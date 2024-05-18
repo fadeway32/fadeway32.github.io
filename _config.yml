@@ -100,7 +100,7 @@ deploy:
   # repo: https://github.com/<username>/<project>
 #  repo: https://gitee.com/fadeway32/fadeway32.git
   repo: https://github.com/fadeway32/fadeway32.github.io.git
-  branch: master
+  branch: main
 
 # Feed Atom
 feed:
