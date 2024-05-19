@@ -8,7 +8,7 @@
     <meta http-equiv="Cache-Control" content="no-siteapp">
     <title>
         
-            归档
+            分布式锁redis正确实现姿势
         
     </title>
     <link rel="shortcut icon" href="#"/>
@@ -31,15 +31,36 @@
 <meta name="generator" content="Hexo 6.2.0"></head>
 <body>
     <a id="cover"></a>
-    <link type="text/css" rel="stylesheet" href="/css/archive.css">
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
 <div id="header" class="header">
     <div class="vertical">
         <div class="inner">
             
-                <h1 class="header-subtitle">归档</h1>
+                <h1 class="header-subtitle">分布式锁redis正确实现姿势</h1>
                 <div class="header-subinfo">
-                    <p class="article-info-text Chinese"></p>
-                    <p class="article-info-text English"></p>                  
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2024-05-19
+                        </span>
+                        
+                            <span id="/article/1716124882/" class="leancloud_visitors" data-flag-title="分布式锁redis正确实现姿势">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1716124882/"></span>
+                        </span>  
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">redis</span>
+                        
+                    
                 </div>
             
         </div>
@@ -48,37 +69,76 @@
 </div>
 <div id="container">
     
-        
-            <!-- 归档页面、分类归档页面、标签归档页面 -->
-            <div class="articles">
-                <div class="articles-wrap">
-                    <span class="archive-move-on"></span>
-                    <span class="archive-counter">
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="分布式锁redis正确实现姿势"><a href="#分布式锁redis正确实现姿势" class="headerlink" title="分布式锁redis正确实现姿势"></a>分布式锁redis正确实现姿势</h1><p><code>redis</code> 正确实现分布式锁</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">package</span> io.binghe.concurrent.chapter19.service.impl;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> io.binghe.concurrent.chapter19.service.RedisDistributeLock;</span><br><span class="line"><span class="keyword">import</span> io.binghe.concurrent.chapter19.task.UpdateLockTimeoutTask;</span><br><span class="line"><span class="keyword">import</span> io.binghe.concurrent.chapter19.utils.ThreadUtils;</span><br><span class="line"><span class="keyword">import</span> org.springframework.beans.factory.annotation.Autowired;</span><br><span class="line"><span class="keyword">import</span> org.springframework.data.redis.core.StringRedisTemplate;</span><br><span class="line"><span class="keyword">import</span> org.springframework.data.redis.core.script.DefaultRedisScript;</span><br><span class="line"><span class="keyword">import</span> org.springframework.stereotype.Service;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.Collections;</span><br><span class="line"><span class="keyword">import</span> java.util.concurrent.TimeUnit;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> binghe</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@version</span> 1.0.0</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@description</span> 实现Redis分布式锁 19.6.11  解决锁失效问题</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Service(&quot;redisDistributeLockV8&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">RedisDistributeLockV9Impl</span> <span class="keyword">implements</span> <span class="title class_">RedisDistributeLock</span> &#123;</span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> StringRedisTemplate stringRedisTemplate;</span><br><span class="line">    <span class="keyword">private</span> ThreadLocal&lt;String&gt; threadLocal = <span class="keyword">new</span> <span class="title class_">ThreadLocal</span>&lt;String&gt;();</span><br><span class="line">    <span class="keyword">private</span> ThreadLocal&lt;Integer&gt; threadLocalCount = <span class="keyword">new</span> <span class="title class_">ThreadLocal</span>&lt;Integer&gt;();</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">tryLock</span><span class="params">(String key, <span class="type">long</span> timeout, TimeUnit unit)</span> &#123;</span><br><span class="line">        <span class="type">Boolean</span> <span class="variable">isLocked</span> <span class="operator">=</span> <span class="literal">false</span>;</span><br><span class="line">        <span class="keyword">if</span> (threadLocal.get() == <span class="literal">null</span>)&#123;</span><br><span class="line">            <span class="type">String</span> <span class="variable">currentThreadId</span> <span class="operator">=</span> <span class="built_in">this</span>.getCurrentThreadId();</span><br><span class="line">            threadLocal.set(currentThreadId);</span><br><span class="line">            isLocked = stringRedisTemplate.opsForValue().setIfAbsent(key, currentThreadId, timeout, unit);</span><br><span class="line"></span><br><span class="line">            <span class="comment">//如果获取锁失败，则执行自旋操作，直到获取锁成功</span></span><br><span class="line">            <span class="keyword">if</span> (!isLocked)&#123;</span><br><span class="line">                <span class="keyword">for</span> (;;)&#123;</span><br><span class="line">                    isLocked = stringRedisTemplate.opsForValue().setIfAbsent(key, currentThreadId, timeout, unit);</span><br><span class="line">                    <span class="keyword">if</span> (isLocked)&#123;</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//启动线程执行定时更新超时时间的方法</span></span><br><span class="line">            <span class="keyword">new</span> <span class="title class_">Thread</span>(<span class="keyword">new</span> <span class="title class_">UpdateLockTimeoutTask</span>(currentThreadId, stringRedisTemplate, key)).start();</span><br><span class="line"></span><br><span class="line">        &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">            isLocked = <span class="literal">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//加锁成功后，计数器的值加1</span></span><br><span class="line">        <span class="keyword">if</span> (isLocked)&#123;</span><br><span class="line">            <span class="type">Integer</span> <span class="variable">count</span> <span class="operator">=</span> threadLocalCount.get() == <span class="literal">null</span> ? <span class="number">0</span> : threadLocalCount.get();</span><br><span class="line">            threadLocalCount.set(++count);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> isLocked;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">releaseLock</span><span class="params">(String key)</span> &#123;</span><br><span class="line">        <span class="comment">//当前线程中绑定的线程id与Redis中的线程id相同时，再执行删除锁的操作</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">currentThreadId</span> <span class="operator">=</span> stringRedisTemplate.opsForValue().get(key);</span><br><span class="line">        <span class="keyword">if</span> (threadLocal.get().equals(currentThreadId))&#123;</span><br><span class="line">            <span class="type">Integer</span> <span class="variable">count</span> <span class="operator">=</span> threadLocalCount.get();</span><br><span class="line">            <span class="keyword">if</span> (count == <span class="literal">null</span> || --count &lt;= <span class="number">0</span>)&#123;</span><br><span class="line">                stringRedisTemplate.delete(key);</span><br><span class="line">                <span class="comment">//防止内存泄露</span></span><br><span class="line">                threadLocal.remove();</span><br><span class="line">                threadLocalCount.remove();</span><br><span class="line"></span><br><span class="line">                <span class="comment">//通过当前线程的id从Redis中获取更新超时时间的线程id</span></span><br><span class="line">                <span class="type">String</span> <span class="variable">updateTimeThreadId</span> <span class="operator">=</span> stringRedisTemplate.opsForValue().get(currentThreadId);</span><br><span class="line">                <span class="keyword">if</span> (updateTimeThreadId != <span class="literal">null</span> &amp;&amp; !<span class="string">&quot;&quot;</span>.equals(updateTimeThreadId.trim()))&#123;</span><br><span class="line">                    <span class="type">Thread</span> <span class="variable">updateTimeThread</span> <span class="operator">=</span> ThreadUtils.getThreadByThreadId(Long.parseLong(updateTimeThreadId));</span><br><span class="line">                    <span class="keyword">if</span> (updateTimeThread != <span class="literal">null</span>)&#123;</span><br><span class="line">                        <span class="comment">//中断更新超时时间的线程</span></span><br><span class="line">                        updateTimeThread.interrupt();</span><br><span class="line">                        stringRedisTemplate.delete(currentThreadId);</span><br><span class="line"></span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;<span class="keyword">else</span> &#123;</span><br><span class="line">                threadLocalCount.set(count);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">LUA_UN_LOCK</span> <span class="operator">=</span></span><br><span class="line">            <span class="string">&quot;if redis.call(&#x27;get&#x27;,KEYS[1]) == ARGV[1] then\n&quot;</span> +</span><br><span class="line">                    <span class="string">&quot;    return redis.call(&#x27;del&#x27;,KEYS[1])\n&quot;</span> +</span><br><span class="line">                    <span class="string">&quot;else\n&quot;</span> +</span><br><span class="line">                    <span class="string">&quot;    return 0\n&quot;</span> +</span><br><span class="line">                    <span class="string">&quot;end&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">releaseLock2</span><span class="params">(String key, String lockValue)</span> &#123;</span><br><span class="line">        DefaultRedisScript&lt;String&gt; redisScript = <span class="keyword">new</span> <span class="title class_">DefaultRedisScript</span>&lt;&gt;();</span><br><span class="line">        redisScript.setScriptText(LUA_UN_LOCK);</span><br><span class="line">        redisScript.setResultType(String.class);</span><br><span class="line">        <span class="type">Object</span> <span class="variable">result</span> <span class="operator">=</span> stringRedisTemplate.execute(redisScript, Collections.singletonList(key), lockValue);</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;1&quot;</span>.equals(result.toString());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> String <span class="title function_">getCurrentThreadId</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="keyword">return</span> String.valueOf(Thread.currentThread().getId());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>watchdog看门狗机制</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> io.binghe.concurrent.chapter19.task;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.springframework.data.redis.core.StringRedisTemplate;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.concurrent.TimeUnit;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> binghe</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@version</span> 1.0.0</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@description</span> 更新分布式锁的超时时间</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UpdateLockTimeoutTask</span> <span class="keyword">implements</span> <span class="title class_">Runnable</span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String currentThreadId;</span><br><span class="line">    <span class="keyword">private</span> StringRedisTemplate stringRedisTemplate;</span><br><span class="line">    <span class="keyword">private</span> String key;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">UpdateLockTimeoutTask</span><span class="params">(String currentThreadId,</span></span><br><span class="line"><span class="params">                                 StringRedisTemplate stringRedisTemplate,</span></span><br><span class="line"><span class="params">                                 String key)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.currentThreadId = currentThreadId;</span><br><span class="line">        <span class="built_in">this</span>.stringRedisTemplate = stringRedisTemplate;</span><br><span class="line">        <span class="built_in">this</span>.key = key;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="comment">//以传递的线程id为key，当前执行更新超时时间的线程为value，保存到redis中</span></span><br><span class="line">        stringRedisTemplate.opsForValue().set(currentThreadId, String.valueOf(Thread.currentThread().getId()));</span><br><span class="line">        <span class="keyword">while</span> (<span class="literal">true</span>)&#123;</span><br><span class="line">            <span class="keyword">if</span> (Thread.interrupted())&#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            stringRedisTemplate.expire(key, <span class="number">30</span>, TimeUnit.SECONDS);</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="comment">//每个10秒执行一次</span></span><br><span class="line">                Thread.sleep(<span class="number">10000</span>);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                Thread.currentThread().interrupt();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1716124882/" target="_blank">分布式锁redis正确实现姿势</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
                         
-                            目前共计 45 篇日志，继续加油！
+                            <a href="/category/Web/">Web</a>
                         
-                    </span>
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
+                        
+                            <a href="/tag/redis/">redis</a>
+                        
+                    </div>
+                
+                <div class="article-prev-next">
+                    
+                        <a href="/article/1805786659/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1805786659/" title="发布于 2024-09-01 12:00">Jetbrain破解</a>
+                        <br>
                     
                     
-                        
-                            <div class="archive-title">
-                                <h2 class="archive-year">2022</h2>
-                            </div>
-                            
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1305786653/"><span>java Learn</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">09-01</span>
-                                </div>
-                            </div>
-                        </div>
+                        <a href="/article/1715610102/" class="next-prefix">» </a> 下一篇：    <a href="/article/1715610102/" title="发布于 2024-05-13 10:21">K8S部署dashboard</a>
                     
                 </div>
             </div>
             
+    <div class="article-comments">
         
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
     
 </div>
     <div id="footer"></div>
@@ -110,7 +170,7 @@
                     
                         <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
                     
-                        <li class=" active "><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
                     
                         <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
                     
