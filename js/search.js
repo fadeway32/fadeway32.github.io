@@ -40,6 +40,13 @@ $(document).ready(function () {
             templates   : {
                 item: function (data) {
                     let link = data.permalink ? data.permalink : ('/' + data.path);
+                    if (link.includes("github.com")){
+                        const pathIndex  =  link.indexOf("github.com/") + "github.com/".length;
+                        const newPath = url.substring(pathIndex);
+                        console.log(newPath);
+                        return ('<a href="' + newPath + '" class="search-hit-link">' + data._highlightResult.title.value + '</a>');
+
+                    }
                     return ('<a href="' + link + '" class="search-hit-link">' + data._highlightResult.title.value + '</a>');
                 },
                 empty: function (data) {
