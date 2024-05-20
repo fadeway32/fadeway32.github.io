@@ -42,8 +42,7 @@ $(document).ready(function () {
                     let link = data.permalink ? data.permalink : ('/' + data.path);
                     if (link.includes("github.com")){
                         const pathIndex  =  link.indexOf("github.com/") + "github.com/".length;
-                        const newPath = url.substring(pathIndex);
-                        console.log(newPath);
+                        const newPath = "https://"+link.substring(pathIndex);
                         return ('<a href="' + newPath + '" class="search-hit-link">' + data._highlightResult.title.value + '</a>');
 
                     }
