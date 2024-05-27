@@ -160,6 +160,12 @@ $ hexo --debug 表示调试模式，用于将消息详细记录到终端和 debu
 $ hexo --silent  表示静默模式，用于静默输出到终端
 ```
 
+10、 hexo algolia
+
+```
+$ hexo algolia  更新algolia   hexo clean && hexo g -d
+```
+
 #### 3.2 md工具地址下载
 
 typora 工具下载：https://ghpym.lanzoui.com/b00zng7gd

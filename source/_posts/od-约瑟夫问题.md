@@ -1,6 +1,6 @@
 ---
 
-layout: [od-约瑟夫问题.md](od-%D4%BC%C9%AA%B7%F2%CE%CA%CC%E2.md)
+layout: od-约瑟夫问题
 
 title: od-约瑟夫问题
 
