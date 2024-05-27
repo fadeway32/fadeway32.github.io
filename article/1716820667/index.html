@@ -8,7 +8,7 @@
     <meta http-equiv="Cache-Control" content="no-siteapp">
     <title>
         
-            归档
+            od-约瑟夫问题
         
     </title>
     <link rel="shortcut icon" href="#"/>
@@ -31,15 +31,36 @@
 <meta name="generator" content="Hexo 6.2.0"></head>
 <body>
     <a id="cover"></a>
-    <link type="text/css" rel="stylesheet" href="/css/archive.css">
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
 <div id="header" class="header">
     <div class="vertical">
         <div class="inner">
             
-                <h1 class="header-subtitle">归档</h1>
+                <h1 class="header-subtitle">od-约瑟夫问题</h1>
                 <div class="header-subinfo">
-                    <p class="article-info-text Chinese"></p>
-                    <p class="article-info-text English"></p>                  
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2024-05-27
+                        </span>
+                        
+                            <span id="/article/1716820667/" class="leancloud_visitors" data-flag-title="od-约瑟夫问题">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1716820667/"></span>
+                        </span>  
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">华为od</span>
+                        
+                    
                 </div>
             
         </div>
@@ -48,235 +69,123 @@
 </div>
 <div id="container">
     
-        
-            <!-- 归档页面、分类归档页面、标签归档页面 -->
-            <div class="articles">
-                <div class="articles-wrap">
-                    <span class="archive-move-on"></span>
-                    <span class="archive-counter">
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="约瑟夫问题"><a href="#约瑟夫问题" class="headerlink" title="约瑟夫问题"></a>约瑟夫问题</h1><h1 id="C卷-100分-约瑟夫问题（Java-amp-JS-amp-Python-amp-C）"><a href="#C卷-100分-约瑟夫问题（Java-amp-JS-amp-Python-amp-C）" class="headerlink" title="C卷,100分)- 约瑟夫问题（Java &amp; JS &amp; Python &amp; C）"></a>C卷,100分)- 约瑟夫问题（Java &amp; JS &amp; Python &amp; C）</h1><h4 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h4><p>输入一个由随机数组成的数列（数列中每个数均是大于 0 的整数，长度已知），和初始计数值 m。</p>
+<p>从数列首位置开始计数，计数到 m 后，将数列该位置数值替换计数值 m，</p>
+<p>并将数列该位置数值出列，然后从下一位置从新开始计数，直到数列所有数值出列为止。</p>
+<p>如果计数到达数列尾段，则返回数列首位置继续计数。</p>
+<p>请编程实现上述计数过程，同时输出数值出列的顺序。</p>
+<p>比如：输入的随机数列为：3,1,2,4，初始计数值 m&#x3D;7，从数列首位置开始计数（数值 3 所在位置）</p>
+<p>第一轮计数出列数字为 2，计数值更新 m&#x3D;2，出列后数列为 3,1,4，从数值 4 所在位置从新开始计数</p>
+<p>第二轮计数出列数字为 3，计数值更新 m&#x3D;3，出列后数列为 1,4，从数值 1 所在位置开始计数</p>
+<p>第三轮计数出列数字为 1，计数值更新 m&#x3D;1，出列后数列为 4，从数值 4 所在位置开始计数</p>
+<p>最后一轮计数出列数字为 4，计数过程完成。输出数值出列顺序为：2,3,1,4。</p>
+<p>要求实现函数：</p>
+<p><em>void array_iterate(int len, int input_array[], int m, int output_array[])</em></p>
+<h4 id="输入描述"><a href="#输入描述" class="headerlink" title="输入描述"></a>输入描述</h4><p> int len：输入数列的长度； int intput_array[]：输入的初始数列 int m：初始计数值</p>
+<h4 id="输出描述"><a href="#输出描述" class="headerlink" title="输出描述"></a>输出描述</h4><p> int output_array[]：输出的数值出列顺序</p>
+<h4 id="用例"><a href="#用例" class="headerlink" title="用例"></a>用例</h4><table>
+<thead>
+<tr>
+<th>输入</th>
+<th>3,1,2,4 4 7</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>输入</td>
+<td>4</td>
+</tr>
+<tr>
+<td>输入</td>
+<td>7</td>
+</tr>
+<tr>
+<td>输出</td>
+<td>2,3,1,4</td>
+</tr>
+<tr>
+<td>说明</td>
+<td>输入第一行是初始数列intput_array第二行是初始数列的长度len第三行是初始计数值m输出数值出列顺序</td>
+</tr>
+</tbody></table>
+<h4 id="题目解析"><a href="#题目解析" class="headerlink" title="题目解析"></a>题目解析</h4><p>本题就是约瑟夫环的变种题。</p>
+<p>约瑟夫环的解题有多种方式，比较容易理解和实现的可以使用双端队列。</p>
+<p>即intput_array当成双端队列，从队头取出元素，判断此时计数是否为m：</p>
+<ul>
+<li>若是，则将取出的元素加入output_arr，并将取出的元素的值赋值给m，然后len–，计数重置为1</li>
+<li>若不是，则将取出的元素塞回intput_array的队尾，仅计数++</li>
+</ul>
+<p>但是本题JS是基于数组实现的双端队列，因此每次头部元素出队，都意味着一次O(n)复杂度的数组元素前移一位操作，这是非常影响性能的。</p>
+<p>对于Java，Python都有内置的双端队列结构，因此可以直接复用，对于C，可以自己实现双端队列结构。</p>
+<p>因此JS语言我们可以选择循环链表来模拟约瑟夫环。</p>
+<p>循环链表本身就实现了环形结构，其head.prev &#x3D; tail，tail.next &#x3D; head。</p>
+<p>且循环链表删除节点的复杂度是O(1)。</p>
+<p>唯一的遗憾是，JS没有原生的循环链表结构，我们需要自己实现。但是我们只需要实现最简单的循环链表即可，即只实现循环链表的尾部新增节点操作即可。而删除操作可以在实际业务中完成。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span>&#123;</span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line"></span><br><span class="line">        <span class="type">Scanner</span> <span class="variable">sc</span>  <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Scanner</span>(System.in);</span><br><span class="line">        Integer[] input_array =</span><br><span class="line">                Arrays.stream(sc.nextLine().split(<span class="string">&quot;,&quot;</span>)).map(Integer::parseInt).toArray(Integer[]::<span class="keyword">new</span>);</span><br><span class="line">        <span class="type">int</span> <span class="variable">len</span>  <span class="operator">=</span> Integer.parseInt(sc.nextLine());</span><br><span class="line">        <span class="type">int</span> <span class="variable">m</span> <span class="operator">=</span>Integer.parseInt(sc.nextLine());</span><br><span class="line"></span><br><span class="line">        System.out.println(getResult(input_array,len,m));</span><br><span class="line">        System.out.println(getResult1(input_array,len,m));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> String <span class="title function_">getResult1</span><span class="params">(Integer[] input_arr, <span class="type">int</span> len, <span class="type">int</span> m)</span> &#123;</span><br><span class="line">        LinkedList&lt;Integer&gt; dq = <span class="keyword">new</span> <span class="title class_">LinkedList</span>&lt;&gt;(Arrays.asList(input_arr));</span><br><span class="line"></span><br><span class="line">        ArrayList&lt;Integer&gt; output_arr = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line"></span><br><span class="line">        <span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">while</span> (len &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="type">Integer</span> <span class="variable">out</span> <span class="operator">=</span> dq.removeFirst();</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (i == m) &#123;</span><br><span class="line">                output_arr.add(out);</span><br><span class="line">                m = out;</span><br><span class="line">                i = <span class="number">1</span>;</span><br><span class="line">                len--;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                dq.add(out);</span><br><span class="line">                i++;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="type">StringJoiner</span> <span class="variable">sj</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">StringJoiner</span>(<span class="string">&quot;,&quot;</span>);</span><br><span class="line">        <span class="keyword">for</span> (Integer ele : output_arr) &#123;</span><br><span class="line">            sj.add(ele + <span class="string">&quot;&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> sj.toString();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> String  <span class="title function_">getResult</span><span class="params">(Integer[] input_array,<span class="type">int</span> length,<span class="type">int</span> m)</span>&#123;</span><br><span class="line">        LinkedList&lt;Integer&gt; dq = <span class="keyword">new</span> <span class="title class_">LinkedList</span>&lt;&gt;(Arrays.asList(input_array));</span><br><span class="line">        ArrayList&lt;Integer&gt; output_array = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">        <span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> <span class="variable">len</span> <span class="operator">=</span> length;</span><br><span class="line">        <span class="keyword">while</span>(len &gt; <span class="number">0</span>)&#123;</span><br><span class="line">            <span class="type">Integer</span> <span class="variable">out</span> <span class="operator">=</span> dq.removeFirst();</span><br><span class="line">            <span class="keyword">if</span>(m == i)&#123;</span><br><span class="line">                output_array.add(out);</span><br><span class="line">                m =out;</span><br><span class="line">                i = <span class="number">1</span>;</span><br><span class="line">                len--;</span><br><span class="line">            &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">                dq.add(out);</span><br><span class="line">                i++;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">StringJoiner</span> <span class="variable">sj</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">StringJoiner</span>(<span class="string">&quot;,&quot;</span>);</span><br><span class="line">        <span class="keyword">for</span>(Integer s : output_array)&#123;</span><br><span class="line">            sj.add(s+<span class="string">&quot;&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> sj.toString();</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1716820667/" target="_blank">od-约瑟夫问题</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
                         
-                            目前共计 46 篇日志，继续加油！
+                            <a href="/category/Web/">Web</a>
                         
-                    </span>
-                    
-                    
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
                         
-                            <div class="archive-title">
-                                <h2 class="archive-year">2023</h2>
-                            </div>
-                            
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1305786659/"><span>gitee及hexo搭建教程</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">09-01</span>
-                                </div>
-                            </div>
-                        </div>
+                            <a href="/tag/%E5%8D%8E%E4%B8%BAod/">华为od</a>
+                        
+                    </div>
+                
+                <div class="article-prev-next">
                     
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1690804405/"><span>多线程事务同时回滚案例demo</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">07-30</span>
-                                </div>
-                            </div>
-                        </div>
+                        <a href="/article/1805786659/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1805786659/" title="发布于 2024-09-01 12:00">Jetbrain破解</a>
+                        <br>
                     
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1684846498/"><span>刷题地址</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">07-06</span>
-                                </div>
-                            </div>
-                        </div>
                     
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1684846423/"><span>资源导航</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">05-23</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1683208917/"><span>搭建自己的chatgpt</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">05-04</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1177767762/"><span>docker实践和运用</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">04-17</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1177767760/"><span>LeetCode23-[下一个排列]</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">04-16</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1177767761/"><span>Window软件分享</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">04-16</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1177767761/"><span>快速排序</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">04-16</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1177767759/"><span>LeetCode22-[Pow(x, n)]</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">04-10</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1177767749/"><span>LeetCode21-[两数相除]</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">04-10</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1677767749/"><span>LeetCode20-[括号生成]</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">03-19</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1677767748/"><span>LeetCode19-判断[括号生成]</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">03-18</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1677767747/"><span>LeetCode18- 删除倒数第n个节点</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">03-17</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1677767746/"><span>LeetCode17-字符串匹配子串返回第一个符合要求的下标</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">03-15</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1677767745/"><span>LeetCode15-求最接近目标的四数之和</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">03-02</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1677767744/"><span>LeetCode15-求最接近目标的三数之和</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">03-02</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1677767743/"><span>LeetCode14-三数之和</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">03-02</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1677767742/"><span>LeetCode13-最长公共前缀</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">03-02</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1677767741/"><span>LeetCode12-罗马数字转成数字</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">03-02</span>
-                                </div>
-                            </div>
-                        </div>
+                        <a href="/article/1716124882/" class="next-prefix">» </a> 下一篇：    <a href="/article/1716124882/" title="发布于 2024-05-19 09:21">分布式锁redis正确实现姿势</a>
                     
                 </div>
             </div>
             
+    <div class="article-comments">
         
-    <div class="pagination-bottom">
-        <div class="pagination">
-            
-                <a href="/archive/2023/page/2/">下一页</a>
-            
-        </div>
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
     </div>
 
+        </div>
     
 </div>
     <div id="footer"></div>
@@ -308,7 +217,7 @@
                     
                         <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
                     
-                        <li class=" active "><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
                     
                         <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
                     
