@@ -163,7 +163,7 @@ $ hexo --silent  表示静默模式，用于静默输出到终端
 10、 hexo algolia
 
 ```
-$ hexo algolia  更新algolia   hexo clean && hexo g -d
+$ hexo algolia  更新algolia   hexo clean && hexo algolia
 ```
 
 #### 3.2 md工具地址下载
