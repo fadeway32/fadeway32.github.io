@@ -8,7 +8,7 @@
     <meta http-equiv="Cache-Control" content="no-siteapp">
     <title>
         
-            归档
+            判断数字是否是回文数字
         
     </title>
     <link rel="shortcut icon" href="#"/>
@@ -31,15 +31,36 @@
 <meta name="generator" content="Hexo 6.2.0"></head>
 <body>
     <a id="cover"></a>
-    <link type="text/css" rel="stylesheet" href="/css/archive.css">
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
 <div id="header" class="header">
     <div class="vertical">
         <div class="inner">
             
-                <h1 class="header-subtitle">归档</h1>
+                <h1 class="header-subtitle">判断数字是否是回文数字</h1>
                 <div class="header-subinfo">
-                    <p class="article-info-text Chinese"></p>
-                    <p class="article-info-text English"></p>                  
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2024-05-28
+                        </span>
+                        
+                            <span id="/article/1716905156/" class="leancloud_visitors" data-flag-title="判断数字是否是回文数字">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1716905156/"></span>
+                        </span>  
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">LeetCode</span>
+                        
+                    
                 </div>
             
         </div>
@@ -48,125 +69,76 @@
 </div>
 <div id="container">
     
-        
-            <!-- 归档页面、分类归档页面、标签归档页面 -->
-            <div class="articles">
-                <div class="articles-wrap">
-                    <span class="archive-move-on"></span>
-                    <span class="archive-counter">
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="判断数字是否是回文数字"><a href="#判断数字是否是回文数字" class="headerlink" title="判断数字是否是回文数字"></a>判断数字是否是回文数字</h1><figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">判断一个整数是否是回文数。回文数是指正序（从左向右）和倒序（从右向左）读都是一样的整数。</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">输入: <span class="number">121</span></span><br><span class="line">输出: <span class="literal">true</span></span><br><span class="line"></span><br><span class="line">输入: -<span class="number">121</span></span><br><span class="line">输出: <span class="literal">false</span></span><br><span class="line">解释: 从左向右读, 为 -<span class="number">121</span> 。 从右向左读, 为 <span class="number">121</span>- 。因此它不是一个回文数。</span><br><span class="line"></span><br><span class="line">输入: <span class="number">10</span></span><br><span class="line">输出: <span class="literal">false</span></span><br><span class="line">解释: 从右向左读, 为 <span class="number">01</span> 。因此它不是一个回文数。</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span>  <span class="title function_">isHuiWen</span><span class="params">(<span class="type">int</span> x)</span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(x==<span class="number">0</span>)<span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span>(x &lt; <span class="number">0</span> || x % <span class="number">10</span> == <span class="number">0</span> )&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 判断一半</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">right</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">       	<span class="keyword">while</span>(x &gt; right)&#123;</span><br><span class="line">	       right = right * <span class="number">10</span> + x % <span class="number">10</span></span><br><span class="line">            x=x/<span class="number">10</span>;</span><br><span class="line">        &#125; </span><br><span class="line">        <span class="comment">// 判断结果 相等或者 大于10倍</span></span><br><span class="line">        <span class="keyword">return</span> x==right || x ==  right / <span class="number">10</span>; </span><br><span class="line">       </span><br><span class="line">        </span><br><span class="line">        </span><br><span class="line">    </span><br><span class="line">        </span><br><span class="line">        </span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1716905156/" target="_blank">判断数字是否是回文数字</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
                         
-                            目前共计 48 篇日志，继续加油！
+                            <a href="/category/Web/">Web</a>
                         
-                    </span>
-                    
-                    
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
                         
-                            <div class="archive-title">
-                                <h2 class="archive-year">2023</h2>
-                            </div>
-                            
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1677507585/"><span>LeetCode07-求数字翻转</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-28</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1677507385/"><span>LeetCode05打印Z型</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-28</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1677333023/"><span>LeetCode03-手写一个生产消费者队列</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-15</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1305786657/"><span>LeetCode04-求字符串最长长度</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-15</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1305786654/"><span>LeetCode01-两数之和</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-15</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1305786655/"><span>LeetCode02-两数加法计算-链表逆序</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-15</span>
-                                </div>
-                            </div>
-                        </div>
-                    
+                            <a href="/tag/LeetCode/">LeetCode</a>
                         
-                            <div class="archive-title">
-                                <h2 class="archive-year">2022</h2>
-                            </div>
-                            
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1305786653/"><span>java Learn</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">09-01</span>
-                                </div>
-                            </div>
-                        </div>
+                    </div>
+                
+                <div class="article-prev-next">
                     
-                        
-                            <div class="archive-title">
-                                <h2 class="archive-year">2020</h2>
-                            </div>
-                            
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1112885395/"><span>Hexo主题LiveForCode介绍</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">08-01</span>
-                                </div>
-                            </div>
-                        </div>
+                        <a href="/article/1716905190/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1716905190/" title="发布于 2024-05-28 10:05">多线程笔试题</a>
+                        <br>
+                    
+                    
+                        <a href="/article/1716820667/" class="next-prefix">» </a> 下一篇：    <a href="/article/1716820667/" title="发布于 2024-05-27 10:37">od-约瑟夫问题</a>
                     
                 </div>
             </div>
             
+    <div class="article-comments">
         
-    <div class="pagination-bottom">
-        <div class="pagination">
-            
-                <a class="extend prev" rel="prev" href="/archive/page/2/">上一页</a><a class="page-number" href="/archive/">1</a><a class="page-number" href="/archive/page/2/">2</a><span class="page-number current">3</span>
-            
-        </div>
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
     </div>
 
+        </div>
     
 </div>
     <div id="footer"></div>
@@ -198,7 +170,7 @@
                     
                         <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
                     
-                        <li class=" active "><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
                     
                         <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
                     
