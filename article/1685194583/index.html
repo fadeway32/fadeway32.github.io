@@ -8,7 +8,7 @@
     <meta http-equiv="Cache-Control" content="no-siteapp">
     <title>
         
-            归档
+            代码同步命令
         
     </title>
     <link rel="shortcut icon" href="#"/>
@@ -31,15 +31,36 @@
 <meta name="generator" content="Hexo 6.2.0"></head>
 <body>
     <a id="cover"></a>
-    <link type="text/css" rel="stylesheet" href="/css/archive.css">
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
 <div id="header" class="header">
     <div class="vertical">
         <div class="inner">
             
-                <h1 class="header-subtitle">归档</h1>
+                <h1 class="header-subtitle">代码同步命令</h1>
                 <div class="header-subinfo">
-                    <p class="article-info-text Chinese"></p>
-                    <p class="article-info-text English"></p>                  
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2023-05-27
+                        </span>
+                        
+                            <span id="/article/1685194583/" class="leancloud_visitors" data-flag-title="代码同步命令">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1685194583/"></span>
+                        </span>  
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">Web</span>
+                        
+                    
                 </div>
             
         </div>
@@ -48,197 +69,109 @@
 </div>
 <div id="container">
     
-        
-            <!-- 归档页面、分类归档页面、标签归档页面 -->
-            <div class="articles">
-                <div class="articles-wrap">
-                    <span class="archive-move-on"></span>
-                    <span class="archive-counter">
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="服务器代码同步操作示例"><a href="#服务器代码同步操作示例" class="headerlink" title="服务器代码同步操作示例"></a>服务器代码同步操作示例</h1><p>##以从192.168.5.129同步至192.168.8.131为例：</p>
+<ol>
+<li><p>以root用户登录192.168.8.131。</p>
+</li>
+<li><p>创建 以日期命名的备份目录： </p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# mkdir /home/backup/webbak/20191108</span><br></pre></td></tr></table></figure></li>
+<li><p>备份代码： </p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# cp -r /home/fadeway/web/&#123;calendar,html,thinkdrive,fadewaysvr&#125; /home/backup/webbak/20191108/</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>同步代码： </p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# rm -rf /home/fadeway/web/&#123;calendar,html,thinkdrive,fadewaysvr&#125;</span><br><span class="line">[root@os11728 ~]# scp -P 22 -r root@192.168.5.129:/home/fadeway/web/&#123;calendar,html,thinkdrive,fadewaysvr&#125;  /home/fadeway/web/</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>重启服务： </p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# /home/fadeway/sbin/webmailctl.sh --restart</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>##从192.168.5.129同步至210.22.22.150</p>
+<ol>
+<li><p>以root用户登录210.22.22.150。</p>
+</li>
+<li><p>创建 以日期命名的备份目录： </p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# mkdir /home/backup/webbak/20191108</span><br></pre></td></tr></table></figure></li>
+<li><p>备份代码： </p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# cp -r /home/fadeway/web/&#123;calendar,html,thinkdrive,fadewaysvr&#125; /home/backup/webbak/20191108/</span><br><span class="line">[root@os11728 ~]# rm -rf /home/fadeway/web/&#123;calendar,html,thinkdrive,fadewaysvr&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>以root用户登录192.168.5.129。</p>
+</li>
+<li><p>同步代码： </p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# scp -P 1579 -r /home/fadeway/web/&#123;calendar,html,thinkdrive,fadewaysvr&#125; root@210.22.22.150:/home/fadeway/web/</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>重启服务： </p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# /home/fadeway/sbin/webmailctl.sh --restart</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>##还原代码</p>
+<ol>
+<li>以root用户登录。</li>
+<li>将某日期备份的文件还原： <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# cp -r /home/backup/webbak/20191108/&#123;calendar,html,thinkdrive,fadewaysvr&#125;  /home/fadeway/web/</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>##fadeway打包备份</p>
+<p>示例： </p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# tar -zcvf fadeway.V5.8.0.release.NeoKylin7.6.kp920arm64.tongweb.mysql8.20210318.tar.gz --exclude=fadeway/logs --exclude=fadeway/backup --exclude=fadeway/nginx.new --exclude=fadeway/MailMove/logs fadeway</span><br></pre></td></tr></table></figure>
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1685194583/" target="_blank">代码同步命令</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
                         
-                            目前共计 53 篇日志，继续加油！
+                            <a href="/category/Web/">Web</a>
                         
-                    </span>
-                    
-                    
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
                         
-                            <div class="archive-title">
-                                <h2 class="archive-year">2024</h2>
-                            </div>
-                            
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1805786659/"><span>Jetbrain破解</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">09-01</span>
-                                </div>
-                            </div>
-                        </div>
+                            <a href="/tag/Web/">Web</a>
+                        
+                    </div>
+                
+                <div class="article-prev-next">
                     
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1/"><span></span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">05-29</span>
-                                </div>
-                            </div>
-                        </div>
+                        <a href="/article/1684846498/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1684846498/" title="发布于 2023-07-06 10:48">刷题地址</a>
+                        <br>
                     
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1716905190/"><span>多线程笔试题</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">05-28</span>
-                                </div>
-                            </div>
-                        </div>
                     
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1716905156/"><span>判断数字是否是回文数字</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">05-28</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1716820667/"><span>od-约瑟夫问题</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">05-27</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1716124882/"><span>分布式锁redis正确实现姿势</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">05-19</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1715610102/"><span>K8S部署dashboard</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">05-13</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1715260887683/"><span>LeetCode判断回文链表</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">05-09</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1713796351/"><span>Leetcode 最长公共子串</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">04-21</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1713796331/"><span>LeetCode判断一个数是不是快乐数</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">04-21</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1713100397/"><span>设计hashSet表</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">04-14</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1713100396/"><span>判断字符是否唯一</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">04-14</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1784846433/"><span>编程满天星题解分享</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">04-03</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1784846431/"><span>LeetCode779递归序列</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-27</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1784846430/"><span>LinkedList源码阅读分析</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-25</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1784846428/"><span>Spring事务机制的个人总结</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-25</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1784846423/"><span>Chatgpt4Free</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-23</span>
-                                </div>
-                            </div>
-                        </div>
+                        <a href="/article/1684846423/" class="next-prefix">» </a> 下一篇：    <a href="/article/1684846423/" title="发布于 2023-05-23 08:00">资源导航</a>
                     
                 </div>
             </div>
             
+    <div class="article-comments">
         
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
     
 </div>
     <div id="footer"></div>
@@ -270,7 +203,7 @@
                     
                         <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
                     
-                        <li class=" active "><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
                     
                         <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
                     
