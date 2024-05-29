@@ -75,43 +75,60 @@
             <div class="article-body">
                 <h1 id="服务器代码同步操作示例"><a href="#服务器代码同步操作示例" class="headerlink" title="服务器代码同步操作示例"></a>服务器代码同步操作示例</h1><p>##以从192.168.5.129同步至192.168.8.131为例：</p>
 <ol>
-<li><p>以root用户登录192.168.8.131。</p>
-</li>
-<li><p>创建 以日期命名的备份目录： </p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# mkdir /home/backup/webbak/20191108</span><br></pre></td></tr></table></figure></li>
-<li><p>备份代码： </p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# cp -r /home/fadeway/web/&#123;calendar,html,thinkdrive,fadewaysvr&#125; /home/backup/webbak/20191108/</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>同步代码： </p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# rm -rf /home/fadeway/web/&#123;calendar,html,thinkdrive,fadewaysvr&#125;</span><br><span class="line">[root@os11728 ~]# scp -P 22 -r root@192.168.5.129:/home/fadeway/web/&#123;calendar,html,thinkdrive,fadewaysvr&#125;  /home/fadeway/web/</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>重启服务： </p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# /home/fadeway/sbin/webmailctl.sh --restart</span><br></pre></td></tr></table></figure></li>
+<li>以root用户登录192.168.8.131。</li>
+<li>创建 以日期命名的备份目录：</li>
 </ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# mkdir /home/backup/webbak/20191108</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>备份代码：</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# cp -r /home/fadeway/web/&#123;calendar,html,thinkdrive,fadewaysvr&#125; /home/backup/webbak/20191108/</span><br></pre></td></tr></table></figure>
+
+<ol start="4">
+<li>同步代码：</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# rm -rf /home/fadeway/web/&#123;calendar,html,thinkdrive,fadewaysvr&#125;</span><br><span class="line">[root@os11728 ~]# scp -P 22 -r root@192.168.5.129:/home/fadeway/web/&#123;calendar,html,thinkdrive,fadewaysvr&#125;  /home/fadeway/web/</span><br></pre></td></tr></table></figure>
+
+<ol start="5">
+<li>重启服务：</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# /home/fadeway/sbin/webmailctl.sh --restart</span><br></pre></td></tr></table></figure>
+
 <p>##从192.168.5.129同步至210.22.22.150</p>
 <ol>
-<li><p>以root用户登录210.22.22.150。</p>
-</li>
-<li><p>创建 以日期命名的备份目录： </p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# mkdir /home/backup/webbak/20191108</span><br></pre></td></tr></table></figure></li>
-<li><p>备份代码： </p>
+<li>以root用户登录210.22.22.150。</li>
+<li>创建 以日期命名的备份目录：</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# mkdir /home/backup/webbak/20191108</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>备份代码：</li>
+</ol>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# cp -r /home/fadeway/web/&#123;calendar,html,thinkdrive,fadewaysvr&#125; /home/backup/webbak/20191108/</span><br><span class="line">[root@os11728 ~]# rm -rf /home/fadeway/web/&#123;calendar,html,thinkdrive,fadewaysvr&#125;</span><br></pre></td></tr></table></figure>
-</li>
+
+<ol start="4">
 <li><p>以root用户登录192.168.5.129。</p>
 </li>
-<li><p>同步代码： </p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# scp -P 1579 -r /home/fadeway/web/&#123;calendar,html,thinkdrive,fadewaysvr&#125; root@210.22.22.150:/home/fadeway/web/</span><br></pre></td></tr></table></figure>
+<li><p>同步代码：</p>
 </li>
-<li><p>重启服务： </p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# /home/fadeway/sbin/webmailctl.sh --restart</span><br></pre></td></tr></table></figure></li>
 </ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# scp -P 1579 -r /home/fadeway/web/&#123;calendar,html,thinkdrive,fadewaysvr&#125; root@210.22.22.150:/home/fadeway/web/</span><br></pre></td></tr></table></figure>
+
+<ol start="5">
+<li>重启服务：</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# /home/fadeway/sbin/webmailctl.sh --restart</span><br></pre></td></tr></table></figure>
+
 <p>##还原代码</p>
 <ol>
 <li>以root用户登录。</li>
-<li>将某日期备份的文件还原： <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# cp -r /home/backup/webbak/20191108/&#123;calendar,html,thinkdrive,fadewaysvr&#125;  /home/fadeway/web/</span><br></pre></td></tr></table></figure></li>
+<li>将某日期备份的文件还原：</li>
 </ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# cp -r /home/backup/webbak/20191108/&#123;calendar,html,thinkdrive,fadewaysvr&#125;  /home/fadeway/web/</span><br></pre></td></tr></table></figure>
+
 <p>##fadeway打包备份</p>
-<p>示例： </p>
+<p>示例：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@os11728 ~]# tar -zcvf fadeway.V5.8.0.release.NeoKylin7.6.kp920arm64.tongweb.mysql8.20210318.tar.gz --exclude=fadeway/logs --exclude=fadeway/backup --exclude=fadeway/nginx.new --exclude=fadeway/MailMove/logs fadeway</span><br></pre></td></tr></table></figure>
                 
                 <p class="end">__END__</p>
