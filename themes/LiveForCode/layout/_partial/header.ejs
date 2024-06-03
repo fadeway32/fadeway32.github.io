@@ -1,3 +1,6 @@
+<header>
+    <meta name="referrer" content="no-referrer">
+</header>
 <div id="header" <% if (!is_home()) { %>class="header"<% } %>>
     <div class="vertical">
         <div class="inner">
@@ -19,7 +22,7 @@
                         <% } %>
                         <span>
                             <i class="iconfont icon-interactive"></i> <%- __('post.comment') %><span class="valine-comment-count" data-xid="/<%- post.path %>"></span>
-                        </span>  
+                        </span>
                     </p>
                     <% if (post.categories.count() > 0) { %>
                         <% post.categories.each((category) => { %>
@@ -36,7 +39,7 @@
                 <h1 class="header-subtitle"><%- title %></h1>
                 <div class="header-subinfo">
                     <p class="article-info-text Chinese"></p>
-                    <p class="article-info-text English"></p>                  
+                    <p class="article-info-text English"></p>
                 </div>
             <% } %>
         </div>
