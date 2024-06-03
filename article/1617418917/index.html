@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <meta name="referrer" content="origin">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>
+        
+            XXL-JOB源码分析
+        
+    </title>
+    <link rel="shortcut icon" href="#"/>
+
+    <link type="text/css" rel="stylesheet" href="/font/LongCang.css">
+    <link type="text/css" rel="stylesheet" href="/font/Monda.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSansSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSerifSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/Playball.css">
+    <link type="text/css" rel="stylesheet" href="/font/PTMono.css">
+    <link type="text/css" rel="stylesheet" href="/font/Roboto.css">
+    <link type="text/css" rel="stylesheet" href="/font/RobotoSlab.css">
+    <link type="text/css" rel="stylesheet" href="/font/Rosario.css">
+    <link type="text/css" rel="stylesheet" href="/font/UbuntuMono.css">
+
+    <link type="text/css" rel="stylesheet" href="/css/base.css">
+    <link type="text/css" rel="stylesheet" href="/css/code.css">
+
+    <script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
+<meta name="generator" content="Hexo 6.2.0"></head>
+<body>
+    <a id="cover"></a>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
+<div id="header" class="header">
+    <div class="vertical">
+        <div class="inner">
+            
+                <h1 class="header-subtitle">XXL-JOB源码分析</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2023-06-03
+                        </span>
+                        
+                            <span id="/article/1617418917/" class="leancloud_visitors" data-flag-title="XXL-JOB源码分析">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1617418917/"></span>
+                        </span>  
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">JOB</span>
+                        
+                    
+                </div>
+            
+        </div>
+    </div>
+    
+</div>
+<div id="container">
+    
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="XXL-JOB源码分析"><a href="#XXL-JOB源码分析" class="headerlink" title="XXL-JOB源码分析"></a>XXL-JOB源码分析</h1><p>架构图：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/image-20240110150652050.png" alt="image-20240110150652050"></p>
+<p>代码结构：</p>
+<p>xxl-job-core</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/image-20240110150841306.png" alt="image-20240110150841306"></p>
+<p>xxl-job-admin</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/image-20240110150755787.png" alt="image-20240110150755787"></p>
+<p>源码解析：</p>
+<p>一、核心类<br>JobTriggerPoolHelper  触发器线程池帮助类<br>JobRegistryHelper  注册帮助类<br>JobFailMonitorHelper 失败监控帮助类<br>JobLogReportHelper 日志报告帮助类<br>JobScheduleHelper 定时任务帮助类</p>
+<h3 id="二、XXLJob-core执行流程"><a href="#二、XXLJob-core执行流程" class="headerlink" title="二、XXLJob-core执行流程"></a>二、XXLJob-core执行流程</h3><p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/image-20240110151034220.png" alt="image-20240110151034220"></p>
+<p>问题一？IJobHandler什么适合被初始化呢？实现主要有三个MethodJobHandler、ScriptJobHandler、GlueJobHandler</p>
+<p>XxlJobAdminConfig是核心的配置类，实现了InitializingBean接口，重写了afterPropertiesSet（）方法，代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"> <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">afterPropertiesSet</span><span class="params">()</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">     adminConfig = <span class="built_in">this</span>;</span><br><span class="line"> </span><br><span class="line">     xxlJobScheduler = <span class="keyword">new</span> <span class="title class_">XxlJobScheduler</span>();</span><br><span class="line">     xxlJobScheduler.init();</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+
+<p>init方法实现了一系列的初始化，看看有没有跟IJobHandler有关。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">init</span><span class="params">()</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">    <span class="comment">// init i18n</span></span><br><span class="line">    initI18n();</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// admin trigger pool start</span></span><br><span class="line">    JobTriggerPoolHelper.toStart();</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// admin registry monitor run</span></span><br><span class="line">    JobRegistryHelper.getInstance().start();</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// admin fail-monitor run</span></span><br><span class="line">    JobFailMonitorHelper.getInstance().start();</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// admin lose-monitor run ( depend on JobTriggerPoolHelper )</span></span><br><span class="line">    JobCompleteHelper.getInstance().start();</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// admin log report start</span></span><br><span class="line">    JobLogReportHelper.getInstance().start();</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// start-schedule  ( depend on JobTriggerPoolHelper )</span></span><br><span class="line">    JobScheduleHelper.getInstance().start();</span><br><span class="line"> </span><br><span class="line">    logger.info(<span class="string">&quot;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt; init xxl-job admin success.&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里做了一些列的事情，包括开启触发池启动，用来定时触发任务的、注册监控的运行等。可以看到JobScheduleHelper.getInstance().start()是开启任务的核心方法，JobScheduleHelper.getInstance()单例的方式，调用方法代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Scan Job</span></span><br><span class="line"><span class="comment">// 1、pre read</span></span><br><span class="line"><span class="comment">// 2、push time-ring</span></span><br><span class="line"><span class="comment">// 3、update trigger info</span></span><br></pre></td></tr></table></figure>
+
+<p>这里的start方法主要是扫描所有的任务，包括下面的部分</p>
+<p>1、首先是通过查询数据库，把所有的任务扫描出来</p>
+<p>2、遍历所有的任务执行JobTriggerPoolHelper.trigger(jobInfo.getId(), TriggerTypeEnum.MISFIRE, -1, null, null, null);触发这条任务</p>
+<p>3、refreshNextValidTime(jobInfo, new Date()) 刷新下次过期的时间</p>
+<p>这里的核心方法就是JobTriggerPoolHelper.trigger方法，是一个静态方法，代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="type">JobTriggerPoolHelper</span> <span class="variable">helper</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">JobTriggerPoolHelper</span>();</span><br><span class="line"> </span><br><span class="line"> <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">trigger</span><span class="params">(<span class="type">int</span> jobId, TriggerTypeEnum triggerType, <span class="type">int</span> failRetryCount, String 	                           executorShardingParam, String executorParam, String addressList)</span> &#123;</span><br><span class="line">        helper.addTrigger(jobId, triggerType, failRetryCount, executorShardingParam, executorParam, addressList);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>1、根据判断是否超过10次重试，选择快速<a target="_blank" rel="noopener" href="https://so.csdn.net/so/search?q=%E7%BA%BF%E7%A8%8B%E6%B1%A0&spm=1001.2101.3001.7020">线程池</a>还是慢速线程池</p>
+<p>2、XxlJobTrigger执行触发，也是一个静态的方法</p>
+<p>这里是<strong>XxlJobTrigger</strong>，是任务触发类。主要做了三个事情</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">       <span class="comment">// load data</span></span><br><span class="line"> </span><br><span class="line">        <span class="title class_">XxlJobInfo</span> jobInfo = <span class="title class_">XxlJobAdminConfig</span>.<span class="title function_">getAdminConfig</span>().<span class="title function_">getXxlJobInfoDao</span>().<span class="title function_">loadById</span>(jobId);</span><br><span class="line"> </span><br><span class="line"> </span><br><span class="line">     <span class="comment">// cover addressList</span></span><br><span class="line">  <span class="keyword">if</span> (addressList!=<span class="literal">null</span> &amp;&amp; addressList.<span class="title function_">trim</span>().<span class="title function_">length</span>()&gt;<span class="number">0</span>) &#123;</span><br><span class="line">            group.<span class="title function_">setAddressType</span>(<span class="number">1</span>);</span><br><span class="line">            group.<span class="title function_">setAddressList</span>(addressList.<span class="title function_">trim</span>());</span><br><span class="line">        &#125;</span><br><span class="line"> </span><br><span class="line">     <span class="comment">// sharding param</span></span><br><span class="line"> </span><br><span class="line"><span class="comment">//如果是分片触发的话，就要在这里进行处理</span></span><br><span class="line"><span class="keyword">if</span> (<span class="title class_">ExecutorRouteStrategyEnum</span>.<span class="property">SHARDING_BROADCAST</span>==<span class="title class_">ExecutorRouteStrategyEnum</span>.<span class="title function_">match</span>(jobInfo.<span class="title function_">getExecutorRouteStrategy</span>(), <span class="literal">null</span>)</span><br><span class="line">                &amp;&amp; group.<span class="title function_">getRegistryList</span>()!=<span class="literal">null</span> &amp;&amp; !group.<span class="title function_">getRegistryList</span>().<span class="title function_">isEmpty</span>()</span><br><span class="line">                &amp;&amp; shardingParam==<span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="keyword">for</span> (int i = <span class="number">0</span>; i &lt; group.<span class="title function_">getRegistryList</span>().<span class="title function_">size</span>(); i++) &#123;</span><br><span class="line">                <span class="title function_">processTrigger</span>(group, jobInfo, finalFailRetryCount, triggerType, i, group.<span class="title function_">getRegistryList</span>().<span class="title function_">size</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (shardingParam == <span class="literal">null</span>) &#123;</span><br><span class="line">                shardingParam = <span class="keyword">new</span> int[]&#123;<span class="number">0</span>, <span class="number">1</span>&#125;;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="title function_">processTrigger</span>(group, jobInfo, finalFailRetryCount, triggerType, shardingParam[<span class="number">0</span>], shardingParam[<span class="number">1</span>]);</span><br><span class="line">        &#125;</span><br><span class="line"><span class="number">1.</span> 加载数据</span><br><span class="line"><span class="number">2.</span> 转化地址</span><br><span class="line"><span class="number">3.</span> 分片参数处理</span><br></pre></td></tr></table></figure>
+
+<h2 id="X触发任务核心逻辑"><a href="#X触发任务核心逻辑" class="headerlink" title="X触发任务核心逻辑"></a>X触发任务核心逻辑</h2><p>这里的核心方法是<strong>processTrigger</strong>方法，核心的处理触发的逻辑，包括阻塞策略选择，页面配置的路由策略选择。保存日志，初始化触发任务的参数，从jobInfo中获取。初始化调用地址，会根据各种算法进行选择地址，比如FIFO，轮询等。代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">processTrigger</span><span class="params">(XxlJobGroup group, XxlJobInfo jobInfo, <span class="type">int</span> finalFailRetryCount, TriggerTypeEnum triggerType, <span class="type">int</span> index, <span class="type">int</span> total)</span>&#123;</span><br><span class="line"></span><br><span class="line">       <span class="comment">// param</span></span><br><span class="line">       <span class="type">ExecutorBlockStrategyEnum</span> <span class="variable">blockStrategy</span> <span class="operator">=</span> ExecutorBlockStrategyEnum.match(jobInfo.getExecutorBlockStrategy(), ExecutorBlockStrategyEnum.SERIAL_EXECUTION);  <span class="comment">// block strategy</span></span><br><span class="line">       <span class="type">ExecutorRouteStrategyEnum</span> <span class="variable">executorRouteStrategyEnum</span> <span class="operator">=</span> ExecutorRouteStrategyEnum.match(jobInfo.getExecutorRouteStrategy(), <span class="literal">null</span>);    <span class="comment">// route strategy</span></span><br><span class="line">       <span class="type">String</span> <span class="variable">shardingParam</span> <span class="operator">=</span> (ExecutorRouteStrategyEnum.SHARDING_BROADCAST==executorRouteStrategyEnum)?String.valueOf(index).concat(<span class="string">&quot;/&quot;</span>).concat(String.valueOf(total)):<span class="literal">null</span>;</span><br><span class="line"></span><br><span class="line">       <span class="comment">// 1、save log-id</span></span><br><span class="line">       <span class="type">XxlJobLog</span> <span class="variable">jobLog</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">XxlJobLog</span>();</span><br><span class="line">       jobLog.setJobGroup(jobInfo.getJobGroup());</span><br><span class="line">       jobLog.setJobId(jobInfo.getId());</span><br><span class="line">       jobLog.setTriggerTime(<span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">       XxlJobAdminConfig.getAdminConfig().getXxlJobLogDao().save(jobLog);</span><br><span class="line">       logger.debug(<span class="string">&quot;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt; xxl-job trigger start, jobId:&#123;&#125;&quot;</span>, jobLog.getId());</span><br><span class="line"></span><br><span class="line">       <span class="comment">// 2、init trigger-param</span></span><br><span class="line">       <span class="type">TriggerParam</span> <span class="variable">triggerParam</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TriggerParam</span>();</span><br><span class="line">       <span class="comment">//省略代码</span></span><br><span class="line">       triggerParam.setBroadcastTotal(total);</span><br><span class="line"></span><br><span class="line">       <span class="comment">// 3、init address</span></span><br><span class="line">       <span class="type">String</span> <span class="variable">address</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">       ReturnT&lt;String&gt; routeAddressResult = <span class="literal">null</span>;</span><br><span class="line">       <span class="keyword">if</span> (group.getRegistryList()!=<span class="literal">null</span> &amp;&amp; !group.getRegistryList().isEmpty()) &#123;</span><br><span class="line">           <span class="keyword">if</span> (ExecutorRouteStrategyEnum.SHARDING_BROADCAST == executorRouteStrategyEnum) &#123;</span><br><span class="line">               <span class="keyword">if</span> (index &lt; group.getRegistryList().size()) &#123;</span><br><span class="line">                   address = group.getRegistryList().get(index);</span><br><span class="line">               &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                   address = group.getRegistryList().get(<span class="number">0</span>);</span><br><span class="line">               &#125;</span><br><span class="line">           &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">               routeAddressResult = executorRouteStrategyEnum.getRouter().route(triggerParam, group.getRegistryList());</span><br><span class="line">               <span class="keyword">if</span> (routeAddressResult.getCode() == ReturnT.SUCCESS_CODE) &#123;</span><br><span class="line">                   address = routeAddressResult.getContent();</span><br><span class="line">               &#125;</span><br><span class="line">           &#125;</span><br><span class="line">       &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">           routeAddressResult = <span class="keyword">new</span> <span class="title class_">ReturnT</span>&lt;String&gt;(ReturnT.FAIL_CODE, I18nUtil.getString(<span class="string">&quot;jobconf_trigger_address_empty&quot;</span>));</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="comment">// 4、trigger remote executor</span></span><br><span class="line">       ReturnT&lt;String&gt; triggerResult = <span class="literal">null</span>;</span><br><span class="line">       <span class="keyword">if</span> (address != <span class="literal">null</span>) &#123;</span><br><span class="line">           triggerResult = runExecutor(triggerParam, address);</span><br><span class="line">       &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">           triggerResult = <span class="keyword">new</span> <span class="title class_">ReturnT</span>&lt;String&gt;(ReturnT.FAIL_CODE, <span class="literal">null</span>);</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="comment">// 5、collection trigger info</span></span><br><span class="line">       <span class="type">StringBuffer</span> <span class="variable">triggerMsgSb</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">StringBuffer</span>();</span><br><span class="line"></span><br><span class="line">       <span class="comment">// 6、save log trigger-info</span></span><br><span class="line">       jobLog.setExecutorAddress(address);</span><br><span class="line">       <span class="comment">//省略代码</span></span><br><span class="line">       XxlJobAdminConfig.getAdminConfig().getXxlJobLogDao().updateTriggerInfo(jobLog);</span><br><span class="line"></span><br><span class="line">       logger.debug(<span class="string">&quot;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt; xxl-job trigger end, jobId:&#123;&#125;&quot;</span>, jobLog.getId());</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+
+<p>简单总结流程: &#x2F;&#x2F; param1、save log-id 2、init trigger-param 3、init address 4、trigger remote executor 5、collection trigger info 6、save log trigger-info</p>
+<p>最核心的操作是<strong>runExecutor</strong>(triggerParam, address)执行远程任务方法，委托<strong>ExecutorBiz</strong></p>
+<p>执行run方法，代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> ReturnT&lt;String&gt; <span class="title function_">runExecutor</span><span class="params">(TriggerParam triggerParam, String address)</span>&#123;</span><br><span class="line">      ReturnT&lt;String&gt; runResult = <span class="literal">null</span>;</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">          <span class="type">ExecutorBiz</span> <span class="variable">executorBiz</span> <span class="operator">=</span> XxlJobScheduler.getExecutorBiz(address);</span><br><span class="line">          runResult = executorBiz.run(triggerParam);</span><br><span class="line">      &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">          logger.error(<span class="string">&quot;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt; xxl-job trigger error, please check if the executor[&#123;&#125;] is running.&quot;</span>, address, e);</span><br><span class="line">          runResult = <span class="keyword">new</span> <span class="title class_">ReturnT</span>&lt;String&gt;(ReturnT.FAIL_CODE, ThrowableUtil.toString(e));</span><br><span class="line">      &#125;</span><br><span class="line"> </span><br><span class="line">      <span class="type">StringBuffer</span> <span class="variable">runResultSB</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">StringBuffer</span>(I18nUtil.getString(<span class="string">&quot;jobconf_trigger_run&quot;</span>) + <span class="string">&quot;：&quot;</span>);</span><br><span class="line">      runResultSB.append(<span class="string">&quot;&lt;br&gt;address：&quot;</span>).append(address);</span><br><span class="line">      runResultSB.append(<span class="string">&quot;&lt;br&gt;code：&quot;</span>).append(runResult.getCode());</span><br><span class="line">      runResultSB.append(<span class="string">&quot;&lt;br&gt;msg：&quot;</span>).append(runResult.getMsg());</span><br><span class="line"> </span><br><span class="line">      runResult.setMsg(runResultSB.toString());</span><br><span class="line">      <span class="keyword">return</span> runResult;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+
+<p>runExecutor是一个静态方法，其中委托了ExecutorBiz执行run方法。是通过XxlJobScheduler.getExecutorBiz(address)来获取到ExecutorBiz对象。这个对象定义了执行业务的统一接口。核心的操作方法包括run运行，还有beat心跳方法，以及kill方法等。</p>
+<p>实现类主要是ExecutorBizImpl和ExecutorBizClient。我们核心看run方法</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/image-20240110151443859.png" alt="image-20240110151443859"></p>
+<h4 id="2-xxIjobHandler的初始化"><a href="#2-xxIjobHandler的初始化" class="headerlink" title="2.xxIjobHandler的初始化"></a>2.xxIjobHandler的初始化</h4><p>这里有加载<strong>IJobHandler</strong>的实现！！！终于可以解释什么适合初始化<strong>IJobHandler的</strong>问题了.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">  <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> ReturnT&lt;String&gt; <span class="title function_">run</span><span class="params">(TriggerParam triggerParam)</span> &#123;</span><br><span class="line"> </span><br><span class="line">         <span class="comment">// load old：jobHandler + jobThread</span></span><br><span class="line">        <span class="type">JobThread</span> <span class="variable">jobThread</span> <span class="operator">=</span> XxlJobExecutor.loadJobThread(triggerParam.getJobId());</span><br><span class="line">        <span class="type">IJobHandler</span> <span class="variable">jobHandler</span> <span class="operator">=</span> jobThread!=<span class="literal">null</span>?jobThread.getHandler():<span class="literal">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p> run方法的主要核心逻辑是：</p>
+<p>1、首先尝试从缓存中加载 IJobHandler</p>
+<p>2、如果加载不了，判断执行执行任务的累心GlueTypeEnum</p>
+<p>3、从XxlJobExecutor中加载IJobHandler，也就是XxlJobExecutor.loadJobHandler方法。那么问题就来了，这个ijobHandler什么时候去注册呢，也就是XxlJobExecutor.registJobHandler注册执行器的时机是什么呢？</p>
+<p>三、IjobHandler注册流程<br>     很重要的@XxlJob注解的方法是如何注册的呢？我们首先来看XxlJobSpringExecutor这个执行器，继承了XxlJobExecutor，同时实现了ApplicationContextAware，SmartInitializingSingleton，DisposableBean等接口，熟悉Spring生命周期的朋友都知道。实现这几个接口必须重写afterSingletonsInstantiated、setApplicationContext、destroy方法。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"> <span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">XxlJobSpringExecutor</span> <span class="keyword">extends</span> <span class="title class_">XxlJobExecutor</span> <span class="keyword">implements</span> <span class="title class_">ApplicationContextAware</span>, SmartInitializingSingleton, DisposableBean &#123;</span><br><span class="line">    <span class="comment">//省略代码</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>核心关注<strong>afterSingletonsInstantiated</strong>方法。这里面包含了初始化JobHandler的核心逻辑以及父类start方法。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"> <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">afterSingletonsInstantiated</span><span class="params">()</span> &#123;</span><br><span class="line"> </span><br><span class="line">     <span class="comment">// init JobHandler Repository</span></span><br><span class="line">     <span class="comment">/*initJobHandlerRepository(applicationContext);*/</span></span><br><span class="line"> </span><br><span class="line">     <span class="comment">// init JobHandler Repository (for method)</span></span><br><span class="line">     initJobHandlerMethodRepository(applicationContext);</span><br><span class="line"> </span><br><span class="line">     <span class="comment">// refresh GlueFactory</span></span><br><span class="line">     GlueFactory.refreshInstance(<span class="number">1</span>);</span><br><span class="line"> </span><br><span class="line">     <span class="comment">// super start</span></span><br><span class="line">     <span class="keyword">try</span> &#123;</span><br><span class="line">         <span class="built_in">super</span>.start();</span><br><span class="line">     &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">         <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(e);</span><br><span class="line">     &#125;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+
+<p>首先来看<strong>initJobHandlerMethodRepository</strong>（applicationContext），这里依赖了SpringApplication容器的上下文，就可以从Spring中读取这里@Xxljob注解的方法，然后进行<a target="_blank" rel="noopener" href="https://so.csdn.net/so/search?q=handler&spm=1001.2101.3001.7020">handler</a>的初始化。！！</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br></pre></td><td class="code"><pre><span class="line">private <span class="keyword">void</span> <span class="title function_">initJobHandlerMethodRepository</span>(<span class="params">ApplicationContext applicationContext</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (applicationContext == <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// init job handler from method</span></span><br><span class="line">    <span class="title class_">String</span>[] beanDefinitionNames = applicationContext.<span class="title function_">getBeanNamesForType</span>(<span class="title class_">Object</span>.<span class="property">class</span>, <span class="literal">false</span>, <span class="literal">true</span>);</span><br><span class="line">    <span class="keyword">for</span> (<span class="title class_">String</span> beanDefinitionName : beanDefinitionNames) &#123;</span><br><span class="line">        <span class="title class_">Object</span> bean = applicationContext.<span class="title function_">getBean</span>(beanDefinitionName);</span><br><span class="line"> </span><br><span class="line">        <span class="title class_">Map</span>&lt;<span class="title class_">Method</span>, <span class="title class_">XxlJob</span>&gt; annotatedMethods = <span class="literal">null</span>;   <span class="comment">// referred to ：org.springframework.context.event.EventListenerMethodProcessor.processBean</span></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            annotatedMethods = <span class="title class_">MethodIntrospector</span>.<span class="title function_">selectMethods</span>(bean.<span class="title function_">getClass</span>(),</span><br><span class="line">                    <span class="keyword">new</span> <span class="title class_">MethodIntrospector</span>.<span class="property">MetadataLookup</span>&lt;<span class="title class_">XxlJob</span>&gt;() &#123;</span><br><span class="line">                        @<span class="title class_">Override</span></span><br><span class="line">                        public <span class="title class_">XxlJob</span> <span class="title function_">inspect</span>(<span class="params">Method method</span>) &#123;</span><br><span class="line">                            <span class="keyword">return</span> <span class="title class_">AnnotatedElementUtils</span>.<span class="title function_">findMergedAnnotation</span>(method, <span class="title class_">XxlJob</span>.<span class="property">class</span>);</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (<span class="title class_">Throwable</span> ex) &#123;</span><br><span class="line">            logger.<span class="title function_">error</span>(<span class="string">&quot;xxl-job method-jobhandler resolve error for bean[&quot;</span> + beanDefinitionName + <span class="string">&quot;].&quot;</span>, ex);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (annotatedMethods==<span class="literal">null</span> || annotatedMethods.<span class="title function_">isEmpty</span>()) &#123;</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line"> </span><br><span class="line">        <span class="keyword">for</span> (<span class="title class_">Map</span>.<span class="property">Entry</span>&lt;<span class="title class_">Method</span>, <span class="title class_">XxlJob</span>&gt; methodXxlJobEntry : annotatedMethods.<span class="title function_">entrySet</span>()) &#123;</span><br><span class="line">            <span class="title class_">Method</span> executeMethod = methodXxlJobEntry.<span class="title function_">getKey</span>();</span><br><span class="line">            <span class="title class_">XxlJob</span> xxlJob = methodXxlJobEntry.<span class="title function_">getValue</span>();</span><br><span class="line">            <span class="keyword">if</span> (xxlJob == <span class="literal">null</span>) &#123;</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line"> </span><br><span class="line">            <span class="title class_">String</span> name = xxlJob.<span class="title function_">value</span>();</span><br><span class="line">            <span class="keyword">if</span> (name.<span class="title function_">trim</span>().<span class="title function_">length</span>() == <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(<span class="string">&quot;xxl-job method-jobhandler name invalid, for[&quot;</span> + bean.<span class="title function_">getClass</span>() + <span class="string">&quot;#&quot;</span> + executeMethod.<span class="title function_">getName</span>() + <span class="string">&quot;] .&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (<span class="title function_">loadJobHandler</span>(name) != <span class="literal">null</span>) &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(<span class="string">&quot;xxl-job jobhandler[&quot;</span> + name + <span class="string">&quot;] naming conflicts.&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line"> </span><br><span class="line">            <span class="comment">// execute method</span></span><br><span class="line">            <span class="comment">/*if (!(method.getParameterTypes().length == 1 &amp;&amp; method.getParameterTypes()[0].isAssignableFrom(String.class))) &#123;</span></span><br><span class="line"><span class="comment">                throw new RuntimeException(&quot;xxl-job method-jobhandler param-classtype invalid, for[&quot; + bean.getClass() + &quot;#&quot; + method.getName() + &quot;] , &quot; +</span></span><br><span class="line"><span class="comment">                        &quot;The correct method format like \&quot; public ReturnT&lt;String&gt; execute(String param) \&quot; .&quot;);</span></span><br><span class="line"><span class="comment">            &#125;</span></span><br><span class="line"><span class="comment">            if (!method.getReturnType().isAssignableFrom(ReturnT.class)) &#123;</span></span><br><span class="line"><span class="comment">                throw new RuntimeException(&quot;xxl-job method-jobhandler return-classtype invalid, for[&quot; + bean.getClass() + &quot;#&quot; + method.getName() + &quot;] , &quot; +</span></span><br><span class="line"><span class="comment">                        &quot;The correct method format like \&quot; public ReturnT&lt;String&gt; execute(String param) \&quot; .&quot;);</span></span><br><span class="line"><span class="comment">            &#125;*/</span></span><br><span class="line"> </span><br><span class="line">            executeMethod.<span class="title function_">setAccessible</span>(<span class="literal">true</span>);</span><br><span class="line"> </span><br><span class="line">            <span class="comment">// init and destory</span></span><br><span class="line">            <span class="title class_">Method</span> initMethod = <span class="literal">null</span>;</span><br><span class="line">            <span class="title class_">Method</span> destroyMethod = <span class="literal">null</span>;</span><br><span class="line"> </span><br><span class="line">            <span class="keyword">if</span> (xxlJob.<span class="title function_">init</span>().<span class="title function_">trim</span>().<span class="title function_">length</span>() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    initMethod = bean.<span class="title function_">getClass</span>().<span class="title function_">getDeclaredMethod</span>(xxlJob.<span class="title function_">init</span>());</span><br><span class="line">                    initMethod.<span class="title function_">setAccessible</span>(<span class="literal">true</span>);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (<span class="title class_">NoSuchMethodException</span> e) &#123;</span><br><span class="line">                    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(<span class="string">&quot;xxl-job method-jobhandler initMethod invalid, for[&quot;</span> + bean.<span class="title function_">getClass</span>() + <span class="string">&quot;#&quot;</span> + executeMethod.<span class="title function_">getName</span>() + <span class="string">&quot;] .&quot;</span>);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (xxlJob.<span class="title function_">destroy</span>().<span class="title function_">trim</span>().<span class="title function_">length</span>() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    destroyMethod = bean.<span class="title function_">getClass</span>().<span class="title function_">getDeclaredMethod</span>(xxlJob.<span class="title function_">destroy</span>());</span><br><span class="line">                    destroyMethod.<span class="title function_">setAccessible</span>(<span class="literal">true</span>);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (<span class="title class_">NoSuchMethodException</span> e) &#123;</span><br><span class="line">                    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(<span class="string">&quot;xxl-job method-jobhandler destroyMethod invalid, for[&quot;</span> + bean.<span class="title function_">getClass</span>() + <span class="string">&quot;#&quot;</span> + executeMethod.<span class="title function_">getName</span>() + <span class="string">&quot;] .&quot;</span>);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line"> </span><br><span class="line">            <span class="comment">// registry jobhandler</span></span><br><span class="line">            <span class="title function_">registJobHandler</span>(name, <span class="keyword">new</span> <span class="title class_">MethodJobHandler</span>(bean, executeMethod, initMethod, destroyMethod));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>简单总结逻辑如下：</p>
+<p>1、从Spring上下文读取所有的Bean定义</p>
+<p>2、过滤所有带XxlJob注解方法，是一个Map,key是Method,value是XxlJob注解</p>
+<p>3、再次遍历Map,获得方法和对应的Xxljob注解</p>
+<p>4、反射出init方法和destroy方法</p>
+<p>5、执行注册registJobHandler注册任务处理器的方法</p>
+<p>最核心部分是2中过滤器出所有带@Xxljob注解的方法和注解的值。和5部分执行注册处理器的逻辑。我们来看一下注册处理器的方法。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"> <span class="keyword">private</span> <span class="keyword">static</span> ConcurrentMap&lt;Integer, JobThread&gt; jobThreadRepository = <span class="keyword">new</span> <span class="title class_">ConcurrentHashMap</span>&lt;Integer, JobThread&gt;();</span><br><span class="line">    </span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> IJobHandler <span class="title function_">registJobHandler</span><span class="params">(String name, IJobHandler jobHandler)</span>&#123;</span><br><span class="line">        logger.info(<span class="string">&quot;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt; xxl-job register jobhandler success, name:&#123;&#125;, jobHandler:&#123;&#125;&quot;</span>, name, jobHandler);</span><br><span class="line">        <span class="keyword">return</span> jobHandlerRepository.put(name, jobHandler);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>直接丢在了XxlJobExecutor中的一个静态变量中jobThreadRepository。这就跟上面如何注册JobHandler联系起来了</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>1、声明核心接口</p>
+<p>2、提供不同的实现类</p>
+<p>3、提供初始化的入口</p>
+<p>4、需要从数据库加载这些配置信息。</p>
+<p>总图</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/image-20240110154028192.png" alt="image-20240110154028192"></p>
+<p>xxl 调度中心流程</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202401101553746.png"></p>
+<p>本篇内容主要是在探索执行器注册到调度中心的流程以及代码实现，流程如下：</p>
+<p>调度中心启动了一个Tomcat作为Web容器，暴露出注册与注销的接口，可以供执行器调用。<br>执行器在启动Netty服务暴露出调度接口后，将自己的name、ip、端口信息通过调度中心的注册接口传输到调度中心，同时每30秒会调用一次注册接口，用于更新注册信息。<br>同理，在执行器停止的时候，也会请求调度中心的注销接口，进行注销。<br>调度中心在接收到注册或注销请求后，会操作xxl_job_registry表，新增或删除执行器的注册信息。<br>调度中心会启动一个探活线程，将90秒都没有更新注册信息的执行器删除掉。</p>
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1617418917/" target="_blank">XXL-JOB源码分析</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
+                        
+                            <a href="/category/Web/">Web</a>
+                        
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
+                        
+                            <a href="/tag/JOB/">JOB</a>
+                        
+                    </div>
+                
+                <div class="article-prev-next">
+                    
+                        <a href="/article/1684846498/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1684846498/" title="发布于 2023-07-06 10:48">刷题地址</a>
+                        <br>
+                    
+                    
+                        <a href="/article/1685194583/" class="next-prefix">» </a> 下一篇：    <a href="/article/1685194583/" title="发布于 2023-05-27 09:36">代码同步命令</a>
+                    
+                </div>
+            </div>
+            
+    <div class="article-comments">
+        
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
+    
+</div>
+    <div id="footer"></div>
+    <div id="sidebar">
+    <div class="menu-wrap" style="display:none;">
+        
+            <div class="menu-notice">
+                <span class="iconfont icon-notice"></span>
+                <div class="notice">
+                    <span>简单地活着，肆意而又精彩！</span>
+                </div>
+            </div>
+        
+        <nav class="menu">
+            <div class="menu-introduce"> 
+                <div class="introduce-avatar">
+                    <img src="/image/sidebar/avatar.jpg">
+                </div> 
+                <div class="introduce-info"> 
+                    <div class="introduce-user"><span>Live For Code</span></div>
+                </div> 
+            </div> 
+            <div class="menu-list">
+                <ul>
+                    
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                    
+                        <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
+                    
+                        <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
+                    
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                    
+                        <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
+                    
+                        <li class=""><a href="/about" class="" target="_self"><span class="iconfont icon-about-fill"></span>关于</a></li>
+                    
+                        <li class=""><a href="/atom.xml" class="" target="_blank"><span class="iconfont icon-rss"></span>订阅</a></li>
+                    
+                        <li class=""><a href="javascript:;" class="search" target="_self"><span class="iconfont icon-search-menu"></span>搜索</a></li>
+                    
+                        <li class=""><a href="/comment" class="" target="_self"><span class="iconfont icon-comments-fill"></span>留言板</a></li>
+                    
+                        <li class=""><a href="/friend" class="" target="_self"><span class="iconfont icon-link"></span>友情链接</a></li>
+                    
+                </ul> 
+            </div> 
+            <div class="menu-link">
+                <div class="box">
+                    <div class="image-box"></div>
+                </div>
+                
+                    <a name="知乎" href="https://www.zhihu.com/people/wo-xin-de-love" class="" target="_blank" data=""><span class="iconfont icon-zhihu"></span></a>
+                
+                    <a name="微博" href="https://weibo.com/u/3939432776" class="" target="_blank" data=""><span class="iconfont icon-weibo"></span></a>
+                
+                    <a name="QQ" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"><span class="iconfont icon-qq"></span></a>
+                
+                    <a name="微信" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"><span class="iconfont icon-wechat"></span></a>
+                
+                    <a name="GitHub" href="https://github.com/first19326" class="" target="_blank" data=""><span class="iconfont icon-github"></span></a>
+                
+            </div> 
+        </nav>
+        <button class="menu-button-close"></button>
+        <div class="morph-shape" id="morph-shape" data-morph-open="M-7.312,0H15c0,0,66,113.339,66,399.5C81,664.006,15,800,15,800H-7.312V0z;M-7.312,0H100c0,0,0,113.839,0,400c0,264.506,0,400,0,400H-7.312V0z">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 800" preserveAspectRatio="none">
+                <path d="M-7.312,0H0c0,0,0,113.839,0,400c0,264.506,0,400,0,400h-7.312V0z"/>
+            </svg>
+        </div>
+    </div>
+    <button class="menu-button-open">MENU</button>
+    <div class="menu-cover"></div>
+</div>
+    <link type="text/css" rel="stylesheet" href="/css/search.css">
+<script type="text/javascript" src="/js/iscroll.js"></script>
+<script type="text/javascript" src="/js/instantsearch.min.js"></script>
+<div class="search-window">
+    <div class="search-content">
+        <div class="search-content-icon">
+            <i class="iconfont icon-search"></i>
+        </div>
+        <div id="search-input" class="search-input"></div>
+    </div>
+
+    <div class="search-scroll">
+        <div class="search-result">
+            <div id="search-stats" class="search-stats"></div>
+            <div id="search-hits"></div>
+            <div id="search-pagination" class="search-pagination"></div>
+        </div>
+    </div>
+
+    <span class="search-close-icon">
+        <i class="iconfont icon-close"></i>
+    </span>
+</div>
+    <div id="tools">
+    <div class="progressbar-top"></div>
+
+    
+        <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
+        <script type="text/javascript" src="/js/APlayer.min.js"></script>
+        <script type="text/javascript" src="/js/Meting.min.js"></script>
+        <meting-js id="3778678" lrcshow="false" server="netease" type="playlist" fixed="true" autoplay="false" loop="all" order="random" preload="auto" volume="0.67" mutex="true"></meting-js>
+    
+    
+    <div class="wrap-right">
+        <div class="setting">
+            <div class="iconbox favorites" switch="false">
+                <span class="iconfont icon-favorites"></span>
+                <span class="icontext">关注</span>
+            </div>
+            <div class="iconbox mode">
+                <div class="light">
+                    <span class="iconfont icon-daymode"></span>
+                    <span class="icontext">浅色模式</span>
+                </div>
+                <div class="dark">
+                    <span class="iconfont icon-nightmode-fill"></span>
+                    <span class="icontext">深色模式</span>
+                </div>
+            </div>
+            <a href="javascript:;" target="_self" class="search">
+                <div class="iconbox">
+                    <span class="iconfont icon-search-menu"></span>
+                    <span class="icontext">搜索</span>
+                </div>
+            </a>
+            <div class="iconbox bottom">
+                <div style="display: inline-block; transform: rotate(180deg);">
+                    <span class="iconfont icon-top"></span>
+                </div>
+                <span class="icontext">跳至底部</span>
+            </div>
+        </div>
+        <div class="iconbox set">
+            <div style="display: inline-block;">
+                <span class="iconfont icon-setting"></span>
+            </div>
+            <span class="icontext">设置</span>
+        </div>
+        <div class="iconbox top">
+            <span class="iconfont icon-top"></span>
+            <span class="icontext">返回顶部</span>
+        </div>
+    </div>
+    <div class="loading"></div>
+</div>
+    <script>
+    window.config = {
+        GitHubUserName     : "first19326",
+        GitHubRepositories : "Hexo-LiveForCode",
+
+        User             : "Live For Code",
+        UserAvatar       : "/image/sidebar/avatar.jpg",
+        WebsiteStartDate : "2020-01-01",
+
+        WebsiteTitleBlur         : "(◍´꒳`◍) Hi, Live For Code",
+        WebsiteTitleBlurTimeOut  : 500,
+        WebsiteTitleFocus        : "(*´∇｀*) 欢迎回来!",
+        WebsiteTitleFocusTimeOut : 1000,
+        WebsiteFavicon           : "/image/website/logo.png",
+
+        ProgressBar : {
+            id       : "topProgressBar",
+            color    : "#77B6FF",
+            height   : "2px",
+            duration : 0.2
+        },
+
+        Loading: {
+            rebound : {
+                tension  : 16,
+                friction : 5
+            },
+            spinner : {
+                id     : "spinner",
+                radius : 90,
+                sides  : 3,
+                depth  : 4,
+                colors : {
+                    background : "#F0F0F0",
+                    stroke     : "#272633",
+                    base       : "",
+                    child      : "#272633"
+                },
+                alwaysForward : true,
+                restAt        : 0.5,
+                renderBase    : false
+            }
+        },
+
+        HomeHeaderAnimationRendered : true,
+        HomeHeaderAnimation         : {
+            radius      : 15,
+            density     : 0.2,
+            color       : "rgba(255, 255, 255, .2)",
+            clearOffset : 0.3
+        },
+
+        BackAnimationRendered          : true,
+        IEBrowserBackAnimationRendered : false,
+        BackAnimation                  : {
+            colorSaturation  : "60%",
+            colorBrightness  : "50%",
+            colorAlpha       : 0.5,
+            colorCycleSpeed  : 5,
+            verticalPosition : "random",
+            horizontalSpeed  : 200,
+            ribbonCount      : 3,
+            strokeSize       : 0,
+            parallaxAmount   : -0.2,
+            animateSections  : true
+        },
+
+        HomeHeaderImage : [
+            
+                "/image/header/home.jpg",
+            
+                "/image/header/home.jpeg",
+            
+                "/image/header/2023-04-17-20-51-03.jpg",
+            
+                "/image/header/2023-04-17-20-54-07.jpg",
+            
+                "/image/header/2023-04-17-20-54-22.jpg",
+            
+                "/image/header/2023-04-17-20-55-25.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+        HomeBannerText  : "",
+
+        ArticleHeaderImage : [
+            
+                "/image/header/article.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+
+        OtherBannerText : "",
+
+        Error : {
+            icon    : "icon-swimming",
+            title   : "PAGE NOT FOUND",
+            content : [
+                
+                    "很抱歉，您访问的页面不存在！",
+                
+                    "可能是输入地址有误或该地址已变更。",
+                
+            ],
+            buttons : [
+                
+                    {
+                        icon  : "icon-home",
+                        text  : "返回首页",
+                        href  : "https://fadeway32.gitee.io/",
+                        class : ""
+                    },
+                
+            ]
+        },
+
+        MenuNotice : {
+            enable : true,
+            notice : "简单地活着，肆意而又精彩！",
+            speed  : 20
+        },
+        MenuList : [
+            
+                {
+                    name   : "首页",
+                    icon   : "icon-home-fill",
+                    href   : "/",
+                    type   : "index",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "分类",
+                    icon   : "icon-folder-fill",
+                    href   : "/category",
+                    type   : "category",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "标签",
+                    icon   : "icon-discount-fill",
+                    href   : "/tag",
+                    type   : "tag",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "归档",
+                    icon   : "icon-calendar-fill",
+                    href   : "/archive",
+                    type   : "archive",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "赞赏",
+                    icon   : "icon-heart-fill",
+                    href   : "/donate",
+                    type   : "donate",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "关于",
+                    icon   : "icon-about-fill",
+                    href   : "/about",
+                    type   : "about",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "订阅",
+                    icon   : "icon-rss",
+                    href   : "/atom.xml",
+                    type   : "",
+                    class  : "",
+                    target : "_blank"
+                },
+            
+                {
+                    name   : "搜索",
+                    icon   : "icon-search-menu",
+                    href   : "javascript:;",
+                    type   : "",
+                    class  : "search",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "留言板",
+                    icon   : "icon-comments-fill",
+                    href   : "/comment",
+                    type   : "comment",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "友情链接",
+                    icon   : "icon-link",
+                    href   : "/friend",
+                    type   : "friend",
+                    class  : "",
+                    target : "_self"
+                },
+            
+        ],
+        MenuLink : [
+            
+                
+                    {
+                        name   : "知乎",
+                        icon   : "icon-zhihu",
+                        href   : "https://www.zhihu.com/people/wo-xin-de-love",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "微博",
+                        icon   : "icon-weibo",
+                        href   : "https://weibo.com/u/3939432776",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "QQ",
+                        icon   : "icon-qq",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"
+                    },
+                
+                    {
+                        name   : "微信",
+                        icon   : "icon-wechat",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"
+                    },
+                
+                    {
+                        name   : "GitHub",
+                        icon   : "icon-github",
+                        href   : "https://github.com/first19326",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+            
+        ],
+
+        FooterStyle : 2,
+        BottomText  : "<div><span class='face'>ღゝ◡╹)ノ♡</span></div><div>【人生若只如初见<span><i class='iconfont icon-like-fill'></i></span>何事秋风悲画扇】</div><div>&copy; 2020-2022 WorstOne. All Rights Reserved.</div>",
+
+        ConsoleList : [
+            
+                
+                    [
+                        
+                            
+                                "Based on cnblogs theme SimpleMemory.",
+                            
+                                "",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "SimpleMemory Author:",
+                            
+                                "BNDong",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "Theme:",
+                            
+                                "LiveForCode",
+                            
+                        
+                    ],
+                
+            
+        ],
+
+        FontIconExtend : "",
+
+        Donate : {
+            paypal  : "",
+            bitcoin : "",
+            alipay  : "/image/donate/alipay.png",
+            wechat  : "/image/donate/wechat.png"
+        },
+
+        Search : {
+            applicationID : "W44GC4V748",
+            apiKey        : "25b43f2c37a0cac32049b98740c3fd6d",
+            indexName     : "hexo2",
+            hits          : {
+                page : 30
+            },
+            labels        : {
+                placeholder : "搜索",
+                empty       : "未发现与 「${query}」 相关的内容",
+                stats       : "${hits} 条相关条目，使用了 ${time} 毫秒",
+            }
+        }, 
+
+        Valine : {
+            switch         : true,
+            el             : ".comments-content",
+            appId          : "srhKtvWPQTWYKh3qX8G8M7v0-gzGzoHsz",
+            appKey         : "8uVSP1q6UlALVC5igYfIfv2h",
+            serverURLs     : "",
+            placeholder    : "你是我一生只会遇见一次的惊喜...",
+            avatar         : "mm",
+            meta           : "nick,mail,link",
+            requiredFields : "nick,mail",
+            pageSize       : 5,
+            lang           : "zh-cn",
+            visitor        : true,
+            enableQQ       : true
+        },
+
+        Tocbot : {
+            switch                : true,
+            tocSelector           : ".toc",
+            contentSelector       : ".article-body",
+            headingSelector       : "h1, h2, h3, h4, h5",
+            headingsOffset        : 0,
+            scrollSmooth          : true,
+            scrollSmoothOffset    : -5,
+            positionFixedSelector : ".toc",
+            positionFixedClass    : "toc-fixed",
+            fixedSidebarOffset    : "",
+        },
+
+        Require : {
+            baseUrl     : "/js/",
+            waitSeconds : 100
+        },
+
+        Music : {
+            type : "Meting"
+        },
+        APlayer : {
+            container : ".aplayer",
+            fixed     : true,
+            autoplay  : true,
+            loop      : "all",
+            order     : "random",
+            preload   : "auto",
+            volume    : 0.67,
+            mutex     : true,
+            lrcType   : 2,
+            audio     : [
+                
+                    {
+                        name   : "Endless Tears",
+                        artist : "CLIFF EDGE",
+                        cover  : "/music/cover/Endless Tears.jpg",
+                        url    : "/music/song/Endless Tears.mp3",
+                        lrc    : "/music/lrc/Endless Tears.lrc"
+                    },
+                
+            ]
+        },
+        Meting : {
+            id       : "3778678", 
+            lrcshow  : false, 
+            server   : "netease", 
+            type     : "playlist", 
+            fixed    : true, 
+            autoplay : false, 
+            loop     : "all", 
+            order    : "random", 
+            preload  : "auto", 
+            volume   : 0.67, 
+            mutex    : true
+        },
+
+        Mouse : {
+            enable  : true,
+            options : {
+                size  : 6,
+                sizeF : 24
+            }
+        },
+
+        LazyLoad : {
+            default : "/image/website/lazyload.svg"
+        },
+  
+        Style : {
+            aplayer          : "/css/APlayer.css",
+            archive          : "/css/archive.css",
+            base             : "/css/base.css",
+            clipboard        : "/css/clipboard.css",
+            code             : "/css/code.css",
+            donate           : "/css/donate.css",
+            fancybox         : "/css/jquery.fancybox.css",
+            footer           : "/css/footer.css",
+            iconfont         : "/iconfont/iconfont.css",
+            index            : "/css/index.css",
+            menuBubble       : "/css/menu-bubble.css",
+            mouse            : "/css/mouse.css",
+            page             : "/css/page.css",
+            post             : "/css/post.css",
+            search           : "/css/search.css",
+            tocbot           : "/css/tocbot.css",
+            valine           : "/css/valine.css"
+        },
+
+        Script: {
+            aplayer          : "/js/APlayer.min.js",
+            config           : "/js/require.config.js",
+            index            : "/js/index.js",
+            instantSearch    : "/js/instantsearch.min.js",
+            iscroll          : "/js/iscroll.js",
+            jQuery           : "/js/jquery-3.4.1.min.js",
+            loading          : "/js/loading.js",
+            meting           : "/js/Meting.min.js",
+            require          : "/js/require.min.js"
+        },
+
+        Font: {
+            LongCang    : "/font/LongCang.css",
+            Monda       : "/font/Monda.css",
+            NotoSansSC  : "/font/NotoSansSC.css",
+            NotoSerifSC : "/font/NotoSerifSC.css",
+            Playball    : "/font/Playball.css",
+            PTMono      : "/font/PTMono.css",
+            Roboto      : "/font/Roboto.css",
+            RobotoSlab  : "/font/RobotoSlab.css",
+            Rosario     : "/font/Rosario.css",
+            UbuntuMono  : "/font/UbuntuMono.css"
+        },
+
+        Suffix : {
+            about : "你知道的越多,你不知道的越多"
+        },
+            
+        Theme : {
+            url  : "https://fadeway32.gitee.io/",
+            name : "fadeway32"
+        }  
+    };
+</script>
+    <script type="text/javascript" src="/js/index.js"></script>
+</body>
+</html>
