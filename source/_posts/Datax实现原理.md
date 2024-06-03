@@ -1,20 +1,20 @@
 ---
 
-layout: XXL-JOB源码分析
+layout: XXLJOB源码分析
 
-title: XXL-JOB源码分析
+title: XXLJOB源码分析
 
-tags: redis
+tags: job
 
 categories: Web
 
-top: 21
+top: 23
 
-path: /article/1717108917
+path: /article/1717406917
 
-abbrlink: 1717108917
+abbrlink: 1717406917
 
-date: 2023-05-19 21:21:21
+date: 2023-06-19 21:21:21
 
 
 ---
