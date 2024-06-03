@@ -8,7 +8,7 @@
     <meta http-equiv="Cache-Control" content="no-siteapp">
     <title>
         
-            归档
+            
         
     </title>
     <link rel="shortcut icon" href="#"/>
@@ -31,15 +31,28 @@
 <meta name="generator" content="Hexo 6.2.0"></head>
 <body>
     <a id="cover"></a>
-    <link type="text/css" rel="stylesheet" href="/css/archive.css">
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
 <div id="header" class="header">
     <div class="vertical">
         <div class="inner">
             
-                <h1 class="header-subtitle">归档</h1>
+                <h1 class="header-subtitle"></h1>
                 <div class="header-subinfo">
-                    <p class="article-info-text Chinese"></p>
-                    <p class="article-info-text English"></p>                  
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2024-06-03
+                        </span>
+                        
+                            <span id="/article/0/" class="leancloud_visitors" data-flag-title="">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/0/"></span>
+                        </span>  
+                    </p>
+                    
+                    
                 </div>
             
         </div>
@@ -48,217 +61,100 @@
 </div>
 <div id="container">
     
-        
-            <!-- 归档页面、分类归档页面、标签归档页面 -->
-            <div class="articles">
-                <div class="articles-wrap">
-                    <span class="archive-move-on"></span>
-                    <span class="archive-counter">
-                        
-                            目前共计 56 篇日志，继续加油！
-                        
-                    </span>
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <hr>
+<p>layout: Datax实现原理</p>
+<p>title: Datax实现原理</p>
+<p>tags: JOB</p>
+<p>categories: Web</p>
+<p>top: 21</p>
+<p>path: &#x2F;article&#x2F;161741896</p>
+<p>abbrlink: 1617418916</p>
+<p>date: 2023-06-03 20:48:36</p>
+<hr>
+<h1 id="Datax实现原理"><a href="#Datax实现原理" class="headerlink" title="Datax实现原理"></a>Datax实现原理</h1><p>DataX 是一个异构数据源离线同步工具，致力于实现包括关系型数据库(MySQL、Oracle等)、HDFS、Hive、ODPS、HBase、FTP等各种异构数据源之间稳定高效的数据同步功能。</p>
+<p><img src="https://img-blog.csdnimg.cn/20201102231833905.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzMxOTU3NzQ3,size_16,color_FFFFFF,t_70" alt="img"></p>
+<p>为了解决异构数据源同步问题，DataX将复杂的网状的同步链路变成了星型数据链路，DataX作为中间传输载体负责连接各种数据源。当需要接入一个新的数据源的时候，只需要将此数据源对接到DataX，便能跟已有的数据源做到无缝数据同步。</p>
+<p>DataX本身作为离线数据同步框架，采用Framework + plugin架构构建。将数据源读取和写入抽象成为Reader&#x2F;Writer插件，纳入到整个同步框架中。</p>
+<ul>
+<li><strong>Reader</strong>：Reader为数据采集模块，负责采集数据源的数据，将数据发送给Framework。</li>
+<li><strong>Writer</strong>： Writer为数据写入模块，负责不断向Framework取数据，并将数据写入到目的端。</li>
+<li><strong>Framework</strong>：Framework用于连接reader和writer，作为两者的数据传输通道，并处理缓冲，流控，并发，数据转换等核心技术问题。</li>
+</ul>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406032035825.png" alt="img"></p>
+<p>核心架构</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406032035071.png" alt="img"></p>
+<ol>
+<li>DataX完成单个数据同步的作业，我们称之为Job，DataX接受到一个Job之后，将启动一个进程来完成整个作业同步过程。DataX Job模块是单个作业的中枢管理节点，承担了数据清理、子任务切分(将单一作业计算转化为多个子Task)、TaskGroup管理等功能。</li>
+<li>DataXJob启动后，会根据不同的源端切分策略，将Job切分成多个小的Task(子任务)，以便于并发执行。Task便是DataX作业的最小单元，每一个Task都会负责一部分数据的同步工作。</li>
+<li>切分多个Task之后，DataX Job会调用Scheduler模块，根据配置的并发数据量，将拆分成的Task重新组合，组装成TaskGroup(任务组)。每一个TaskGroup负责以一定的并发运行完毕分配好的所有Task，默认单个任务组的并发数量为5。</li>
+<li>每一个Task都由TaskGroup负责启动，Task启动后，会固定启动Reader—&gt;Channel—&gt;Writer的线程来完成任务同步工作。</li>
+<li>DataX作业运行起来之后， Job监控并等待多个TaskGroup模块任务完成，等待所有TaskGroup任务完成后Job成功退出。否则，异常退出，进程退出值非0</li>
+</ol>
+<p>JobContainer实现了AbstractContainer的start方法。</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406032040859.png" alt="在这里插入图片描述"></p>
+<p><strong>- 生成scheduler实例</strong></p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406032040160.png" alt="在这里插入图片描述"></p>
+<p>这里的scheduler实现类是StandAloneScheduler。</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406032041391.png" alt="在这里插入图片描述"></p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406032041274.png" alt="在这里插入图片描述"></p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406032041952.png"></p>
+<p>①　首先创建固定数量的线程池<br>②　遍历任务组配置<br>③　创建TaskGroupContainerRunner对象实例</p>
+<p><img src="https://img-blog.csdnimg.cn/7754226b7f7145c1b1941ac372226741.png" alt="在这里插入图片描述"></p>
+<p><img src="https://img-blog.csdnimg.cn/53c703580ba7459390949a14ea55fb64.png" alt="在这里插入图片描述"></p>
+<p>从源码可得知，doStart本质上就是启动了writerTread和readerThread线程。writerTread的Runnable是WriterRunner，readThread的Runnable是ReaderRunner。</p>
+<p><em><strong>Datax给我们提供了一个模板，所有的读取插件都要实现Job、Task两个内部类。而MysqlReader继承Reader并实现了Job和Task两个内部类，如下图：</strong></em></p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406032043497.png" alt="在这里插入图片描述"></p>
+<p>本质上，MysqlReader其实是调用了CommonRdbmsReader的方法。它没干啥事，有兴趣的同学可以看下其他的read插件，其实可以发现PostgresReader、OracleReader等关系型数据库都是一样的，都是调用的模板方法。</p>
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/0/" target="_blank"></a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                
+                <div class="article-prev-next">
+                    
+                        <a href="/article/1805786659/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1805786659/" title="发布于 2024-09-01 12:00">Jetbrain破解</a>
+                        <br>
                     
                     
-                        
-                            <div class="archive-title">
-                                <h2 class="archive-year">2024</h2>
-                            </div>
-                            
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1805786659/"><span>Jetbrain破解</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">09-01</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/0/"><span></span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">06-03</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1/"><span></span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">06-02</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1717340312/"><span>LeetCode22.括号生成</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">06-02</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1716905190/"><span>多线程笔试题</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">05-28</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1716905156/"><span>判断数字是否是回文数字</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">05-28</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1716820667/"><span>od-约瑟夫问题</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">05-27</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1716124882/"><span>分布式锁redis正确实现姿势</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">05-19</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1715610102/"><span>K8S部署dashboard</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">05-13</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1715260887683/"><span>LeetCode判断回文链表</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">05-09</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1713796351/"><span>Leetcode 最长公共子串</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">04-21</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1713796331/"><span>LeetCode判断一个数是不是快乐数</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">04-21</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1713100397/"><span>设计hashSet表</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">04-14</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1713100396/"><span>判断字符是否唯一</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">04-14</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1784846433/"><span>编程满天星题解分享</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">04-03</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1784846431/"><span>LeetCode779递归序列</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-27</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1784846430/"><span>LinkedList源码阅读分析</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-25</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1784846428/"><span>Spring事务机制的个人总结</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-25</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1784846423/"><span>Chatgpt4Free</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-23</span>
-                                </div>
-                            </div>
-                        </div>
+                        <a href="/article/1/" class="next-prefix">» </a> 下一篇：    <a href="/article/1/" title="发布于 2024-06-02 10:59"></a>
                     
                 </div>
             </div>
             
+    <div class="article-comments">
         
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
     
 </div>
     <div id="footer"></div>
@@ -290,7 +186,7 @@
                     
                         <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
                     
-                        <li class=" active "><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
                     
                         <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
                     
