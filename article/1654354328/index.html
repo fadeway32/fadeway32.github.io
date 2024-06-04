@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <!--    <meta name="referrer" content="origin">-->
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>
+        
+            垃圾回收G1和cms的区别
+        
+    </title>
+    <link rel="shortcut icon" href="#"/>
+
+    <link type="text/css" rel="stylesheet" href="/font/LongCang.css">
+    <link type="text/css" rel="stylesheet" href="/font/Monda.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSansSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSerifSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/Playball.css">
+    <link type="text/css" rel="stylesheet" href="/font/PTMono.css">
+    <link type="text/css" rel="stylesheet" href="/font/Roboto.css">
+    <link type="text/css" rel="stylesheet" href="/font/RobotoSlab.css">
+    <link type="text/css" rel="stylesheet" href="/font/Rosario.css">
+    <link type="text/css" rel="stylesheet" href="/font/UbuntuMono.css">
+
+    <link type="text/css" rel="stylesheet" href="/css/base.css">
+    <link type="text/css" rel="stylesheet" href="/css/code.css">
+
+    <script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
+<meta name="generator" content="Hexo 6.2.0"></head>
+<body>
+    <a id="cover"></a>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
+<header>
+    <meta name="referrer" content="no-referrer">
+</header>
+<div id="header" class="header">
+    <div class="vertical">
+        <div class="inner">
+            
+                <h1 class="header-subtitle">垃圾回收G1和cms的区别</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2022-06-04
+                        </span>
+                        
+                            <span id="/article/1654354328/" class="leancloud_visitors" data-flag-title="垃圾回收G1和cms的区别">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1654354328/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">web</span>
+                        
+                    
+                </div>
+            
+        </div>
+    </div>
+    
+</div>
+<div id="container">
+    
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="垃圾回收G1和cms的区别"><a href="#垃圾回收G1和cms的区别" class="headerlink" title="垃圾回收G1和cms的区别"></a>垃圾回收G1和cms的区别</h1><p>CMS（Concurrent Mark-Sweep）和G1（Garbage-First）是Java虚拟机（JVM）中两种常见的垃圾收集器，它们各自有不同的设计理念和实现方式，适用于不同的应用场景。以下是CMS和G1垃圾收集器的主要区别：</p>
+<h3 id="CMS（Concurrent-Mark-Sweep）垃圾收集器"><a href="#CMS（Concurrent-Mark-Sweep）垃圾收集器" class="headerlink" title="CMS（Concurrent Mark-Sweep）垃圾收集器"></a>CMS（Concurrent Mark-Sweep）垃圾收集器</h3><h4 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h4><ol>
+<li><strong>并发收集</strong>：<ul>
+<li>CMS收集器在垃圾收集的标记阶段和清除阶段与应用程序线程并发执行，减少了应用程序的停顿时间（STW，Stop-The-World）。</li>
+</ul>
+</li>
+<li><strong>低延迟</strong>：<ul>
+<li>CMS主要目标是减少垃圾收集的停顿时间，适用于需要低延迟的应用程序，如交互式应用和实时系统。</li>
+</ul>
+</li>
+<li><strong>多阶段收集</strong>：<ul>
+<li>CMS收集器的工作分为四个主要阶段：<ul>
+<li><strong>初始标记</strong>（Initial Mark）：标记GC Roots直接可达的对象，需要短暂的STW。</li>
+<li><strong>并发标记</strong>（Concurrent Mark）：并发标记所有可达的对象。</li>
+<li><strong>重新标记</strong>（Remark）：修正并发标记期间发生变化的对象，需要短暂的STW。</li>
+<li><strong>并发清除</strong>（Concurrent Sweep）：并发清除不可达的对象。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>内存碎片</strong>：<ul>
+<li>CMS使用标记-清除算法，清除阶段不进行内存整理，因此可能会产生内存碎片，导致内存分配效率降低。</li>
+</ul>
+</li>
+<li><strong>老年代收集</strong>：<ul>
+<li>CMS主要用于老年代的垃圾收集，年轻代通常使用ParNew或其他年轻代收集器。</li>
+</ul>
+</li>
+</ol>
+<h4 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h4><ol>
+<li><strong>内存碎片</strong>：由于不进行内存整理，可能会产生内存碎片，影响内存分配效率。</li>
+<li><strong>并发模式失败</strong>：在并发收集过程中，如果内存不足，可能会触发“并发模式失败”，导致一次完全的STW垃圾收集（Full GC）。</li>
+<li><strong>较高的CPU开销</strong>：并发收集需要额外的CPU资源，可能会影响应用程序的性能。</li>
+</ol>
+<h3 id="G1（Garbage-First）垃圾收集器"><a href="#G1（Garbage-First）垃圾收集器" class="headerlink" title="G1（Garbage-First）垃圾收集器"></a>G1（Garbage-First）垃圾收集器</h3><h4 id="特点-1"><a href="#特点-1" class="headerlink" title="特点"></a>特点</h4><ol>
+<li><strong>分区收集</strong>：<ul>
+<li>G1将堆内存划分为多个大小相等的区域（Region），每个区域可以作为年轻代或老年代的一部分。</li>
+<li>这种分区收集方式使得G1能够灵活地控制和调整垃圾收集的范围和频率。</li>
+</ul>
+</li>
+<li><strong>并发和并行</strong>：<ul>
+<li>G1支持并发和并行垃圾收集，减少了停顿时间。</li>
+<li>年轻代和老年代的垃圾收集可以并行进行，提高了垃圾收集的效率。</li>
+</ul>
+</li>
+<li><strong>全局标记阶段</strong>：<ul>
+<li>G1采用全局标记阶段，标记所有可达的对象。</li>
+<li>全局标记阶段包括初始标记、并发标记、最终标记和清除阶段。</li>
+</ul>
+</li>
+<li><strong>混合收集</strong>：<ul>
+<li>G1在年轻代收集的基础上，结合老年代收集，进行混合收集（Mixed Collection）。</li>
+<li>混合收集可以同时收集年轻代和部分老年代的对象，提高了垃圾收集的效率。</li>
+</ul>
+</li>
+<li><strong>暂停时间预测</strong>：<ul>
+<li>G1支持用户指定的暂停时间目标，通过预测和调整收集范围，尽量满足暂停时间目标。</li>
+</ul>
+</li>
+<li><strong>内存整理</strong>：<ul>
+<li>G1在垃圾收集过程中进行内存整理，减少内存碎片，提高内存分配效率。</li>
+</ul>
+</li>
+</ol>
+<h4 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h4><ol>
+<li><strong>低停顿时间</strong>：通过并发和并行收集、暂停时间预测，G1能够提供较低的停顿时间。</li>
+<li><strong>内存整理</strong>：G1进行内存整理，减少内存碎片，提高内存分配效率。</li>
+<li><strong>适用于大内存应用</strong>：G1适用于大内存应用和高并发场景。</li>
+</ol>
+<h4 id="缺点-1"><a href="#缺点-1" class="headerlink" title="缺点"></a>缺点</h4><ol>
+<li><strong>复杂性</strong>：G1的实现较为复杂，调优难度较大。</li>
+<li><strong>较高的内存开销</strong>：G1需要额外的内存来维护分区和元数据。</li>
+</ol>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><table>
+<thead>
+<tr>
+<th>特性</th>
+<th>CMS</th>
+<th>G1</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>目标</strong></td>
+<td>低延迟</td>
+<td>低停顿时间</td>
+</tr>
+<tr>
+<td><strong>收集方式</strong></td>
+<td>标记-清除</td>
+<td>分区收集</td>
+</tr>
+<tr>
+<td><strong>并发和并行</strong></td>
+<td>支持并发标记和清除</td>
+<td>支持并发和并行收集</td>
+</tr>
+<tr>
+<td><strong>内存碎片</strong></td>
+<td>可能产生内存碎片</td>
+<td>进行内存整理，减少碎片</td>
+</tr>
+<tr>
+<td><strong>适用场景</strong></td>
+<td>低延迟应用（如交互式应用）</td>
+<td>大内存、高并发应用</td>
+</tr>
+<tr>
+<td><strong>复杂性</strong></td>
+<td>实现较简单</td>
+<td>实现复杂，调优难度较大</td>
+</tr>
+<tr>
+<td><strong>暂停时间预测</strong></td>
+<td>不支持</td>
+<td>支持</td>
+</tr>
+<tr>
+<td><strong>混合收集</strong></td>
+<td>不支持</td>
+<td>支持</td>
+</tr>
+</tbody></table>
+<p>CMS适用于需要低延迟的应用，如交互式应用和实时系统，而G1适用于大内存和高并发场景，能够提供较低的停顿时间和更好的内存整理。选择合适的垃圾收集器需要根据具体的应用需求和性能目标进行权衡。</p>
+<p>如何确定对象是否需要被回收？垃圾回收算法有哪些？</p>
+<p>在Java中，GC Roots（垃圾回收根）是垃圾回收器执行可达性分析的起点。GC Roots包括一组特殊的对象，这些对象被认为是始终可达的，不会被垃圾回收。通过从GC<br>Roots开始遍历，可以找到所有可达的对象，标记为存活对象，其余的对象则可以被回收。</p>
+<p>具体来说，Java中的GC Roots包括以下几种类型的对象：</p>
+<h3 id="1-虚拟机栈（栈帧）中的引用对象"><a href="#1-虚拟机栈（栈帧）中的引用对象" class="headerlink" title="1. 虚拟机栈（栈帧）中的引用对象"></a>1. 虚拟机栈（栈帧）中的引用对象</h3><ul>
+<li><strong>局部变量表</strong>：每个线程的栈帧中的局部变量表中包含的引用变量。例如，在方法中定义的局部变量和参数。</li>
+<li><strong>操作数栈</strong>：栈帧中的操作数栈中包含的引用变量。</li>
+</ul>
+<h3 id="2-方法区中的静态变量"><a href="#2-方法区中的静态变量" class="headerlink" title="2. 方法区中的静态变量"></a>2. 方法区中的静态变量</h3><ul>
+<li><strong>类的静态属性</strong>：在方法区中定义的类的静态变量。例如，类的静态字段（<code>static</code>修饰的变量）。</li>
+<li><strong>常量引用</strong>：方法区中的常量池中的引用。例如，字符串常量（<code>String</code>常量）和类常量。</li>
+</ul>
+<h3 id="3-方法区中的常量引用"><a href="#3-方法区中的常量引用" class="headerlink" title="3. 方法区中的常量引用"></a>3. 方法区中的常量引用</h3><ul>
+<li><strong>类常量</strong>：方法区中的常量池中的引用。例如，字符串常量和类常量。</li>
+</ul>
+<h3 id="4-本地方法栈中的JNI引用"><a href="#4-本地方法栈中的JNI引用" class="headerlink" title="4. 本地方法栈中的JNI引用"></a>4. 本地方法栈中的JNI引用</h3><ul>
+<li><strong>JNI引用</strong>：在本地方法栈（Native Method Stack）中，JNI（Java Native Interface）引用的对象。例如，通过JNI调用的C&#x2F;C++代码中引用的Java对象。</li>
+</ul>
+<h3 id="5-活跃线程"><a href="#5-活跃线程" class="headerlink" title="5. 活跃线程"></a>5. 活跃线程</h3><ul>
+<li><strong>线程对象</strong>：所有活跃线程（包括主线程和其他用户创建的线程）的引用。</li>
+</ul>
+<h3 id="6-类加载器"><a href="#6-类加载器" class="headerlink" title="6. 类加载器"></a>6. 类加载器</h3><ul>
+<li><strong>类加载器对象</strong>：类加载器本身及其加载的类。</li>
+</ul>
+<h3 id="7-其他"><a href="#7-其他" class="headerlink" title="7. 其他"></a>7. 其他</h3><ul>
+<li><strong>同步锁持有的对象</strong>：被同步锁（<code>synchronized</code>关键字）持有的对象。</li>
+<li><strong>Java虚拟机内部引用</strong>：一些由Java虚拟机内部使用的特殊引用对象。</li>
+</ul>
+<h3 id="示例代码"><a href="#示例代码" class="headerlink" title="示例代码"></a>示例代码</h3><p>以下是一个简单的示例代码，展示了几种GC Roots类型的对象：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">GCRootsDemo</span> &#123;</span><br><span class="line">    <span class="comment">// 静态变量（方法区中的静态变量）</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> GCRootsDemo staticInstance;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 常量引用（方法区中的常量引用）</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">GCRootsDemo</span> <span class="variable">constantInstance</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">GCRootsDemo</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 局部变量（虚拟机栈中的引用对象）</span></span><br><span class="line">        <span class="type">GCRootsDemo</span> <span class="variable">localInstance</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">GCRootsDemo</span>();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 调用本地方法（本地方法栈中的JNI引用）</span></span><br><span class="line">        nativeMethod();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 保持主线程活跃（活跃线程）</span></span><br><span class="line">        <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                e.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">nativeMethod</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="comment">// 本地方法中引用的对象</span></span><br><span class="line">        <span class="type">GCRootsDemo</span> <span class="variable">nativeInstance</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">GCRootsDemo</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在这个示例中：</p>
+<ul>
+<li><code>staticInstance</code>是静态变量，属于GC Roots的一部分。</li>
+<li><code>constantInstance</code>是常量引用，属于GC Roots的一部分。</li>
+<li><code>localInstance</code>是局部变量，属于GC Roots的一部分。</li>
+<li><code>nativeInstance</code>是在本地方法中引用的对象，属于GC Roots的一部分。</li>
+<li>主线程保持活跃，主线程对象也是GC Roots的一部分。</li>
+</ul>
+<h3 id="总结-1"><a href="#总结-1" class="headerlink" title="总结"></a>总结</h3><p>Java中的GC Roots包括以下几种类型的对象：</p>
+<ol>
+<li><strong>虚拟机栈中的引用对象</strong>：局部变量表和操作数栈中的引用。</li>
+<li><strong>方法区中的静态变量</strong>：类的静态属性。</li>
+<li><strong>方法区中的常量引用</strong>：类常量。</li>
+<li><strong>本地方法栈中的JNI引用</strong>：通过JNI调用的本地代码中的引用。</li>
+<li><strong>活跃线程</strong>：所有活跃线程的引用。</li>
+<li><strong>类加载器</strong>：类加载器对象及其加载的类。</li>
+<li><strong>同步锁持有的对象</strong>：被同步锁持有的对象。</li>
+<li><strong>Java虚拟机内部引用</strong>：一些由Java虚拟机内部使用的特殊引用对象。</li>
+</ol>
+<p>理解GC Roots的概念对于深入理解Java垃圾回收机制和优化内存管理非常重要。</p>
+<p>轻代回收的过程？年轻代为什么要分E区&#x2F;S0和S1区（为什么要两个S区）</p>
+<p>年轻代（Young Generation）的垃圾回收过程通常被称为<strong>Minor GC</strong>。年轻代的回收过程涉及到复制算法和分区策略。年轻代通常被划分为三个区域：<br><strong>Eden区</strong>、<strong>Survivor 0区（S0）</strong>和<strong>Survivor 1区（S1）</strong>。下面详细介绍年轻代的回收过程以及为什么要分Eden区和两个Survivor区。</p>
+<p>轻代（Young Generation）的垃圾回收过程通常被称为<strong>Minor GC</strong>。年轻代的回收过程涉及到复制算法和分区策略。年轻代通常被划分为三个区域：<br><strong>Eden区</strong>、<strong>Survivor 0区（S0）</strong>和<strong>Survivor 1区（S1）</strong>。下面详细介绍年轻代的回收过程以及为什么要分Eden区和两个Survivor区。</p>
+<h3 id="年轻代回收过程"><a href="#年轻代回收过程" class="headerlink" title="年轻代回收过程"></a>年轻代回收过程</h3><p>年轻代回收过程主要使用<strong>复制算法（Copying Algorithm）</strong>，该算法将对象从一个区域复制到另一个区域，从而实现垃圾回收。具体步骤如下：</p>
+<ol>
+<li><p><strong>对象分配</strong>：</p>
+<ul>
+<li>新创建的对象首先分配在Eden区。</li>
+<li>当Eden区满时，触发Minor GC。</li>
+</ul>
+</li>
+<li><p><strong>标记存活对象</strong>：</p>
+<ul>
+<li>从GC Roots开始，标记Eden区和Survivor区中的所有存活对象。</li>
+</ul>
+</li>
+<li><p><strong>复制存活对象</strong>：</p>
+<ul>
+<li>将Eden区和当前Survivor区（假设是S0区）中的存活对象复制到另一个Survivor区（假设是S1区）。</li>
+<li>如果对象已经在Survivor区并且存活次数达到一定阈值，则将其晋升到老年代（Old Generation）。</li>
+</ul>
+</li>
+<li><p><strong>清空Eden区和当前Survivor区</strong>：</p>
+<ul>
+<li>清空Eden区和当前Survivor区（S0区），所有存活对象已经被复制到另一个Survivor区（S1区）。</li>
+</ul>
+</li>
+<li><p><strong>交换Survivor区角色</strong>：</p>
+<ul>
+<li>交换Survivor区的角色，下次Minor GC时，S1区作为当前Survivor区，S0区作为目标Survivor区。</li>
+</ul>
+<h3 id="为什么年轻代要分Eden区和两个Survivor区"><a href="#为什么年轻代要分Eden区和两个Survivor区" class="headerlink" title="为什么年轻代要分Eden区和两个Survivor区"></a>为什么年轻代要分Eden区和两个Survivor区</h3></li>
+</ol>
+<p>年轻代分为Eden区和两个Survivor区的主要原因是为了优化垃圾回收过程，提高内存利用率和回收效率。具体原因如下：</p>
+<ol>
+<li><strong>复制算法的实现</strong>：<ul>
+<li>复制算法需要一个源区域和一个目标区域。Eden区和一个Survivor区作为源区域，另一个Survivor区作为目标区域。</li>
+<li>通过复制存活对象到目标区域，可以避免内存碎片，提高内存分配的效率。</li>
+</ul>
+</li>
+<li><strong>减少内存碎片</strong>：<ul>
+<li>在每次Minor GC后，Eden区和当前Survivor区中的存活对象被复制到另一个Survivor区，清空源区域，避免了内存碎片的产生。</li>
+<li>目标Survivor区中的对象是连续的，便于后续的内存分配。</li>
+</ul>
+</li>
+<li><strong>对象的晋升</strong>：<ul>
+<li>对象在年轻代中经历多次Minor GC后，如果仍然存活，则会被晋升到老年代。</li>
+<li>使用两个Survivor区可以有效管理对象的生命周期，控制对象的晋升过程。</li>
+</ul>
+</li>
+<li><strong>提高回收效率</strong>：<ul>
+<li>大多数新创建的对象在短时间内会被回收，使用Eden区和Survivor区的分区策略，可以快速回收短生命周期的对象，提高垃圾回收的效率。</li>
+</ul>
+</li>
+</ol>
+<h3 id="示例图示"><a href="#示例图示" class="headerlink" title="示例图示"></a>示例图示</h3><p>以下是年轻代分区和垃圾回收过程的示意图：</p>
+   <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">初始状态：</span><br><span class="line">+-----------------+-----------------+-----------------+</span><br><span class="line">|      Eden       |       S0        |       S1        |</span><br><span class="line">+-----------------+-----------------+-----------------+</span><br><span class="line">|   对象分配区   |   当前Survivor区 |   目标Survivor区|</span><br><span class="line">+-----------------+-----------------+-----------------+</span><br><span class="line"></span><br><span class="line">Minor GC过程：</span><br><span class="line">1. 标记存活对象</span><br><span class="line">2. 将存活对象从Eden和S0复制到S1</span><br><span class="line">3. 清空Eden和S0</span><br><span class="line">4. 交换S0和S1的角色</span><br><span class="line"></span><br><span class="line">回收后状态：</span><br><span class="line">+-----------------+-----------------+-----------------+</span><br><span class="line">|      Eden       |       S1        |       S0        |</span><br><span class="line">+-----------------+-----------------+-----------------+</span><br><span class="line">|   对象分配区   |   当前Survivor区 |   目标Survivor区|</span><br><span class="line">+-----------------+-----------------+-----------------+</span><br></pre></td></tr></table></figure>
+
+<h3 id="总结-2"><a href="#总结-2" class="headerlink" title="总结"></a>总结</h3><p>年轻代回收过程（Minor GC）主要使用复制算法，将存活对象从Eden区和当前Survivor区复制到另一个Survivor区。年轻代分为Eden区和两个Survivor区的原因包括：</p>
+<ol>
+<li><strong>实现复制算法</strong>：需要源区域和目标区域。</li>
+<li><strong>减少内存碎片</strong>：通过复制存活对象，清空源区域，避免内存碎片。</li>
+<li><strong>对象晋升管理</strong>：有效管理对象的生命周期，控制对象的晋升过程。</li>
+<li><strong>提高回收效率</strong>：快速回收短生命周期的对象，提高垃圾回收效率。</li>
+</ol>
+<p>理解年轻代的分区策略和回收过程对于优化Java应用的内存管理和性能非常重要</p>
+<p>为什么年轻代的回收过程使用复制算法而不是其他算法？</p>
+<p>年轻代（Young Generation）采用复制算法（Copying Algorithm）进行垃圾回收的主要原因是复制算法在处理短生命周期对象时具有显著的优势。以下是年轻代使用复制算法而不是其他算法的具体原因：</p>
+<h3 id="1-对象存活率低"><a href="#1-对象存活率低" class="headerlink" title="1. 对象存活率低"></a>1. 对象存活率低</h3><p>年轻代中的对象通常具有较短的生命周期，大部分新创建的对象会在短时间内变为垃圾。复制算法在这种情况下非常高效：</p>
+<ul>
+<li><strong>复制算法</strong>：只需要复制存活的对象，而不是遍历和处理所有对象。由于大部分对象在年轻代中很快就会被回收，因此需要复制的存活对象相对较少，复制操作的开销较低。</li>
+<li><strong>标记-清除算法</strong>：需要遍历整个堆进行标记和清除，即使大部分对象是垃圾，也需要遍历所有对象，开销较大。</li>
+<li><strong>标记-整理算法</strong>：需要标记和整理内存，虽然可以消除内存碎片，但整理操作的开销较大。</li>
+</ul>
+<h3 id="2-避免内存碎片"><a href="#2-避免内存碎片" class="headerlink" title="2. 避免内存碎片"></a>2. 避免内存碎片</h3><p>复制算法可以有效避免内存碎片问题：</p>
+<ul>
+<li><strong>复制算法</strong>：将存活对象从一个区域复制到另一个区域，内存分配是连续的，没有碎片。每次回收后，目标区域中的存活对象是连续存放的，便于后续的内存分配。</li>
+<li><strong>标记-清除算法</strong>：清除未标记的对象后，内存中可能会留下大量碎片，影响内存分配效率。</li>
+<li><strong>标记-整理算法</strong>：虽然可以消除内存碎片，但整理操作的开销较大。</li>
+</ul>
+<h3 id="3-简单高效的内存管理"><a href="#3-简单高效的内存管理" class="headerlink" title="3. 简单高效的内存管理"></a>3. 简单高效的内存管理</h3><p>复制算法的实现相对简单，管理内存也更加高效：</p>
+<ul>
+<li><strong>复制算法</strong>：只需要两个区域（Eden区和一个Survivor区），每次回收后交换角色，内存管理逻辑简单。</li>
+<li><strong>标记-清除算法</strong>和<strong>标记-整理算法</strong>：需要复杂的标记和清除&#x2F;整理逻辑，管理内存的开销较大。</li>
+</ul>
+<h3 id="4-并行和并发收集"><a href="#4-并行和并发收集" class="headerlink" title="4. 并行和并发收集"></a>4. 并行和并发收集</h3><p>复制算法适合并行和并发收集：</p>
+<ul>
+<li><strong>复制算法</strong>：可以将复制操作分配给多个线程并行执行，提高垃圾回收的效率。现代JVM中的年轻代垃圾收集器（如Parallel<br>Scavenge和G1）都支持并行和并发收集。</li>
+<li><strong>标记-清除算法</strong>和<strong>标记-整理算法</strong>：虽然也可以并行化，但实现和管理相对复杂。</li>
+</ul>
+<p>在Java虚拟机（JVM）中，Minor GC是指年轻代（Young Generation）的垃圾回收过程。JVM提供了一些参数来控制和调优年轻代的垃圾回收行为。了解这些参数对于优化应用程序的性能和内存管理非常重要。</p>
+<h3 id="miniorGC主要JVM参数"><a href="#miniorGC主要JVM参数" class="headerlink" title="miniorGC主要JVM参数"></a>miniorGC主要JVM参数</h3><p>以下是一些与年轻代垃圾回收（Minor GC）相关的重要JVM参数及其说明：</p>
+<h4 id="1-Xms-和-Xmx"><a href="#1-Xms-和-Xmx" class="headerlink" title="1. -Xms 和 -Xmx"></a>1. -Xms 和 -Xmx</h4><ul>
+<li><strong>-Xms</strong>：设置JVM的初始堆内存大小。</li>
+<li><strong>-Xmx</strong>：设置JVM的最大堆内存大小。</li>
+</ul>
+<p>示例：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -Xms512m -Xmx1024m MyApp</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-Xmn"><a href="#2-Xmn" class="headerlink" title="2. -Xmn"></a>2. -Xmn</h4><ul>
+<li><strong>-Xmn</strong>：设置年轻代的内存大小。这个参数可以显式地控制年轻代的大小，影响Minor GC的频率和性能。</li>
+</ul>
+<p>示例：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -Xmn256m MyApp</span><br></pre></td></tr></table></figure>
+
+<h4 id="3-XX-NewRatio"><a href="#3-XX-NewRatio" class="headerlink" title="3. -XX:NewRatio"></a>3. -XX:NewRatio</h4><ul>
+<li><strong>-XX:NewRatio</strong>：设置老年代（Old Generation）与年轻代的内存比例。<code>NewRatio=3</code>表示老年代与年轻代的比例为3:1。</li>
+</ul>
+<p>示例：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -XX:NewRatio=3 MyApp</span><br></pre></td></tr></table></figure>
+
+<h4 id="4-XX-SurvivorRatio"><a href="#4-XX-SurvivorRatio" class="headerlink" title="4. -XX:SurvivorRatio"></a>4. -XX:SurvivorRatio</h4><ul>
+<li><strong>-XX:SurvivorRatio</strong>：设置Eden区与一个Survivor区的内存比例。<code>SurvivorRatio=8</code>表示Eden区与一个Survivor区的比例为8:1。</li>
+</ul>
+<p>示例：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -XX:SurvivorRatio=8 MyApp</span><br></pre></td></tr></table></figure>
+
+<h4 id="5-XX-MaxTenuringThreshold"><a href="#5-XX-MaxTenuringThreshold" class="headerlink" title="5. -XX:MaxTenuringThreshold"></a>5. -XX:MaxTenuringThreshold</h4><ul>
+<li><strong>-XX:MaxTenuringThreshold</strong>：设置对象在年轻代存活的最大次数（年龄阈值）。超过这个阈值的对象将被晋升到老年代。</li>
+</ul>
+<p>示例：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -XX:MaxTenuringThreshold=15 MyApp</span><br></pre></td></tr></table></figure>
+
+<h4 id="6-XX-UseSerialGC"><a href="#6-XX-UseSerialGC" class="headerlink" title="6. -XX:+UseSerialGC"></a>6. -XX:+UseSerialGC</h4><ul>
+<li><strong>-XX:+UseSerialGC</strong>：使用串行垃圾收集器（Serial GC），适用于单线程环境。年轻代使用复制算法，老年代使用标记-整理算法。</li>
+</ul>
+<p>示例：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -XX:+UseSerialGC MyApp</span><br></pre></td></tr></table></figure>
+
+<h4 id="7-XX-UseParallelGC"><a href="#7-XX-UseParallelGC" class="headerlink" title="7. -XX:+UseParallelGC"></a>7. -XX:+UseParallelGC</h4><ul>
+<li><strong>-XX:+UseParallelGC</strong>：使用并行垃圾收集器（Parallel GC），适用于多线程环境。年轻代使用并行复制算法，老年代使用并行标记-整理算法。</li>
+</ul>
+<p>示例：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -XX:+UseParallelGC MyApp</span><br></pre></td></tr></table></figure>
+
+<h4 id="8-XX-UseParNewGC"><a href="#8-XX-UseParNewGC" class="headerlink" title="8. -XX:+UseParNewGC"></a>8. -XX:+UseParNewGC</h4><ul>
+<li><strong>-XX:+UseParNewGC</strong>：使用ParNew垃圾收集器，年轻代使用并行复制算法。通常与CMS收集器一起使用。</li>
+</ul>
+<p>示例：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -XX:+UseParNewGC MyApp</span><br></pre></td></tr></table></figure>
+
+<h4 id="9-XX-UseG1GC"><a href="#9-XX-UseG1GC" class="headerlink" title="9. -XX:+UseG1GC"></a>9. -XX:+UseG1GC</h4><ul>
+<li><strong>-XX:+UseG1GC</strong>：使用G1垃圾收集器，适用于大内存和高并发应用。G1垃圾收集器将堆内存划分为多个区域（Region），进行并行和并发收集。</li>
+</ul>
+<p>示例：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -XX:+UseG1GC MyApp</span><br></pre></td></tr></table></figure>
+
+<h3 id="示例配置"><a href="#示例配置" class="headerlink" title="示例配置"></a>示例配置</h3><p>以下是一个示例配置，使用Parallel GC并设置年轻代和Survivor区的参数：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -Xms512m -Xmx1024m -Xmn256m -XX:NewRatio=3 -XX:SurvivorRatio=8 -XX:MaxTenuringThreshold=15 -XX:+UseParallelGC MyApp</span><br></pre></td></tr></table></figure>
+
+<h3 id="参数解释"><a href="#参数解释" class="headerlink" title="参数解释"></a>参数解释</h3><ul>
+<li><strong>-Xms512m</strong>：设置初始堆内存大小为512MB。</li>
+<li><strong>-Xmx1024m</strong>：设置最大堆内存大小为1024MB。</li>
+<li><strong>-Xmn256m</strong>：设置年轻代内存大小为256MB。</li>
+<li><strong>-XX:NewRatio&#x3D;3</strong>：设置老年代与年轻代的内存比例为3:1。</li>
+<li><strong>-XX:SurvivorRatio&#x3D;8</strong>：设置Eden区与一个Survivor区的内存比例为8:1。</li>
+<li><strong>-XX:MaxTenuringThreshold&#x3D;15</strong>：设置对象在年轻代存活的最大次数为15次。</li>
+<li><strong>-XX:+UseParallelGC</strong>：使用Parallel GC进行垃圾收集。</li>
+</ul>
+<h3 id="总结-3"><a href="#总结-3" class="headerlink" title="总结"></a>总结</h3><p>JVM提供了一系列参数来控制年轻代的垃圾回收过程（Minor<br>GC），包括设置堆内存大小、年轻代大小、Eden区和Survivor区比例、对象晋升阈值以及选择不同的垃圾收集器。通过合理配置这些参数，可以优化应用程序的性能和内存管理，减少垃圾回收的停顿时间，提高系统的响应速度。理解和调优这些参数对于Java应用的性能优化非常重要。</p>
+<h2 id="JVM参数-Xmn如何影响Minor-GC的频率和性能？"><a href="#JVM参数-Xmn如何影响Minor-GC的频率和性能？" class="headerlink" title="JVM参数-Xmn如何影响Minor GC的频率和性能？"></a>JVM参数-Xmn如何影响Minor GC的频率和性能？</h2><h3 id="年轻代内存大小与Minor-GC频率"><a href="#年轻代内存大小与Minor-GC频率" class="headerlink" title="年轻代内存大小与Minor GC频率"></a>年轻代内存大小与Minor GC频率</h3><p>年轻代的内存大小决定了新创建对象的存放区域。年轻代越大，能够容纳的新对象就越多，触发Minor<br>GC的频率就越低；反之，年轻代越小，能够容纳的新对象就越少，触发Minor GC的频率就越高。</p>
+<p>在Java虚拟机（JVM）中，对象从年轻代（Young Generation）进入老年代（Old Generation）通常基于以下几个条件：</p>
+<h3 id="对象进入老年代的条件"><a href="#对象进入老年代的条件" class="headerlink" title="对象进入老年代的条件"></a>对象进入老年代的条件</h3><ol>
+<li><p>对象的年龄达到阈值</p>
+<p>：</p>
+<ul>
+<li>对象在年轻代中每经历一次Minor GC，年龄就增加1。当对象的年龄达到某个阈值时（由参数<code>-XX:MaxTenuringThreshold</code><br>决定），该对象会被晋升到老年代。</li>
+<li>默认情况下，<code>-XX:MaxTenuringThreshold</code>的值是15。</li>
+</ul>
+</li>
+</ol>
+<p>shell</p>
+<p>Copy</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -XX:MaxTenuringThreshold=15 MyApp</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><strong>Survivor区满</strong>：<ul>
+<li>年轻代包含Eden区和两个Survivor区（S0和S1）。当Eden区满时会触发Minor<br>GC，存活的对象会被复制到Survivor区。如果Survivor区满了，存活的对象会直接晋升到老年代。</li>
+</ul>
+</li>
+<li><strong>动态年龄判定</strong>：<ul>
+<li>JVM可能会根据实际情况动态调整对象晋升到老年代的年龄阈值。如果在某次Minor<br>GC中，进入Survivor区的对象总大小超过Survivor区的一半，JVM会将年龄大于或等于该年龄的对象直接晋升到老年代。</li>
+</ul>
+</li>
+<li><h2 id="大对象："><a href="#大对象：" class="headerlink" title="大对象："></a><strong>大对象</strong>：</h2> 大对象是指需要大量连续内存空间的对象，如大数组或大字符串。为了避免在年轻代频繁复制大对象，JVM会将大对象直接分配到老年代。大对象的大小由参数<code>-XX:PretenureSizeThreshold</code><br> 决定。</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -XX:PretenureSizeThreshold=1m MyApp</span><br></pre></td></tr></table></figure>
+
+<h3 id="什么是大对象"><a href="#什么是大对象" class="headerlink" title="什么是大对象"></a>什么是大对象</h3><p>大对象（Large<br>Object）通常是指需要大量连续内存空间的对象，例如大数组、大字符串等。由于大对象在年轻代中频繁复制会带来较大的性能开销，因此JVM提供了参数<code>-XX:PretenureSizeThreshold</code><br>来控制大对象的分配策略。</p>
+<ul>
+<li><p>-XX:PretenureSizeThreshold</p>
+<p>：设置大对象的大小阈值，超过该阈值的对象会直接分配到老年代，而不是在年轻代中分配。</p>
+<ul>
+<li>例如，设置<code>-XX:PretenureSizeThreshold=1m</code>表示大小超过1MB的对象会直接分配到老年代。</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -XX:PretenureSizeThreshold=1m MyApp</span><br></pre></td></tr></table></figure>
+
+<h3 id="示例代码-1"><a href="#示例代码-1" class="headerlink" title="示例代码"></a>示例代码</h3><p>以下是一个示例代码，展示了对象在年轻代和老年代中的分配和晋升过程：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ObjectAllocationExample</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> <span class="variable">_1MB</span> <span class="operator">=</span> <span class="number">1024</span> * <span class="number">1024</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 创建大对象，直接分配到老年代</span></span><br><span class="line">        <span class="type">byte</span>[] largeObject = <span class="keyword">new</span> <span class="title class_">byte</span>[<span class="number">4</span> * _1MB];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 创建多个小对象，分配到年轻代</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">            <span class="type">byte</span>[] smallObject = <span class="keyword">new</span> <span class="title class_">byte</span>[_1MB / <span class="number">10</span>];</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 触发Minor GC，观察对象晋升到老年代的情况</span></span><br><span class="line">        <span class="type">byte</span>[] anotherLargeObject = <span class="keyword">new</span> <span class="title class_">byte</span>[<span class="number">4</span> * _1MB];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="配置示例"><a href="#配置示例" class="headerlink" title="配置示例"></a>配置示例</h3><p>以下是一个示例配置，设置堆内存大小、年轻代大小、大对象阈值等参数：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -Xms512m -Xmx512m -Xmn256m -XX:PretenureSizeThreshold=1m -XX:MaxTenuringThreshold=15 -XX:+PrintGCDetails -XX:+PrintGCDateStamps -Xloggc:gc.log ObjectAllocationExample</span><br></pre></td></tr></table></figure>
+
+<h3 id="总结-4"><a href="#总结-4" class="headerlink" title="总结"></a>总结</h3><p>对象进入老年代的条件包括对象的年龄达到阈值、Survivor区满、动态年龄判定以及大对象直接分配到老年代。大对象是指需要大量连续内存空间的对象，其大小由参数<code>-XX:PretenureSizeThreshold</code><br>决定。通过合理配置这些参数，可以优化JVM的内存管理和垃圾回收性能，减少垃圾回收的停顿时间，提高系统的响应速度。理解这些参数的作用和影响对于Java应用的性能调优非常重要。</p>
+<p>在Java虚拟机（JVM）中，对象从年轻代（Young Generation）进入老年代（Old Generation）通常基于以下几个条件：</p>
+<h3 id="对象进入老年代的条件-1"><a href="#对象进入老年代的条件-1" class="headerlink" title="对象进入老年代的条件"></a>对象进入老年代的条件</h3><ol>
+<li><p>对象的年龄达到阈值</p>
+<p>：</p>
+<ul>
+<li>对象在年轻代中每经历一次Minor GC，年龄就增加1。当对象的年龄达到某个阈值时（由参数<code>-XX:MaxTenuringThreshold</code><br>决定），该对象会被晋升到老年代。</li>
+<li>默认情况下，<code>-XX:MaxTenuringThreshold</code>的值是15。</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -XX:MaxTenuringThreshold=15 MyApp</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><strong>Survivor区满</strong>：<ul>
+<li>年轻代包含Eden区和两个Survivor区（S0和S1）。当Eden区满时会触发Minor<br>GC，存活的对象会被复制到Survivor区。如果Survivor区满了，存活的对象会直接晋升到老年代。</li>
+</ul>
+</li>
+<li><strong>动态年龄判定</strong>：<ul>
+<li>JVM可能会根据实际情况动态调整对象晋升到老年代的年龄阈值。如果在某次Minor<br>GC中，进入Survivor区的对象总大小超过Survivor区的一半，JVM会将年龄大于或等于该年龄的对象直接晋升到老年代。</li>
+</ul>
+</li>
+<li><h2 id="大对象：-1"><a href="#大对象：-1" class="headerlink" title="大对象："></a><strong>大对象</strong>：</h2> 大对象是指需要大量连续内存空间的对象，如大数组或大字符串。为了避免在年轻代频繁复制大对象，JVM会将大对象直接分配到老年代。大对象的大小由参数<code>-XX:PretenureSizeThreshold</code><br> 决定。</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -XX:PretenureSizeThreshold=1m MyApp</span><br></pre></td></tr></table></figure>
+
+<h3 id="什么是大对象-1"><a href="#什么是大对象-1" class="headerlink" title="什么是大对象"></a>什么是大对象</h3><p>大对象（Large<br>Object）通常是指需要大量连续内存空间的对象，例如大数组、大字符串等。由于大对象在年轻代中频繁复制会带来较大的性能开销，因此JVM提供了参数<code>-XX:PretenureSizeThreshold</code><br>来控制大对象的分配策略。</p>
+<ul>
+<li><p>-XX:PretenureSizeThreshold</p>
+<p>：设置大对象的大小阈值，超过该阈值的对象会直接分配到老年代，而不是在年轻代中分配。</p>
+<ul>
+<li>例如，设置<code>-XX:PretenureSizeThreshold=1m</code>表示大小超过1MB的对象会直接分配到老年代。</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -XX:PretenureSizeThreshold=1m MyApp</span><br></pre></td></tr></table></figure>
+
+<h3 id="示例代码-2"><a href="#示例代码-2" class="headerlink" title="示例代码"></a>示例代码</h3><p>以下是一个示例代码，展示了对象在年轻代和老年代中的分配和晋升过程：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ObjectAllocationExample</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> <span class="variable">_1MB</span> <span class="operator">=</span> <span class="number">1024</span> * <span class="number">1024</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 创建大对象，直接分配到老年代</span></span><br><span class="line">        <span class="type">byte</span>[] largeObject = <span class="keyword">new</span> <span class="title class_">byte</span>[<span class="number">4</span> * _1MB];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 创建多个小对象，分配到年轻代</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">            <span class="type">byte</span>[] smallObject = <span class="keyword">new</span> <span class="title class_">byte</span>[_1MB / <span class="number">10</span>];</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 触发Minor GC，观察对象晋升到老年代的情况</span></span><br><span class="line">        <span class="type">byte</span>[] anotherLargeObject = <span class="keyword">new</span> <span class="title class_">byte</span>[<span class="number">4</span> * _1MB];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="配置示例-1"><a href="#配置示例-1" class="headerlink" title="配置示例"></a>配置示例</h3><p>以下是一个示例配置，设置堆内存大小、年轻代大小、大对象阈值等参数：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -Xms512m -Xmx512m -Xmn256m -XX:PretenureSizeThreshold=1m -XX:MaxTenuringThreshold=15 -XX:+PrintGCDetails -XX:+PrintGCDateStamps -Xloggc:gc.log ObjectAllocationExample</span><br></pre></td></tr></table></figure>
+
+<h3 id="总结-5"><a href="#总结-5" class="headerlink" title="总结"></a>总结</h3><p>对象进入老年代的条件包括对象的年龄达到阈值、Survivor区满、动态年龄判定以及大对象直接分配到老年代。大对象是指需要大量连续内存空间的对象，其大小由参数<code>-XX:PretenureSizeThreshold</code><br>决定。通过合理配置这些参数，可以优化JVM的内存管理和垃圾回收性能，减少垃圾回收的停顿时间，提高系统的响应速度。理解这些参数的作用和影响对于Java应用的性能调优非常重要。</p>
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1654354328/" target="_blank">垃圾回收G1和cms的区别</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
+                        
+                            <a href="/category/Web/">Web</a>
+                        
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
+                        
+                            <a href="/tag/web/">web</a>
+                        
+                    </div>
+                
+                <div class="article-prev-next">
+                    
+                        <a href="/article/1654354327/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1654354327/" title="发布于 2022-06-04 10:52">Tcp宝典大全</a>
+                        <br>
+                    
+                    
+                        <a href="/article/1653658581/" class="next-prefix">» </a> 下一篇：    <a href="/article/1653658581/" title="发布于 2022-05-29 09:36">java助记符</a>
+                    
+                </div>
+            </div>
+            
+    <div class="article-comments">
+        
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
+    
+</div>
+    <div id="footer"></div>
+    <div id="sidebar">
+    <div class="menu-wrap" style="display:none;">
+        
+            <div class="menu-notice">
+                <span class="iconfont icon-notice"></span>
+                <div class="notice">
+                    <span>简单地活着，肆意而又精彩！</span>
+                </div>
+            </div>
+        
+        <nav class="menu">
+            <div class="menu-introduce"> 
+                <div class="introduce-avatar">
+                    <img src="/image/sidebar/avatar.jpg">
+                </div> 
+                <div class="introduce-info"> 
+                    <div class="introduce-user"><span>Live For Code</span></div>
+                </div> 
+            </div> 
+            <div class="menu-list">
+                <ul>
+                    
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                    
+                        <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
+                    
+                        <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
+                    
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                    
+                        <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
+                    
+                        <li class=""><a href="/about" class="" target="_self"><span class="iconfont icon-about-fill"></span>关于</a></li>
+                    
+                        <li class=""><a href="/atom.xml" class="" target="_blank"><span class="iconfont icon-rss"></span>订阅</a></li>
+                    
+                        <li class=""><a href="javascript:;" class="search" target="_self"><span class="iconfont icon-search-menu"></span>搜索</a></li>
+                    
+                        <li class=""><a href="/comment" class="" target="_self"><span class="iconfont icon-comments-fill"></span>留言板</a></li>
+                    
+                        <li class=""><a href="/friend" class="" target="_self"><span class="iconfont icon-link"></span>友情链接</a></li>
+                    
+                </ul> 
+            </div> 
+            <div class="menu-link">
+                <div class="box">
+                    <div class="image-box"></div>
+                </div>
+                
+                    <a name="知乎" href="https://www.zhihu.com/people/wo-xin-de-love" class="" target="_blank" data=""><span class="iconfont icon-zhihu"></span></a>
+                
+                    <a name="微博" href="https://weibo.com/u/3939432776" class="" target="_blank" data=""><span class="iconfont icon-weibo"></span></a>
+                
+                    <a name="QQ" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"><span class="iconfont icon-qq"></span></a>
+                
+                    <a name="微信" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"><span class="iconfont icon-wechat"></span></a>
+                
+                    <a name="GitHub" href="https://github.com/first19326" class="" target="_blank" data=""><span class="iconfont icon-github"></span></a>
+                
+            </div> 
+        </nav>
+        <button class="menu-button-close"></button>
+        <div class="morph-shape" id="morph-shape" data-morph-open="M-7.312,0H15c0,0,66,113.339,66,399.5C81,664.006,15,800,15,800H-7.312V0z;M-7.312,0H100c0,0,0,113.839,0,400c0,264.506,0,400,0,400H-7.312V0z">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 800" preserveAspectRatio="none">
+                <path d="M-7.312,0H0c0,0,0,113.839,0,400c0,264.506,0,400,0,400h-7.312V0z"/>
+            </svg>
+        </div>
+    </div>
+    <button class="menu-button-open">MENU</button>
+    <div class="menu-cover"></div>
+</div>
+    <link type="text/css" rel="stylesheet" href="/css/search.css">
+<script type="text/javascript" src="/js/iscroll.js"></script>
+<script type="text/javascript" src="/js/instantsearch.min.js"></script>
+<div class="search-window">
+    <div class="search-content">
+        <div class="search-content-icon">
+            <i class="iconfont icon-search"></i>
+        </div>
+        <div id="search-input" class="search-input"></div>
+    </div>
+
+    <div class="search-scroll">
+        <div class="search-result">
+            <div id="search-stats" class="search-stats"></div>
+            <div id="search-hits"></div>
+            <div id="search-pagination" class="search-pagination"></div>
+        </div>
+    </div>
+
+    <span class="search-close-icon">
+        <i class="iconfont icon-close"></i>
+    </span>
+</div>
+    <div id="tools">
+    <div class="progressbar-top"></div>
+
+    
+        <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
+        <script type="text/javascript" src="/js/APlayer.min.js"></script>
+        <script type="text/javascript" src="/js/Meting.min.js"></script>
+        <meting-js id="3778678" lrcshow="false" server="netease" type="playlist" fixed="true" autoplay="false" loop="all" order="random" preload="auto" volume="0.67" mutex="true"></meting-js>
+    
+    
+    <div class="wrap-right">
+        <div class="setting">
+            <div class="iconbox favorites" switch="false">
+                <span class="iconfont icon-favorites"></span>
+                <span class="icontext">关注</span>
+            </div>
+            <div class="iconbox mode">
+                <div class="light">
+                    <span class="iconfont icon-daymode"></span>
+                    <span class="icontext">浅色模式</span>
+                </div>
+                <div class="dark">
+                    <span class="iconfont icon-nightmode-fill"></span>
+                    <span class="icontext">深色模式</span>
+                </div>
+            </div>
+            <a href="javascript:;" target="_self" class="search">
+                <div class="iconbox">
+                    <span class="iconfont icon-search-menu"></span>
+                    <span class="icontext">搜索</span>
+                </div>
+            </a>
+            <div class="iconbox bottom">
+                <div style="display: inline-block; transform: rotate(180deg);">
+                    <span class="iconfont icon-top"></span>
+                </div>
+                <span class="icontext">跳至底部</span>
+            </div>
+        </div>
+        <div class="iconbox set">
+            <div style="display: inline-block;">
+                <span class="iconfont icon-setting"></span>
+            </div>
+            <span class="icontext">设置</span>
+        </div>
+        <div class="iconbox top">
+            <span class="iconfont icon-top"></span>
+            <span class="icontext">返回顶部</span>
+        </div>
+    </div>
+    <div class="loading"></div>
+</div>
+    <script>
+    window.config = {
+        GitHubUserName     : "first19326",
+        GitHubRepositories : "Hexo-LiveForCode",
+
+        User             : "Live For Code",
+        UserAvatar       : "/image/sidebar/avatar.jpg",
+        WebsiteStartDate : "2020-01-01",
+
+        WebsiteTitleBlur         : "(◍´꒳`◍) Hi, Live For Code",
+        WebsiteTitleBlurTimeOut  : 500,
+        WebsiteTitleFocus        : "(*´∇｀*) 欢迎回来!",
+        WebsiteTitleFocusTimeOut : 1000,
+        WebsiteFavicon           : "/image/website/logo.png",
+
+        ProgressBar : {
+            id       : "topProgressBar",
+            color    : "#77B6FF",
+            height   : "2px",
+            duration : 0.2
+        },
+
+        Loading: {
+            rebound : {
+                tension  : 16,
+                friction : 5
+            },
+            spinner : {
+                id     : "spinner",
+                radius : 90,
+                sides  : 3,
+                depth  : 4,
+                colors : {
+                    background : "#F0F0F0",
+                    stroke     : "#272633",
+                    base       : "",
+                    child      : "#272633"
+                },
+                alwaysForward : true,
+                restAt        : 0.5,
+                renderBase    : false
+            }
+        },
+
+        HomeHeaderAnimationRendered : true,
+        HomeHeaderAnimation         : {
+            radius      : 15,
+            density     : 0.2,
+            color       : "rgba(255, 255, 255, .2)",
+            clearOffset : 0.3
+        },
+
+        BackAnimationRendered          : true,
+        IEBrowserBackAnimationRendered : false,
+        BackAnimation                  : {
+            colorSaturation  : "60%",
+            colorBrightness  : "50%",
+            colorAlpha       : 0.5,
+            colorCycleSpeed  : 5,
+            verticalPosition : "random",
+            horizontalSpeed  : 200,
+            ribbonCount      : 3,
+            strokeSize       : 0,
+            parallaxAmount   : -0.2,
+            animateSections  : true
+        },
+
+        HomeHeaderImage : [
+            
+                "/image/header/home.jpg",
+            
+                "/image/header/home.jpeg",
+            
+                "/image/header/2023-04-17-20-51-03.jpg",
+            
+                "/image/header/2023-04-17-20-54-07.jpg",
+            
+                "/image/header/2023-04-17-20-54-22.jpg",
+            
+                "/image/header/2023-04-17-20-55-25.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+        HomeBannerText  : "",
+
+        ArticleHeaderImage : [
+            
+                "/image/header/article.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+
+        OtherBannerText : "",
+
+        Error : {
+            icon    : "icon-swimming",
+            title   : "PAGE NOT FOUND",
+            content : [
+                
+                    "很抱歉，您访问的页面不存在！",
+                
+                    "可能是输入地址有误或该地址已变更。",
+                
+            ],
+            buttons : [
+                
+                    {
+                        icon  : "icon-home",
+                        text  : "返回首页",
+                        href  : "https://fadeway32.gitee.io/",
+                        class : ""
+                    },
+                
+            ]
+        },
+
+        MenuNotice : {
+            enable : true,
+            notice : "简单地活着，肆意而又精彩！",
+            speed  : 20
+        },
+        MenuList : [
+            
+                {
+                    name   : "首页",
+                    icon   : "icon-home-fill",
+                    href   : "/",
+                    type   : "index",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "分类",
+                    icon   : "icon-folder-fill",
+                    href   : "/category",
+                    type   : "category",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "标签",
+                    icon   : "icon-discount-fill",
+                    href   : "/tag",
+                    type   : "tag",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "归档",
+                    icon   : "icon-calendar-fill",
+                    href   : "/archive",
+                    type   : "archive",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "赞赏",
+                    icon   : "icon-heart-fill",
+                    href   : "/donate",
+                    type   : "donate",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "关于",
+                    icon   : "icon-about-fill",
+                    href   : "/about",
+                    type   : "about",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "订阅",
+                    icon   : "icon-rss",
+                    href   : "/atom.xml",
+                    type   : "",
+                    class  : "",
+                    target : "_blank"
+                },
+            
+                {
+                    name   : "搜索",
+                    icon   : "icon-search-menu",
+                    href   : "javascript:;",
+                    type   : "",
+                    class  : "search",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "留言板",
+                    icon   : "icon-comments-fill",
+                    href   : "/comment",
+                    type   : "comment",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "友情链接",
+                    icon   : "icon-link",
+                    href   : "/friend",
+                    type   : "friend",
+                    class  : "",
+                    target : "_self"
+                },
+            
+        ],
+        MenuLink : [
+            
+                
+                    {
+                        name   : "知乎",
+                        icon   : "icon-zhihu",
+                        href   : "https://www.zhihu.com/people/wo-xin-de-love",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "微博",
+                        icon   : "icon-weibo",
+                        href   : "https://weibo.com/u/3939432776",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "QQ",
+                        icon   : "icon-qq",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"
+                    },
+                
+                    {
+                        name   : "微信",
+                        icon   : "icon-wechat",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"
+                    },
+                
+                    {
+                        name   : "GitHub",
+                        icon   : "icon-github",
+                        href   : "https://github.com/first19326",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+            
+        ],
+
+        FooterStyle : 2,
+        BottomText  : "<div><span class='face'>ღゝ◡╹)ノ♡</span></div><div>【人生若只如初见<span><i class='iconfont icon-like-fill'></i></span>何事秋风悲画扇】</div><div>&copy; 2020-2022 WorstOne. All Rights Reserved.</div>",
+
+        ConsoleList : [
+            
+                
+                    [
+                        
+                            
+                                "Based on cnblogs theme SimpleMemory.",
+                            
+                                "",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "SimpleMemory Author:",
+                            
+                                "BNDong",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "Theme:",
+                            
+                                "LiveForCode",
+                            
+                        
+                    ],
+                
+            
+        ],
+
+        FontIconExtend : "",
+
+        Donate : {
+            paypal  : "",
+            bitcoin : "",
+            alipay  : "/image/donate/alipay.png",
+            wechat  : "/image/donate/wechat.png"
+        },
+
+        Search : {
+            applicationID : "W44GC4V748",
+            apiKey        : "25b43f2c37a0cac32049b98740c3fd6d",
+            indexName     : "hexo2",
+            hits          : {
+                page : 30
+            },
+            labels        : {
+                placeholder : "搜索",
+                empty       : "未发现与 「${query}」 相关的内容",
+                stats       : "${hits} 条相关条目，使用了 ${time} 毫秒",
+            }
+        }, 
+
+        Valine : {
+            switch         : true,
+            el             : ".comments-content",
+            appId          : "srhKtvWPQTWYKh3qX8G8M7v0-gzGzoHsz",
+            appKey         : "8uVSP1q6UlALVC5igYfIfv2h",
+            serverURLs     : "",
+            placeholder    : "你是我一生只会遇见一次的惊喜...",
+            avatar         : "mm",
+            meta           : "nick,mail,link",
+            requiredFields : "nick,mail",
+            pageSize       : 5,
+            lang           : "zh-cn",
+            visitor        : true,
+            enableQQ       : true
+        },
+
+        Tocbot : {
+            switch                : true,
+            tocSelector           : ".toc",
+            contentSelector       : ".article-body",
+            headingSelector       : "h1, h2, h3, h4, h5",
+            headingsOffset        : 0,
+            scrollSmooth          : true,
+            scrollSmoothOffset    : -5,
+            positionFixedSelector : ".toc",
+            positionFixedClass    : "toc-fixed",
+            fixedSidebarOffset    : "",
+        },
+
+        Require : {
+            baseUrl     : "/js/",
+            waitSeconds : 100
+        },
+
+        Music : {
+            type : "Meting"
+        },
+        APlayer : {
+            container : ".aplayer",
+            fixed     : true,
+            autoplay  : true,
+            loop      : "all",
+            order     : "random",
+            preload   : "auto",
+            volume    : 0.67,
+            mutex     : true,
+            lrcType   : 2,
+            audio     : [
+                
+                    {
+                        name   : "Endless Tears",
+                        artist : "CLIFF EDGE",
+                        cover  : "/music/cover/Endless Tears.jpg",
+                        url    : "/music/song/Endless Tears.mp3",
+                        lrc    : "/music/lrc/Endless Tears.lrc"
+                    },
+                
+            ]
+        },
+        Meting : {
+            id       : "3778678", 
+            lrcshow  : false, 
+            server   : "netease", 
+            type     : "playlist", 
+            fixed    : true, 
+            autoplay : false, 
+            loop     : "all", 
+            order    : "random", 
+            preload  : "auto", 
+            volume   : 0.67, 
+            mutex    : true
+        },
+
+        Mouse : {
+            enable  : true,
+            options : {
+                size  : 6,
+                sizeF : 24
+            }
+        },
+
+        LazyLoad : {
+            default : "/image/website/lazyload.svg"
+        },
+  
+        Style : {
+            aplayer          : "/css/APlayer.css",
+            archive          : "/css/archive.css",
+            base             : "/css/base.css",
+            clipboard        : "/css/clipboard.css",
+            code             : "/css/code.css",
+            donate           : "/css/donate.css",
+            fancybox         : "/css/jquery.fancybox.css",
+            footer           : "/css/footer.css",
+            iconfont         : "/iconfont/iconfont.css",
+            index            : "/css/index.css",
+            menuBubble       : "/css/menu-bubble.css",
+            mouse            : "/css/mouse.css",
+            page             : "/css/page.css",
+            post             : "/css/post.css",
+            search           : "/css/search.css",
+            tocbot           : "/css/tocbot.css",
+            valine           : "/css/valine.css"
+        },
+
+        Script: {
+            aplayer          : "/js/APlayer.min.js",
+            config           : "/js/require.config.js",
+            index            : "/js/index.js",
+            instantSearch    : "/js/instantsearch.min.js",
+            iscroll          : "/js/iscroll.js",
+            jQuery           : "/js/jquery-3.4.1.min.js",
+            loading          : "/js/loading.js",
+            meting           : "/js/Meting.min.js",
+            require          : "/js/require.min.js"
+        },
+
+        Font: {
+            LongCang    : "/font/LongCang.css",
+            Monda       : "/font/Monda.css",
+            NotoSansSC  : "/font/NotoSansSC.css",
+            NotoSerifSC : "/font/NotoSerifSC.css",
+            Playball    : "/font/Playball.css",
+            PTMono      : "/font/PTMono.css",
+            Roboto      : "/font/Roboto.css",
+            RobotoSlab  : "/font/RobotoSlab.css",
+            Rosario     : "/font/Rosario.css",
+            UbuntuMono  : "/font/UbuntuMono.css"
+        },
+
+        Suffix : {
+            about : "你知道的越多,你不知道的越多"
+        },
+            
+        Theme : {
+            url  : "https://fadeway32.gitee.io/",
+            name : "fadeway32"
+        }  
+    };
+</script>
+    <script type="text/javascript" src="/js/index.js"></script>
+</body>
+</html>
