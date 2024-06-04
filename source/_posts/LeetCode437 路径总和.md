@@ -1,8 +1,8 @@
 ---
 
-layout: LeetCode437 路径总和
+layout: LeetCode437路径总和
 
-title:  LeetCode437 路径总和
+title:  LeetCode437路径总和
 
 tags: Web
 
