@@ -1,9 +1,9 @@
 
 ---
 
-layout: Leetcode 最长公共子串
+layout: Leetcode最长公共子串
 
-title: Leetcode 最长公共子串
+title: Leetcode最长公共子串
 
 tags: LeetCode
 
