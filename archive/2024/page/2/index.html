@@ -9,7 +9,7 @@
     <meta http-equiv="Cache-Control" content="no-siteapp">
     <title>
         
-            
+            归档
         
     </title>
     <link rel="shortcut icon" href="#"/>
@@ -32,7 +32,7 @@
 <meta name="generator" content="Hexo 6.2.0"></head>
 <body>
     <a id="cover"></a>
-    <link type="text/css" rel="stylesheet" href="/css/post.css">
+    <link type="text/css" rel="stylesheet" href="/css/archive.css">
 <header>
     <meta name="referrer" content="no-referrer">
 </header>
@@ -40,23 +40,10 @@
     <div class="vertical">
         <div class="inner">
             
-                <h1 class="header-subtitle"></h1>
+                <h1 class="header-subtitle">归档</h1>
                 <div class="header-subinfo">
-                    <p class="article-info-text">
-                        <span>
-                            <i class="iconfont icon-time"></i> 发表时间：2024-06-04
-                        </span>
-                        
-                            <span id="/article/1/" class="leancloud_visitors" data-flag-title="">
-                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                            </span>
-                        
-                        <span>
-                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1/"></span>
-                        </span>
-                    </p>
-                    
-                    
+                    <p class="article-info-text Chinese"></p>
+                    <p class="article-info-text English"></p>
                 </div>
             
         </div>
@@ -65,81 +52,45 @@
 </div>
 <div id="container">
     
-        <!-- 文章页面 -->
-        <div id="article">
-            <div class="toc"></div>
-            <div class="article-body">
-                <h1 id="序列Dp"><a href="#序列Dp" class="headerlink" title="序列Dp"></a>序列Dp</h1><p>平台：LeetCode</p>
-<p>题号：139</p>
-<p>给你一个字符串 <code>s</code> 和一个字符串列表 <code>wordDict</code> 作为字典。</p>
-<p>请你判断是否可以利用字典中出现的单词拼接出 <code>s</code> 。</p>
-<p>注意：不要求字典中出现的单词全部都使用，并且字典中的单词可以重复使用。</p>
-<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">输入: s = &quot;leetcode&quot;, wordDict = [&quot;leet&quot;, &quot;code&quot;]</span><br><span class="line"></span><br><span class="line">输出: true</span><br><span class="line"></span><br><span class="line">解释: 返回 true 因为 &quot;leetcode&quot; 可以由 &quot;leet&quot; 和 &quot;code&quot; 拼接成。</span><br></pre></td></tr></table></figure>
-
-<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">输入: s = &quot;applepenapple&quot;, wordDict = [&quot;apple&quot;, &quot;pen&quot;]</span><br><span class="line"></span><br><span class="line">输出: true</span><br><span class="line"></span><br><span class="line">解释: 返回 true 因为 &quot;applepenapple&quot; 可以由 &quot;apple&quot; &quot;pen&quot; &quot;apple&quot; 拼接成。</span><br><span class="line">注意，你可以重复使用字典中的单词。</span><br></pre></td></tr></table></figure>
-
-<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">输入: s = &quot;catsandog&quot;, wordDict = [&quot;cats&quot;, &quot;dog&quot;, &quot;sand&quot;, &quot;and&quot;, &quot;cat&quot;]</span><br><span class="line"></span><br><span class="line">输出: false</span><br></pre></td></tr></table></figure>
-
-<p>提示：</p>
-<ul>
-<li></li>
-<li></li>
-<li></li>
-<li><code>s</code> 和 <code>wordDict[i]</code> 仅有小写英文字母组成</li>
-<li><code>wordDict</code> 中的所有字符串 互不相同</li>
-</ul>
-<p>解答：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span>&#123;</span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">getContainsResult</span><span class="params">(String s, String[] arrays)</span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(arrays == <span class="literal">null</span> || arrays.length == <span class="number">0</span>  )&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        Set&lt;String&gt; sets = <span class="keyword">new</span> <span class="title class_">HashSet</span>&lt;&gt;();</span><br><span class="line">        <span class="keyword">for</span>(String str: arrays)&#123;</span><br><span class="line">            sets.add(str);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 初始化数组</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">n</span> <span class="operator">=</span> s.length() ;</span><br><span class="line">        <span class="type">boolean</span>[]  result = <span class="keyword">new</span> <span class="title class_">boolean</span>[n+<span class="number">10</span>];</span><br><span class="line">        result[<span class="number">0</span>] = <span class="literal">true</span>;</span><br><span class="line">        <span class="comment">// 从1开始</span></span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">1</span>;i &lt;= n ;i++ )&#123;</span><br><span class="line">            <span class="keyword">for</span>(<span class="type">int</span> j=<span class="number">1</span>;j &lt;=i &amp;&amp; !result[i];j++)&#123;</span><br><span class="line">                <span class="type">String</span> <span class="variable">s</span> <span class="operator">=</span> s.substring(j-<span class="number">1</span>,i);</span><br><span class="line">                <span class="keyword">if</span>(sets.contains(s)&#123;</span><br><span class="line">                    result[i] = result[j-<span class="number">1</span>];</span><br><span class="line">                &#125;</span><br><span class="line">                    </span><br><span class="line">                </span><br><span class="line">            &#125;</span><br><span class="line">            </span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result[n];</span><br><span class="line">        </span><br><span class="line">           </span><br><span class="line">        </span><br><span class="line">        </span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>线性 DP 通常强调「状态转移所依赖的前驱状态」是由给定数组所提供的，即拓扑序是由原数组直接给出。更大白话来说就是通常有<br>依赖于 。</p>
-<p>这就限定了线性 DP 的复杂度是简单由「状态数量（或者说是维度数）」所决定。</p>
-<p>序列 DP<br>通常需要结合题意来寻找前驱状态，即需要自身寻找拓扑序关系（例如本题，需要自己通过枚举的方式来找左端点，从而找到可转移的前驱状态 ）。</p>
-
-                
-                <p class="end">__END__</p>
-            </div>
-            <div class="article-footer">
-                <div class="suffix-box">
-    <div class="suffix-box-left">
-        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
-    </div>
-    <div class="suffix-box-right">
-        <span class="suffix-box-title">文章作者：</span>Live For Code
-        <br>
-        <span class="suffix-box-title">文章出处：</span><a href="/article/1/" target="_blank"></a>
-        <br>
-        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
-        <br>
-        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
-        <br>
-        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
-        <br>
-    </div>
-    <div style="clear: both;"></div>
-</div>
-                
-                
-                <div class="article-prev-next">
-                    
-                        <a href="/article/1805786659/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1805786659/" title="发布于 2024-09-01 12:00">Jetbrain破解</a>
-                        <br>
+        
+            <!-- 归档页面、分类归档页面、标签归档页面 -->
+            <div class="articles">
+                <div class="articles-wrap">
+                    <span class="archive-move-on"></span>
+                    <span class="archive-counter">
+                        
+                            目前共计 62 篇日志，继续加油！
+                        
+                    </span>
                     
                     
-                        <a href="/article/1717340312/" class="next-prefix">» </a> 下一篇：    <a href="/article/1717340312/" title="发布于 2024-06-02 10:58">LeetCode22.括号生成</a>
+                        
+                            <div class="archive-title">
+                                <h2 class="archive-year">2024</h2>
+                            </div>
+                            
+                           
+                        <div class="article">
+                            <div class="article-header">
+                                <h1 class="article-title"><a href="/article/1784846423/"><span>Chatgpt4Free</span></a></h1>
+                                <div class="article-meta">
+                                    <span class="article-time">02-23</span>
+                                </div>
+                            </div>
+                        </div>
                     
                 </div>
             </div>
             
-    <div class="article-comments">
         
-            <div class="comments-title">
-                评论列表
-            </div>
-        
-        <div class="comments-content"></div>
+    <div class="pagination-bottom">
+        <div class="pagination">
+            
+                <a class="extend prev" rel="prev" href="/archive/2024/">上一页</a><a class="page-number" href="/archive/2024/">1</a><span class="page-number current">2</span>
+            
+        </div>
     </div>
 
-        </div>
     
 </div>
     <div id="footer"></div>
@@ -171,7 +122,7 @@
                     
                         <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
                     
-                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                        <li class=" active "><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
                     
                         <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
                     

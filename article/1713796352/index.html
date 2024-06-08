@@ -9,7 +9,7 @@
     <meta http-equiv="Cache-Control" content="no-siteapp">
     <title>
         
-            分类 - Web
+            Leetcode最长公共子串
         
     </title>
     <link rel="shortcut icon" href="#"/>
@@ -32,7 +32,7 @@
 <meta name="generator" content="Hexo 6.2.0"></head>
 <body>
     <a id="cover"></a>
-    <link type="text/css" rel="stylesheet" href="/css/archive.css">
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
 <header>
     <meta name="referrer" content="no-referrer">
 </header>
@@ -40,10 +40,31 @@
     <div class="vertical">
         <div class="inner">
             
-                <h1 class="header-subtitle">分类归档</h1>
+                <h1 class="header-subtitle">Leetcode最长公共子串</h1>
                 <div class="header-subinfo">
-                    <p class="article-info-text Chinese"></p>
-                    <p class="article-info-text English"></p>
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2024-04-21
+                        </span>
+                        
+                            <span id="/article/1713796352/" class="leancloud_visitors" data-flag-title="Leetcode最长公共子串">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1713796352/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">LeetCode</span>
+                        
+                    
                 </div>
             
         </div>
@@ -52,240 +73,82 @@
 </div>
 <div id="container">
     
-        
-            <!-- 归档页面、分类归档页面、标签归档页面 -->
-            <div class="articles">
-                <div class="articles-wrap">
-                    <span class="archive-move-on"></span>
-                    <span class="archive-counter">
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="leetcode最长公共子串"><a href="#leetcode最长公共子串" class="headerlink" title="leetcode最长公共子串"></a>leetcode最长公共子串</h1><p>1、 最长公共子串（Longest Common Substring）要求连续。这里提供的是最长公共子串（连续的子串）的Java解法，使用动态规划的方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">longestCommonSubstring</span><span class="params">(String A, String B)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (A == <span class="literal">null</span> || B == <span class="literal">null</span>) <span class="keyword">return</span> <span class="string">&quot;&quot;</span>;</span><br><span class="line">        <span class="type">int</span> <span class="variable">m</span> <span class="operator">=</span> A.length();</span><br><span class="line">        <span class="type">int</span> <span class="variable">n</span> <span class="operator">=</span> B.length();</span><br><span class="line">        <span class="type">int</span> <span class="variable">maxLen</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> <span class="variable">endIndex</span> <span class="operator">=</span> <span class="number">0</span>; <span class="comment">// 用于记录最长公共子串结束的位置</span></span><br><span class="line">        </span><br><span class="line">        <span class="comment">// 使用一个二维数组dp来保存当前位置结尾的最长公共子串的长度</span></span><br><span class="line">        <span class="type">int</span>[][] dp = <span class="keyword">new</span> <span class="title class_">int</span>[m + <span class="number">1</span>][n + <span class="number">1</span>];</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">1</span>; i &lt;= m; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> <span class="number">1</span>; j &lt;= n; j++) &#123;</span><br><span class="line">                <span class="keyword">if</span> (A.charAt(i - <span class="number">1</span>) == B.charAt(j - <span class="number">1</span>)) &#123;</span><br><span class="line">                    dp[i][j] = dp[i - <span class="number">1</span>][j - <span class="number">1</span>] + <span class="number">1</span>;</span><br><span class="line">                    <span class="keyword">if</span> (dp[i][j] &gt; maxLen) &#123;</span><br><span class="line">                        maxLen = dp[i][j];</span><br><span class="line">                        endIndex = i; <span class="comment">// 更新最长子串的结束位置</span></span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        <span class="comment">// 返回最长子串</span></span><br><span class="line">        <span class="keyword">return</span> A.substring(endIndex - maxLen, endIndex);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">Solution</span> <span class="variable">solution</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Solution</span>();</span><br><span class="line">        <span class="comment">// 测试示例</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">A</span> <span class="operator">=</span> <span class="string">&quot;abcde&quot;</span>;</span><br><span class="line">        <span class="type">String</span> <span class="variable">B</span> <span class="operator">=</span> <span class="string">&quot;abfce&quot;</span>;</span><br><span class="line">        System.out.println(solution.longestCommonSubstring(A, B)); <span class="comment">// 应该输出&quot;abc&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这个解法中，我们使用一个二维数组<code>dp</code>来记录字符串<code>A</code>和字符串<code>B</code>的每个位置结尾的最长公共子串的长度。如果<code>A[i-1]</code>和<code>B[j-1]</code><br>两个字符相同，那么<code>dp[i][j]</code>就是<code>dp[i-1][j-1]</code>的基础上加1。我们同时记录下当前找到的最长子串的长度和结束位置，最后通过这两个值来截取并返回最长公共子串。</p>
+<p>2、最长公共子序列（Longest Common Subsequence, LCS）不要求连续，</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">longestCommonSubsequence</span><span class="params">(String text1, String text2)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (text1 == <span class="literal">null</span> || text2 == <span class="literal">null</span>) <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> <span class="variable">m</span> <span class="operator">=</span> text1.length();</span><br><span class="line">        <span class="type">int</span> <span class="variable">n</span> <span class="operator">=</span> text2.length();</span><br><span class="line">        </span><br><span class="line">        <span class="comment">// dp[i][j]表示text1的前i个字符与text2的前j个字符的最长公共子序列长度</span></span><br><span class="line">        <span class="type">int</span>[][] dp = <span class="keyword">new</span> <span class="title class_">int</span>[m + <span class="number">1</span>][n + <span class="number">1</span>];</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">1</span>; i &lt;= m; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> <span class="number">1</span>; j &lt;= n; j++) &#123;</span><br><span class="line">                <span class="keyword">if</span> (text1.charAt(i - <span class="number">1</span>) == text2.charAt(j - <span class="number">1</span>)) &#123;</span><br><span class="line">                    <span class="comment">// 如果当前字符相等，则该位置的LCS长度为左上角的LCS长度加1</span></span><br><span class="line">                    dp[i][j] = dp[i - <span class="number">1</span>][j - <span class="number">1</span>] + <span class="number">1</span>;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="comment">// 如果当前字符不相等，则该位置的LCS长度为左边和上边的LCS长度的最大值</span></span><br><span class="line">                    dp[i][j] = Math.max(dp[i - <span class="number">1</span>][j], dp[i][j - <span class="number">1</span>]);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        <span class="comment">// 返回整个序列的LCS长度</span></span><br><span class="line">        <span class="keyword">return</span> dp[m][n];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">Solution</span> <span class="variable">solution</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Solution</span>();</span><br><span class="line">        <span class="comment">// 测试示例</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">text1</span> <span class="operator">=</span> <span class="string">&quot;abcde&quot;</span>;</span><br><span class="line">        <span class="type">String</span> <span class="variable">text2</span> <span class="operator">=</span> <span class="string">&quot;ace&quot;</span>;</span><br><span class="line">        System.out.println(solution.longestCommonSubsequence(text1, text2)); <span class="comment">// 应该输出3</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这段代码中，我们创建了一个二维数组<code>dp</code>来记录<code>text1</code>和<code>text2</code>的每个子序列的最长公共子序列的长度。<code>dp[i][j]</code>代表<code>text1</code><br>的前<code>i</code>个字符和<code>text2</code>的前<code>j</code><br>个字符的最长公共子序列的长度。通过两层循环，我们比较每一对字符，如果字符相等，则当前位置的LCS长度为左上角的LCS长度加1；如果字符不相等，则当前位置的LCS长度为左边和上边的LCS长度的最大值。最终，<code>dp[m][n]</code><br>中存储的就是整个序列的最长公共子序列的长度，其中<code>m</code>和<code>n</code>分别是<code>text1</code>和<code>text2</code>的长度。</p>
+<p>leetcode最长无重复子串</p>
+<p>滑动串口机制</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span>&#123;</span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="type">long</span> <span class="title function_">getLongNoRepeatStr</span><span class="params">(String a)</span>&#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">m</span> <span class="operator">=</span> a.length();</span><br><span class="line">      </span><br><span class="line"></span><br><span class="line">        HashMap&lt;Character,Integer&gt; maps = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">        <span class="type">int</span> <span class="variable">max</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">     </span><br><span class="line">       </span><br><span class="line">       </span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> i=<span class="number">0</span>,j=<span class="number">0</span>;j &lt; m; j++)&#123;</span><br><span class="line">            <span class="keyword">if</span>(maps.containsKey(a.charAt(j)))&#123;</span><br><span class="line">               i = Math.max(i,maps.get(a.charAt(j))+<span class="number">1</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            max = Math.max(max,j-i+<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">            maps.put(a.charAt(j),j);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> max;</span><br><span class="line">         </span><br><span class="line">        </span><br><span class="line">        </span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1713796352/" target="_blank">Leetcode最长公共子串</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
                         
-                            当前分类：<span class="category">Web</span>
+                            <a href="/category/Web/">Web</a>
                         
-                    </span>
-                    
-                    
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
                         
-                            <div class="archive-title">
-                                <h2 class="archive-year">2024</h2>
-                            </div>
-                            
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1716905190/"><span>多线程笔试题</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">05-28</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1716905156/"><span>判断数字是否是回文数字</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">05-28</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1716820667/"><span>od-约瑟夫问题</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">05-27</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1716124882/"><span>分布式锁redis正确实现姿势</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">05-19</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1715260887683/"><span>LeetCode判断回文链表</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">05-09</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1713796351/"><span>Leetcode最长公共子串</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">04-21</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1713796331/"><span>LeetCode判断一个数是不是快乐数</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">04-21</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1713796353/"><span>Leetcode序列Dp</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">04-21</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1713796352/"><span>Leetcode最长公共子串</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">04-21</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1713100397/"><span>设计hashSet表</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">04-14</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1713100396/"><span>判断字符是否唯一</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">04-14</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1784846433/"><span>编程满天星题解分享</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">04-03</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/178484731/"><span>LeetCode437路径总和</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-27</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1784846531/"><span>LeetCode779递归序列</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-27</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1784846431/"><span>LeetCode779递归序列</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-27</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1784846430/"><span>LinkedList源码阅读分析</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-25</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1784846428/"><span>Spring事务机制的个人总结</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-25</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1784846423/"><span>Chatgpt4Free</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-23</span>
-                                </div>
-                            </div>
-                        </div>
-                    
+                            <a href="/tag/LeetCode/">LeetCode</a>
                         
-                            <div class="archive-title">
-                                <h2 class="archive-year">2023</h2>
-                            </div>
-                            
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1305786659/"><span>gitee及hexo搭建教程</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">09-01</span>
-                                </div>
-                            </div>
-                        </div>
+                    </div>
+                
+                <div class="article-prev-next">
                     
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1690804405/"><span>多线程事务同时回滚案例demo</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">07-30</span>
-                                </div>
-                            </div>
-                        </div>
+                        <a href="/article/1713796353/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1713796353/" title="发布于 2024-04-21 09:33">Leetcode序列Dp</a>
+                        <br>
+                    
+                    
+                        <a href="/article/1713100397/" class="next-prefix">» </a> 下一篇：    <a href="/article/1713100397/" title="发布于 2024-04-14 09:14">设计hashSet表</a>
                     
                 </div>
             </div>
             
+    <div class="article-comments">
         
-    <div class="pagination-bottom">
-        <div class="pagination">
-            
-                <a href="/category/Web/page/2/">下一页</a>
-            
-        </div>
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
     </div>
 
+        </div>
     
 </div>
     <div id="footer"></div>

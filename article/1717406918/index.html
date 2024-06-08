@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <!--    <meta name="referrer" content="origin">-->
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>
+        
+            datax性能优化
+        
+    </title>
+    <link rel="shortcut icon" href="#"/>
+
+    <link type="text/css" rel="stylesheet" href="/font/LongCang.css">
+    <link type="text/css" rel="stylesheet" href="/font/Monda.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSansSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSerifSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/Playball.css">
+    <link type="text/css" rel="stylesheet" href="/font/PTMono.css">
+    <link type="text/css" rel="stylesheet" href="/font/Roboto.css">
+    <link type="text/css" rel="stylesheet" href="/font/RobotoSlab.css">
+    <link type="text/css" rel="stylesheet" href="/font/Rosario.css">
+    <link type="text/css" rel="stylesheet" href="/font/UbuntuMono.css">
+
+    <link type="text/css" rel="stylesheet" href="/css/base.css">
+    <link type="text/css" rel="stylesheet" href="/css/code.css">
+
+    <script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
+<meta name="generator" content="Hexo 6.2.0"></head>
+<body>
+    <a id="cover"></a>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
+<header>
+    <meta name="referrer" content="no-referrer">
+</header>
+<div id="header" class="header">
+    <div class="vertical">
+        <div class="inner">
+            
+                <h1 class="header-subtitle">datax性能优化</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2023-06-20
+                        </span>
+                        
+                            <span id="/article/1717406918/" class="leancloud_visitors" data-flag-title="datax性能优化">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1717406918/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">job</span>
+                        
+                    
+                </div>
+            
+        </div>
+    </div>
+    
+</div>
+<div id="container">
+    
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="datax性能优化"><a href="#datax性能优化" class="headerlink" title="datax性能优化"></a>datax性能优化</h1><p>架构图：</p>
+<p><img src="https://images.xiaozhuanlan.com/photo/2018/86cb476b0bce571db3852d0572612c6d.png" alt="img"></p>
+<ol>
+<li>DataX完成单个数据同步的作业，我们称之为Job，DataX接受到一个Job之后，将启动一个进程来完成整个作业同步过程。DataX<br>Job模块是单个作业的中枢管理节点，承担了数据清理、子任务切分(将单一作业计算转化为多个子Task)、TaskGroup管理等功能。</li>
+<li>DataXJob启动后，会根据不同的源端切分策略，将Job切分成多个小的Task(子任务)<br>，以便于并发执行。Task便是DataX作业的最小单元，每一个Task都会负责一部分数据的同步工作。</li>
+</ol>
+<p>3.切分多个Task之后，DataX Job会调用Scheduler模块，根据配置的并发数据量，将拆分成的Task重新组合，组装成TaskGroup(任务组)<br>。每一个TaskGroup负责以一定的并发运行完毕分配好的所有Task，默认单个任务组的并发数量为5。</p>
+<p>4.每一个Task都由TaskGroup负责启动，Task启动后，会固定启动Reader—&gt;Channel—&gt;Writer的线程来完成任务同步工作。</p>
+<p>5、DataX作业运行起来之后， Job监控并等待多个TaskGroup模块任务完成，等待所有TaskGroup任务完成后Job成功退出。否则，异常退出，进程退出值非0</p>
+<p>简单总结过程如下：<br>一个DataX Job会切分成多个Task，每个Task会按TaskGroup进行分组，一个Task内部会有一组Reader-&gt;Channel-&gt;<br>Writer。Channel是连接Reader和Writer的数据交换通道，所有的数据都会经由Channel进行传输</p>
+<p><strong>优化1：提升每个channel的速度</strong></p>
+<p>DataX内部对每个Channel会有严格的速度控制，分两种，一种是控制每秒同步的记录数，另外一种是每秒同步的字节数，默认的速度限制是1MB&#x2F;s，可以根据具体硬件情况设置这个byte速度或者record速度，一般设置byte速度，比如：我们可以把单个Channel的速度上限配置为5MB</p>
+<p>**<em>优化2：提升DataX Job内Channel并发数 并发数&#x3D;taskGroup的数量</em>每一个TaskGroup并发执行的Task数 (<br>默认单个任务组的并发数量为5) **</p>
+<p>提升job内Channel并发有三种配置方式：</p>
+<ol>
+<li>配置全局Byte限速以及单Channel Byte限速，Channel个数 &#x3D; 全局Byte限速 &#x2F; 单Channel Byte限速</li>
+<li>配置全局Record限速以及单Channel Record限速，Channel个数 &#x3D; 全局Record限速 &#x2F; 单Channel Record限速</li>
+<li>直接配置Channel个数.</li>
+</ol>
+<p>配置含义：<br>job.setting.speed.channel : channel并发数<br>job.setting.speed.record : 全局配置channel的record限速<br>job.setting.speed.byte：全局配置channel的byte限速</p>
+<p>core.transport.channel.speed.record：单channel的record限速<br>core.transport.channel.speed.byte：单channel的byte限速</p>
+<p>第一种方式举例如下：core.transport.channel.speed.byte&#x3D;1048576，job.setting.speed.byte&#x3D;5242880，所以Channel个数 &#x3D;<br>全局Byte限速 &#x2F; 单Channel Byte限速&#x3D;5242880&#x2F;1048576&#x3D;5个，配置如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;core&quot;: &#123;</span><br><span class="line">        &quot;transport&quot;: &#123;</span><br><span class="line">            &quot;channel&quot;: &#123;</span><br><span class="line">                &quot;speed&quot;: &#123;</span><br><span class="line">                    &quot;byte&quot;: 1048576</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;job&quot;: &#123;</span><br><span class="line">        &quot;setting&quot;: &#123;</span><br><span class="line">            &quot;speed&quot;: &#123;</span><br><span class="line">                &quot;byte&quot; : 5242880</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">       </span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>第二种方式举例如下：core.transport.channel.speed.record&#x3D;100，job.setting.speed.record&#x3D;500,所以配置全局Record限速以及单Channel<br>Record限速，Channel个数 &#x3D; 全局Record限速 &#x2F; 单Channel Record限速&#x3D;500&#x2F;100&#x3D;5</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;core&quot;: &#123;</span><br><span class="line">        &quot;transport&quot;: &#123;</span><br><span class="line">            &quot;channel&quot;: &#123;</span><br><span class="line">                &quot;speed&quot;: &#123;</span><br><span class="line">                    &quot;record&quot;: 100</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;job&quot;: &#123;</span><br><span class="line">        &quot;setting&quot;: &#123;</span><br><span class="line">            &quot;speed&quot;: &#123;</span><br><span class="line">                &quot;record&quot; : 500</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>第三种配置举例如下：直接配置job.setting.speed.channel&#x3D;5，所以job内Channel并发&#x3D;5个</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;job&quot;: &#123;</span><br><span class="line">        &quot;setting&quot;: &#123;</span><br><span class="line">            &quot;speed&quot;: &#123;</span><br><span class="line">                &quot;channel&quot; : 5</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>当提升DataX Job内Channel并发数时，调整JVM堆参数，原因如下：</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">- 当一个Job内Channel数变多后，内存的占用会显著增加，因为DataX作为数据交换通道，在内存中会缓存较多的数据。</span><br><span class="line">        - 例如Channel中会有一个Buffer，作为临时的数据交换的缓冲区，而在部分Reader和Writer的中，也会存在一些Buffer，为了防止jvm报内存溢出等错误，调大jvm的堆参数。</span><br><span class="line">        - 通常我们建议将内存设置为4G或者8G，这个也可以根据实际情况来调整</span><br><span class="line">        - 调整JVM xms xmx参数的两种方式：一种是直接更改datax.py；另一种是在启动的时候，加上对应的参数，如下： </span><br><span class="line">          python datax/bin/datax.py --jvm=&quot;-Xms8G -Xmx8G&quot; XXX.json</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>Channel个数并不是越多越好， 原因如下：</p>
+</li>
+<li></li>
+<li><p>&#96;&#96;&#96;</p>
+<ul>
+<li>Channel个数的增加，带来的是更多的CPU消耗以及内存消耗。<br>    - 如果Channel并发配置过高导致JVM内存不够用，会出现的情况是发生频繁的Full GC，导出速度会骤降，适得其反。这个可以通过观察日志发现<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">测试使用datax从mysql到mysql，不同配置测试效果如下：</span><br><span class="line"></span><br><span class="line">使用默认单个channel 限速1M/s，测试情况如下，1660s跑完：</span><br><span class="line">![img](https://images.xiaozhuanlan.com/photo/2018/6aaab468321bd36dfd677a568b3e67d3.png)</span><br><span class="line"></span><br><span class="line">使用单通道，5M/s，测试情况如下，50s跑完：</span><br><span class="line">![img](https://images.xiaozhuanlan.com/photo/2018/f36e00c52c93c86a34aa46d569968186.png)</span><br><span class="line">使用5通道，5M/s，测试情况如下，10s跑完：</span><br><span class="line">![img](https://images.xiaozhuanlan.com/photo/2018/1350cbfd1a5a3a791f555332b8f7b127.png)</span><br><span class="line"></span><br><span class="line">**注意：**</span><br><span class="line">MysqlReader进行数据抽取时，如果指定splitPk，表示用户希望使用splitPk代表的字段进行数据分片，DataX因此会启动并发任务进行数据同步，这样可以大大提供数据同步的效能，splitPk不填写，包括不提供splitPk或者splitPk值为空，DataX视作使用单通道同步该表数据，第三个测试不配置splitPk测试不出来效果</span><br><span class="line"></span><br><span class="line">调优没有固定的，先了解原理，再根据原理及执行过程进行局部或者全局的调优</span><br><span class="line"></span><br><span class="line">#### 定时增量同步</span><br><span class="line"></span><br><span class="line">相比全量同步，增量同步增加了用某个字段来判断改条数据是否被更新，具体体现在 Shell 脚本和 Json 文件中，下面会提到。</span><br><span class="line"></span><br><span class="line">###### 1.准备工作：</span><br><span class="line"></span><br><span class="line">给需要同步的表增加用于增量同步判断的字段，可用ID也可以用时间，个人建议用时间，更方便。</span><br><span class="line"></span><br><span class="line">给读库的table1表加上实时更新的时间记录字段（可根据需要是否给写库也加上，我这里是加上的）：</span><br><span class="line"></span><br><span class="line">```sql</span><br><span class="line">alter table table1 add column `curr_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP  COMMENT &#x27;最后更新时间（DataX数据采集使用）&#x27;;</span><br><span class="line">1</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+</ul>
+<p>具体可参考我的其他博客的第二点：<a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_25112523/article/details/109156918">MySQL | 设置时间字段为自动更新（CURRENT_TIMESTAMP）</a>.</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">#</span><span class="language-bash">!/bin/bash</span></span><br><span class="line">. /etc/profile</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">当前时间（用于增量同步判断条件）</span></span><br><span class="line">curr_time=$(date +%Y-%m-%d)</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">读库的IP</span></span><br><span class="line">r_ip=&quot;127.0.0.1&quot;</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">读库的端口</span></span><br><span class="line">r_port=&quot;3306&quot;</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">读库的数据库名称</span></span><br><span class="line">r_dbname=&quot;datax&quot;</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">读库的账号</span></span><br><span class="line">r_username=&quot;root&quot;</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">读库的密码</span></span><br><span class="line">r_password=&quot;123456&quot;</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">写库的IP</span></span><br><span class="line">w_ip=&quot;127.0.0.1&quot;</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">写库的端口</span></span><br><span class="line">w_port=&quot;3306&quot;</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">写库的数据库名称</span></span><br><span class="line">w_dbname=&quot;datax2&quot;</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">写库的账号</span></span><br><span class="line">w_username=&quot;root&quot;</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">写库的密码</span></span><br><span class="line">w_password=&quot;123456&quot;</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">DataX全量同步(多个文件直接写多个执行命令)</span></span><br><span class="line">python /opt/datax/bin/datax.py /opt/datax/job/incr_table1.json -p &quot;-Dcurr_time=$curr_time -Dr_ip=$r_ip -Dr_port=$r_port -Dr_dbname=$r_dbname -Dr_username=$r_username -Dr_password=$r_password -Dw_ip=$w_ip -Dw_port=$w_port -Dw_dbname=$w_dbname -Dw_username=$w_username -Dw_password=$w_password&quot;</span><br><span class="line">python /opt/datax/bin/datax.py /opt/datax/job/incr_table2.json -p &quot;-Dcurr_time=$curr_time -Dr_ip=$r_ip -Dr_port=$r_port -Dr_dbname=$r_dbname -Dr_username=$r_username -Dr_password=$r_password -Dw_ip=$w_ip -Dw_port=$w_port -Dw_dbname=$w_dbname -Dw_username=$w_username -Dw_password=$w_password&quot;</span><br><span class="line">123456789101112131415161718192021222324252627</span><br></pre></td></tr></table></figure>
+
+<p>至于为什么加<code>. /etc/profile</code><br>，参考此文章的第二点：<a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_25112523/article/details/109333611">DataX踩坑2: | 定时任务crontab不执行或报错：&#x2F;bin&#x2F;sh: java: command not found</a>.</p>
+<h6 id="3-示例Json文件（相比于全量同步，这里使用了在读库（reader）加了一个where条件，条件就是传入的当前日期）：incr-table1-json"><a href="#3-示例Json文件（相比于全量同步，这里使用了在读库（reader）加了一个where条件，条件就是传入的当前日期）：incr-table1-json" class="headerlink" title="3.示例Json文件（相比于全量同步，这里使用了在读库（reader）加了一个where条件，条件就是传入的当前日期）：incr_table1.json"></a>3.示例Json文件（相比于全量同步，这里使用了在读库（reader）加了一个where条件，条件就是传入的当前日期）：incr_table1.json</h6><figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;job&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;setting&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;speed&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;channel&quot;</span><span class="punctuation">:</span> <span class="number">10</span></span><br><span class="line">      <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;errorLimit&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;record&quot;</span><span class="punctuation">:</span> <span class="number">0</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;percentage&quot;</span><span class="punctuation">:</span> <span class="number">0.02</span></span><br><span class="line">      <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;content&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">      <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;reader&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">          <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;mysqlreader&quot;</span><span class="punctuation">,</span></span><br><span class="line">          <span class="attr">&quot;parameter&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">            <span class="attr">&quot;column&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">              <span class="string">&quot;`id`&quot;</span><span class="punctuation">,</span></span><br><span class="line">              <span class="string">&quot;`name`&quot;</span><span class="punctuation">,</span></span><br><span class="line">              <span class="string">&quot;`curr_time`&quot;</span></span><br><span class="line">            <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">            <span class="attr">&quot;where&quot;</span><span class="punctuation">:</span> <span class="string">&quot;curr_time between DATE_SUB(&#x27;$&#123;curr_time&#125; 05:00:00&#x27;, INTERVAL 1 DAY) and &#x27;$&#123;curr_time&#125; 04:59:59&#x27;&quot;</span><span class="punctuation">,</span></span><br><span class="line">            <span class="attr">&quot;connection&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">              <span class="punctuation">&#123;</span></span><br><span class="line">                <span class="attr">&quot;jdbcUrl&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">                  <span class="string">&quot;jdbc:mysql://$&#123;r_ip&#125;:$&#123;r_port&#125;/$&#123;r_dbname&#125;?serverTimezone=Asia/Shanghai&amp;characterEncoding=utf8&amp;useSSL=false&amp;zeroDateTimeBehavior=convertToNull&quot;</span></span><br><span class="line">                <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">                <span class="attr">&quot;table&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">                  <span class="string">&quot;tabel1&quot;</span></span><br><span class="line">                <span class="punctuation">]</span></span><br><span class="line">              <span class="punctuation">&#125;</span></span><br><span class="line">            <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">            <span class="attr">&quot;username&quot;</span><span class="punctuation">:</span> <span class="string">&quot;$&#123;r_username&#125;&quot;</span><span class="punctuation">,</span></span><br><span class="line">            <span class="attr">&quot;password&quot;</span><span class="punctuation">:</span> <span class="string">&quot;$&#123;r_password&#125;&quot;</span></span><br><span class="line">          <span class="punctuation">&#125;</span></span><br><span class="line">        <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;writer&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">          <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;mysqlwriter&quot;</span><span class="punctuation">,</span></span><br><span class="line">          <span class="attr">&quot;parameter&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">            <span class="attr">&quot;writeMode&quot;</span><span class="punctuation">:</span> <span class="string">&quot;update&quot;</span><span class="punctuation">,</span></span><br><span class="line">            <span class="attr">&quot;column&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">              <span class="string">&quot;`id`&quot;</span><span class="punctuation">,</span></span><br><span class="line">              <span class="string">&quot;`name`&quot;</span><span class="punctuation">,</span></span><br><span class="line">              <span class="string">&quot;`curr_time`&quot;</span></span><br><span class="line">            <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">            <span class="attr">&quot;session&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">              <span class="string">&quot;set session sql_mode=&#x27;ANSI&#x27;&quot;</span></span><br><span class="line">            <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">            <span class="attr">&quot;connection&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">              <span class="punctuation">&#123;</span></span><br><span class="line">                <span class="attr">&quot;jdbcUrl&quot;</span><span class="punctuation">:</span> <span class="string">&quot;jdbc:mysql://$&#123;w_ip&#125;:$&#123;w_port&#125;/$&#123;w_dbname&#125;?serverTimezone=Asia/Shanghai&amp;characterEncoding=utf8&amp;useSSL=false&amp;zeroDateTimeBehavior=convertToNull&quot;</span><span class="punctuation">,</span></span><br><span class="line">                <span class="attr">&quot;table&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">                  <span class="string">&quot;tabel1&quot;</span></span><br><span class="line">                <span class="punctuation">]</span></span><br><span class="line">              <span class="punctuation">&#125;</span></span><br><span class="line">            <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">            <span class="attr">&quot;username&quot;</span><span class="punctuation">:</span> <span class="string">&quot;$&#123;w_username&#125;&quot;</span><span class="punctuation">,</span></span><br><span class="line">            <span class="attr">&quot;password&quot;</span><span class="punctuation">:</span> <span class="string">&quot;$&#123;w_password&#125;&quot;</span></span><br><span class="line">          <span class="punctuation">&#125;</span></span><br><span class="line">        <span class="punctuation">&#125;</span></span><br><span class="line">      <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">]</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br><span class="line"><span class="number">12345678910111213141516171819202122232425262728293031323334353637383940414243444546474849505152535455565758</span></span><br></pre></td></tr></table></figure>
+
+<p>简单说一下上面的增量逻辑：在 Shell<br>脚本中传入当前日期给where条件时间，我会让定时器在凌晨五点执行，所以查询的是昨天凌晨5点到今天04:59:<br>59有修改的数据，查询条件就是第1点说到的实时修改时间</p>
+<h6 id="4-添加定时器，这里使用的是crontab"><a href="#4-添加定时器，这里使用的是crontab" class="headerlink" title="4.添加定时器，这里使用的是crontab"></a>4.添加定时器，这里使用的是crontab</h6><p>运行脚本之前先将放入的脚本进行授权，否则不能执行，对文件进行最高级别授权命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">chmod 777 incrSyncTask.sh</span><br><span class="line">1</span><br></pre></td></tr></table></figure>
+
+<p>4.1.编辑定时任务crontab，使用以下命令进入crontab任务文件：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">crontab -e</span><br></pre></td></tr></table></figure>
+
+<p>4.2.进行vi编辑即可，添加crontab定时任务（每天凌晨5点执行，跟cron表达式类似）：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">0 5 * * * /opt/datax/bin/incrSyncTask.sh &gt;/dev/null 2&gt;&amp;1</span><br><span class="line">1</span><br></pre></td></tr></table></figure>
+
+<p>建议加上<code>&gt;/dev/null 2&gt;&amp;1</code>，因为<code>crontab</code>会把日志都发给<code>mail</code>，这里是直接丢弃一样<br>，也可以指定输出到某个文件中，参考如下命令，每天执行后生成<a target="_blank" rel="noopener" href="https://so.csdn.net/so/search?q=%E6%97%A5%E5%BF%97%E6%96%87%E4%BB%B6&spm=1001.2101.3001.7020">日志文件</a>：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">0 5 * * * /opt/datax/bin/incrSyncTask.sh &gt; /opt/datax/log/incrSyncTask_$(date +\%Y\%m\%d).log 2&gt;&amp;1</span><br><span class="line">1</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>这里需要用斜杠”&quot;对百分号进行转义</p>
+</blockquote>
+<p>4.3.查看crontab日志：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">tail -f /var/log/cron</span><br><span class="line">或</span><br><span class="line">tail -f /var/spool/mail/root</span><br><span class="line">123</span><br></pre></td></tr></table></figure>
+
+<p>如果找不到<code>/var/spool/mail/root</code><br>文件，参考：<a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_25112523/article/details/109333611">DataX踩坑2: | 定时任务crontab不执行或报错：&#x2F;bin&#x2F;sh: java: command not found</a>.</p>
+<p>定时任务跑了之后，会将日志文件输出到上面的位置，根据登录宿主机的用户不同，文件名不同。这里的发送到邮箱有些坑，日志量过大问题、找不到邮箱问题，参考：<a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_25112523/article/details/109333611">DataX踩坑2 | 定时任务crontab不执行或报错：&#x2F;bin&#x2F;sh: java: command not found</a>.</p>
+<h4 id="三、注意点"><a href="#三、注意点" class="headerlink" title="三、注意点"></a>三、注意点</h4><h5 id="1-关于脚本运行后连接数据库报连接失败，重新连接等错误（-r换行符的问题）"><a href="#1-关于脚本运行后连接数据库报连接失败，重新连接等错误（-r换行符的问题）" class="headerlink" title="1.关于脚本运行后连接数据库报连接失败，重新连接等错误（\r换行符的问题）"></a>1.关于脚本运行后连接数据库报连接失败，重新连接等错误（<code>\r</code>换行符的问题）</h5><p>其实脚本中的所有数据库参数都是正确的，但就是报错，可以看日志，发现每个参数后面都携带了<code>\r</code>换行符<br><img src="https://img-blog.csdnimg.cn/20201026084213133.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzI1MTEyNTIz,size_16,color_FFFFFF,t_70#pic_center" alt="在这里插入图片描述"><br>解决方法：<a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_25112523/article/details/109279059">Shell 脚本参数传递时有 \r 换行符问题</a>.</p>
+<hr>
+<h5 id="2-批量执行多文件命令报错"><a href="#2-批量执行多文件命令报错" class="headerlink" title="2.批量执行多文件命令报错"></a>2.批量执行多文件命令报错</h5><p>建议将speed中的channel参数设置大一点，如10。<br>由于DataX读取数据和写入数据需要占用服务器性能，所以需要考虑服务器性能，channel的值并不是越大越好。<br>具体可参考结尾的性能优化文章。</p>
+<hr>
+<h5 id="3-执行命令报：FileNotFoundException"><a href="#3-执行命令报：FileNotFoundException" class="headerlink" title="3.执行命令报：FileNotFoundException"></a>3.执行命令报：FileNotFoundException</h5><p>本来想将全量同步 Json 文件和增量同步 Json 文件放入不同的文件夹A和B，便于区分，直接放在 DataX 安装路径的 job 目录中，结果执行命令时找不到<br>job 目录下的A、B文件夹中的Json文件</p>
+<hr>
+<h5 id="4-定时任务crontab不执行-或-报错：-x2F-bin-x2F-sh-java-command-not-found"><a href="#4-定时任务crontab不执行-或-报错：-x2F-bin-x2F-sh-java-command-not-found" class="headerlink" title="4.定时任务crontab不执行 或 报错：&#x2F;bin&#x2F;sh: java: command not found"></a>4.定时任务crontab不执行 或 报错：&#x2F;bin&#x2F;sh: java: command not found</h5><p>参考文章：<a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_25112523/article/details/109333611">DataX踩坑2: | 定时任务crontab不执行或报错：&#x2F;bin&#x2F;sh: java: command not found</a>.</p>
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1717406918/" target="_blank">datax性能优化</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
+                        
+                            <a href="/category/Web/">Web</a>
+                        
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
+                        
+                            <a href="/tag/job/">job</a>
+                        
+                    </div>
+                
+                <div class="article-prev-next">
+                    
+                        <a href="/article/1684846498/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1684846498/" title="发布于 2023-07-06 10:48">刷题地址</a>
+                        <br>
+                    
+                    
+                        <a href="/article/1717406917/" class="next-prefix">» </a> 下一篇：    <a href="/article/1717406917/" title="发布于 2023-06-19 09:21">Datax实现原理</a>
+                    
+                </div>
+            </div>
+            
+    <div class="article-comments">
+        
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
+    
+</div>
+    <div id="footer"></div>
+    <div id="sidebar">
+    <div class="menu-wrap" style="display:none;">
+        
+            <div class="menu-notice">
+                <span class="iconfont icon-notice"></span>
+                <div class="notice">
+                    <span>简单地活着，肆意而又精彩！</span>
+                </div>
+            </div>
+        
+        <nav class="menu">
+            <div class="menu-introduce"> 
+                <div class="introduce-avatar">
+                    <img src="/image/sidebar/avatar.jpg">
+                </div> 
+                <div class="introduce-info"> 
+                    <div class="introduce-user"><span>Live For Code</span></div>
+                </div> 
+            </div> 
+            <div class="menu-list">
+                <ul>
+                    
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                    
+                        <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
+                    
+                        <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
+                    
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                    
+                        <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
+                    
+                        <li class=""><a href="/about" class="" target="_self"><span class="iconfont icon-about-fill"></span>关于</a></li>
+                    
+                        <li class=""><a href="/atom.xml" class="" target="_blank"><span class="iconfont icon-rss"></span>订阅</a></li>
+                    
+                        <li class=""><a href="javascript:;" class="search" target="_self"><span class="iconfont icon-search-menu"></span>搜索</a></li>
+                    
+                        <li class=""><a href="/comment" class="" target="_self"><span class="iconfont icon-comments-fill"></span>留言板</a></li>
+                    
+                        <li class=""><a href="/friend" class="" target="_self"><span class="iconfont icon-link"></span>友情链接</a></li>
+                    
+                </ul> 
+            </div> 
+            <div class="menu-link">
+                <div class="box">
+                    <div class="image-box"></div>
+                </div>
+                
+                    <a name="知乎" href="https://www.zhihu.com/people/wo-xin-de-love" class="" target="_blank" data=""><span class="iconfont icon-zhihu"></span></a>
+                
+                    <a name="微博" href="https://weibo.com/u/3939432776" class="" target="_blank" data=""><span class="iconfont icon-weibo"></span></a>
+                
+                    <a name="QQ" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"><span class="iconfont icon-qq"></span></a>
+                
+                    <a name="微信" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"><span class="iconfont icon-wechat"></span></a>
+                
+                    <a name="GitHub" href="https://github.com/first19326" class="" target="_blank" data=""><span class="iconfont icon-github"></span></a>
+                
+            </div> 
+        </nav>
+        <button class="menu-button-close"></button>
+        <div class="morph-shape" id="morph-shape" data-morph-open="M-7.312,0H15c0,0,66,113.339,66,399.5C81,664.006,15,800,15,800H-7.312V0z;M-7.312,0H100c0,0,0,113.839,0,400c0,264.506,0,400,0,400H-7.312V0z">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 800" preserveAspectRatio="none">
+                <path d="M-7.312,0H0c0,0,0,113.839,0,400c0,264.506,0,400,0,400h-7.312V0z"/>
+            </svg>
+        </div>
+    </div>
+    <button class="menu-button-open">MENU</button>
+    <div class="menu-cover"></div>
+</div>
+    <link type="text/css" rel="stylesheet" href="/css/search.css">
+<script type="text/javascript" src="/js/iscroll.js"></script>
+<script type="text/javascript" src="/js/instantsearch.min.js"></script>
+<div class="search-window">
+    <div class="search-content">
+        <div class="search-content-icon">
+            <i class="iconfont icon-search"></i>
+        </div>
+        <div id="search-input" class="search-input"></div>
+    </div>
+
+    <div class="search-scroll">
+        <div class="search-result">
+            <div id="search-stats" class="search-stats"></div>
+            <div id="search-hits"></div>
+            <div id="search-pagination" class="search-pagination"></div>
+        </div>
+    </div>
+
+    <span class="search-close-icon">
+        <i class="iconfont icon-close"></i>
+    </span>
+</div>
+    <div id="tools">
+    <div class="progressbar-top"></div>
+
+    
+        <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
+        <script type="text/javascript" src="/js/APlayer.min.js"></script>
+        <script type="text/javascript" src="/js/Meting.min.js"></script>
+        <meting-js id="3778678" lrcshow="false" server="netease" type="playlist" fixed="true" autoplay="false" loop="all" order="random" preload="auto" volume="0.67" mutex="true"></meting-js>
+    
+    
+    <div class="wrap-right">
+        <div class="setting">
+            <div class="iconbox favorites" switch="false">
+                <span class="iconfont icon-favorites"></span>
+                <span class="icontext">关注</span>
+            </div>
+            <div class="iconbox mode">
+                <div class="light">
+                    <span class="iconfont icon-daymode"></span>
+                    <span class="icontext">浅色模式</span>
+                </div>
+                <div class="dark">
+                    <span class="iconfont icon-nightmode-fill"></span>
+                    <span class="icontext">深色模式</span>
+                </div>
+            </div>
+            <a href="javascript:;" target="_self" class="search">
+                <div class="iconbox">
+                    <span class="iconfont icon-search-menu"></span>
+                    <span class="icontext">搜索</span>
+                </div>
+            </a>
+            <div class="iconbox bottom">
+                <div style="display: inline-block; transform: rotate(180deg);">
+                    <span class="iconfont icon-top"></span>
+                </div>
+                <span class="icontext">跳至底部</span>
+            </div>
+        </div>
+        <div class="iconbox set">
+            <div style="display: inline-block;">
+                <span class="iconfont icon-setting"></span>
+            </div>
+            <span class="icontext">设置</span>
+        </div>
+        <div class="iconbox top">
+            <span class="iconfont icon-top"></span>
+            <span class="icontext">返回顶部</span>
+        </div>
+    </div>
+    <div class="loading"></div>
+</div>
+    <script>
+    window.config = {
+        GitHubUserName     : "first19326",
+        GitHubRepositories : "Hexo-LiveForCode",
+
+        User             : "Live For Code",
+        UserAvatar       : "/image/sidebar/avatar.jpg",
+        WebsiteStartDate : "2020-01-01",
+
+        WebsiteTitleBlur         : "(◍´꒳`◍) Hi, Live For Code",
+        WebsiteTitleBlurTimeOut  : 500,
+        WebsiteTitleFocus        : "(*´∇｀*) 欢迎回来!",
+        WebsiteTitleFocusTimeOut : 1000,
+        WebsiteFavicon           : "/image/website/logo.png",
+
+        ProgressBar : {
+            id       : "topProgressBar",
+            color    : "#77B6FF",
+            height   : "2px",
+            duration : 0.2
+        },
+
+        Loading: {
+            rebound : {
+                tension  : 16,
+                friction : 5
+            },
+            spinner : {
+                id     : "spinner",
+                radius : 90,
+                sides  : 3,
+                depth  : 4,
+                colors : {
+                    background : "#F0F0F0",
+                    stroke     : "#272633",
+                    base       : "",
+                    child      : "#272633"
+                },
+                alwaysForward : true,
+                restAt        : 0.5,
+                renderBase    : false
+            }
+        },
+
+        HomeHeaderAnimationRendered : true,
+        HomeHeaderAnimation         : {
+            radius      : 15,
+            density     : 0.2,
+            color       : "rgba(255, 255, 255, .2)",
+            clearOffset : 0.3
+        },
+
+        BackAnimationRendered          : true,
+        IEBrowserBackAnimationRendered : false,
+        BackAnimation                  : {
+            colorSaturation  : "60%",
+            colorBrightness  : "50%",
+            colorAlpha       : 0.5,
+            colorCycleSpeed  : 5,
+            verticalPosition : "random",
+            horizontalSpeed  : 200,
+            ribbonCount      : 3,
+            strokeSize       : 0,
+            parallaxAmount   : -0.2,
+            animateSections  : true
+        },
+
+        HomeHeaderImage : [
+            
+                "/image/header/home.jpg",
+            
+                "/image/header/home.jpeg",
+            
+                "/image/header/2023-04-17-20-51-03.jpg",
+            
+                "/image/header/2023-04-17-20-54-07.jpg",
+            
+                "/image/header/2023-04-17-20-54-22.jpg",
+            
+                "/image/header/2023-04-17-20-55-25.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+        HomeBannerText  : "",
+
+        ArticleHeaderImage : [
+            
+                "/image/header/article.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+
+        OtherBannerText : "",
+
+        Error : {
+            icon    : "icon-swimming",
+            title   : "PAGE NOT FOUND",
+            content : [
+                
+                    "很抱歉，您访问的页面不存在！",
+                
+                    "可能是输入地址有误或该地址已变更。",
+                
+            ],
+            buttons : [
+                
+                    {
+                        icon  : "icon-home",
+                        text  : "返回首页",
+                        href  : "https://fadeway32.gitee.io/",
+                        class : ""
+                    },
+                
+            ]
+        },
+
+        MenuNotice : {
+            enable : true,
+            notice : "简单地活着，肆意而又精彩！",
+            speed  : 20
+        },
+        MenuList : [
+            
+                {
+                    name   : "首页",
+                    icon   : "icon-home-fill",
+                    href   : "/",
+                    type   : "index",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "分类",
+                    icon   : "icon-folder-fill",
+                    href   : "/category",
+                    type   : "category",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "标签",
+                    icon   : "icon-discount-fill",
+                    href   : "/tag",
+                    type   : "tag",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "归档",
+                    icon   : "icon-calendar-fill",
+                    href   : "/archive",
+                    type   : "archive",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "赞赏",
+                    icon   : "icon-heart-fill",
+                    href   : "/donate",
+                    type   : "donate",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "关于",
+                    icon   : "icon-about-fill",
+                    href   : "/about",
+                    type   : "about",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "订阅",
+                    icon   : "icon-rss",
+                    href   : "/atom.xml",
+                    type   : "",
+                    class  : "",
+                    target : "_blank"
+                },
+            
+                {
+                    name   : "搜索",
+                    icon   : "icon-search-menu",
+                    href   : "javascript:;",
+                    type   : "",
+                    class  : "search",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "留言板",
+                    icon   : "icon-comments-fill",
+                    href   : "/comment",
+                    type   : "comment",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "友情链接",
+                    icon   : "icon-link",
+                    href   : "/friend",
+                    type   : "friend",
+                    class  : "",
+                    target : "_self"
+                },
+            
+        ],
+        MenuLink : [
+            
+                
+                    {
+                        name   : "知乎",
+                        icon   : "icon-zhihu",
+                        href   : "https://www.zhihu.com/people/wo-xin-de-love",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "微博",
+                        icon   : "icon-weibo",
+                        href   : "https://weibo.com/u/3939432776",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "QQ",
+                        icon   : "icon-qq",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"
+                    },
+                
+                    {
+                        name   : "微信",
+                        icon   : "icon-wechat",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"
+                    },
+                
+                    {
+                        name   : "GitHub",
+                        icon   : "icon-github",
+                        href   : "https://github.com/first19326",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+            
+        ],
+
+        FooterStyle : 2,
+        BottomText  : "<div><span class='face'>ღゝ◡╹)ノ♡</span></div><div>【人生若只如初见<span><i class='iconfont icon-like-fill'></i></span>何事秋风悲画扇】</div><div>&copy; 2020-2022 WorstOne. All Rights Reserved.</div>",
+
+        ConsoleList : [
+            
+                
+                    [
+                        
+                            
+                                "Based on cnblogs theme SimpleMemory.",
+                            
+                                "",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "SimpleMemory Author:",
+                            
+                                "BNDong",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "Theme:",
+                            
+                                "LiveForCode",
+                            
+                        
+                    ],
+                
+            
+        ],
+
+        FontIconExtend : "",
+
+        Donate : {
+            paypal  : "",
+            bitcoin : "",
+            alipay  : "/image/donate/alipay.png",
+            wechat  : "/image/donate/wechat.png"
+        },
+
+        Search : {
+            applicationID : "W44GC4V748",
+            apiKey        : "25b43f2c37a0cac32049b98740c3fd6d",
+            indexName     : "hexo2",
+            hits          : {
+                page : 30
+            },
+            labels        : {
+                placeholder : "搜索",
+                empty       : "未发现与 「${query}」 相关的内容",
+                stats       : "${hits} 条相关条目，使用了 ${time} 毫秒",
+            }
+        }, 
+
+        Valine : {
+            switch         : true,
+            el             : ".comments-content",
+            appId          : "srhKtvWPQTWYKh3qX8G8M7v0-gzGzoHsz",
+            appKey         : "8uVSP1q6UlALVC5igYfIfv2h",
+            serverURLs     : "",
+            placeholder    : "你是我一生只会遇见一次的惊喜...",
+            avatar         : "mm",
+            meta           : "nick,mail,link",
+            requiredFields : "nick,mail",
+            pageSize       : 5,
+            lang           : "zh-cn",
+            visitor        : true,
+            enableQQ       : true
+        },
+
+        Tocbot : {
+            switch                : true,
+            tocSelector           : ".toc",
+            contentSelector       : ".article-body",
+            headingSelector       : "h1, h2, h3, h4, h5",
+            headingsOffset        : 0,
+            scrollSmooth          : true,
+            scrollSmoothOffset    : -5,
+            positionFixedSelector : ".toc",
+            positionFixedClass    : "toc-fixed",
+            fixedSidebarOffset    : "",
+        },
+
+        Require : {
+            baseUrl     : "/js/",
+            waitSeconds : 100
+        },
+
+        Music : {
+            type : "Meting"
+        },
+        APlayer : {
+            container : ".aplayer",
+            fixed     : true,
+            autoplay  : true,
+            loop      : "all",
+            order     : "random",
+            preload   : "auto",
+            volume    : 0.67,
+            mutex     : true,
+            lrcType   : 2,
+            audio     : [
+                
+                    {
+                        name   : "Endless Tears",
+                        artist : "CLIFF EDGE",
+                        cover  : "/music/cover/Endless Tears.jpg",
+                        url    : "/music/song/Endless Tears.mp3",
+                        lrc    : "/music/lrc/Endless Tears.lrc"
+                    },
+                
+            ]
+        },
+        Meting : {
+            id       : "3778678", 
+            lrcshow  : false, 
+            server   : "netease", 
+            type     : "playlist", 
+            fixed    : true, 
+            autoplay : false, 
+            loop     : "all", 
+            order    : "random", 
+            preload  : "auto", 
+            volume   : 0.67, 
+            mutex    : true
+        },
+
+        Mouse : {
+            enable  : true,
+            options : {
+                size  : 6,
+                sizeF : 24
+            }
+        },
+
+        LazyLoad : {
+            default : "/image/website/lazyload.svg"
+        },
+  
+        Style : {
+            aplayer          : "/css/APlayer.css",
+            archive          : "/css/archive.css",
+            base             : "/css/base.css",
+            clipboard        : "/css/clipboard.css",
+            code             : "/css/code.css",
+            donate           : "/css/donate.css",
+            fancybox         : "/css/jquery.fancybox.css",
+            footer           : "/css/footer.css",
+            iconfont         : "/iconfont/iconfont.css",
+            index            : "/css/index.css",
+            menuBubble       : "/css/menu-bubble.css",
+            mouse            : "/css/mouse.css",
+            page             : "/css/page.css",
+            post             : "/css/post.css",
+            search           : "/css/search.css",
+            tocbot           : "/css/tocbot.css",
+            valine           : "/css/valine.css"
+        },
+
+        Script: {
+            aplayer          : "/js/APlayer.min.js",
+            config           : "/js/require.config.js",
+            index            : "/js/index.js",
+            instantSearch    : "/js/instantsearch.min.js",
+            iscroll          : "/js/iscroll.js",
+            jQuery           : "/js/jquery-3.4.1.min.js",
+            loading          : "/js/loading.js",
+            meting           : "/js/Meting.min.js",
+            require          : "/js/require.min.js"
+        },
+
+        Font: {
+            LongCang    : "/font/LongCang.css",
+            Monda       : "/font/Monda.css",
+            NotoSansSC  : "/font/NotoSansSC.css",
+            NotoSerifSC : "/font/NotoSerifSC.css",
+            Playball    : "/font/Playball.css",
+            PTMono      : "/font/PTMono.css",
+            Roboto      : "/font/Roboto.css",
+            RobotoSlab  : "/font/RobotoSlab.css",
+            Rosario     : "/font/Rosario.css",
+            UbuntuMono  : "/font/UbuntuMono.css"
+        },
+
+        Suffix : {
+            about : "你知道的越多,你不知道的越多"
+        },
+            
+        Theme : {
+            url  : "https://fadeway32.gitee.io/",
+            name : "fadeway32"
+        }  
+    };
+</script>
+    <script type="text/javascript" src="/js/index.js"></script>
+</body>
+</html>
