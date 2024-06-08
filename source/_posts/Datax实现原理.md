@@ -1,8 +1,8 @@
 ---
 
-layout: XXLJOB源码分析
+layout: Datax实现原理
 
-title: XXLJOB源码分析
+title: Datax实现原理
 
 tags: job
 
