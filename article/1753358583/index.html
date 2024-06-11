@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <!--    <meta name="referrer" content="origin">-->
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>
+        
+            Kubernetes-Pod管理对象与调度策略
+        
+    </title>
+    <link rel="shortcut icon" href="#"/>
+
+    <link type="text/css" rel="stylesheet" href="/font/LongCang.css">
+    <link type="text/css" rel="stylesheet" href="/font/Monda.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSansSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSerifSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/Playball.css">
+    <link type="text/css" rel="stylesheet" href="/font/PTMono.css">
+    <link type="text/css" rel="stylesheet" href="/font/Roboto.css">
+    <link type="text/css" rel="stylesheet" href="/font/RobotoSlab.css">
+    <link type="text/css" rel="stylesheet" href="/font/Rosario.css">
+    <link type="text/css" rel="stylesheet" href="/font/UbuntuMono.css">
+
+    <link type="text/css" rel="stylesheet" href="/css/base.css">
+    <link type="text/css" rel="stylesheet" href="/css/code.css">
+
+    <script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
+<meta name="generator" content="Hexo 6.2.0"></head>
+<body>
+    <a id="cover"></a>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
+<header>
+    <meta name="referrer" content="no-referrer">
+</header>
+<div id="header" class="header">
+    <div class="vertical">
+        <div class="inner">
+            
+                <h1 class="header-subtitle">Kubernetes-Pod管理对象与调度策略</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2023-04-29
+                        </span>
+                        
+                            <span id="/article/1753358583/" class="leancloud_visitors" data-flag-title="Kubernetes-Pod管理对象与调度策略">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1753358583/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">Kubernetes</span>
+                        
+                    
+                </div>
+            
+        </div>
+    </div>
+    
+</div>
+<div id="container">
+    
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h2 id="Kubernetes-Pod管理对象与调度策略"><a href="#Kubernetes-Pod管理对象与调度策略" class="headerlink" title="Kubernetes-Pod管理对象与调度策略"></a>Kubernetes-Pod管理对象与调度策略</h2><p>在前面的学习中我们了解到，在Kubernetes中，Pod管理对象主要有RC(RS)、Deployment、StatefulSet、DaemonSet和Job（CronJob）等。其中RC(<br>RS)<br>和Deployment的用法已经大致了解，这里主要记录下StatefulSet、DaemonSet和Job（CronJob）的用法。默认情况下，Pod管理对象在创建Pod的时候是根据系统自动调度算法来完成部署的，我们可以设置调度策略来实现Pod的精准调度。</p>
+<h2 id="Pod调度策略"><a href="#Pod调度策略" class="headerlink" title="Pod调度策略"></a>Pod调度策略</h2><h3 id="NodeSelector"><a href="#NodeSelector" class="headerlink" title="NodeSelector"></a>NodeSelector</h3><p>我们可以该某个节点Node设置标签，然后通过NodeSelector让Pod调度到该节点上。</p>
+<p>前面搭建的Kubernetes集群有两个worker节点node1和node2，我们给node2打个标签：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl label nodes node2 tier=frontend</span><br></pre></td></tr></table></figure>
+
+<p>接着定义一个RC配置（node-select-pod.yml）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: ReplicationController</span><br><span class="line">metadata:</span><br><span class="line">  name: test-rc</span><br><span class="line">spec:</span><br><span class="line">  replicas: 1</span><br><span class="line">  selector:</span><br><span class="line">    name: nginx</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      labels:</span><br><span class="line">        name: nginx</span><br><span class="line">    spec:</span><br><span class="line">      containers:</span><br><span class="line">        - name: nginx</span><br><span class="line">          image: nginx</span><br><span class="line">          ports:</span><br><span class="line">            - containerPort: 80</span><br><span class="line">      nodeSelector:</span><br><span class="line">        tier: frontend</span><br></pre></td></tr></table></figure>
+
+<p>创建该RC，观察Pod最终调度的节点：</p>
+<p><img src="https://mrbird.cc/img/QQ%E6%88%AA%E5%9B%BE20191105202135.png" alt="图片"></p>
+<p>可以看到nginx pod已经成功调度到了node2节点上。</p>
+<p>Kubernetes会给每个node贴上一些默认的标签，通过<code>kubectl get node node1 -o yaml</code>可以看到这些默认的标签：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111330793.png" alt="QQ截图20191105152923.png"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">beta.kubernetes.io/arch: amd64</span><br><span class="line">beta.kubernetes.io/os: linux</span><br><span class="line">kubernetes.io/arch: amd64</span><br><span class="line">kubernetes.io/hostname: node1</span><br><span class="line">kubernetes.io/os: linux</span><br></pre></td></tr></table></figure>
+
+<p>这些默认的标签在下面这些调度策略中也是蛮常用的。</p>
+<h3 id="NodeAffinity"><a href="#NodeAffinity" class="headerlink" title="NodeAffinity"></a>NodeAffinity</h3><p>Affinity[əˈfɪnəti]：亲和力，喜好。NodeAffinity为Node亲和力调度，主要有两个规则（名称有点长，快18cm了吧）:</p>
+<ol>
+<li>RequiredDuringSchedulingIgnoredDuringExecution：必须满足指定的规则才可以调度Pod，硬规则。</li>
+<li>PreferredDuringSchedulingIgnoredDuringExecution：软规则，最好满足所列出的条件才调度Pod。</li>
+</ol>
+<p>IgnoredDuringExecution的意思是，如果一个Pod已经调度到某个节点上了，然后这个节点的标签发生了改变，那么不影响已经调度好的Pod，ignore。</p>
+<p>定义一个配置文件（node-affinity.yml），用于演示NodeAffinity：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: ReplicationController</span><br><span class="line">metadata:</span><br><span class="line">  name: test-rc</span><br><span class="line">spec:</span><br><span class="line">  replicas: 1</span><br><span class="line">  selector:</span><br><span class="line">    name: nginx</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      labels:</span><br><span class="line">        name: nginx</span><br><span class="line">    spec:</span><br><span class="line">      containers:</span><br><span class="line">        - name: nginx</span><br><span class="line">          image: nginx</span><br><span class="line">          ports:</span><br><span class="line">            - containerPort: 80</span><br><span class="line">      affinity:</span><br><span class="line">        nodeAffinity:</span><br><span class="line">          requiredDuringSchedulingIgnoredDuringExecution:</span><br><span class="line">            nodeSelectorTerms:</span><br><span class="line">              - matchExpressions:</span><br><span class="line">                  - key: beta.kubernetes.io/arch</span><br><span class="line">                    operator: In</span><br><span class="line">                    values:</span><br><span class="line">                      - amd64</span><br><span class="line">          preferredDuringSchedulingIgnoredDuringExecution:</span><br><span class="line">            - weight: 1</span><br><span class="line">              preference:</span><br><span class="line">                matchExpressions:</span><br><span class="line">                  - key: disk-type</span><br><span class="line">                    operator: In</span><br><span class="line">                    values:</span><br><span class="line">                      - ssd</span><br></pre></td></tr></table></figure>
+
+<p>上面配置使得RC在调度nginx pod的时候需要满足：节点具有beta.kubernetes.io&#x2F;arch&#x3D;amd64标签，如果具有disk-type&#x3D;ssd标签就更好了，换句话说就是希望nginx<br>pod调度在cpu架构为amd，磁盘为ssd的节点上。</p>
+<p>上面配置中，操作符<code>operator</code>除了可以使用In外，还可以使用NotIn、Exists、DoesNotExist、Gt、Lt。</p>
+<p>NodeAffinity规则设置需要注意的几个点：</p>
+<ol>
+<li>如果nodeAffinity指定了多个nodeSelectorTerms，那么其中一个能够匹配成功即可；</li>
+<li>如果在nodeSelectorTerms中有多个matchExpressions，则一个节点必须满足所有matchExpressions才能运行该Pod。</li>
+</ol>
+<p>运行上面这个配置：</p>
+<p><img src="https://mrbird.cc/img/QQ%E6%88%AA%E5%9B%BE20191105202725.png" alt="QQ截图20191105202725.png"></p>
+<p>可以看到，因为node1和node2都具有beta.kubernetes.io&#x2F;arch&#x3D;amd64标签，而没有disk-type&#x3D;ssd标签，所以nginx<br>pod有可能被调度到node1也有可能被调度到node2。</p>
+<p>我们给node1添加disk-type&#x3D;ssd标签，重新运行上面的配置文件：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111330878.png" alt="QQ截图20191105203033.png"></p>
+<p>可以看到，nginx pod被调度到了node1上。</p>
+<h3 id="PodAffinity"><a href="#PodAffinity" class="headerlink" title="PodAffinity"></a>PodAffinity</h3><p>PodAffinity指的是Pod亲和力调度股则，比如某些节点已经存在一些Pod了，新的Pod在调度的时候希望和指定Pod在一台节点上，亦或有意避开和指定Pod在一台节点上，这时候就可以用PodAffinity实现。</p>
+<p>NodeAffinity规则设置也是通过<code>requiredDuringSchedulingIgnoredDuringExecution</code><br>和<code>PreferredDuringSchedulingIgnoredDuringExecution</code>实现的。此外，NodeAffinity还需要设置topology（拓扑规则），意为表达节点所属的topology范围：</p>
+<ol>
+<li>kubernetes.io&#x2F;hostname（节点所处的服务器）</li>
+<li>failure-domain.beta.kubernetes.io&#x2F;zone（节点所处的服务器云盘分区）</li>
+<li>failure-domain.beta.kubernetes.io&#x2F;region（节点所处的服务器云盘所在的地区）</li>
+</ol>
+<p>要演示PodAffinity的使用，需要先创建一个参照Pod，创建一个参照Pod的配置文件（flag-pod.yml）:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Pod</span><br><span class="line">metadata:</span><br><span class="line">  name: flag-pod</span><br><span class="line">  labels:</span><br><span class="line">    tier: frontend</span><br><span class="line">    app: flag-nginx</span><br><span class="line">spec:</span><br><span class="line">  containers:</span><br><span class="line">    - name: flag-nginx</span><br><span class="line">      image: nginx</span><br><span class="line">      ports:</span><br><span class="line">        - containerPort: 8081</span><br></pre></td></tr></table></figure>
+
+<p>这个Pod具有<code>tier=frontend</code>和<code>app=flag-nginx</code>标签。</p>
+<p>创建这个参照Pod：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111330721.png" alt="QQ截图20191105203331.png"></p>
+<p>参照pod运行在了node1节点上。</p>
+<p>创建好后，接着定义一个新的配置类（pod-affinity.yml）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Pod</span><br><span class="line">metadata:</span><br><span class="line">  name: pod-affinity</span><br><span class="line">spec:</span><br><span class="line">  containers:</span><br><span class="line">    - name: nginx</span><br><span class="line">      image: nginx</span><br><span class="line">      ports:</span><br><span class="line">        - containerPort: 80</span><br><span class="line">  affinity:</span><br><span class="line">    podAffinity:</span><br><span class="line">      requiredDuringSchedulingIgnoredDuringExecution:</span><br><span class="line">        - labelSelector:</span><br><span class="line">            matchExpressions:</span><br><span class="line">              - key: tier</span><br><span class="line">                operator: In</span><br><span class="line">                values:</span><br><span class="line">                  - frontend</span><br><span class="line">          topologyKey: kubernetes.io/hostname</span><br></pre></td></tr></table></figure>
+
+<p>上述配置要求，nginx pod需要和标签包含tier&#x3D;frontend的Pod分配在同一个Node上（topologyKey:<br>kubernetes.io&#x2F;hostname），创建该Pod，观察它被调度到哪个节点上了：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111330728.png" alt="QQ截图20191105203532.png"></p>
+<p>podAntiAffinity和podAffinity刚好相反，举个例子，创建一个新的配置类（pod-affinity-two.yml）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Pod</span><br><span class="line">metadata:</span><br><span class="line">  name: pod-affinity-two</span><br><span class="line">spec:</span><br><span class="line">  containers:</span><br><span class="line">    - name: nginx</span><br><span class="line">      image: nginx</span><br><span class="line">      ports:</span><br><span class="line">        - containerPort: 80</span><br><span class="line">  affinity:</span><br><span class="line">    podAntiAffinity:</span><br><span class="line">      requiredDuringSchedulingIgnoredDuringExecution:</span><br><span class="line">        - labelSelector:</span><br><span class="line">            matchExpressions:</span><br><span class="line">              - key: app</span><br><span class="line">                operator: In</span><br><span class="line">                values:</span><br><span class="line">                  - flag-nginx</span><br><span class="line">          topologyKey: kubernetes.io/hostname</span><br></pre></td></tr></table></figure>
+
+<p>上面配置希望nginx pod不和app&#x3D;flag-nginx的Pod在同一个节点。</p>
+<p>创建该Pod，观察它被调度到哪个节点上了：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111331869.png" alt="QQ截图20191105203938.png"></p>
+<p>可以看到，它和flag-nginx处于不同的节点，位于node2。</p>
+<h3 id="Taints-amp-Tolerations"><a href="#Taints-amp-Tolerations" class="headerlink" title="Taints &amp; Tolerations"></a>Taints &amp; Tolerations</h3><p>Taints用于给节点添加污点，而Tolerations用于定义Pod对节点污点的容忍度。在Node上设置一个或多个Taint之后，除非Pod明确声明能够容忍这些污点，否则无法在这些Node上运行。Toleration是Pod的属性，让Pod能够（注意，只是能够，而非必须）运行在标注了Taint的Node上。</p>
+<p>给节点设置污点的语法为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl taint nodes [nodeName] key=value:rule</span><br></pre></td></tr></table></figure>
+
+<p>其中rule的取值有：</p>
+<ol>
+<li>NoScheudle：不调度；</li>
+<li>PreferNoSchedule：最好不要调度；</li>
+<li>NoExecute：不运行；</li>
+<li>PreferNoExecute：最好不运行。</li>
+</ol>
+<p>NoSchedule和NoExecute区别：</p>
+<ul>
+<li>NoSchedule不调度，如果是在调度后设置的污点，并且Pod没有容忍该污点，也能继续执行</li>
+<li>NoExecute不执行，如果是在调度后设置的污点，并且Pod没有容忍该污点，则会被驱逐。可以设置驱逐时间<code>tolerationSeconds: xx</code>。</li>
+</ul>
+<p>我们给node1节点设置一个污点：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl taint nodes node1 aa=bb:NoSchedule</span><br></pre></td></tr></table></figure>
+
+<p>然后新建一个Pod配置类（pod-taint-test.yml）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Pod</span><br><span class="line">metadata:</span><br><span class="line">  name: pod-taint</span><br><span class="line">spec:</span><br><span class="line">  containers:</span><br><span class="line">    - name: nginx</span><br><span class="line">      image: nginx</span><br><span class="line">      ports:</span><br><span class="line">        - containerPort: 80</span><br><span class="line">  tolerations:</span><br><span class="line">    - key: &quot;aa&quot;</span><br><span class="line">      operator: &quot;Equal&quot;</span><br><span class="line">      value: &quot;bb&quot;</span><br><span class="line">      effect: &quot;NoSchedule&quot;</span><br></pre></td></tr></table></figure>
+
+<p>Pod的Toleration声明中的key和effect需要与Taint的设置保持一致，并且满足以下条件之一：</p>
+<ol>
+<li><p>operator的值是Exists（无须指定value），如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">......</span><br><span class="line">  tolerations:</span><br><span class="line">    - key: &quot;aa&quot;</span><br><span class="line">      operator: &quot;Exists&quot;</span><br><span class="line">      effect: &quot;NoSchedule&quot;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>operator的值是Equal并且value相等。如果不指定operator，则默认值为Equal。</p>
+</li>
+</ol>
+<p>另外，有如下两个特例：</p>
+<ol>
+<li>空的key配合Exists操作符能够匹配所有的键和值；</li>
+<li>空的effect匹配所有的effect。</li>
+</ol>
+<p>回到pod-taint-test.yml，该配置文件定义nginx pod可以容忍<code>aa=bb:NoSchedule</code>这个污点，所以它有可能会被调度到node1上。创建该Pod，观察：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111331497.png" alt="QQ截图20191105204219.png"></p>
+<p>这时候在nginx pod所运行的节点node1上新增一个污点：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl taint nodes node1 cc=dd:NoExecute</span><br></pre></td></tr></table></figure>
+
+<p>观察nginx pod情况：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111331649.png" alt="QQ截图20191105204303.png"></p>
+<p>可以看到它被驱逐了，已经没有正在运行的pod了。</p>
+<h3 id="Pod-Priority-Preemption"><a href="#Pod-Priority-Preemption" class="headerlink" title="Pod Priority Preemption"></a>Pod Priority Preemption</h3><p>我们可以给Pod指定优先级，优先级可以通过PriorityClass对象创建，比如创建一个优先级为10000的PriorityClass：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: scheduling.k8s.io/v1</span><br><span class="line">kind: PriorityClass</span><br><span class="line">metadata:</span><br><span class="line">  name: hign-priority</span><br><span class="line">value: 10000</span><br><span class="line">globalDefault: false</span><br><span class="line">description: &quot;10000优先级&quot;</span><br></pre></td></tr></table></figure>
+
+<p>上述文件定义了一个名为high-priority的优先级类别，优先级为10000，数字越大，优先越高。超过一亿的数字被系统保留，用于指派给系统组件。</p>
+<p>优先级创建后，可以在Pod定义中引用该优先级：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">spec:</span><br><span class="line">  containers:</span><br><span class="line">    - name: nginx</span><br><span class="line">      image: nginx</span><br><span class="line">      ports:</span><br><span class="line">        - containerPort: 80</span><br><span class="line">  priorityClassName: hign-priority</span><br></pre></td></tr></table></figure>
+
+<h2 id="Pod管理对象"><a href="#Pod管理对象" class="headerlink" title="Pod管理对象"></a>Pod管理对象</h2><h3 id="Job"><a href="#Job" class="headerlink" title="Job"></a>Job</h3><p>Job是一种特殊的Pod管理对象，是一种一次性Pod运行任务，任务结束后，Pod的生命周期也就结束了。</p>
+<p>定义一个Job配置类（job.yml）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: batch/v1</span><br><span class="line">kind: Job</span><br><span class="line">metadata:</span><br><span class="line">  name: job-ex</span><br><span class="line">spec:</span><br><span class="line">  template:</span><br><span class="line">    spec:</span><br><span class="line">      containers:</span><br><span class="line">        - name: job</span><br><span class="line">          image: busybox</span><br><span class="line">          command: [&quot;echo&quot;, &quot;hello job&quot;]</span><br><span class="line">      restartPolicy: Never</span><br></pre></td></tr></table></figure>
+
+<p>Job的重启策略<code>restartPolicy</code>只支持Never和OnFailure。</p>
+<p>创建这个Job：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111331114.png" alt="QQ截图20191105140915.png"></p>
+<p>查看Job状态：</p>
+<p><img src="https://mrbird.cc/img/QQ%E6%88%AA%E5%9B%BE20191105141330.png" alt="QQ截图20191105141330.png"></p>
+<p>COMPLETIONS 1&#x2F;1表示总共需要执行1个任务，共执行完1个任务。</p>
+<p>查看对应Pod的状态：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111331016.png" alt="QQ截图20191105141452.png"></p>
+<p>状态为Completed。</p>
+<p>查看Job日志：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111331237.png" alt="QQ截图20191105141618.png"></p>
+<p>Job还可以设置并发数量和总Job数，修改上面的job.yml：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: batch/v1</span><br><span class="line">kind: Job</span><br><span class="line">metadata:</span><br><span class="line">  name: job-ex</span><br><span class="line">spec:</span><br><span class="line">  parallelism: 2 # 并发数2</span><br><span class="line">  completions: 6 # 总的Job数量</span><br><span class="line">  template:</span><br><span class="line">    spec:</span><br><span class="line">      containers:</span><br><span class="line">        - name: job</span><br><span class="line">          image: busybox</span><br><span class="line">          command: [&quot;echo&quot;, &quot;hello job&quot;]</span><br><span class="line">      restartPolicy: Never</span><br></pre></td></tr></table></figure>
+
+<p>运行该Job：<img src="https://mrbird.cc/img/QQ%E6%88%AA%E5%9B%BE20191105142838.png" alt="QQ截图20191105142838.png"></p>
+<p>查看Pod：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111331965.png" alt="QQ截图20191105142918.png"></p>
+<h3 id="CronJob"><a href="#CronJob" class="headerlink" title="CronJob"></a>CronJob</h3><p>CronJob顾名思义就是支持Cron表达式的Job，不过Kubernetes的Cron表达式和传统的Cron表达式不太一样，不支持到秒级。具体规则如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Minutes Hours DayofMonth Month DayofWeek Year</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>Minutes：可出现<code>,</code> <code>-</code> <code>*</code> <code>/</code> 这4个字符，有效范围为0～59的整数。</li>
+<li>Hours：可出现<code>,</code> <code>-</code> <code>*</code> <code>/</code>这4个字符， 有效范围为0～23的整数。</li>
+<li>DayofMonth：可出现<code>,</code> <code>-</code> <code>*</code> <code>/</code> <code>?</code> <code>L</code> <code>W</code> <code>C</code> 这8个字符，有效范围为0～31的整数。</li>
+<li>Month：可出现<code>,</code> <code>-</code> <code>*</code> <code>/</code>这4个字符，有效范围为1～12的整数或JAN～DEC。</li>
+<li>DayofWeek：可出现<code>,</code> <code>-</code> <code>*</code> <code>/</code> <code>?</code> <code>L</code> <code>C</code> <code>＃</code>这8个字符，有效范围为1～7的整数或SUN～SAT。1表示星期天，2表示星期一，以此类推。</li>
+</ol>
+<p>上面特殊字符的含义如下：</p>
+<ol>
+<li><code>*</code>：表示匹配该域的任意值，假如在Minutes域使用<code>*</code>，则表示每分钟都会触发事件。</li>
+<li><code>/</code>：表示从起始时间开始触发，然后每隔固定时间触发一次，例如在Minutes域设置为5&#x2F;20，则意味着第1次触发在第5min时，接下来每20min触发一次，将在第25min、第45min等时刻分别触发。</li>
+</ol>
+<p>定义一个CronJob的配置类（cron-job.yml）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: batch/v1beta1</span><br><span class="line">kind: CronJob</span><br><span class="line">metadata:</span><br><span class="line">  name: cron-job-ex</span><br><span class="line">spec:</span><br><span class="line">  schedule: &quot;*/1 * * * *&quot;</span><br><span class="line">  jobTemplate:</span><br><span class="line">    spec:</span><br><span class="line">      template:</span><br><span class="line">        spec:</span><br><span class="line">          containers:</span><br><span class="line">            - name: hello</span><br><span class="line">              image: busybox</span><br><span class="line">              command: [&quot;sh&quot;, &quot;-c&quot;, &quot;date;echo hello cronJob&quot;]</span><br><span class="line">          restartPolicy: Never</span><br></pre></td></tr></table></figure>
+
+<p>上面的定时任务每分钟执行一次。</p>
+<p>创建该CronJob：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111331078.png" alt="QQ截图20191105144308.png"></p>
+<p>过个两三分钟查看运行情况：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111331665.png" alt="QQ截图20191105145147.png"></p>
+<h3 id="DaemonSet"><a href="#DaemonSet" class="headerlink" title="DaemonSet"></a>DaemonSet</h3><p>DaemonSet适用于在每个Node都需要运行一个Pod的时候使用，比如：每一个Node上运行一个日志采集、性能监控的Pod。</p>
+<p>比如我们现在需要在每个节点上都部署一个node-exporter来采集节点信息，可以通过DaemonSet来实现。</p>
+<p>定义一个DaemonSet配置文件（daemonset.yml）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: apps/v1</span><br><span class="line">kind: DaemonSet</span><br><span class="line">metadata:</span><br><span class="line">  name: node-exporter-d</span><br><span class="line">spec:</span><br><span class="line">  selector:</span><br><span class="line">    matchLabels:</span><br><span class="line">      name: node-exporter</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      labels:</span><br><span class="line">        name: node-exporter</span><br><span class="line">    spec:</span><br><span class="line">      containers:</span><br><span class="line">        - name: node-exporter</span><br><span class="line">          image: prom/node-exporter</span><br><span class="line">          ports:</span><br><span class="line">            - containerPort: 9100</span><br></pre></td></tr></table></figure>
+
+<p>创建该DaemonSet之前先删除上面在node1节点上创建的污点：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">kubectl taint nodes node1 aa:NoSchedule-</span><br><span class="line">kubectl taint nodes node1 cc:NoExecute-</span><br></pre></td></tr></table></figure>
+
+<p>创建该DaemonSet，然后观察Pod信息，看是否每个节点都部署了一个实例：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111331486.png" alt="QQ截图20191105205401.png"></p>
+<h3 id="StatefulSet"><a href="#StatefulSet" class="headerlink" title="StatefulSet"></a>StatefulSet</h3><p>系统学习PV&#x2F;PVC后再深入。</p>
+<blockquote>
+<p>《Kubernetes权威指南(第4版)》读书笔记</p>
+</blockquote>
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1753358583/" target="_blank">Kubernetes-Pod管理对象与调度策略</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
+                        
+                            <a href="/category/Web/">Web</a>
+                        
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
+                        
+                            <a href="/tag/Kubernetes/">Kubernetes</a>
+                        
+                    </div>
+                
+                <div class="article-prev-next">
+                    
+                        <a href="/article/1753358579/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1753358579/" title="发布于 2023-04-29 09:36">Kubernetes-Pod基础</a>
+                        <br>
+                    
+                    
+                        <a href="/article/1177767762/" class="next-prefix">» </a> 下一篇：    <a href="/article/1177767762/" title="发布于 2023-04-17 11:59">docker实践和运用</a>
+                    
+                </div>
+            </div>
+            
+    <div class="article-comments">
+        
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
+    
+</div>
+    <div id="footer"></div>
+    <div id="sidebar">
+    <div class="menu-wrap" style="display:none;">
+        
+            <div class="menu-notice">
+                <span class="iconfont icon-notice"></span>
+                <div class="notice">
+                    <span>简单地活着，肆意而又精彩！</span>
+                </div>
+            </div>
+        
+        <nav class="menu">
+            <div class="menu-introduce"> 
+                <div class="introduce-avatar">
+                    <img src="/image/sidebar/avatar.jpg">
+                </div> 
+                <div class="introduce-info"> 
+                    <div class="introduce-user"><span>Live For Code</span></div>
+                </div> 
+            </div> 
+            <div class="menu-list">
+                <ul>
+                    
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                    
+                        <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
+                    
+                        <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
+                    
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                    
+                        <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
+                    
+                        <li class=""><a href="/about" class="" target="_self"><span class="iconfont icon-about-fill"></span>关于</a></li>
+                    
+                        <li class=""><a href="/atom.xml" class="" target="_blank"><span class="iconfont icon-rss"></span>订阅</a></li>
+                    
+                        <li class=""><a href="javascript:;" class="search" target="_self"><span class="iconfont icon-search-menu"></span>搜索</a></li>
+                    
+                        <li class=""><a href="/comment" class="" target="_self"><span class="iconfont icon-comments-fill"></span>留言板</a></li>
+                    
+                        <li class=""><a href="/friend" class="" target="_self"><span class="iconfont icon-link"></span>友情链接</a></li>
+                    
+                </ul> 
+            </div> 
+            <div class="menu-link">
+                <div class="box">
+                    <div class="image-box"></div>
+                </div>
+                
+                    <a name="知乎" href="https://www.zhihu.com/people/wo-xin-de-love" class="" target="_blank" data=""><span class="iconfont icon-zhihu"></span></a>
+                
+                    <a name="微博" href="https://weibo.com/u/3939432776" class="" target="_blank" data=""><span class="iconfont icon-weibo"></span></a>
+                
+                    <a name="QQ" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"><span class="iconfont icon-qq"></span></a>
+                
+                    <a name="微信" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"><span class="iconfont icon-wechat"></span></a>
+                
+                    <a name="GitHub" href="https://github.com/first19326" class="" target="_blank" data=""><span class="iconfont icon-github"></span></a>
+                
+            </div> 
+        </nav>
+        <button class="menu-button-close"></button>
+        <div class="morph-shape" id="morph-shape" data-morph-open="M-7.312,0H15c0,0,66,113.339,66,399.5C81,664.006,15,800,15,800H-7.312V0z;M-7.312,0H100c0,0,0,113.839,0,400c0,264.506,0,400,0,400H-7.312V0z">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 800" preserveAspectRatio="none">
+                <path d="M-7.312,0H0c0,0,0,113.839,0,400c0,264.506,0,400,0,400h-7.312V0z"/>
+            </svg>
+        </div>
+    </div>
+    <button class="menu-button-open">MENU</button>
+    <div class="menu-cover"></div>
+</div>
+    <link type="text/css" rel="stylesheet" href="/css/search.css">
+<script type="text/javascript" src="/js/iscroll.js"></script>
+<script type="text/javascript" src="/js/instantsearch.min.js"></script>
+<div class="search-window">
+    <div class="search-content">
+        <div class="search-content-icon">
+            <i class="iconfont icon-search"></i>
+        </div>
+        <div id="search-input" class="search-input"></div>
+    </div>
+
+    <div class="search-scroll">
+        <div class="search-result">
+            <div id="search-stats" class="search-stats"></div>
+            <div id="search-hits"></div>
+            <div id="search-pagination" class="search-pagination"></div>
+        </div>
+    </div>
+
+    <span class="search-close-icon">
+        <i class="iconfont icon-close"></i>
+    </span>
+</div>
+    <div id="tools">
+    <div class="progressbar-top"></div>
+
+    
+        <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
+        <script type="text/javascript" src="/js/APlayer.min.js"></script>
+        <script type="text/javascript" src="/js/Meting.min.js"></script>
+        <meting-js id="3778678" lrcshow="false" server="netease" type="playlist" fixed="true" autoplay="false" loop="all" order="random" preload="auto" volume="0.67" mutex="true"></meting-js>
+    
+    
+    <div class="wrap-right">
+        <div class="setting">
+            <div class="iconbox favorites" switch="false">
+                <span class="iconfont icon-favorites"></span>
+                <span class="icontext">关注</span>
+            </div>
+            <div class="iconbox mode">
+                <div class="light">
+                    <span class="iconfont icon-daymode"></span>
+                    <span class="icontext">浅色模式</span>
+                </div>
+                <div class="dark">
+                    <span class="iconfont icon-nightmode-fill"></span>
+                    <span class="icontext">深色模式</span>
+                </div>
+            </div>
+            <a href="javascript:;" target="_self" class="search">
+                <div class="iconbox">
+                    <span class="iconfont icon-search-menu"></span>
+                    <span class="icontext">搜索</span>
+                </div>
+            </a>
+            <div class="iconbox bottom">
+                <div style="display: inline-block; transform: rotate(180deg);">
+                    <span class="iconfont icon-top"></span>
+                </div>
+                <span class="icontext">跳至底部</span>
+            </div>
+        </div>
+        <div class="iconbox set">
+            <div style="display: inline-block;">
+                <span class="iconfont icon-setting"></span>
+            </div>
+            <span class="icontext">设置</span>
+        </div>
+        <div class="iconbox top">
+            <span class="iconfont icon-top"></span>
+            <span class="icontext">返回顶部</span>
+        </div>
+    </div>
+    <div class="loading"></div>
+</div>
+    <script>
+    window.config = {
+        GitHubUserName     : "first19326",
+        GitHubRepositories : "Hexo-LiveForCode",
+
+        User             : "Live For Code",
+        UserAvatar       : "/image/sidebar/avatar.jpg",
+        WebsiteStartDate : "2020-01-01",
+
+        WebsiteTitleBlur         : "(◍´꒳`◍) Hi, Live For Code",
+        WebsiteTitleBlurTimeOut  : 500,
+        WebsiteTitleFocus        : "(*´∇｀*) 欢迎回来!",
+        WebsiteTitleFocusTimeOut : 1000,
+        WebsiteFavicon           : "/image/website/logo.png",
+
+        ProgressBar : {
+            id       : "topProgressBar",
+            color    : "#77B6FF",
+            height   : "2px",
+            duration : 0.2
+        },
+
+        Loading: {
+            rebound : {
+                tension  : 16,
+                friction : 5
+            },
+            spinner : {
+                id     : "spinner",
+                radius : 90,
+                sides  : 3,
+                depth  : 4,
+                colors : {
+                    background : "#F0F0F0",
+                    stroke     : "#272633",
+                    base       : "",
+                    child      : "#272633"
+                },
+                alwaysForward : true,
+                restAt        : 0.5,
+                renderBase    : false
+            }
+        },
+
+        HomeHeaderAnimationRendered : true,
+        HomeHeaderAnimation         : {
+            radius      : 15,
+            density     : 0.2,
+            color       : "rgba(255, 255, 255, .2)",
+            clearOffset : 0.3
+        },
+
+        BackAnimationRendered          : true,
+        IEBrowserBackAnimationRendered : false,
+        BackAnimation                  : {
+            colorSaturation  : "60%",
+            colorBrightness  : "50%",
+            colorAlpha       : 0.5,
+            colorCycleSpeed  : 5,
+            verticalPosition : "random",
+            horizontalSpeed  : 200,
+            ribbonCount      : 3,
+            strokeSize       : 0,
+            parallaxAmount   : -0.2,
+            animateSections  : true
+        },
+
+        HomeHeaderImage : [
+            
+                "/image/header/home.jpg",
+            
+                "/image/header/home.jpeg",
+            
+                "/image/header/2023-04-17-20-51-03.jpg",
+            
+                "/image/header/2023-04-17-20-54-07.jpg",
+            
+                "/image/header/2023-04-17-20-54-22.jpg",
+            
+                "/image/header/2023-04-17-20-55-25.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+        HomeBannerText  : "",
+
+        ArticleHeaderImage : [
+            
+                "/image/header/article.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+
+        OtherBannerText : "",
+
+        Error : {
+            icon    : "icon-swimming",
+            title   : "PAGE NOT FOUND",
+            content : [
+                
+                    "很抱歉，您访问的页面不存在！",
+                
+                    "可能是输入地址有误或该地址已变更。",
+                
+            ],
+            buttons : [
+                
+                    {
+                        icon  : "icon-home",
+                        text  : "返回首页",
+                        href  : "https://fadeway32.gitee.io/",
+                        class : ""
+                    },
+                
+            ]
+        },
+
+        MenuNotice : {
+            enable : true,
+            notice : "简单地活着，肆意而又精彩！",
+            speed  : 20
+        },
+        MenuList : [
+            
+                {
+                    name   : "首页",
+                    icon   : "icon-home-fill",
+                    href   : "/",
+                    type   : "index",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "分类",
+                    icon   : "icon-folder-fill",
+                    href   : "/category",
+                    type   : "category",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "标签",
+                    icon   : "icon-discount-fill",
+                    href   : "/tag",
+                    type   : "tag",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "归档",
+                    icon   : "icon-calendar-fill",
+                    href   : "/archive",
+                    type   : "archive",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "赞赏",
+                    icon   : "icon-heart-fill",
+                    href   : "/donate",
+                    type   : "donate",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "关于",
+                    icon   : "icon-about-fill",
+                    href   : "/about",
+                    type   : "about",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "订阅",
+                    icon   : "icon-rss",
+                    href   : "/atom.xml",
+                    type   : "",
+                    class  : "",
+                    target : "_blank"
+                },
+            
+                {
+                    name   : "搜索",
+                    icon   : "icon-search-menu",
+                    href   : "javascript:;",
+                    type   : "",
+                    class  : "search",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "留言板",
+                    icon   : "icon-comments-fill",
+                    href   : "/comment",
+                    type   : "comment",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "友情链接",
+                    icon   : "icon-link",
+                    href   : "/friend",
+                    type   : "friend",
+                    class  : "",
+                    target : "_self"
+                },
+            
+        ],
+        MenuLink : [
+            
+                
+                    {
+                        name   : "知乎",
+                        icon   : "icon-zhihu",
+                        href   : "https://www.zhihu.com/people/wo-xin-de-love",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "微博",
+                        icon   : "icon-weibo",
+                        href   : "https://weibo.com/u/3939432776",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "QQ",
+                        icon   : "icon-qq",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"
+                    },
+                
+                    {
+                        name   : "微信",
+                        icon   : "icon-wechat",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"
+                    },
+                
+                    {
+                        name   : "GitHub",
+                        icon   : "icon-github",
+                        href   : "https://github.com/first19326",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+            
+        ],
+
+        FooterStyle : 2,
+        BottomText  : "<div><span class='face'>ღゝ◡╹)ノ♡</span></div><div>【人生若只如初见<span><i class='iconfont icon-like-fill'></i></span>何事秋风悲画扇】</div><div>&copy; 2020-2022 WorstOne. All Rights Reserved.</div>",
+
+        ConsoleList : [
+            
+                
+                    [
+                        
+                            
+                                "Based on cnblogs theme SimpleMemory.",
+                            
+                                "",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "SimpleMemory Author:",
+                            
+                                "BNDong",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "Theme:",
+                            
+                                "LiveForCode",
+                            
+                        
+                    ],
+                
+            
+        ],
+
+        FontIconExtend : "",
+
+        Donate : {
+            paypal  : "",
+            bitcoin : "",
+            alipay  : "/image/donate/alipay.png",
+            wechat  : "/image/donate/wechat.png"
+        },
+
+        Search : {
+            applicationID : "W44GC4V748",
+            apiKey        : "25b43f2c37a0cac32049b98740c3fd6d",
+            indexName     : "hexo2",
+            hits          : {
+                page : 30
+            },
+            labels        : {
+                placeholder : "搜索",
+                empty       : "未发现与 「${query}」 相关的内容",
+                stats       : "${hits} 条相关条目，使用了 ${time} 毫秒",
+            }
+        }, 
+
+        Valine : {
+            switch         : true,
+            el             : ".comments-content",
+            appId          : "srhKtvWPQTWYKh3qX8G8M7v0-gzGzoHsz",
+            appKey         : "8uVSP1q6UlALVC5igYfIfv2h",
+            serverURLs     : "",
+            placeholder    : "你是我一生只会遇见一次的惊喜...",
+            avatar         : "mm",
+            meta           : "nick,mail,link",
+            requiredFields : "nick,mail",
+            pageSize       : 5,
+            lang           : "zh-cn",
+            visitor        : true,
+            enableQQ       : true
+        },
+
+        Tocbot : {
+            switch                : true,
+            tocSelector           : ".toc",
+            contentSelector       : ".article-body",
+            headingSelector       : "h1, h2, h3, h4, h5",
+            headingsOffset        : 0,
+            scrollSmooth          : true,
+            scrollSmoothOffset    : -5,
+            positionFixedSelector : ".toc",
+            positionFixedClass    : "toc-fixed",
+            fixedSidebarOffset    : "",
+        },
+
+        Require : {
+            baseUrl     : "/js/",
+            waitSeconds : 100
+        },
+
+        Music : {
+            type : "Meting"
+        },
+        APlayer : {
+            container : ".aplayer",
+            fixed     : true,
+            autoplay  : true,
+            loop      : "all",
+            order     : "random",
+            preload   : "auto",
+            volume    : 0.67,
+            mutex     : true,
+            lrcType   : 2,
+            audio     : [
+                
+                    {
+                        name   : "Endless Tears",
+                        artist : "CLIFF EDGE",
+                        cover  : "/music/cover/Endless Tears.jpg",
+                        url    : "/music/song/Endless Tears.mp3",
+                        lrc    : "/music/lrc/Endless Tears.lrc"
+                    },
+                
+            ]
+        },
+        Meting : {
+            id       : "3778678", 
+            lrcshow  : false, 
+            server   : "netease", 
+            type     : "playlist", 
+            fixed    : true, 
+            autoplay : false, 
+            loop     : "all", 
+            order    : "random", 
+            preload  : "auto", 
+            volume   : 0.67, 
+            mutex    : true
+        },
+
+        Mouse : {
+            enable  : true,
+            options : {
+                size  : 6,
+                sizeF : 24
+            }
+        },
+
+        LazyLoad : {
+            default : "/image/website/lazyload.svg"
+        },
+  
+        Style : {
+            aplayer          : "/css/APlayer.css",
+            archive          : "/css/archive.css",
+            base             : "/css/base.css",
+            clipboard        : "/css/clipboard.css",
+            code             : "/css/code.css",
+            donate           : "/css/donate.css",
+            fancybox         : "/css/jquery.fancybox.css",
+            footer           : "/css/footer.css",
+            iconfont         : "/iconfont/iconfont.css",
+            index            : "/css/index.css",
+            menuBubble       : "/css/menu-bubble.css",
+            mouse            : "/css/mouse.css",
+            page             : "/css/page.css",
+            post             : "/css/post.css",
+            search           : "/css/search.css",
+            tocbot           : "/css/tocbot.css",
+            valine           : "/css/valine.css"
+        },
+
+        Script: {
+            aplayer          : "/js/APlayer.min.js",
+            config           : "/js/require.config.js",
+            index            : "/js/index.js",
+            instantSearch    : "/js/instantsearch.min.js",
+            iscroll          : "/js/iscroll.js",
+            jQuery           : "/js/jquery-3.4.1.min.js",
+            loading          : "/js/loading.js",
+            meting           : "/js/Meting.min.js",
+            require          : "/js/require.min.js"
+        },
+
+        Font: {
+            LongCang    : "/font/LongCang.css",
+            Monda       : "/font/Monda.css",
+            NotoSansSC  : "/font/NotoSansSC.css",
+            NotoSerifSC : "/font/NotoSerifSC.css",
+            Playball    : "/font/Playball.css",
+            PTMono      : "/font/PTMono.css",
+            Roboto      : "/font/Roboto.css",
+            RobotoSlab  : "/font/RobotoSlab.css",
+            Rosario     : "/font/Rosario.css",
+            UbuntuMono  : "/font/UbuntuMono.css"
+        },
+
+        Suffix : {
+            about : "你知道的越多,你不知道的越多"
+        },
+            
+        Theme : {
+            url  : "https://fadeway32.gitee.io/",
+            name : "fadeway32"
+        }  
+    };
+</script>
+    <script type="text/javascript" src="/js/index.js"></script>
+</body>
+</html>

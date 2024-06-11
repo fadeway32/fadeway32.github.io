@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <!--    <meta name="referrer" content="origin">-->
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>
+        
+            Kubernetes-Pod基础
+        
+    </title>
+    <link rel="shortcut icon" href="#"/>
+
+    <link type="text/css" rel="stylesheet" href="/font/LongCang.css">
+    <link type="text/css" rel="stylesheet" href="/font/Monda.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSansSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSerifSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/Playball.css">
+    <link type="text/css" rel="stylesheet" href="/font/PTMono.css">
+    <link type="text/css" rel="stylesheet" href="/font/Roboto.css">
+    <link type="text/css" rel="stylesheet" href="/font/RobotoSlab.css">
+    <link type="text/css" rel="stylesheet" href="/font/Rosario.css">
+    <link type="text/css" rel="stylesheet" href="/font/UbuntuMono.css">
+
+    <link type="text/css" rel="stylesheet" href="/css/base.css">
+    <link type="text/css" rel="stylesheet" href="/css/code.css">
+
+    <script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
+<meta name="generator" content="Hexo 6.2.0"></head>
+<body>
+    <a id="cover"></a>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
+<header>
+    <meta name="referrer" content="no-referrer">
+</header>
+<div id="header" class="header">
+    <div class="vertical">
+        <div class="inner">
+            
+                <h1 class="header-subtitle">Kubernetes-Pod基础</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2023-04-29
+                        </span>
+                        
+                            <span id="/article/1753358579/" class="leancloud_visitors" data-flag-title="Kubernetes-Pod基础">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1753358579/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">Kubernetes</span>
+                        
+                    
+                </div>
+            
+        </div>
+    </div>
+    
+</div>
+<div id="container">
+    
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="Kubernetes-Pod基础"><a href="#Kubernetes-Pod基础" class="headerlink" title="Kubernetes Pod基础"></a>Kubernetes Pod基础</h1><p>Pod是Kubernetes的最小调度单位，包含一个或者多个容器（比如Docker容器），容器间共享网络和存储。这节主要记录什么是静态Pod，Pod容器如何共享存储，如何使用ConfigMap管理Pod配置，如何使用Downward<br>API获取Pod信息等。</p>
+<h2 id="静态Pod"><a href="#静态Pod" class="headerlink" title="静态Pod"></a>静态Pod</h2><p>静态Pod是由kubelet创建并管理的特殊的Pod，无法和Pod管理对象关联，并且不能通过API Server关联。创建静态Pod有配置文件方式和HTTP方式：</p>
+<h3 id="配置文件方式"><a href="#配置文件方式" class="headerlink" title="配置文件方式"></a>配置文件方式</h3><p>在搭建Kubernetes集群的时候，从启动Master节点的日志可以看出，静态Pod的目录位于<code>/etc/kubernetes/manifests</code>：</p>
+<p>在该目录下创建静态Pod文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd /etc/kubernetes/manifests</span><br><span class="line">vim static-pod.yaml</span><br></pre></td></tr></table></figure>
+
+<p>内容如下所示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Pod</span><br><span class="line">metadata:</span><br><span class="line">  name: static-pod</span><br><span class="line">  labels:</span><br><span class="line">    name: static-pod</span><br><span class="line">spec:</span><br><span class="line">  containers:</span><br><span class="line">    - name: static-nginx</span><br><span class="line">      image: nginx</span><br><span class="line">      imagePullPolicy: IfNotPresent</span><br><span class="line">      ports:</span><br><span class="line">        - containerPort: 80</span><br></pre></td></tr></table></figure>
+
+<p>过了一会查看Pod：</p>
+<p><img src="https://mrbird.cc/img/QQ%E6%88%AA%E5%9B%BE20191103124437.png" alt="QQ截图20191103124437.png"></p>
+<p>于静态Pod无法通过API Server直接管理，所以在Master上尝试删除这个Pod时，会使其变成Pending状态，且不会被删除。</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111359301.png" alt="QQ截图20191103124756.png"></p>
+<p>删除该Pod的操作只能是到其所在Node上将其定义文件static-pod.yaml从&#x2F;etc&#x2F;kubernetes&#x2F;manifests目录下删除：</p>
+<p><img src="https://mrbird.cc/img/QQ%E6%88%AA%E5%9B%BE20191103124916.png" alt="QQ截图20191103124916.png"></p>
+<h3 id="HTTP方式"><a href="#HTTP方式" class="headerlink" title="HTTP方式"></a>HTTP方式</h3><p>过设置kubelet的启动参数<code>--manifest-url</code>，kubelet将会定期从该URL地址下载Pod的定义文件，并以.yaml或.json文件的格式进行解析，然后创建Pod。</p>
+<h2 id="Pod容器共享Volume"><a href="#Pod容器共享Volume" class="headerlink" title="Pod容器共享Volume"></a>Pod容器共享Volume</h2><p>同一个Pod的多个容器间可以共享Pod级别的Volume，举个例子：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vim pod-volume.yml</span><br></pre></td></tr></table></figure>
+
+<p>内容如下所示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Pod</span><br><span class="line">metadata:</span><br><span class="line">  name: pod-volume</span><br><span class="line">spec:</span><br><span class="line">  containers:</span><br><span class="line">    - name: tomcat</span><br><span class="line">      image: tomcat</span><br><span class="line">      imagePullPolicy: IfNotPresent</span><br><span class="line">      ports:</span><br><span class="line">        - containerPort: 8080</span><br><span class="line">      volumeMounts:</span><br><span class="line">        - mountPath: /usr/local/tomcat/logs</span><br><span class="line">          name: logs</span><br><span class="line">    - name: busybox</span><br><span class="line">      image: busybox</span><br><span class="line">      imagePullPolicy: IfNotPresent</span><br><span class="line">      command: [&quot;sh&quot;, &quot;-c&quot;, &quot;tail -f /logs/catalina*.log&quot;]</span><br><span class="line">      volumeMounts:</span><br><span class="line">        - mountPath: /logs</span><br><span class="line">          name: logs</span><br><span class="line">  volumes:</span><br><span class="line">    - name: logs</span><br><span class="line">      emptyDir: &#123;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上面Pod定义中，创建了一个Pod级别的Volume，名称为logs，类型为emptyDir。这个Volume同时挂载到了tomcat的&#x2F;usr&#x2F;local&#x2F;tomcat&#x2F;logs目录下，也挂载到了busybox的&#x2F;logs目录下。</p>
+<p>创建该Pod：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl create -f pod-volume.yml</span><br></pre></td></tr></table></figure>
+
+<p>这里的tomcat镜像比较大，大概有500MB左右，所以在创建之前，最好在Kubernetes集群的每个节点中配置Docker镜像加速地址。</p>
+<p>当pod-volume状态为ready后，查看busybox的日志：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111359166.png" alt="QQ截图20191103143252.png"></p>
+<p>该日志为tomcat的启动日志，说明上面挂载的Volume生效了，可以通过查看tomcat<code>/usr/local/tomcat/logs</code>目录下和busybox<code>/logs</code><br>目录下的内容来证明这一点：</p>
+<p><img src="https://mrbird.cc/img/QQ%E6%88%AA%E5%9B%BE20191103143458.png" alt="QQ截图20191103143458.png"></p>
+<h2 id="ConfigMap"><a href="#ConfigMap" class="headerlink" title="ConfigMap"></a>ConfigMap</h2><p>ConfigMap以一个或多个key:<br>value的形式保存在Kubernetes系统中供应用使用，既可以用于表示一个变量的值（例如version&#x3D;v1），也可以用于表示一个完整配置文件的内容（例如<code>server.xml=&lt;?xml...&gt;...</code>）。</p>
+<h3 id="创建ConfigMap"><a href="#创建ConfigMap" class="headerlink" title="创建ConfigMap"></a>创建ConfigMap</h3><p>创建ConfigMap主要有两种方式：</p>
+<p><strong>1.通过yml文件创建</strong></p>
+<p>创建<code>simple-cm.yml</code>文件，内容如下所示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: ConfigMap</span><br><span class="line">metadata:</span><br><span class="line">  name: simple-cm</span><br><span class="line">data:</span><br><span class="line">  version: v1</span><br><span class="line">  release: stable</span><br></pre></td></tr></table></figure>
+
+<p>该ConfigMap仅包含两个简单的值version和releases。</p>
+<p>创建该ConfigMap：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl create -f simple-cm.yml</span><br></pre></td></tr></table></figure>
+
+<p>查看该ConfigMap：</p>
+<p><img src="https://mrbird.cc/img/QQ%E6%88%AA%E5%9B%BE20191103145002.png" alt="QQ截图20191103145002.png"></p>
+<p>在定义ConfigMap的时候，value除了可以使用简单的值外，还可以是整个配置文件的内容。</p>
+<p>创建<code>file-cm.yml</code>，内容如下所示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: ConfigMap</span><br><span class="line">metadata:</span><br><span class="line">  name: file-cm</span><br><span class="line">data:</span><br><span class="line">  serverXml: |</span><br><span class="line">    &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span><br><span class="line">    &lt;Server port=&quot;8005&quot; shutdown=&quot;SHUTDOWN&quot;&gt;</span><br><span class="line">      &lt;Listener className=&quot;org.apache.catalina.startup.VersionLoggerListener&quot;/&gt;</span><br><span class="line">      &lt;Listener SSLEngine=&quot;on&quot; className=&quot;org.apache.catalina.core.AprLifecycleListener&quot;/&gt;</span><br><span class="line">      &lt;!-- Prevent memory leaks due to use of particular java/javax APIs--&gt;</span><br><span class="line">      &lt;Listener className=&quot;org.apache.catalina.core.JreMemoryLeakPreventionListener&quot;/&gt;</span><br><span class="line">      &lt;Listener className=&quot;org.apache.catalina.mbeans.GlobalResourcesLifecycleListener&quot;/&gt;</span><br><span class="line">      &lt;Listener className=&quot;org.apache.catalina.core.ThreadLocalLeakPreventionListener&quot;/&gt;</span><br><span class="line">      &lt;GlobalNamingResources&gt;</span><br><span class="line">        &lt;Resource auth=&quot;Container&quot; description=&quot;User database that can be updated and saved&quot; factory=&quot;org.apache.catalina.users.MemoryUserDatabaseFactory&quot; name=&quot;UserDatabase&quot; pathname=&quot;conf/tomcat-users.xml&quot; type=&quot;org.apache.catalina.UserDatabase&quot;/&gt;</span><br><span class="line">      &lt;/GlobalNamingResources&gt;</span><br><span class="line">      &lt;Service name=&quot;Catalina&quot;&gt;</span><br><span class="line">        &lt;Connector connectionTimeout=&quot;20000&quot; port=&quot;8080&quot; protocol=&quot;HTTP/1.1&quot; redirectPort=&quot;8443&quot;/&gt;</span><br><span class="line">        &lt;Connector port=&quot;8009&quot; protocol=&quot;AJP/1.3&quot; redirectPort=&quot;8443&quot;/&gt;</span><br><span class="line">        &lt;Engine defaultHost=&quot;localhost&quot; name=&quot;Catalina&quot;&gt;</span><br><span class="line">          &lt;Realm className=&quot;org.apache.catalina.realm.LockOutRealm&quot;&gt;</span><br><span class="line">            &lt;Realm className=&quot;org.apache.catalina.realm.UserDatabaseRealm&quot; resourceName=&quot;UserDatabase&quot;/&gt;</span><br><span class="line">          &lt;/Realm&gt;</span><br><span class="line"></span><br><span class="line">          &lt;Host appBase=&quot;webapps&quot; autoDeploy=&quot;true&quot; name=&quot;localhost&quot; unpackWARs=&quot;true&quot;&gt;</span><br><span class="line">            &lt;Valve className=&quot;org.apache.catalina.valves.AccessLogValve&quot; directory=&quot;logs&quot; pattern=&quot;%h %l %u %t &amp;quot;%r&amp;quot; %s %b&quot; prefix=&quot;localhost_access_log&quot; suffix=&quot;.txt&quot;/&gt;</span><br><span class="line">          &lt;Context docBase=&quot;D:\Code\apache-tomcat-8.5.32\webapps\tj_certification&quot; path=&quot;/tj_certification&quot; reloadable=&quot;true&quot; source=&quot;org.eclipse.jst.jee.server:tj_certification&quot;/&gt;&lt;/Host&gt;</span><br><span class="line">        &lt;/Engine&gt;</span><br><span class="line">      &lt;/Service&gt;</span><br><span class="line">    &lt;/Server&gt;</span><br><span class="line">  serverProperties: &quot;1catalina.org.apache.juli.AsyncFileHandler.level = FINE</span><br><span class="line">                     1catalina.org.apache.juli.AsyncFileHandler.directory = $&#123;catalina.base&#125;/logs</span><br><span class="line">                     1catalina.org.apache.juli.AsyncFileHandler.prefix = catalina.</span><br><span class="line"></span><br><span class="line">                     2localhost.org.apache.juli.AsyncFileHandler.level = FINE</span><br><span class="line">                     2localhost.org.apache.juli.AsyncFileHandler.directory = $&#123;catalina.base&#125;/logs</span><br><span class="line">                     2localhost.org.apache.juli.AsyncFileHandler.prefix = localhost.</span><br><span class="line"></span><br><span class="line">                     3manager.org.apache.juli.AsyncFileHandler.level = FINE</span><br><span class="line">                     3manager.org.apache.juli.AsyncFileHandler.directory = $&#123;catalina.base&#125;/logs</span><br><span class="line">                     3manager.org.apache.juli.AsyncFileHandler.prefix = manager.</span><br><span class="line"></span><br><span class="line">                     4host-manager.org.apache.juli.AsyncFileHandler.level = FINE</span><br><span class="line">                     4host-manager.org.apache.juli.AsyncFileHandler.directory = $&#123;catalina.base&#125;/logs</span><br><span class="line">                     4host-manager.org.apache.juli.AsyncFileHandler.prefix = host-manager.</span><br><span class="line"></span><br><span class="line">                     java.util.logging.ConsoleHandler.level = FINE</span><br><span class="line">                     java.util.logging.ConsoleHandler.formatter = org.apache.juli.OneLineFormatter</span><br><span class="line"></span><br><span class="line">                     org.apache.catalina.core.ContainerBase.[Catalina].[localhost].level = INFO</span><br><span class="line">                     org.apache.catalina.core.ContainerBase.[Catalina].[localhost].handlers = 2localhost.org.apache.juli.AsyncFileHandler</span><br><span class="line"></span><br><span class="line">                     org.apache.catalina.core.ContainerBase.[Catalina].[localhost].[/manager].level = INFO</span><br><span class="line">                     org.apache.catalina.core.ContainerBase.[Catalina].[localhost].[/manager].handlers = 3manager.org.apache.juli.AsyncFileHandler</span><br><span class="line"></span><br><span class="line">                     org.apache.catalina.core.ContainerBase.[Catalina].[localhost].[/host-manager].level = INFO</span><br><span class="line">                     org.apache.catalina.core.ContainerBase.[Catalina].[localhost].[/host-manager].handlers = 4host-manager.org.apache.juli.AsyncFileHandler&quot;</span><br></pre></td></tr></table></figure>
+
+<p>创建该ConfigMap：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111359196.png" alt="QQ截图20191103150049.png"></p>
+<p><strong>2.直接通过Kubectl命令创建</strong></p>
+<p>通过kubectl命令创建ConfigMap主要有以下三种用法：</p>
+<ol>
+<li><p>通过–from-file参数从文件中进行创建，可以指定key的名称，也可以在一个命令行中创建包含多个key的ConfigMap，语法为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl cerate configmap [NAME] --from-file=[key=]source --from-file=[key=]source</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>通过–from-file参数从目录中进行创建，该目录下的每个配置文件名都被设置为key，文件的内容被设置为value，语法为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl cerate configmap [NAME] --from-file=config-file-dir</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>使用–from-literal时会从文本中进行创建，直接将指定的key#&#x3D;value#创建为ConfigMap的内容，语法为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl cerate configmap [NAME] --from-literal=key1=value1 --from-literal=key2=value2</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>比如使用kubectl命令创建一个和simple-cm效果一样的ConfigMap：</p>
+<p><img src="https://mrbird.cc/img/QQ%E6%88%AA%E5%9B%BE20191103150859.png" alt="QQ截图20191103150859.png"></p>
+<p>使用kubectl命令创建一个和file-cm效果一样的ConfigMap：</p>
+<p>首先在当前目录下准备好两个配置文件server.xml和server.properties：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111359656.png" alt="QQ截图20191103151524.png"></p>
+<p>然后使用kubectl命令创建：</p>
+<p><img src="https://mrbird.cc/img/QQ%E6%88%AA%E5%9B%BE20191103151751.png" alt="QQ截图20191103151751.png"></p>
+<h3 id="Pod容器使用ConfigMap"><a href="#Pod容器使用ConfigMap" class="headerlink" title="Pod容器使用ConfigMap"></a>Pod容器使用ConfigMap</h3><p>Pod的容器要使用ConfigMap主要有两种方式：</p>
+<ol>
+<li>通过环境变量获取ConfigMap中的内容;</li>
+<li>通过Volume挂载的方式将ConfigMap中的内容挂载为容器内部的文件或目录。</li>
+</ol>
+<p><strong>通过环境变量的方式</strong></p>
+<p>创建一个Pod配置（simple-cm-pod.yml）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Pod</span><br><span class="line">metadata:</span><br><span class="line">  name: simple-cm-pod</span><br><span class="line">spec:</span><br><span class="line">  containers:</span><br><span class="line">    - name: busybox</span><br><span class="line">      image: busybox</span><br><span class="line">      command: [&quot;sh&quot;, &quot;-c&quot;, &quot;env | grep ENV&quot;] # 打印名称包含ENV的环境变量</span><br><span class="line">      env:</span><br><span class="line">        - name: ENVVERSION     # 定义环境变量名称</span><br><span class="line">          valueFrom:           # 值来自...</span><br><span class="line">            configMapKeyRef:   # ConfigMap键的引用</span><br><span class="line">              key: version     # ConfigMap的key</span><br><span class="line">              name: simple-cm  # ConfigMap的名称</span><br><span class="line">        - name: ENVRELEASE</span><br><span class="line">          valueFrom:</span><br><span class="line">            configMapKeyRef:</span><br><span class="line">              key: release</span><br><span class="line">              name: simple-cm</span><br></pre></td></tr></table></figure>
+
+<p>创建该Pod，并查看日志：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111359195.png" alt="QQ截图20191103153532.png"></p>
+<p>可以看到，值已经成功从ConfigMap里去到了。</p>
+<p>如果要引用某个ConfigMap的所有内容，可以使用下面这种方式。定义一个Pod配置（simple-cm-pod-all.uyml）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Pod</span><br><span class="line">metadata:</span><br><span class="line">  name: simple-cm-pod-all</span><br><span class="line">spec:</span><br><span class="line">  containers:</span><br><span class="line">    - name: busybox</span><br><span class="line">      image: busybox</span><br><span class="line">      command: [&quot;sh&quot;, &quot;-c&quot;, &quot;env&quot;]</span><br><span class="line">      envFrom:</span><br><span class="line">        - configMapRef:</span><br><span class="line">            name: simple-cm</span><br></pre></td></tr></table></figure>
+
+<p>创建该Pod，并查看日志：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111359649.png" alt="QQ截图20191103154213.png"></p>
+<p><strong>通过Volume挂载的方式</strong></p>
+<p>创建一个Pod配置（file-cm-pod.yml）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Pod</span><br><span class="line">metadata:</span><br><span class="line">  name: file-cm-pod</span><br><span class="line">spec:</span><br><span class="line">  containers:</span><br><span class="line">    - name: tomcat</span><br><span class="line">      image: tomcat</span><br><span class="line">      ports:</span><br><span class="line">        - containerPort: 8080</span><br><span class="line">      volumeMounts:</span><br><span class="line">        - mountPath: /configs # 容器挂载目录为/configs</span><br><span class="line">          name: config-vm # 引用下面定义的这个Volume</span><br><span class="line">  volumes:</span><br><span class="line">    - name: config-vm   # volume名称为config-vm</span><br><span class="line">      configMap:        # 通过ConfigMap获取</span><br><span class="line">        name: file-cm   # 引用名称为file-cm的ConfigMap</span><br><span class="line">        items:</span><br><span class="line">          - key: serverXml # ConfigMap里配置的key</span><br><span class="line">            path: server.xml # 值使用server.xml文件进行挂载</span><br><span class="line">          - key: serverProperties</span><br><span class="line">            path: server.properties</span><br></pre></td></tr></table></figure>
+
+<p>创建该Pod，并进入到容器内部观察&#x2F;configs目录下文件内容：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111359881.png" alt="QQ截图20191103155731.png"></p>
+<p>可以看到名称为file-cm的ConfigMap内容已经成功挂载到了tomcat容器内部。</p>
+<p>如果在引用ConfigMap时不指定items，则使用volumeMount方式在容器内的目录下为每个item都生成一个文件名为key的文件。</p>
+<p>在Pod对ConfigMap进行挂载（volumeMount）操作时，在容器内部只能挂载为“目录”，无法挂载为“文件”。在挂载到容器内部后，在目录下将包含ConfigMap定义的每个item，如果在该目录下原来还有其他文件，则容器内的该目录将被挂载的ConfigMap<br><strong>覆盖</strong>。</p>
+<h2 id="Downward-API"><a href="#Downward-API" class="headerlink" title="Downward API"></a>Downward API</h2><p>Downward API用于将Pod相关信息注入到容器内部，主要有<strong>环境变量</strong>和<strong>Volume挂载</strong>两种方式。</p>
+<p><strong>环境变量</strong></p>
+<p>创建一个Pod配置（dapi-pod.yml）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Pod</span><br><span class="line">metadata:</span><br><span class="line">  name: dapi-pod</span><br><span class="line">spec:</span><br><span class="line">  containers:</span><br><span class="line">    - name: busybox</span><br><span class="line">      image: busybox</span><br><span class="line">      command: [&quot;sh&quot;, &quot;-c&quot;, &quot;env | grep MY_POD&quot;]</span><br><span class="line">      env:</span><br><span class="line">        - name: MY_POD_NAME</span><br><span class="line">          valueFrom:</span><br><span class="line">            fieldRef:</span><br><span class="line">              fieldPath: metadata.name # 通过downward api获取当前pod名称</span><br><span class="line">        - name: MY_POD_NAMESPACE</span><br><span class="line">          valueFrom:</span><br><span class="line">            fieldRef:</span><br><span class="line">              fieldPath: metadata.namespace  # 通过downward api获取当前pod namespace</span><br><span class="line">        - name: MY_POD_IP</span><br><span class="line">          valueFrom:</span><br><span class="line">            fieldRef:</span><br><span class="line">              fieldPath: status.podIP  # 通过downward api获取当前pod IP</span><br></pre></td></tr></table></figure>
+
+<p>创建该Pod，并查看日志：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111359106.png" alt="QQ截图20191103162045.png"></p>
+<p>通过环境变量的方式还可以将容器的requests和limits信息注入到容器的环境变量中，创建一个Pod配置（dapi-pod-container-vars.yml）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Pod</span><br><span class="line">metadata:</span><br><span class="line">  name: dapi-pod-container-vars</span><br><span class="line">spec:</span><br><span class="line">  containers:</span><br><span class="line">    - name: busybox</span><br><span class="line">      image: busybox</span><br><span class="line">      command: [&quot;sh&quot;, &quot;-c&quot;]</span><br><span class="line">      args:</span><br><span class="line">        - while true;do</span><br><span class="line">            echo -en &#x27;\n&#x27;;</span><br><span class="line">            printenv MY_CPU_REQUEST MY_CPU_LIMIT;</span><br><span class="line">            printenv MY_MEM_REQUEST MY_MEM_LIMIT;</span><br><span class="line">            sleep 3600;</span><br><span class="line">          done;</span><br><span class="line">      resources:</span><br><span class="line">        requests:</span><br><span class="line">          memory: &quot;32Mi&quot;</span><br><span class="line">          cpu: &quot;125m&quot;</span><br><span class="line">        limits:</span><br><span class="line">          memory: &quot;64Mi&quot;</span><br><span class="line">          cpu: &quot;250m&quot;</span><br><span class="line">      env:</span><br><span class="line">        - name: MY_CPU_REQUEST</span><br><span class="line">          valueFrom:</span><br><span class="line">            resourceFieldRef:</span><br><span class="line">              resource: requests.cpu</span><br><span class="line">              containerName: busybox</span><br><span class="line">        - name: MY_CPU_LIMIT</span><br><span class="line">          valueFrom:</span><br><span class="line">            resourceFieldRef:</span><br><span class="line">              resource: limits.cpu</span><br><span class="line">              containerName: busybox</span><br><span class="line">        - name: MY_MEM_REQUEST</span><br><span class="line">          valueFrom:</span><br><span class="line">            resourceFieldRef:</span><br><span class="line">              resource: request.memory</span><br><span class="line">              containerName: busybox</span><br><span class="line">        - name: MY_MEM_LIMIT</span><br><span class="line">          valueFrom:</span><br><span class="line">            resourceFieldRef:</span><br><span class="line">              resource: limits.memory</span><br><span class="line">              containerName: busybox</span><br></pre></td></tr></table></figure>
+
+<p>创建该Pod并观察日志：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111359217.png" alt="QQ截图20191103163059.png"></p>
+<p><strong>通过Volume挂载</strong></p>
+<p>我们可以通过Downward API将Pod的Label，Annotation等信息挂载到容器内部文件中，新建一个Pod配置（dapi-pod-volumes.yml）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Pod</span><br><span class="line">metadata:</span><br><span class="line">  name: dapi-pod-volume</span><br><span class="line">  labels:</span><br><span class="line">    tier: frontend</span><br><span class="line">    release: canary</span><br><span class="line">    environment: dev</span><br><span class="line">  annotations:</span><br><span class="line">    builder: mrbird</span><br><span class="line">    blog: https://mrbird.cc</span><br><span class="line">spec:</span><br><span class="line">  containers:</span><br><span class="line">    - name: busybox</span><br><span class="line">      image: busybox</span><br><span class="line">      command: [&quot;sh&quot;, &quot;-c&quot;, &quot;sleep 36000&quot;]</span><br><span class="line">      volumeMounts:</span><br><span class="line">        - mountPath: /podinfo # 挂载路径</span><br><span class="line">          name: pod-info</span><br><span class="line">  volumes:</span><br><span class="line">    - name: pod-info</span><br><span class="line">      downwardAPI: # 通过downward api获取pod labels和annations信息</span><br><span class="line">        items:</span><br><span class="line">          - path: &quot;labels&quot; # 挂载文件名称</span><br><span class="line">            fieldRef:</span><br><span class="line">              fieldPath: metadata.labels # 挂载内容</span><br><span class="line">          - path: &quot;annotation&quot;</span><br><span class="line">            fieldRef:</span><br><span class="line">              fieldPath: metadata.annotations</span><br></pre></td></tr></table></figure>
+
+<p>创建该Pod，并进入到容器&#x2F;podinfo目录观察结果：</p>
+<p><img src="https://mrbird.cc/img/QQ%E6%88%AA%E5%9B%BE20191103171025.png" alt="QQ截图20191103171025.png"></p>
+<h2 id="Pod生命周期"><a href="#Pod生命周期" class="headerlink" title="Pod生命周期"></a>Pod生命周期</h2><table>
+<thead>
+<tr>
+<th align="left">阶段</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>Pending</strong></td>
+<td align="left">Pod 已被 Kubernetes 接受，但尚未创建一个或多个容器镜像。这包括被调度之前的时间以及通过网络下载镜像所花费的时间，执行需要一段时间。</td>
+</tr>
+<tr>
+<td align="left"><strong>Running</strong></td>
+<td align="left">Pod 已经被绑定到了一个节点，所有容器已被创建。至少一个容器正在运行，或者正在启动或重新启动。</td>
+</tr>
+<tr>
+<td align="left"><strong>Succeeded</strong></td>
+<td align="left">所有容器成功终止，也不会重启。</td>
+</tr>
+<tr>
+<td align="left"><strong>Failed</strong></td>
+<td align="left">所有容器终止，至少有一个容器以失败方式终止。也就是说，这个容器要么已非 0 状态退出，要么被系统终止。</td>
+</tr>
+<tr>
+<td align="left"><strong>Unknown</strong></td>
+<td align="left">由于一些原因，Pod 的状态无法获取，通常是与 Pod 通信时出错导致的。</td>
+</tr>
+</tbody></table>
+<p>三种重启策略：</p>
+<ol>
+<li>Always：当容器失效时，由kubelet自动重启该容器；</li>
+<li>OnFailure：当容器终止运行且退出码不为0时，由kubelet自动重启该容器；</li>
+<li>Never：不论容器运行状态如何，kubelet都不会重启该容器。</li>
+</ol>
+<p>结合Pod的状态和重启策略，以下为一些常见的状态转换场景：</p>
+<table>
+<thead>
+<tr>
+<th>Pod包含的容器数</th>
+<th>Pod当前的状态</th>
+<th>发生事件</th>
+<th>Pod的结果状态</th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td></td>
+<td></td>
+<td></td>
+<td>RestarPolicy&#x3D;Always</td>
+<td>RestartPolicy&#x3D;OnFailure</td>
+<td>RestartPolicy&#x3D;Never</td>
+</tr>
+<tr>
+<td>包含1个容器</td>
+<td>Running</td>
+<td>容器成功退出</td>
+<td>Running</td>
+<td>Succeeded</td>
+<td>Succeeded</td>
+</tr>
+<tr>
+<td>包含1个容器</td>
+<td>Running</td>
+<td>容器失败退出</td>
+<td>Running</td>
+<td>Running</td>
+<td>Failed</td>
+</tr>
+<tr>
+<td>包含两个容器</td>
+<td>Running</td>
+<td>1个容器失败退出</td>
+<td>Running</td>
+<td>Running</td>
+<td>Running</td>
+</tr>
+<tr>
+<td>包含两个容器</td>
+<td>Running</td>
+<td>容器被OOM杀掉</td>
+<td>Running</td>
+<td>Running</td>
+<td>Failed</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>《Kubernetes权威指南(第4版)》读书笔记</p>
+</blockquote>
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1753358579/" target="_blank">Kubernetes-Pod基础</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
+                        
+                            <a href="/category/Web/">Web</a>
+                        
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
+                        
+                            <a href="/tag/Kubernetes/">Kubernetes</a>
+                        
+                    </div>
+                
+                <div class="article-prev-next">
+                    
+                        <a href="/article/1753358581/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1753358581/" title="发布于 2023-04-29 09:36">Kubernetes-Pod扩容与缩容</a>
+                        <br>
+                    
+                    
+                        <a href="/article/1753358583/" class="next-prefix">» </a> 下一篇：    <a href="/article/1753358583/" title="发布于 2023-04-29 09:36">Kubernetes-Pod管理对象与调度策略</a>
+                    
+                </div>
+            </div>
+            
+    <div class="article-comments">
+        
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
+    
+</div>
+    <div id="footer"></div>
+    <div id="sidebar">
+    <div class="menu-wrap" style="display:none;">
+        
+            <div class="menu-notice">
+                <span class="iconfont icon-notice"></span>
+                <div class="notice">
+                    <span>简单地活着，肆意而又精彩！</span>
+                </div>
+            </div>
+        
+        <nav class="menu">
+            <div class="menu-introduce"> 
+                <div class="introduce-avatar">
+                    <img src="/image/sidebar/avatar.jpg">
+                </div> 
+                <div class="introduce-info"> 
+                    <div class="introduce-user"><span>Live For Code</span></div>
+                </div> 
+            </div> 
+            <div class="menu-list">
+                <ul>
+                    
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                    
+                        <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
+                    
+                        <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
+                    
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                    
+                        <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
+                    
+                        <li class=""><a href="/about" class="" target="_self"><span class="iconfont icon-about-fill"></span>关于</a></li>
+                    
+                        <li class=""><a href="/atom.xml" class="" target="_blank"><span class="iconfont icon-rss"></span>订阅</a></li>
+                    
+                        <li class=""><a href="javascript:;" class="search" target="_self"><span class="iconfont icon-search-menu"></span>搜索</a></li>
+                    
+                        <li class=""><a href="/comment" class="" target="_self"><span class="iconfont icon-comments-fill"></span>留言板</a></li>
+                    
+                        <li class=""><a href="/friend" class="" target="_self"><span class="iconfont icon-link"></span>友情链接</a></li>
+                    
+                </ul> 
+            </div> 
+            <div class="menu-link">
+                <div class="box">
+                    <div class="image-box"></div>
+                </div>
+                
+                    <a name="知乎" href="https://www.zhihu.com/people/wo-xin-de-love" class="" target="_blank" data=""><span class="iconfont icon-zhihu"></span></a>
+                
+                    <a name="微博" href="https://weibo.com/u/3939432776" class="" target="_blank" data=""><span class="iconfont icon-weibo"></span></a>
+                
+                    <a name="QQ" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"><span class="iconfont icon-qq"></span></a>
+                
+                    <a name="微信" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"><span class="iconfont icon-wechat"></span></a>
+                
+                    <a name="GitHub" href="https://github.com/first19326" class="" target="_blank" data=""><span class="iconfont icon-github"></span></a>
+                
+            </div> 
+        </nav>
+        <button class="menu-button-close"></button>
+        <div class="morph-shape" id="morph-shape" data-morph-open="M-7.312,0H15c0,0,66,113.339,66,399.5C81,664.006,15,800,15,800H-7.312V0z;M-7.312,0H100c0,0,0,113.839,0,400c0,264.506,0,400,0,400H-7.312V0z">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 800" preserveAspectRatio="none">
+                <path d="M-7.312,0H0c0,0,0,113.839,0,400c0,264.506,0,400,0,400h-7.312V0z"/>
+            </svg>
+        </div>
+    </div>
+    <button class="menu-button-open">MENU</button>
+    <div class="menu-cover"></div>
+</div>
+    <link type="text/css" rel="stylesheet" href="/css/search.css">
+<script type="text/javascript" src="/js/iscroll.js"></script>
+<script type="text/javascript" src="/js/instantsearch.min.js"></script>
+<div class="search-window">
+    <div class="search-content">
+        <div class="search-content-icon">
+            <i class="iconfont icon-search"></i>
+        </div>
+        <div id="search-input" class="search-input"></div>
+    </div>
+
+    <div class="search-scroll">
+        <div class="search-result">
+            <div id="search-stats" class="search-stats"></div>
+            <div id="search-hits"></div>
+            <div id="search-pagination" class="search-pagination"></div>
+        </div>
+    </div>
+
+    <span class="search-close-icon">
+        <i class="iconfont icon-close"></i>
+    </span>
+</div>
+    <div id="tools">
+    <div class="progressbar-top"></div>
+
+    
+        <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
+        <script type="text/javascript" src="/js/APlayer.min.js"></script>
+        <script type="text/javascript" src="/js/Meting.min.js"></script>
+        <meting-js id="3778678" lrcshow="false" server="netease" type="playlist" fixed="true" autoplay="false" loop="all" order="random" preload="auto" volume="0.67" mutex="true"></meting-js>
+    
+    
+    <div class="wrap-right">
+        <div class="setting">
+            <div class="iconbox favorites" switch="false">
+                <span class="iconfont icon-favorites"></span>
+                <span class="icontext">关注</span>
+            </div>
+            <div class="iconbox mode">
+                <div class="light">
+                    <span class="iconfont icon-daymode"></span>
+                    <span class="icontext">浅色模式</span>
+                </div>
+                <div class="dark">
+                    <span class="iconfont icon-nightmode-fill"></span>
+                    <span class="icontext">深色模式</span>
+                </div>
+            </div>
+            <a href="javascript:;" target="_self" class="search">
+                <div class="iconbox">
+                    <span class="iconfont icon-search-menu"></span>
+                    <span class="icontext">搜索</span>
+                </div>
+            </a>
+            <div class="iconbox bottom">
+                <div style="display: inline-block; transform: rotate(180deg);">
+                    <span class="iconfont icon-top"></span>
+                </div>
+                <span class="icontext">跳至底部</span>
+            </div>
+        </div>
+        <div class="iconbox set">
+            <div style="display: inline-block;">
+                <span class="iconfont icon-setting"></span>
+            </div>
+            <span class="icontext">设置</span>
+        </div>
+        <div class="iconbox top">
+            <span class="iconfont icon-top"></span>
+            <span class="icontext">返回顶部</span>
+        </div>
+    </div>
+    <div class="loading"></div>
+</div>
+    <script>
+    window.config = {
+        GitHubUserName     : "first19326",
+        GitHubRepositories : "Hexo-LiveForCode",
+
+        User             : "Live For Code",
+        UserAvatar       : "/image/sidebar/avatar.jpg",
+        WebsiteStartDate : "2020-01-01",
+
+        WebsiteTitleBlur         : "(◍´꒳`◍) Hi, Live For Code",
+        WebsiteTitleBlurTimeOut  : 500,
+        WebsiteTitleFocus        : "(*´∇｀*) 欢迎回来!",
+        WebsiteTitleFocusTimeOut : 1000,
+        WebsiteFavicon           : "/image/website/logo.png",
+
+        ProgressBar : {
+            id       : "topProgressBar",
+            color    : "#77B6FF",
+            height   : "2px",
+            duration : 0.2
+        },
+
+        Loading: {
+            rebound : {
+                tension  : 16,
+                friction : 5
+            },
+            spinner : {
+                id     : "spinner",
+                radius : 90,
+                sides  : 3,
+                depth  : 4,
+                colors : {
+                    background : "#F0F0F0",
+                    stroke     : "#272633",
+                    base       : "",
+                    child      : "#272633"
+                },
+                alwaysForward : true,
+                restAt        : 0.5,
+                renderBase    : false
+            }
+        },
+
+        HomeHeaderAnimationRendered : true,
+        HomeHeaderAnimation         : {
+            radius      : 15,
+            density     : 0.2,
+            color       : "rgba(255, 255, 255, .2)",
+            clearOffset : 0.3
+        },
+
+        BackAnimationRendered          : true,
+        IEBrowserBackAnimationRendered : false,
+        BackAnimation                  : {
+            colorSaturation  : "60%",
+            colorBrightness  : "50%",
+            colorAlpha       : 0.5,
+            colorCycleSpeed  : 5,
+            verticalPosition : "random",
+            horizontalSpeed  : 200,
+            ribbonCount      : 3,
+            strokeSize       : 0,
+            parallaxAmount   : -0.2,
+            animateSections  : true
+        },
+
+        HomeHeaderImage : [
+            
+                "/image/header/home.jpg",
+            
+                "/image/header/home.jpeg",
+            
+                "/image/header/2023-04-17-20-51-03.jpg",
+            
+                "/image/header/2023-04-17-20-54-07.jpg",
+            
+                "/image/header/2023-04-17-20-54-22.jpg",
+            
+                "/image/header/2023-04-17-20-55-25.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+        HomeBannerText  : "",
+
+        ArticleHeaderImage : [
+            
+                "/image/header/article.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+
+        OtherBannerText : "",
+
+        Error : {
+            icon    : "icon-swimming",
+            title   : "PAGE NOT FOUND",
+            content : [
+                
+                    "很抱歉，您访问的页面不存在！",
+                
+                    "可能是输入地址有误或该地址已变更。",
+                
+            ],
+            buttons : [
+                
+                    {
+                        icon  : "icon-home",
+                        text  : "返回首页",
+                        href  : "https://fadeway32.gitee.io/",
+                        class : ""
+                    },
+                
+            ]
+        },
+
+        MenuNotice : {
+            enable : true,
+            notice : "简单地活着，肆意而又精彩！",
+            speed  : 20
+        },
+        MenuList : [
+            
+                {
+                    name   : "首页",
+                    icon   : "icon-home-fill",
+                    href   : "/",
+                    type   : "index",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "分类",
+                    icon   : "icon-folder-fill",
+                    href   : "/category",
+                    type   : "category",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "标签",
+                    icon   : "icon-discount-fill",
+                    href   : "/tag",
+                    type   : "tag",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "归档",
+                    icon   : "icon-calendar-fill",
+                    href   : "/archive",
+                    type   : "archive",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "赞赏",
+                    icon   : "icon-heart-fill",
+                    href   : "/donate",
+                    type   : "donate",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "关于",
+                    icon   : "icon-about-fill",
+                    href   : "/about",
+                    type   : "about",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "订阅",
+                    icon   : "icon-rss",
+                    href   : "/atom.xml",
+                    type   : "",
+                    class  : "",
+                    target : "_blank"
+                },
+            
+                {
+                    name   : "搜索",
+                    icon   : "icon-search-menu",
+                    href   : "javascript:;",
+                    type   : "",
+                    class  : "search",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "留言板",
+                    icon   : "icon-comments-fill",
+                    href   : "/comment",
+                    type   : "comment",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "友情链接",
+                    icon   : "icon-link",
+                    href   : "/friend",
+                    type   : "friend",
+                    class  : "",
+                    target : "_self"
+                },
+            
+        ],
+        MenuLink : [
+            
+                
+                    {
+                        name   : "知乎",
+                        icon   : "icon-zhihu",
+                        href   : "https://www.zhihu.com/people/wo-xin-de-love",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "微博",
+                        icon   : "icon-weibo",
+                        href   : "https://weibo.com/u/3939432776",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "QQ",
+                        icon   : "icon-qq",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"
+                    },
+                
+                    {
+                        name   : "微信",
+                        icon   : "icon-wechat",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"
+                    },
+                
+                    {
+                        name   : "GitHub",
+                        icon   : "icon-github",
+                        href   : "https://github.com/first19326",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+            
+        ],
+
+        FooterStyle : 2,
+        BottomText  : "<div><span class='face'>ღゝ◡╹)ノ♡</span></div><div>【人生若只如初见<span><i class='iconfont icon-like-fill'></i></span>何事秋风悲画扇】</div><div>&copy; 2020-2022 WorstOne. All Rights Reserved.</div>",
+
+        ConsoleList : [
+            
+                
+                    [
+                        
+                            
+                                "Based on cnblogs theme SimpleMemory.",
+                            
+                                "",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "SimpleMemory Author:",
+                            
+                                "BNDong",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "Theme:",
+                            
+                                "LiveForCode",
+                            
+                        
+                    ],
+                
+            
+        ],
+
+        FontIconExtend : "",
+
+        Donate : {
+            paypal  : "",
+            bitcoin : "",
+            alipay  : "/image/donate/alipay.png",
+            wechat  : "/image/donate/wechat.png"
+        },
+
+        Search : {
+            applicationID : "W44GC4V748",
+            apiKey        : "25b43f2c37a0cac32049b98740c3fd6d",
+            indexName     : "hexo2",
+            hits          : {
+                page : 30
+            },
+            labels        : {
+                placeholder : "搜索",
+                empty       : "未发现与 「${query}」 相关的内容",
+                stats       : "${hits} 条相关条目，使用了 ${time} 毫秒",
+            }
+        }, 
+
+        Valine : {
+            switch         : true,
+            el             : ".comments-content",
+            appId          : "srhKtvWPQTWYKh3qX8G8M7v0-gzGzoHsz",
+            appKey         : "8uVSP1q6UlALVC5igYfIfv2h",
+            serverURLs     : "",
+            placeholder    : "你是我一生只会遇见一次的惊喜...",
+            avatar         : "mm",
+            meta           : "nick,mail,link",
+            requiredFields : "nick,mail",
+            pageSize       : 5,
+            lang           : "zh-cn",
+            visitor        : true,
+            enableQQ       : true
+        },
+
+        Tocbot : {
+            switch                : true,
+            tocSelector           : ".toc",
+            contentSelector       : ".article-body",
+            headingSelector       : "h1, h2, h3, h4, h5",
+            headingsOffset        : 0,
+            scrollSmooth          : true,
+            scrollSmoothOffset    : -5,
+            positionFixedSelector : ".toc",
+            positionFixedClass    : "toc-fixed",
+            fixedSidebarOffset    : "",
+        },
+
+        Require : {
+            baseUrl     : "/js/",
+            waitSeconds : 100
+        },
+
+        Music : {
+            type : "Meting"
+        },
+        APlayer : {
+            container : ".aplayer",
+            fixed     : true,
+            autoplay  : true,
+            loop      : "all",
+            order     : "random",
+            preload   : "auto",
+            volume    : 0.67,
+            mutex     : true,
+            lrcType   : 2,
+            audio     : [
+                
+                    {
+                        name   : "Endless Tears",
+                        artist : "CLIFF EDGE",
+                        cover  : "/music/cover/Endless Tears.jpg",
+                        url    : "/music/song/Endless Tears.mp3",
+                        lrc    : "/music/lrc/Endless Tears.lrc"
+                    },
+                
+            ]
+        },
+        Meting : {
+            id       : "3778678", 
+            lrcshow  : false, 
+            server   : "netease", 
+            type     : "playlist", 
+            fixed    : true, 
+            autoplay : false, 
+            loop     : "all", 
+            order    : "random", 
+            preload  : "auto", 
+            volume   : 0.67, 
+            mutex    : true
+        },
+
+        Mouse : {
+            enable  : true,
+            options : {
+                size  : 6,
+                sizeF : 24
+            }
+        },
+
+        LazyLoad : {
+            default : "/image/website/lazyload.svg"
+        },
+  
+        Style : {
+            aplayer          : "/css/APlayer.css",
+            archive          : "/css/archive.css",
+            base             : "/css/base.css",
+            clipboard        : "/css/clipboard.css",
+            code             : "/css/code.css",
+            donate           : "/css/donate.css",
+            fancybox         : "/css/jquery.fancybox.css",
+            footer           : "/css/footer.css",
+            iconfont         : "/iconfont/iconfont.css",
+            index            : "/css/index.css",
+            menuBubble       : "/css/menu-bubble.css",
+            mouse            : "/css/mouse.css",
+            page             : "/css/page.css",
+            post             : "/css/post.css",
+            search           : "/css/search.css",
+            tocbot           : "/css/tocbot.css",
+            valine           : "/css/valine.css"
+        },
+
+        Script: {
+            aplayer          : "/js/APlayer.min.js",
+            config           : "/js/require.config.js",
+            index            : "/js/index.js",
+            instantSearch    : "/js/instantsearch.min.js",
+            iscroll          : "/js/iscroll.js",
+            jQuery           : "/js/jquery-3.4.1.min.js",
+            loading          : "/js/loading.js",
+            meting           : "/js/Meting.min.js",
+            require          : "/js/require.min.js"
+        },
+
+        Font: {
+            LongCang    : "/font/LongCang.css",
+            Monda       : "/font/Monda.css",
+            NotoSansSC  : "/font/NotoSansSC.css",
+            NotoSerifSC : "/font/NotoSerifSC.css",
+            Playball    : "/font/Playball.css",
+            PTMono      : "/font/PTMono.css",
+            Roboto      : "/font/Roboto.css",
+            RobotoSlab  : "/font/RobotoSlab.css",
+            Rosario     : "/font/Rosario.css",
+            UbuntuMono  : "/font/UbuntuMono.css"
+        },
+
+        Suffix : {
+            about : "你知道的越多,你不知道的越多"
+        },
+            
+        Theme : {
+            url  : "https://fadeway32.gitee.io/",
+            name : "fadeway32"
+        }  
+    };
+</script>
+    <script type="text/javascript" src="/js/index.js"></script>
+</body>
+</html>

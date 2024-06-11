@@ -9,7 +9,7 @@
     <meta http-equiv="Cache-Control" content="no-siteapp">
     <title>
         
-            LeetCode02-两数加法计算-链表逆序
+            Kubernetes-Pod升级与回滚
         
     </title>
     <link rel="shortcut icon" href="#"/>
@@ -40,19 +40,19 @@
     <div class="vertical">
         <div class="inner">
             
-                <h1 class="header-subtitle">LeetCode02-两数加法计算-链表逆序</h1>
+                <h1 class="header-subtitle">Kubernetes-Pod升级与回滚</h1>
                 <div class="header-subinfo">
                     <p class="article-info-text">
                         <span>
-                            <i class="iconfont icon-time"></i> 发表时间：2023-02-15
+                            <i class="iconfont icon-time"></i> 发表时间：2023-04-29
                         </span>
                         
-                            <span id="/article/1305786655/" class="leancloud_visitors" data-flag-title="LeetCode02-两数加法计算-链表逆序">
+                            <span id="/article/1753358582/" class="leancloud_visitors" data-flag-title="Kubernetes-Pod升级与回滚">
                                 <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
                             </span>
                         
                         <span>
-                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1305786655/"></span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1753358582/"></span>
                         </span>
                     </p>
                     
@@ -62,7 +62,7 @@
                     
                     
                         
-                            <span class="tag-color">LeetCode</span>
+                            <span class="tag-color">Kubernetes</span>
                         
                     
                 </div>
@@ -77,22 +77,66 @@
         <div id="article">
             <div class="toc"></div>
             <div class="article-body">
-                <p>LeetCode 两数相加</p>
-<p>给你两个 非空 的链表，表示两个非负的整数。它们每位数字都是按照 逆序 的方式存储的，并且每个节点只能存储 一位 数字。</p>
-<p>请你将两个数相加，并以相同形式返回一个表示和的链表。</p>
-<p>你可以假设除了数字 0 之外，这两个数都不会以 0 开头。</p>
-<p><a target="_blank" rel="noopener" href="https://gitee.com/fadeway32/fadeway32/raw/master/img/20230224213414.png">https://gitee.com/fadeway32/fadeway32/raw/master/img/20230224213414.png</a></p>
-<div class="aligin" align="left"><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/20230224213414.png" style="zoom:100%;" /></div>
+                <h1 id="Kubernetes-Pod升级与回滚"><a href="#Kubernetes-Pod升级与回滚" class="headerlink" title="Kubernetes Pod升级与回滚"></a>Kubernetes Pod升级与回滚</h1><p>当集群中的某个服务需要升级时，我们需要停止目前与该服务相关的所有Pod，然后下载新版本镜像并创建新的Pod。如果集群规模比较大，则这个工作变成了一个挑战，而且先全部停止然后逐步升级的方式会导致较长时间的服务不可用。Kubernetes提供了滚动升级功能来解决上述问题。如果在更新过程中发生了错误，则还可以通过回滚操作恢复Pod的版本。</p>
+<h2 id="Deployment升级"><a href="#Deployment升级" class="headerlink" title="Deployment升级"></a>Deployment升级</h2><p>现有如下deployment定义（nginx-deployment.yml）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: apps/v1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">  name: nginx-deployment</span><br><span class="line">spec:</span><br><span class="line">  selector:</span><br><span class="line">    matchLabels:</span><br><span class="line">      name: nginx</span><br><span class="line">  replicas: 3</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      labels:</span><br><span class="line">        name: nginx</span><br><span class="line">    spec:</span><br><span class="line">      containers:</span><br><span class="line">        - name: nginx</span><br><span class="line">          image: nginx:1.7.9</span><br><span class="line">          imagePullPolicy: IfNotPresent</span><br><span class="line">          ports:</span><br><span class="line">            - containerPort: 80</span><br></pre></td></tr></table></figure>
 
+<p>创建该deployment：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111326919.png" alt="QQ截图20191106094755.png"></p>
+<p>通过kubectl命令将nginx的版本更新到1.9.1：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl set image deployment/nginx-deployment nginx=nginx:1.9.1</span><br></pre></td></tr></table></figure>
 
+<p>查看滚动升级的过程：</p>
+<p><img src="https://mrbird.cc/img/QQ%E6%88%AA%E5%9B%BE20191106095447.png" alt="QQ截图20191106095447.png"></p>
+<p>查看Pod，会发现名称已经改变了：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111326041.png" alt="QQ截图20191106095549.png"></p>
+<p>上述滚动升级的过程可以用下图表示：</p>
+<p><img src="https://mrbird.cc/img/QQ%E6%88%AA%E5%9B%BE20191106101327.png" alt="QQ截图20191106101327.png"></p>
+<p>查看Deployment nginx-deployment的详细事件信息可以证明这一点：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl describe deployments/nginx-deployment</span><br></pre></td></tr></table></figure>
 
-<p>解法：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 逆序添加1</span></span><br><span class="line">    <span class="keyword">public</span> ListNode <span class="title function_">addTwoNumber</span><span class="params">(ListNode1 l1,ListNode2 l2)</span>&#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">carry</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="type">ListNode</span>  <span class="variable">pre</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ListNode</span>();</span><br><span class="line">        <span class="type">ListNode</span> <span class="variable">cur</span> <span class="operator">=</span>pre;</span><br><span class="line">         <span class="keyword">while</span>(l1 != <span class="literal">null</span> || l2 != <span class="literal">null</span>)&#123;</span><br><span class="line">             <span class="type">int</span> <span class="variable">val1</span> <span class="operator">=</span>l1 ==<span class="literal">null</span>?<span class="number">0</span>:l1.val;</span><br><span class="line">             <span class="type">int</span> <span class="variable">val2</span> <span class="operator">=</span>l2 == <span class="literal">null</span>?<span class="number">0</span>:l2.val;</span><br><span class="line">             <span class="type">int</span> <span class="variable">sum</span> <span class="operator">=</span> (val1+val2)+carry;</span><br><span class="line">             carry =  sum /<span class="number">10</span>;</span><br><span class="line">             sum =sum % <span class="number">10</span>;</span><br><span class="line">             cur.next =<span class="keyword">new</span> <span class="title class_">ListNode</span>(sum);</span><br><span class="line">             cur =cur.next;</span><br><span class="line">             <span class="keyword">if</span>(l1 !=<span class="literal">null</span>)&#123;</span><br><span class="line">                 l1 =l1.next;</span><br><span class="line">             &#125;</span><br><span class="line">             <span class="keyword">if</span>(l2 != <span class="literal">null</span>)&#123;</span><br><span class="line">                 l2 =l2.next;</span><br><span class="line">             &#125;</span><br><span class="line">          </span><br><span class="line">         &#125;</span><br><span class="line">        <span class="comment">// 处理最后两位进位有可能为1的情况 但最大为1，因为 9+9&lt;20在最尾巴加一</span></span><br><span class="line">        <span class="keyword">if</span>(carry==<span class="number">1</span>)&#123;</span><br><span class="line">            cur.next =<span class="keyword">new</span> <span class="title class_">ListNode</span>(carry);</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">return</span> pre.next;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p><img src="https://mrbird.cc/img/QQ%E6%88%AA%E5%9B%BE20191106100133.png" alt="QQ截图20191106100133.png"></p>
+<p>查看rs：</p>
+<p><img src="https://mrbird.cc/img/QQ%E6%88%AA%E5%9B%BE20191106102115.png" alt="QQ截图20191106102115.png"></p>
+<p>默认的升级策略为RollingUpdate（滚动更新），Kubernetes还支持Recreate（重建）策略：</p>
+<ol>
+<li>Recreate：先杀掉所有正在运行的Pod，然后创建新的Pod。</li>
+<li>RollingUpdate：以滚动更新的方式来逐个更新Pod。同时，可以通过设置spec.strategy.rollingUpdate下的两个参数（maxUnavailable和maxSurge）来控制滚动更新的过程。</li>
+</ol>
+<p>RollingUpdate的两个参数含义如下：</p>
+<ol>
+<li>maxUnavailable：用于指定Deployment在更新过程中不可用状态的Pod数量的上限。该maxUnavailable的数值可以是绝对值（例如1）或Pod期望的副本数的百分比（例如10%）。</li>
+<li>maxSurge：用于指定在Deployment更新Pod的过程中Pod总数超过Pod期望副本数部分的最大值。该maxSurge的数值可以是绝对值（例如5）或Pod期望副本数的百分比（例如10%）。</li>
+</ol>
+<p>此外，除了使用kubectl命令升级外，我们也可以直接通过修改deployment.yml的方式来完成。</p>
+<h2 id="Deployment回滚"><a href="#Deployment回滚" class="headerlink" title="Deployment回滚"></a>Deployment回滚</h2><p>如果升级后效果不满意的话，我们也可以将Deployment回滚到升级之前，使用下面这条命令查看滚动升级的历史：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl rollout history deployment/nginx-deployment</span><br></pre></td></tr></table></figure>
 
+<p><img src="https://mrbird.cc/img/QQ%E6%88%AA%E5%9B%BE20191106103606.png" alt="QQ截图20191106103606.png"></p>
+<p>REVISION为升级的历史版本，我们只完成了nginx从1.7.9升级到1.9.1的过程，所以REVISION 1表示nginx为1.7.9的版本，REVISION<br>2表示nginx为1.9.1的版本。因为我们在创建deployment的时候没有加上<code>--record=true</code>参数，所以CHANGE-CACSE列是空的。</p>
+<p>需要查看特定版本的详细信息，则可以加上–revision&#x3D;参数：</p>
+<p><img src="https://mrbird.cc/img/QQ%E6%88%AA%E5%9B%BE20191106104520.png" alt="QQ截图20191106104520.png"></p>
+<p>要将nginx回退到1.7.9版本，我们可以将REVISION指定为1：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl rollout undo deployment/nginx-deployment --to-revision=1</span><br></pre></td></tr></table></figure>
 
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111326440.png" alt="QQ截图20191106105253.png"></p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111326736.png" alt="QQ截图20191106105638.png"></p>
+<h2 id="暂停与恢复"><a href="#暂停与恢复" class="headerlink" title="暂停与恢复"></a>暂停与恢复</h2><p>因为Deployment配置一旦修改就会触发升级操作，所以当修改的地方较多的时候就会频繁触发升级。我们可以先暂停升级操作，当所有配置都修改好后再恢复升级。</p>
+<p>暂停：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl rollout pause deployment/nginx-deployment</span><br></pre></td></tr></table></figure>
 
+<p>暂停后，对nginx-deployment的修改不会触发升级。修改好后，恢复升级：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl rollout resume deployment/nginx-deployment</span><br></pre></td></tr></table></figure>
 
-
+<h2 id="其他Pod管理对象升级策略"><a href="#其他Pod管理对象升级策略" class="headerlink" title="其他Pod管理对象升级策略"></a>其他Pod管理对象升级策略</h2><h3 id="DaemonSet"><a href="#DaemonSet" class="headerlink" title="DaemonSet"></a>DaemonSet</h3><p>DaemonSet的升级策略包括两种：OnDelete和RollingUpdate：</p>
+<ol>
+<li>OnDelete（默认）：在创建好新的DaemonSet配置之后，新的Pod并不会被自动创建，直到用户手动删除旧版本的Pod，才触发新建操作。</li>
+<li>RollingUpdate：和前面介绍的一致，不过不支持rollout，只能通过将配置改回去来实现。</li>
+</ol>
+<h3 id="StatefulSet"><a href="#StatefulSet" class="headerlink" title="StatefulSet"></a>StatefulSet</h3><p>支持Recreate、OnDelete和RollingUpdate。</p>
+<blockquote>
+<p>《Kubernetes权威指南(第4版)》读书笔记</p>
+</blockquote>
 
                 
                 <p class="end">__END__</p>
@@ -105,7 +149,7 @@
     <div class="suffix-box-right">
         <span class="suffix-box-title">文章作者：</span>Live For Code
         <br>
-        <span class="suffix-box-title">文章出处：</span><a href="/article/1305786655/" target="_blank">LeetCode02-两数加法计算-链表逆序</a>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1753358582/" target="_blank">Kubernetes-Pod升级与回滚</a>
         <br>
         <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
         <br>
@@ -128,17 +172,17 @@
                     <div class="tag">
                         标签：
                         
-                            <a href="/tag/LeetCode/">LeetCode</a>
+                            <a href="/tag/Kubernetes/">Kubernetes</a>
                         
                     </div>
                 
                 <div class="article-prev-next">
                     
-                        <a href="/article/1305786654/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1305786654/" title="发布于 2023-02-15 10:08">LeetCode01-两数之和</a>
+                        <a href="/article/1683208917/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1683208917/" title="发布于 2023-05-04 12:00">搭建自己的chatgpt</a>
                         <br>
                     
                     
-                        <a href="/article/165365858/" class="next-prefix">» </a> 下一篇：    <a href="/article/165365858/" title="发布于 2022-09-01 12:00">java Learn</a>
+                        <a href="/article/1753358581/" class="next-prefix">» </a> 下一篇：    <a href="/article/1753358581/" title="发布于 2023-04-29 09:36">Kubernetes-Pod扩容与缩容</a>
                     
                 </div>
             </div>
