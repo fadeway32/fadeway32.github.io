@@ -9,7 +9,7 @@
     <meta http-equiv="Cache-Control" content="no-siteapp">
     <title>
         
-            Jetbrain破解
+            Kubernetes-Pod扩容与缩容
         
     </title>
     <link rel="shortcut icon" href="#"/>
@@ -40,29 +40,29 @@
     <div class="vertical">
         <div class="inner">
             
-                <h1 class="header-subtitle">Jetbrain破解</h1>
+                <h1 class="header-subtitle">Kubernetes-Pod扩容与缩容</h1>
                 <div class="header-subinfo">
                     <p class="article-info-text">
                         <span>
-                            <i class="iconfont icon-time"></i> 发表时间：2024-09-01
+                            <i class="iconfont icon-time"></i> 发表时间：2023-04-29
                         </span>
                         
-                            <span id="/article/1805786659/" class="leancloud_visitors" data-flag-title="Jetbrain破解">
+                            <span id="/article/1753358581/" class="leancloud_visitors" data-flag-title="Kubernetes-Pod扩容与缩容">
                                 <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
                             </span>
                         
                         <span>
-                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1805786659/"></span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1753358581/"></span>
                         </span>
                     </p>
                     
                         
-                            <span class="category-color">资料</span>
+                            <span class="category-color">Web</span>
                         
                     
                     
                         
-                            <span class="tag-color">资料</span>
+                            <span class="tag-color">Kubernetes</span>
                         
                     
                 </div>
@@ -77,241 +77,33 @@
         <div id="article">
             <div class="toc"></div>
             <div class="article-body">
-                <h1 id="IntelliJ-全家桶和付费插件-最新破解"><a href="#IntelliJ-全家桶和付费插件-最新破解" class="headerlink" title="IntelliJ 全家桶和付费插件 最新破解"></a>IntelliJ 全家桶和付费插件 最新破解</h1><h2 id="①-ja-netfilter-all（推荐）-https-3-jetbra-in"><a href="#①-ja-netfilter-all（推荐）-https-3-jetbra-in" class="headerlink" title="① ja-netfilter-all（推荐）  https://3.jetbra.in"></a>① ja-netfilter-all（推荐）  <a target="_blank" rel="noopener" href="https://3.jetbra.in/">https://3.jetbra.in</a></h2><blockquote>
-<p>Mac 要先解锁文件读写权限 <code>chmod 777 ./mac.sh</code></p>
-</blockquote>
-<h3 id="使用方法"><a href="#使用方法" class="headerlink" title="使用方法:"></a>使用方法:</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">1. 进入 ja-netfilter-all\scripts 文件夹</span><br><span class="line">2. 自动激活</span><br><span class="line">	macOS 或 Linux: 	执行 &quot;scripts/install.sh&quot;</span><br><span class="line">    Windows: 		 双击执行 &quot;scripts\install-current-user.vbs&quot; (当前用户)</span><br><span class="line">                             &quot;scripts\install-all-users.vbs&quot; (对所有用户)</span><br><span class="line">3. 如果仍然提示输入激活码，进入 https://3.jetbra.in 复制最新激活码</span><br><span class="line">4. 最新全家桶激活码以及所有付费插件激活码 请访问 https://3.jetbra.in</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+                <h1 id="Kubernetes-Pod扩容与缩容"><a href="#Kubernetes-Pod扩容与缩容" class="headerlink" title="Kubernetes Pod扩容与缩容"></a>Kubernetes Pod扩容与缩容</h1><p>针对不同时期流量的大小我们可以给Pod扩缩容，Kubernetes支持通过kubectl命令手动扩缩容，也支持通过HPA自动横向扩缩容。</p>
+<h2 id="手动扩缩容"><a href="#手动扩缩容" class="headerlink" title="手动扩缩容"></a>手动扩缩容</h2><p>现有如下deployment配置（nginx-deployment.yml）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: apps/v1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">  name: nginx-deployment</span><br><span class="line">spec:</span><br><span class="line">  selector:</span><br><span class="line">    matchLabels:</span><br><span class="line">      name: nginx</span><br><span class="line">  replicas: 3</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      labels:</span><br><span class="line">        name: nginx</span><br><span class="line">    spec:</span><br><span class="line">      containers:</span><br><span class="line">        - name: nginx</span><br><span class="line">          image: nginx:1.7.9</span><br><span class="line">          imagePullPolicy: IfNotPresent</span><br><span class="line">          ports:</span><br><span class="line">            - containerPort: 80</span><br></pre></td></tr></table></figure>
 
-<table>
-<thead>
-<tr>
-<th>可激活软件</th>
-<th></th>
-<th></th>
-<th></th>
-</tr>
-</thead>
-<tbody><tr>
-<td>IntelliJ IDEA</td>
-<td>Cypress Support Pro</td>
-<td>Code With Me Premium</td>
-<td>Nginx Configuration Pro</td>
-</tr>
-<tr>
-<td>PhpStorm</td>
-<td>Smart Jump</td>
-<td>JPA Buddy</td>
-<td>Zookeeper-Admin</td>
-</tr>
-<tr>
-<td>AppCode</td>
-<td>Auto Java Code Suggestions</td>
-<td>Firebase Rules Syntax Highlighter</td>
-<td>API Runner</td>
-</tr>
-<tr>
-<td>DataGrip</td>
-<td>CMake Plus</td>
-<td>JPA SQL</td>
-<td>NEON Nette Support</td>
-</tr>
-<tr>
-<td>RubyMine</td>
-<td>OpenAPI Editor</td>
-<td>Execution God Recorder</td>
-<td>Mybatis Smart Code Help Pro</td>
-</tr>
-<tr>
-<td>WebStorm</td>
-<td>Iceberg</td>
-<td>Ledger CLI</td>
-<td>Code Refactor AI</td>
-</tr>
-<tr>
-<td>Rider</td>
-<td>Atom One Dark By Mayke</td>
-<td>Requirements Pro</td>
-<td>XSD Visualizer</td>
-</tr>
-<tr>
-<td>CLion</td>
-<td>Generate Document</td>
-<td>Regex Tool</td>
-<td>Spring Boot</td>
-</tr>
-<tr>
-<td>PyCharm</td>
-<td>OfficeFloor</td>
-<td>Android Package Helper</td>
-<td>Machinet AI Unit Tests</td>
-</tr>
-<tr>
-<td>GoLand</td>
-<td>Android WiFiADB</td>
-<td>Gitlab CI</td>
-<td>ExcelEditor</td>
-</tr>
-<tr>
-<td>DataSpell</td>
-<td>Laravel Idea</td>
-<td>Circle CI</td>
-<td>Friendly Terminal</td>
-</tr>
-<tr>
-<td>dotCover</td>
-<td>Odoo</td>
-<td>Heroku Console Helper</td>
-<td>WireMocha</td>
-</tr>
-<tr>
-<td>dotTrace</td>
-<td>Bitbucket Pull Requests</td>
-<td>Redis Manager</td>
-<td>DynamoDB</td>
-</tr>
-<tr>
-<td>dotMemory</td>
-<td>Merge Request Integration EE - Code Review for GitLab</td>
-<td>Zerocode Scenario Helper</td>
-<td>FastShell</td>
-</tr>
-<tr>
-<td>Symfony Support</td>
-<td>Salesforce B2C Commerce (SFCC)</td>
-<td>StormSections</td>
-<td>Jsonnet Templating Language Support</td>
-</tr>
-<tr>
-<td>Wolfram Language</td>
-<td>MinBatis</td>
-<td>Sentry Integration</td>
-<td>PHP Houdini</td>
-</tr>
-<tr>
-<td>Shopware</td>
-<td>POJO to JSON Schema</td>
-<td>Redis</td>
-<td>XSD to JSON Schema</td>
-</tr>
-<tr>
-<td>Hybris Integration</td>
-<td>RDF and SPARQL</td>
-<td>Find In Files (Configurations)</td>
-<td>Quarkus Assistant</td>
-</tr>
-<tr>
-<td>Material Theme UI</td>
-<td>BashSupport Pro</td>
-<td>Bitrise CI</td>
-<td>codeCreator</td>
-</tr>
-<tr>
-<td>JetForcer | The Smartest Force.com IDE</td>
-<td>MyBatis Log</td>
-<td>Qt Style Sheets Editor</td>
-<td>CIclone</td>
-</tr>
-<tr>
-<td>AEM IDE</td>
-<td>Auto GOLang Code Suggestions</td>
-<td>Database Helper</td>
-<td>Database Tool</td>
-</tr>
-<tr>
-<td>React Native Console</td>
-<td>Auto Ruby Code Suggestions</td>
-<td>Php Inspections (EA Ultimate)</td>
-<td>Karate</td>
-</tr>
-<tr>
-<td>ANSI Highlighter Premium</td>
-<td>Commit Template</td>
-<td>leetcode editor pro</td>
-<td>Material Theme UI Extras</td>
-</tr>
-<tr>
-<td>AEM Support</td>
-<td>Auto Javascript Code Suggestions</td>
-<td>PHP Data Object Generator</td>
-<td>Material Theme UI Custom Theme</td>
-</tr>
-<tr>
-<td>SystemVerilog</td>
-<td>Auto PHP Code Suggestions</td>
-<td>Material Theme UI High Contrast</td>
-<td>Material Theme UI Language Additions</td>
-</tr>
-<tr>
-<td>CodeMR</td>
-<td>SystemVerilog Studio</td>
-<td>MQTT Client</td>
-<td>Material Theme UI Project Frame</td>
-</tr>
-<tr>
-<td>JavaDoc Clean Read</td>
-<td>SPARQL</td>
-<td>Notes</td>
-<td>Rancher</td>
-</tr>
-<tr>
-<td>AutoCode for Java</td>
-<td>Toolset</td>
-<td>Magnolia YAML Assistant</td>
-<td>Redis Client</td>
-</tr>
-<tr>
-<td>Database Tools and SQL for WebStorm</td>
-<td>QML Editor</td>
-<td>Cap-Elasticsearch</td>
-<td>ScreenCodePro</td>
-</tr>
-<tr>
-<td>Extra Icons</td>
-<td>Stryker</td>
-<td>AStock</td>
-<td>CodeKits</td>
-</tr>
-<tr>
-<td>Java Antidecompiler</td>
-<td>Elasticsearch</td>
-<td>Cap-Redis</td>
-<td>Redis Operator</td>
-</tr>
-<tr>
-<td>Scipio ERP Integration</td>
-<td>VisualGC</td>
-<td>Maestro</td>
-<td>Restful Fast Request</td>
-</tr>
-<tr>
-<td>ZenUML support</td>
-<td>Auto Python Code Suggestions</td>
-<td>Simple Object Copy</td>
-<td>MyBatisCodeHelperPro (Marketplace Edition)</td>
-</tr>
-<tr>
-<td>JFormDesigner (Marketplace Edition)</td>
-<td>Flutter Storm</td>
-<td>ElasticSearch-Admin</td>
-<td>OrchidE - Ansible Language Support</td>
-</tr>
-<tr>
-<td>QueryFlag</td>
-<td>AWS Lambda Deployer</td>
-<td>Typed Django Template</td>
-<td>PlantUML Studio</td>
-</tr>
-<tr>
-<td>Iedis 2</td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-</tbody></table>
-<p><img src="http://shfs.cf/img/202208161938082.png" alt="image-20220816193838028"></p>
-<p><img src="http://shfs.cf/img/202208221504462.png" alt="image-20220822150400383"></p>
-<h2 id="②-http-lookdiv-com"><a href="#②-http-lookdiv-com" class="headerlink" title="② http://lookdiv.com/"></a>② <a target="_blank" rel="noopener" href="http://lookdiv.com/">http://lookdiv.com/</a></h2><p><img src="http://shfs.cf/img/202208161947102.png" alt="image-20220816194717785"></p>
-<p><img src="http://shfs.cf/img/202208161947646.png" alt="image-20220816194736595"></p>
+<p>创建该Deployment：</p>
+<p><img src="https://mrbird.cc/img/QQ%E6%88%AA%E5%9B%BE20191108094938.png" alt="QQ截图20191108094938.png"></p>
+<p>有3个nginx实例，现在用下面这条命令将nginx实例扩充到5个：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl scale deployment nginx-deployment --replicas 5</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406111328301.png" alt="QQ截图20191108100513.png"></p>
+<p>缩容：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl scale deployment nginx-deployment --replicas 1</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://mrbird.cc/img/QQ%E6%88%AA%E5%9B%BE20191108100834.png" alt="QQ截图20191108100834.png"></p>
+<h2 id="HPA"><a href="#HPA" class="headerlink" title="HPA"></a>HPA</h2><p>HPA能够根据特定指标完成目标Pod的自动扩缩容。创建一个与上面nginx-deployment相对应的HPA（nginx-deployment-hpa.yml）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: autoscaling/v1</span><br><span class="line">kind: HorizontalPodAutoscaler</span><br><span class="line">metadata:</span><br><span class="line">  name: nginx-deployment-hpa-v1</span><br><span class="line">spec:</span><br><span class="line">  maxReplicas: 6</span><br><span class="line">  minReplicas: 2</span><br><span class="line">  scaleTargetRef:</span><br><span class="line">    apiVersion: apps/v1</span><br><span class="line">    kind: Deployment</span><br><span class="line">    name: nginx-deployment</span><br><span class="line">  targetCPUUtilizationPercentage: 50</span><br></pre></td></tr></table></figure>
+
+<p>主要参数如下：</p>
+<ol>
+<li>scaleTargetRef：目标作用对象，可以是Deployment、ReplicationController或ReplicaSet。</li>
+<li>targetCPUUtilizationPercentage：期望每个Pod的CPU使用率都为50%，该使用率基于Pod设置的CPU<br>Request值进行计算，例如该值为200m，那么系统将维持Pod的实际CPU使用值为100m。</li>
+<li>minReplicas和maxReplicas：Pod副本数量的最小值和最大值，系统将在这个范围内进行自动扩缩容操作，并维持每个Pod的CPU使用率为50%。</li>
+</ol>
+<p>使用HPA，需要预先安装Metrics Server，用于采集Pod的CPU使用率。</p>
+<blockquote>
+<p>《Kubernetes权威指南(第4版)》读书笔记</p>
+</blockquote>
 
                 
                 <p class="end">__END__</p>
@@ -319,14 +111,14 @@
             <div class="article-footer">
                 <div class="suffix-box">
     <div class="suffix-box-left">
-        <img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png" alt="fadeway32">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
     </div>
     <div class="suffix-box-right">
-        <span class="suffix-box-title">文章作者：</span>fadeway32
+        <span class="suffix-box-title">文章作者：</span>Live For Code
         <br>
-        <span class="suffix-box-title">文章出处：</span><a href="https://fadeway32.gitee.io/" target="_blank">Jetbrain破解</a>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1753358581/" target="_blank">Kubernetes-Pod扩容与缩容</a>
         <br>
-        <span class="suffix-box-title">作者签名：</span>blog/wiki
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
         <br>
         <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
         <br>
@@ -339,7 +131,7 @@
                     <div class="category">
                         分类：
                         
-                            <a href="/category/%E8%B5%84%E6%96%99/">资料</a>
+                            <a href="/category/Web/">Web</a>
                         
                     </div>
                 
@@ -347,14 +139,17 @@
                     <div class="tag">
                         标签：
                         
-                            <a href="/tag/%E8%B5%84%E6%96%99/">资料</a>
+                            <a href="/tag/Kubernetes/">Kubernetes</a>
                         
                     </div>
                 
                 <div class="article-prev-next">
                     
+                        <a href="/article/1753358582/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1753358582/" title="发布于 2023-04-29 09:37">Kubernetes-Pod升级与回滚</a>
+                        <br>
                     
-                        <a href="/article/1717340312/" class="next-prefix">» </a> 下一篇：    <a href="/article/1717340312/" title="发布于 2024-06-02 10:58">LeetCode22.括号生成</a>
+                    
+                        <a href="/article/1753358579/" class="next-prefix">» </a> 下一篇：    <a href="/article/1753358579/" title="发布于 2023-04-29 09:36">Kubernetes-Pod基础</a>
                     
                 </div>
             </div>

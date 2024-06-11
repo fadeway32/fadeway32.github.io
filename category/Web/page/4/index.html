@@ -9,7 +9,7 @@
     <meta http-equiv="Cache-Control" content="no-siteapp">
     <title>
         
-            LeetCode02-两数加法计算-链表逆序
+            分类 - Web
         
     </title>
     <link rel="shortcut icon" href="#"/>
@@ -32,7 +32,7 @@
 <meta name="generator" content="Hexo 6.2.0"></head>
 <body>
     <a id="cover"></a>
-    <link type="text/css" rel="stylesheet" href="/css/post.css">
+    <link type="text/css" rel="stylesheet" href="/css/archive.css">
 <header>
     <meta name="referrer" content="no-referrer">
 </header>
@@ -40,31 +40,10 @@
     <div class="vertical">
         <div class="inner">
             
-                <h1 class="header-subtitle">LeetCode02-两数加法计算-链表逆序</h1>
+                <h1 class="header-subtitle">分类归档</h1>
                 <div class="header-subinfo">
-                    <p class="article-info-text">
-                        <span>
-                            <i class="iconfont icon-time"></i> 发表时间：2023-02-15
-                        </span>
-                        
-                            <span id="/article/1305786655/" class="leancloud_visitors" data-flag-title="LeetCode02-两数加法计算-链表逆序">
-                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                            </span>
-                        
-                        <span>
-                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1305786655/"></span>
-                        </span>
-                    </p>
-                    
-                        
-                            <span class="category-color">Web</span>
-                        
-                    
-                    
-                        
-                            <span class="tag-color">LeetCode</span>
-                        
-                    
+                    <p class="article-info-text Chinese"></p>
+                    <p class="article-info-text English"></p>
                 </div>
             
         </div>
@@ -73,86 +52,70 @@
 </div>
 <div id="container">
     
-        <!-- 文章页面 -->
-        <div id="article">
-            <div class="toc"></div>
-            <div class="article-body">
-                <p>LeetCode 两数相加</p>
-<p>给你两个 非空 的链表，表示两个非负的整数。它们每位数字都是按照 逆序 的方式存储的，并且每个节点只能存储 一位 数字。</p>
-<p>请你将两个数相加，并以相同形式返回一个表示和的链表。</p>
-<p>你可以假设除了数字 0 之外，这两个数都不会以 0 开头。</p>
-<p><a target="_blank" rel="noopener" href="https://gitee.com/fadeway32/fadeway32/raw/master/img/20230224213414.png">https://gitee.com/fadeway32/fadeway32/raw/master/img/20230224213414.png</a></p>
-<div class="aligin" align="left"><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/20230224213414.png" style="zoom:100%;" /></div>
-
-
-
-<p>解法：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 逆序添加1</span></span><br><span class="line">    <span class="keyword">public</span> ListNode <span class="title function_">addTwoNumber</span><span class="params">(ListNode1 l1,ListNode2 l2)</span>&#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">carry</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="type">ListNode</span>  <span class="variable">pre</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ListNode</span>();</span><br><span class="line">        <span class="type">ListNode</span> <span class="variable">cur</span> <span class="operator">=</span>pre;</span><br><span class="line">         <span class="keyword">while</span>(l1 != <span class="literal">null</span> || l2 != <span class="literal">null</span>)&#123;</span><br><span class="line">             <span class="type">int</span> <span class="variable">val1</span> <span class="operator">=</span>l1 ==<span class="literal">null</span>?<span class="number">0</span>:l1.val;</span><br><span class="line">             <span class="type">int</span> <span class="variable">val2</span> <span class="operator">=</span>l2 == <span class="literal">null</span>?<span class="number">0</span>:l2.val;</span><br><span class="line">             <span class="type">int</span> <span class="variable">sum</span> <span class="operator">=</span> (val1+val2)+carry;</span><br><span class="line">             carry =  sum /<span class="number">10</span>;</span><br><span class="line">             sum =sum % <span class="number">10</span>;</span><br><span class="line">             cur.next =<span class="keyword">new</span> <span class="title class_">ListNode</span>(sum);</span><br><span class="line">             cur =cur.next;</span><br><span class="line">             <span class="keyword">if</span>(l1 !=<span class="literal">null</span>)&#123;</span><br><span class="line">                 l1 =l1.next;</span><br><span class="line">             &#125;</span><br><span class="line">             <span class="keyword">if</span>(l2 != <span class="literal">null</span>)&#123;</span><br><span class="line">                 l2 =l2.next;</span><br><span class="line">             &#125;</span><br><span class="line">          </span><br><span class="line">         &#125;</span><br><span class="line">        <span class="comment">// 处理最后两位进位有可能为1的情况 但最大为1，因为 9+9&lt;20在最尾巴加一</span></span><br><span class="line">        <span class="keyword">if</span>(carry==<span class="number">1</span>)&#123;</span><br><span class="line">            cur.next =<span class="keyword">new</span> <span class="title class_">ListNode</span>(carry);</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">return</span> pre.next;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-
-
-
-
-
-                
-                <p class="end">__END__</p>
-            </div>
-            <div class="article-footer">
-                <div class="suffix-box">
-    <div class="suffix-box-left">
-        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
-    </div>
-    <div class="suffix-box-right">
-        <span class="suffix-box-title">文章作者：</span>Live For Code
-        <br>
-        <span class="suffix-box-title">文章出处：</span><a href="/article/1305786655/" target="_blank">LeetCode02-两数加法计算-链表逆序</a>
-        <br>
-        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
-        <br>
-        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
-        <br>
-        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
-        <br>
-    </div>
-    <div style="clear: both;"></div>
-</div>
-                
-                    <div class="category">
-                        分类：
+        
+            <!-- 归档页面、分类归档页面、标签归档页面 -->
+            <div class="articles">
+                <div class="articles-wrap">
+                    <span class="archive-move-on"></span>
+                    <span class="archive-counter">
                         
-                            <a href="/category/Web/">Web</a>
+                            当前分类：<span class="category">Web</span>
                         
-                    </div>
-                
-                
-                    <div class="tag">
-                        标签：
-                        
-                            <a href="/tag/LeetCode/">LeetCode</a>
-                        
-                    </div>
-                
-                <div class="article-prev-next">
-                    
-                        <a href="/article/1305786654/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1305786654/" title="发布于 2023-02-15 10:08">LeetCode01-两数之和</a>
-                        <br>
+                    </span>
                     
                     
-                        <a href="/article/165365858/" class="next-prefix">» </a> 下一篇：    <a href="/article/165365858/" title="发布于 2022-09-01 12:00">java Learn</a>
+                        
+                            <div class="archive-title">
+                                <h2 class="archive-year">2022</h2>
+                            </div>
+                            
+                           
+                        <div class="article">
+                            <div class="article-header">
+                                <h1 class="article-title"><a href="/article/1653658588/"><span>字节码插桩</span></a></h1>
+                                <div class="article-meta">
+                                    <span class="article-time">05-29</span>
+                                </div>
+                            </div>
+                        </div>
+                    
+                           
+                        <div class="article">
+                            <div class="article-header">
+                                <h1 class="article-title"><a href="/article/1653358581/"><span>HashMap实现</span></a></h1>
+                                <div class="article-meta">
+                                    <span class="article-time">04-29</span>
+                                </div>
+                            </div>
+                        </div>
+                    
+                        
+                            <div class="archive-title">
+                                <h2 class="archive-year">2020</h2>
+                            </div>
+                            
+                           
+                        <div class="article">
+                            <div class="article-header">
+                                <h1 class="article-title"><a href="/article/1112885395/"><span>Hexo主题LiveForCode介绍</span></a></h1>
+                                <div class="article-meta">
+                                    <span class="article-time">08-01</span>
+                                </div>
+                            </div>
+                        </div>
                     
                 </div>
             </div>
             
-    <div class="article-comments">
         
-            <div class="comments-title">
-                评论列表
-            </div>
-        
-        <div class="comments-content"></div>
+    <div class="pagination-bottom">
+        <div class="pagination">
+            
+                <a class="extend prev" rel="prev" href="/category/Web/page/3/">上一页</a><a class="page-number" href="/category/Web/">1</a><a class="page-number" href="/category/Web/page/2/">2</a><a class="page-number" href="/category/Web/page/3/">3</a><span class="page-number current">4</span>
+            
+        </div>
     </div>
 
-        </div>
     
 </div>
     <div id="footer"></div>
