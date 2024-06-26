@@ -9,7 +9,7 @@
     <meta http-equiv="Cache-Control" content="no-siteapp">
     <title>
         
-            Live For Code
+            UML设计原则
         
     </title>
     <link rel="shortcut icon" href="#"/>
@@ -32,294 +32,156 @@
 <meta name="generator" content="Hexo 6.2.0"></head>
 <body>
     <a id="cover"></a>
-    <link type="text/css" rel="stylesheet" href="/css/index.css">
-<div id="count"></div>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
 <header>
     <meta name="referrer" content="no-referrer">
 </header>
-<div id="header" >
+<div id="header" class="header">
     <div class="vertical">
         <div class="inner">
             
-                <h1 class="header-title">Live For Code</h1>
-                <h2 class="header-description" id="hitokoto"></h2>
-                <h3 class="header-info" id="hitokotoAuthor"></h3>
+                <h1 class="header-subtitle">UML设计原则</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2024-05-12
+                        </span>
+                        
+                            <span id="/article/1715610903/" class="leancloud_visitors" data-flag-title="UML设计原则">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1715610903/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">Web</span>
+                        
+                    
+                </div>
             
         </div>
     </div>
-    
-        <a class="scroll-down" href="javascript:;" target="_self" data-offset="-45">
-            <i class="scroll-down-icon iconfont icon-return"></i>
-        </a>
     
 </div>
 <div id="container">
     
-        
-            <!-- 首页 -->
-            <div class="articles">
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="UML设计原则"><a href="#UML设计原则" class="headerlink" title="UML设计原则"></a>UML设计原则</h1><h2 id="用途"><a href="#用途" class="headerlink" title="用途"></a>用途</h2><p>​    <a target="_blank" rel="noopener" href="https://so.csdn.net/so/search?q=%E6%97%B6%E5%BA%8F%E5%9B%BE&spm=1001.2101.3001.7020">时序图</a>（Sequence<br>Diagram），又名序列图、循序图，是一种UML交互图。它通过描述对象之间发送消息的时间顺序显示多个对象之间的动态协作。它可以表示用例的行为顺序，当执行一个用例行为时，其中的每条消息对应一个类操作或状态机中引起转换的触发事件。</p>
+<ol>
+<li>梳理业务流程</li>
+<li>梳理代码逻辑</li>
+</ol>
+<h2 id="元素类型"><a href="#元素类型" class="headerlink" title="元素类型"></a>元素类型</h2><h4 id="1-角色（Actor）"><a href="#1-角色（Actor）" class="headerlink" title="1.角色（Actor）"></a>1.角色（Actor）</h4><p>用法：系统角色，可以是人或者其他系统，子系统。</p>
+<p>画法：以一个小人图标表示。</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406131355664.png" alt="img"></p>
+<h4 id="2-对象（Object）"><a href="#2-对象（Object）" class="headerlink" title="2.对象（Object）"></a>2.对象（Object）</h4><p>用法：对象代表时序图中的对象在交互中所扮演的角色，位于时序图顶部和对象代表类角色。</p>
+<p>画法：对象位于时序图的顶部,以一个矩形表示。</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406131355406.png" alt="img"></p>
+<h4 id="3-生命线-LifeLine"><a href="#3-生命线-LifeLine" class="headerlink" title="3.生命线(LifeLine)"></a>3.生命线(LifeLine)</h4><p>用法：生命线代表时序图中的对象在一段时期内的存在。</p>
+<p>画法：时序图中每个对象和底部中心都有一条垂直的虚线，这就是对象的生命线，对象间的消息存在于两条虚线间。</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406131355642.png" alt="img"></p>
+<h4 id="4-控制焦点-Activation"><a href="#4-控制焦点-Activation" class="headerlink" title="4.控制焦点(Activation)"></a>4.控制焦点(Activation)</h4><p>用法：控制焦点代表时序图中的对象执行一项操作的时期。</p>
+<p>画法：在时序图中每条生命线上的窄的矩形代表活动期。</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406131355878.png" alt="img"></p>
+<h4 id="5-消息-Message"><a href="#5-消息-Message" class="headerlink" title="5.消息(Message)"></a>5.消息(Message)</h4><p>消息是定义交互和协作中交换信息的类，用于对实体间的通信内容建模，信息用于在实体间传递信息。允许实体请求其他的服务，类角色通过发送和接受信息进行通信。</p>
+<p>类型消息</p>
+<ol>
+<li>同步消息：就是指消息的发送者把控制传递给消息的接收者，然后停止活动，等待消息的接收者放弃或者返回控制。用来表示同步的意义。实线和实心箭头组成。</li>
+<li>异步消息：就是指消息发送者通过消息把信号传递给消息的接收者，然后自己继续活动，不等待接收者返回消息或者控制。异步消息的接收者和发送者是并发工作的。实线和大于号箭头组成。</li>
+<li>返回消息：指消息从过程调用返回。小于号箭头和虚线组成。</li>
+<li>自关联消息：表示方法的自身调用以及一个对象内的一个方法调用另外一个方法，</li>
+</ol>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406131355348.png" alt="img"></p>
+<h4 id="6-组合片段（Combined-Fragment）"><a href="#6-组合片段（Combined-Fragment）" class="headerlink" title="6.组合片段（Combined Fragment）"></a>6.组合片段（Combined Fragment）</h4><p><strong>13总类型：</strong></p>
+<ol>
+<li>ref：引用其他地方定义的组合片段；</li>
+<li>alt：在一组行为中根据特定的条件选择某个交互；表示条件选择的意思，类似if else。alt需填写参数。</li>
+<li>opt：表示一个可选的行为；</li>
+<li>break：提供了和编程语言中的break类拟的机制；</li>
+<li>par：支持交互片段的并发执行；</li>
+<li>seq：强迫交互按照特定的顺序执行；</li>
+<li>strict：明确定义了一组交互片段的执行顺序；</li>
+<li>neg：用来标志不应该发生的交互；</li>
+<li>region：标志在组合片段中先于其他交互片断发生的交互；</li>
+<li>ignore：明确定义了交互片段不应该响应的消息；</li>
+<li>consider：明确标志了应该被处理的消息</li>
+<li>assert：标志了在交互片段中作为事件唯一的合法继续者的操作数；</li>
+<li>loop：说明交互片段会被重复执行</li>
+</ol>
+<p>画法 ：</p>
+<p>这里以opt为例，表示未注册用户需要执行注册流程。</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406131355398.png" alt="img"></p>
+
                 
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1753358579/">Kubernetes-Pod基础</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-29
-                            </span>
-                            
-                                <span id="/article/1753358579/" class="leancloud_visitors" data-flag-title="Kubernetes-Pod基础">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1753358579/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1715610903/" target="_blank">UML设计原则</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
+                        
+                            <a href="/category/Web/">Web</a>
+                        
                     </div>
                 
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1753358583/">Kubernetes-Pod管理对象与调度策略</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-29
-                            </span>
-                            
-                                <span id="/article/1753358583/" class="leancloud_visitors" data-flag-title="Kubernetes-Pod管理对象与调度策略">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1753358583/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
+                
+                    <div class="tag">
+                        标签：
+                        
+                            <a href="/tag/Web/">Web</a>
+                        
                     </div>
                 
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1177767762/">docker实践和运用</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-17
-                            </span>
-                            
-                                <span id="/article/1177767762/" class="leancloud_visitors" data-flag-title="docker实践和运用">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1177767762/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
-                    </div>
-                
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1177767760/">LeetCode23-[下一个排列]</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-16
-                            </span>
-                            
-                                <span id="/article/1177767760/" class="leancloud_visitors" data-flag-title="LeetCode23-[下一个排列]">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1177767760/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
-                    </div>
-                
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1177767761/">Window软件分享</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-16
-                            </span>
-                            
-                                <span id="/article/1177767761/" class="leancloud_visitors" data-flag-title="Window软件分享">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1177767761/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
-                    </div>
-                
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1177767761/">快速排序</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-16
-                            </span>
-                            
-                                <span id="/article/1177767761/" class="leancloud_visitors" data-flag-title="快速排序">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1177767761/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
-                    </div>
-                
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1177767759/">LeetCode22-[Pow(x, n)]</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-10
-                            </span>
-                            
-                                <span id="/article/1177767759/" class="leancloud_visitors" data-flag-title="LeetCode22-[Pow(x, n)]">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1177767759/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
-                    </div>
-                
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1177767749/">LeetCode21-[两数相除]</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-10
-                            </span>
-                            
-                                <span id="/article/1177767749/" class="leancloud_visitors" data-flag-title="LeetCode21-[两数相除]">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1177767749/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
-                    </div>
-                
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1677767749/">LeetCode20-[括号生成]</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-03-19
-                            </span>
-                            
-                                <span id="/article/1677767749/" class="leancloud_visitors" data-flag-title="LeetCode20-[括号生成]">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1677767749/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
-                    </div>
-                
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1677767748/">LeetCode19-判断[括号生成]</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-03-18
-                            </span>
-                            
-                                <span id="/article/1677767748/" class="leancloud_visitors" data-flag-title="LeetCode19-判断[括号生成]">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1677767748/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
-                    </div>
-                
+                <div class="article-prev-next">
+                    
+                        <a href="/article/1715610913/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1715610913/" title="发布于 2024-05-12 08:21">最大努力通知与本地消息事务区别</a>
+                        <br>
+                    
+                    
+                        <a href="/article/1715260887683/" class="next-prefix">» </a> 下一篇：    <a href="/article/1715260887683/" title="发布于 2024-05-09 09:21">LeetCode判断回文链表</a>
+                    
+                </div>
             </div>
             
+    <div class="article-comments">
         
-    <div class="pagination-bottom">
-        <div class="pagination">
-            
-                <a class="extend prev" rel="prev" href="/page/4/">上一页</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><a class="page-number" href="/page/7/">7</a><a class="page-number" href="/page/8/">8</a><a class="extend next" rel="next" href="/page/6/">下一页</a>
-            
-        </div>
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
     </div>
 
+        </div>
     
 </div>
     <div id="footer"></div>
@@ -345,7 +207,7 @@
             <div class="menu-list">
                 <ul>
                     
-                        <li class=" active "><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
                     
                         <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
                     

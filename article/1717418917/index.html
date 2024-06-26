@@ -9,7 +9,7 @@
     <meta http-equiv="Cache-Control" content="no-siteapp">
     <title>
         
-            LeetCode02-两数加法计算-链表逆序
+            为什么G1能够替代CMS回收器
         
     </title>
     <link rel="shortcut icon" href="#"/>
@@ -40,19 +40,19 @@
     <div class="vertical">
         <div class="inner">
             
-                <h1 class="header-subtitle">LeetCode02-两数加法计算-链表逆序</h1>
+                <h1 class="header-subtitle">为什么G1能够替代CMS回收器</h1>
                 <div class="header-subinfo">
                     <p class="article-info-text">
                         <span>
-                            <i class="iconfont icon-time"></i> 发表时间：2023-02-15
+                            <i class="iconfont icon-time"></i> 发表时间：2023-05-20
                         </span>
                         
-                            <span id="/article/1305786655/" class="leancloud_visitors" data-flag-title="LeetCode02-两数加法计算-链表逆序">
+                            <span id="/article/1717418917/" class="leancloud_visitors" data-flag-title="为什么G1能够替代CMS回收器">
                                 <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
                             </span>
                         
                         <span>
-                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1305786655/"></span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1717418917/"></span>
                         </span>
                     </p>
                     
@@ -62,7 +62,7 @@
                     
                     
                         
-                            <span class="tag-color">LeetCode</span>
+                            <span class="tag-color">GC</span>
                         
                     
                 </div>
@@ -77,22 +77,144 @@
         <div id="article">
             <div class="toc"></div>
             <div class="article-body">
-                <p>LeetCode 两数相加</p>
-<p>给你两个 非空 的链表，表示两个非负的整数。它们每位数字都是按照 逆序 的方式存储的，并且每个节点只能存储 一位 数字。</p>
-<p>请你将两个数相加，并以相同形式返回一个表示和的链表。</p>
-<p>你可以假设除了数字 0 之外，这两个数都不会以 0 开头。</p>
-<p><a target="_blank" rel="noopener" href="https://gitee.com/fadeway32/fadeway32/raw/master/img/20230224213414.png">https://gitee.com/fadeway32/fadeway32/raw/master/img/20230224213414.png</a></p>
-<div class="aligin" align="left"><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/20230224213414.png" style="zoom:100%;" /></div>
-
-
-
-<p>解法：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 逆序添加1</span></span><br><span class="line">    <span class="keyword">public</span> ListNode <span class="title function_">addTwoNumber</span><span class="params">(ListNode1 l1,ListNode2 l2)</span>&#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">carry</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="type">ListNode</span>  <span class="variable">pre</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ListNode</span>();</span><br><span class="line">        <span class="type">ListNode</span> <span class="variable">cur</span> <span class="operator">=</span>pre;</span><br><span class="line">         <span class="keyword">while</span>(l1 != <span class="literal">null</span> || l2 != <span class="literal">null</span>)&#123;</span><br><span class="line">             <span class="type">int</span> <span class="variable">val1</span> <span class="operator">=</span>l1 ==<span class="literal">null</span>?<span class="number">0</span>:l1.val;</span><br><span class="line">             <span class="type">int</span> <span class="variable">val2</span> <span class="operator">=</span>l2 == <span class="literal">null</span>?<span class="number">0</span>:l2.val;</span><br><span class="line">             <span class="type">int</span> <span class="variable">sum</span> <span class="operator">=</span> (val1+val2)+carry;</span><br><span class="line">             carry =  sum /<span class="number">10</span>;</span><br><span class="line">             sum =sum % <span class="number">10</span>;</span><br><span class="line">             cur.next =<span class="keyword">new</span> <span class="title class_">ListNode</span>(sum);</span><br><span class="line">             cur =cur.next;</span><br><span class="line">             <span class="keyword">if</span>(l1 !=<span class="literal">null</span>)&#123;</span><br><span class="line">                 l1 =l1.next;</span><br><span class="line">             &#125;</span><br><span class="line">             <span class="keyword">if</span>(l2 != <span class="literal">null</span>)&#123;</span><br><span class="line">                 l2 =l2.next;</span><br><span class="line">             &#125;</span><br><span class="line">          </span><br><span class="line">         &#125;</span><br><span class="line">        <span class="comment">// 处理最后两位进位有可能为1的情况 但最大为1，因为 9+9&lt;20在最尾巴加一</span></span><br><span class="line">        <span class="keyword">if</span>(carry==<span class="number">1</span>)&#123;</span><br><span class="line">            cur.next =<span class="keyword">new</span> <span class="title class_">ListNode</span>(carry);</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">return</span> pre.next;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-
-
-
-
+                <h1 id="为什么G1能够替代CMS回收器？"><a href="#为什么G1能够替代CMS回收器？" class="headerlink" title="为什么G1能够替代CMS回收器？"></a>为什么G1能够替代CMS回收器？</h1><h2 id="01-简介"><a href="#01-简介" class="headerlink" title="01 简介"></a><strong>01 简介</strong></h2><p>G1 是 Garbage First 的简称，最初起源于 Sun在2004年发布的一篇 G1学术论文 ，2012年9月，JDK 7 Update 4 发布，G1正式投入商业使用，耗时<br>8年之久。</p>
+<p>G1收集器是一款面向<a target="_blank" rel="noopener" href="https://cloud.tencent.com/act/pro/promotion-cvm?from_column=20065&from=20065">服务器</a><br>的垃圾收集器，采用标记整理算法，用于大内存的多处理器计算机，目标是实现低延时垃圾回收，从 2017年9月发布的 JDK9 开始，G1<br>就已经成为了默认的垃圾收集器。</p>
+<p>Oracle官方给 G1的定位是用来替代 CMS收集器，这就是为什么很多文章会把 G1 和 CMS进行对比的根本原因。</p>
+<h2 id="02-堆内存结构"><a href="#02-堆内存结构" class="headerlink" title="02 堆内存结构"></a><strong>02 堆内存结构</strong></h2><p>和以往的垃圾收集器不一样，G1尽管依然保留了年轻代和老年代的概念，<br>但是它们已经变成了一个逻辑上的概念，G1的堆内存被切分成若干个大小（1M ～ 32M）相同且不连续的 Region，包括 4种类型：</p>
+<ol>
+<li>Eden Region，Eden区域</li>
+<li>Survivor Region，存活区域</li>
+<li>Old Generation Region，老年代区域</li>
+<li>Humongous Region，大对象区域</li>
+</ol>
+<p>具体的堆内存结构如下图：</p>
+<p><img src="https://developer.qcloudimg.com/http-save/4096205/1d84e4529f19529ea9ae46dc572a9257.webp" alt="图片"></p>
+<p>图片</p>
+<p>Eden 区和 Survivor区的组合就是通常说的年轻代。</p>
+<p>Humongous是 G1 提出来的一个新区域，专门用于存储大对象，这里的大对象是指内存占用大于等于单个 Region一半大小的对象。</p>
+<p>比如，假设每个 Region是 2M，如果当前对象是 1M，那么它就是一个大对象，如果当前对象的大小是 3M，超过 1个 Region的范围， 那么<br>G1会寻找连续的 2个 Humongous 区域来存放它，如果找不到连续的空间存放当前对象， G1可能会触发一次垃圾回收来释放空间，或者进行内存压缩操作。</p>
+<p>参数-XX:G1HeapRegionSize可以用来设置Region的大小，-XX:G1HeapRegionSize&#x3D;4M，代表每个 Region的大小是 4M。</p>
+<p>从 JVM运行时内存结构的角度看，G1 回收对象是整个堆内存，如下图：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406261701923.webp" alt="图片"></p>
+<p>图片</p>
+<p>Region的特别说明：一个 Region可以是 Eden，Survivor，Old，Humongous 4种角色中的任意一种。在垃圾回收的过程中，存活对象可以从一个<br>Region 移动到另一个 Region， 比如，从 Eden区 移动到 Survivor区，从 Survivor区移动到老年代，所以，每个<br>Region具体属于哪一种角色也是动态变化的。理解这一点，可以帮助我们更好地领会下文 G1的回收原理。</p>
+<h2 id="03-几个重要技术点"><a href="#03-几个重要技术点" class="headerlink" title="03 几个重要技术点"></a><strong>03 几个重要技术点</strong></h2><p>在 CMS收集器这篇文章中，我们分析过三色标记法，记忆集，卡表，可达性分析等重要技术，作为 CMS的替换者和继承人，G1也使用了类似的技术点。</p>
+<p>在 CMS收集器中，存在跨代引用的问题，在 G1收集器中也存在同样的问题：跨区域引用，可能因为 G1堆内存有很多的<br>Region，所以这个跨区域引用的问题似乎表现地更明显。</p>
+<h4 id="什么是跨区域引用？"><a href="#什么是跨区域引用？" class="headerlink" title="什么是跨区域引用？"></a><strong>什么是跨区域引用？</strong></h4><p>如下图：Eden区的 A对象引用 Old区的 B对象，这是一种跨区域引用，Old区的 D对象指向 Eden区域的 E对象，这也是一种跨区域引用。</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406261702786.webp" alt="图片"></p>
+<h4 id="跨区域引用产生的问题"><a href="#跨区域引用产生的问题" class="headerlink" title="跨区域引用产生的问题"></a><strong>跨区域引用产生的问题</strong></h4><p>对于上图中 Eden区域（年轻代）A对象指向老年代 B对象，即便 Young GC把 A对象回收了，程序还能正常运行，随着 A-&gt;<br>B引用链的断开，B对象最终也可能因为无法被标记被回收，这种行为是可以接受的。但是，对于老年代 D对象指向 Eden区域（年轻代）E对象的场景，因为老年代<br>D对象是一个活跃对象，它是一个 GC Root， 所以，D对象直接关联的 E对象也应该是存活对象，假如 E对象被 Young<br>GC掉，就会出现存活的对象无故消失，该如何避免呢 ？</p>
+<p>方法1：在 Young GC时扫描所有的老年代，找出指向 E对象的引用，因为 G1是用于大内存的垃圾回收器，如果全局扫描老年代区域，将会是一个很耗时的操作，显然和<br>G1的设计初衷相违背。</p>
+<p>方法2：把老年代指向年轻代（A -&gt; B）的引用关系记录起来，GC时只要扫描这些记录数据，而 G1就是采用这种方式。在 G1中，<br>这种关系数据叫做记忆集（Remembered Set，RSet，RS），对于这里 A -&gt; B里面的 B，G1也有专门的术语叫收集集（Collection Set）。</p>
+<h4 id="收集集（Collection-Set）"><a href="#收集集（Collection-Set）" class="headerlink" title="收集集（Collection Set）"></a><strong>收集集（Collection Set）</strong></h4><p>在 G1中，收集集（Collection Set，CSet，CS）是指那些将要被清理以回收空间的源区域（Regions）的集合。根据垃圾回收的类型，收集集包含不同种类的区域：</p>
+<p>Young-Only阶段：在这个阶段，收集集只包含年轻代中的区域，以及那些可能被回收的大对象区域中的对象。</p>
+<p>空间回收阶段：在这个阶段，收集集包括年轻代区域、可能被回收的大对象区域中的对象，以及从候选收集集区域集合中选出的一些老年代区域。</p>
+<p>候选收集集区域（Collection Set Candidate Regions）是指那些在空间回收阶段很可能被回收的区域。G1<br>会根据区域存活对象的数量以及和其他区域的连接性两个指标进行选择。存活对象少，连接性低的区域会优先成为候选收集集区域，这种选择的目的是为了优化垃圾回收过程的效率，减少暂停时间，同时最大化回收空间。</p>
+<h4 id="记忆集（Remembered-Set）"><a href="#记忆集（Remembered-Set）" class="headerlink" title="记忆集（Remembered Set）"></a><strong>记忆集（Remembered Set）</strong></h4><p>在 G1中，记忆集（Remembered Set，RSet，RS）本质上是一种哈希表，它用于跟踪那些包含指向收集集中对象的引用的位置，这些引用是通过<br>Cards Table（卡表）来管理。</p>
+<p>因为 Region的角色（Eden，Survivor，Old，Humongous）是动态变化的，所以 G1会给每个 Region设置一个 RSet，RSet本质上是一种哈希表，Key是<br>Region的起始地址，Key对应的 Value是一个集合，里面存储的元素是卡表的索引号。</p>
+<p>如下图：Eden是一个收集集，包含一个记忆集（RSet），RSet 指向了两个 Old区域。</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406261704849.webp" alt="图片"></p>
+<p>记忆集的作用，主要有 2点：</p>
+<ol>
+<li>为了防止整个堆作为GC Roots的扫描范围</li>
+<li>确保在垃圾回收过程中，当收集集中的对象被移动，所有指向这些对象的引用都能够更新，指向对象的新位置</li>
+</ol>
+<h4 id="卡表"><a href="#卡表" class="headerlink" title="卡表"></a><strong>卡表</strong></h4><p>卡表（Card Table）是记忆集的一种具体实现，每个 Region被分成了若干个大小为 512字节的连续内存区域，即卡表（Card Table），因为<br>Region的大小是 1～32M，所以每个 Region中卡表数量是 2～64个。</p>
+<p>当一个老年代区域中的对象被修改，比如更新了一个引用字段指向一个年轻代对象时，JVM会使用写屏障（Write<br>Barrier）将相应的卡片标记为“脏”（Dirty）。在执行 Young GC时，G1会检查这些卡表并找出所有的脏卡片，然后只扫描这些脏卡片对应的内存区域，以更新老年代到年轻代的引用，避免每次<br>Young GC时都会扫描整个老年代。</p>
+<p>如下图：假设 Region的大小为 1M，因此每个 Region就包含 2个卡表。对象D 指向对象E，对象 E所在的 Eden是一个收集集，它会包含一个<br>RSet，RSet里有一个 Entry（Key）指向对象 D所在的 Old区域的起始地址，这个 Key对应的 Value包含了卡表的信息。</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406261705967.webp" alt="图片"></p>
+<h2 id="04-工作流程"><a href="#04-工作流程" class="headerlink" title="04 工作流程"></a><strong>04 工作流程</strong></h2><h3 id="4-1-两条主线"><a href="#4-1-两条主线" class="headerlink" title="4.1 两条主线"></a><strong>4.1 两条主线</strong></h3><p>为了更好地讲解 G1回收过程，我特地整理了官方文档的两条主线（或者说两个维度）：回收过程 和 回收周期。</p>
+<h4 id="4-1-1-回收过程"><a href="#4-1-1-回收过程" class="headerlink" title="4.1.1 回收过程"></a><strong>4.1.1 回收过程</strong></h4><p>回收过程是指 G1回收过程中会经历哪些具体的步骤，从全局上看，包括年轻代回收（Young GC），老年代并发标记周期（Concurrent Marking<br>Cycle），混合回收（Mixed GC）和 Full GC 4个过程。</p>
+<p>而老年代并发标记周期（Concurrent Marking Cycle）又包含以下 5个过程：</p>
+<ol>
+<li>Initial Marking（初始标记）</li>
+<li>Root Region Scanning（根据扫描）</li>
+<li>Concurrent Marking（并发标记）</li>
+<li>Remark（重新标记）</li>
+<li>Copying&#x2F;Cleanup（清除垃圾）</li>
+</ol>
+<p>从回收过程角度，G1工作流程可以抽象成如下示意图：</p>
+<p><img src="https://developer.qcloudimg.com/http-save/4096205/02a10b94f858d467c37b63a58ae37e7d.webp" alt="图片"></p>
+<p>图片</p>
+<p>严格意义上讲，Full GC并不能算是一个必需过程，它是 G1设计时需要尽量避免的，但因为这个点比较重要，所以还是把它放在过程中。</p>
+<h4 id="4-1-2-回收周期"><a href="#4-1-2-回收周期" class="headerlink" title="4.1.2 回收周期"></a><strong>4.1.2 回收周期</strong></h4><p>回收周期是对应官方文档的“On a high level”，它是对回收过程更高一层的抽象，包括 Young-only phase 和 Space-reclamation phase<br>两个阶段。</p>
+<p>Young-only phase：这里的“Young-only”是指垃圾收集器只会回收年轻代，该阶段主要完成回收过程中的 年轻代回收（Young GC） 和<br>老年代并发标记周期（Concurrent Marking Cycle） 两个过程。</p>
+<p>Space-reclamation phase：空间回收阶段，该阶段会进行多次年轻代收集（Young GC）以及增量回收部分老年代，被称为混合收集（Mixed<br>GC）。当 G1判断继续回收老年代不足以释放更多的空间，或者停顿时间大于 MaxGCPauseMillis（默认<br>200ms）时，会退出该阶段。空间回收阶段对应回收过程中的混合回收（Mixed GC）。</p>
+<p>从回收周期角度，G1的工作流程可以抽象成如下示意图：</p>
+<p><img src="https://developer.qcloudimg.com/http-save/4096205/ba5301989adf898e09dd4afdb334c16f.webp" alt="图片"></p>
+<p>图片</p>
+<p>扁平化后的示意图：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406261705715.webp" alt="图片"></p>
+<p>图片</p>
+<p>最后，我们从回收过程和回收周期两个维度进行对比，G1的工作流程可以抽象成如下示意图：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406261705670.webp" alt="图片"></p>
+<p>图片</p>
+<p>G1的实现细节比较难懂，但是我们可以通过上述两条主线，从整体上去把握 G1，接下来，我们将逐步来分析 G1的工作流程。</p>
+<h3 id="4-2-回收过程详解"><a href="#4-2-回收过程详解" class="headerlink" title="4.2 回收过程详解"></a><strong>4.2 回收过程详解</strong></h3><h4 id="4-2-1-年轻代回收"><a href="#4-2-1-年轻代回收" class="headerlink" title="4.2.1 年轻代回收"></a><strong>4.2.1 年轻代回收</strong></h4><p>年轻代回收，顾名思义就是对年轻代的回收，它是一个 Stop The World的过程，当 Eden区的剩余空间无法完成新对象的分配时会触发<br>Young GC，年轻代回收包含对 Eden区 和 Survivor区的回收， 具体表现为存活对象被复制或移动到一个或多个<br>Survivor区域，如果对象存活时间达到进入老年代（Old Generation）的阈值，对象将被提升到老年代。</p>
+<p>G1 Young GC回收过程示意图如下：</p>
+<p><img src="https://developer.qcloudimg.com/http-save/4096205/85645fd5a5338657b7ef791fd1ac5a1c.webp" alt="图片"></p>
+<p>图片</p>
+<h4 id="4-2-2-老年代并发标记周期"><a href="#4-2-2-老年代并发标记周期" class="headerlink" title="4.2.2 老年代并发标记周期"></a><strong>4.2.2 老年代并发标记周期</strong></h4><h5 id="Initial-Mark（初始标记）"><a href="#Initial-Mark（初始标记）" class="headerlink" title="Initial Mark（初始标记）"></a><strong>Initial Mark（初始标记）</strong></h5><p>初始标记阶段会 Stop The World（STW），但耗时很短，它是伴随 Young GC同步完成的。</p>
+<p>初始标记主要完成 2件事情：</p>
+<ol>
+<li>标记 GC Roots直接关联的对象</li>
+<li>标记出所有的 survivor区（Root区）</li>
+</ol>
+<p>下图为一个简单的初始标记过程示例：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406261705666.webp" alt="图片"></p>
+<p>图片</p>
+<p><strong>为什么初始标记会伴随 Young GC？</strong></p>
+<p>最大的考虑是性能问题，这里给出两个具体的理由：</p>
+<ol>
+<li>减少停顿时间：Young GC会 Stop The World，而初始标记刚好借着这个停顿时间，做一些额外的标记工作，从而减少 STW的时间；</li>
+<li>提升效率：Young GC是回收年轻代，而初始标记是标记年轻代和老年代中存活的对象。两者结合，就可以把处理年轻代这个重叠的过程给复用了，提高垃圾收集的效率；</li>
+</ol>
+<h5 id="Root-Region-Scanning（根区扫描）"><a href="#Root-Region-Scanning（根区扫描）" class="headerlink" title="Root Region Scanning（根区扫描）"></a><strong>Root Region Scanning（根区扫描）</strong></h5><p>根区扫描主要是扫描 Survivor区指向老年代的引用。扫描线程和用户线程是并发执行的， 另外，该过程必须在下一个 Young<br>GC到来之前完成，主要原因是 Young GC会涉及到存活对象的在 Region间的移动， 因此，可能会改变 Survivor指向老年代的引用，从而影响数据的正确性。</p>
+<h5 id="Concurrent-Marking（并发标记）"><a href="#Concurrent-Marking（并发标记）" class="headerlink" title="Concurrent Marking（并发标记）"></a><strong>Concurrent Marking（并发标记）</strong></h5><p>这里的并发是指 GC线程和用户线程可以并发执行，并发标记阶段的耗时会较长一些。</p>
+<p>并发标记主要完成 3件事情：</p>
+<ol>
+<li>从 GC Root开始，对堆中所有对象进行可达性分析，确认需要回收的对象</li>
+<li>更新卡表</li>
+<li>标记空的 Region</li>
+</ol>
+<p>并发标记示意图如下：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406261705571.webp" alt="图片"></p>
+<p>图片</p>
+<h5 id="Remark（重新标记）"><a href="#Remark（重新标记）" class="headerlink" title="Remark（重新标记）"></a><strong>Remark（重新标记）</strong></h5><p>重新标记主要完成 2件事情：</p>
+<ol>
+<li>回收并发标记过程中的空 Region</li>
+<li>利用 Snapshot-At-The-Beginning （SATB） 修正并发标记中的数据</li>
+</ol>
+<h5 id="Cleanup（并发清理）"><a href="#Cleanup（并发清理）" class="headerlink" title="Cleanup（并发清理）"></a><strong>Cleanup（并发清理）</strong></h5><p>并发清除阶段主要完成 3件事情：</p>
+<ol>
+<li>对存活对象进行统计并完全释放空闲区域。（STW）</li>
+<li>清理记忆集（Remembered Sets）。（STW）</li>
+<li>重置空闲区域并将它们返回到空闲列表。（并发执行）</li>
+</ol>
+<h4 id="4-2-3-混合回收"><a href="#4-2-3-混合回收" class="headerlink" title="4.2.3 混合回收"></a><strong>4.2.3 混合回收</strong></h4><p>当老年代的堆使用率达到参数 -XX:InitiatingHeapOccupancyPercent 设定阈值（默认是 45%）， 则触发混合回收，混合回收阶段会进行多次<br>Young GC 以及对部分老年代进行增量回收。</p>
+<h4 id="4-2-4-Full-GC"><a href="#4-2-4-Full-GC" class="headerlink" title="4.2.4 Full GC"></a><strong>4.2.4 Full GC</strong></h4><p>Fu1l GC 是 G1最后的防护线，它本是 G1设计时需要尽量避免的，严格上说，不应该作为一个过程来讲，但是 Full<br>GC是实际生产中大家比较关注的问题，所以作为一个过程来分析。</p>
+<p>G1 主要通过以下几个参数和指标来决定是否需要触发Full GC：</p>
+<p>-XX:G1HeapWastePercent：堆中可以容忍的最大垃圾比例。如果在 Mixed GC之后，垃圾的比例超过了这个阈值，G1可能会触发 Full<br>GC来回收更多的空间。</p>
+<p>-XX:G1MixedGCLiveThresholdPercent：当 Old区中的对象占用的比例超过多少时，这部分区域会被包含在 Mixed GC中，默认<br>85。如果这个比例设置得太低，可能会导致过多的 Old区域被包含在 Mixed GC中，进而增加GC的工作量和停顿时间，最终可能引发 Full GC。</p>
+<p>-XX:G1MixedGCCountTarget：在开始进行 Full GC之前，可以执行 Mixed GC的最大次数。如果连续的 Mixed<br>GC没有有效地回收内存，达到这个次数限制后，G1可能会触发 Full GC。</p>
+<p>-XX:G1ReservePercent：保留的堆内存的百分比，默认是10，作为一个缓冲区来减少 Full GC的发生。如果可用内存低于这个阈值，G1可能会触发<br>Full GC。</p>
+<h2 id="05-为什么-G1-能替代-CMS"><a href="#05-为什么-G1-能替代-CMS" class="headerlink" title="05 为什么 G1 能替代 CMS"></a><strong>05 为什么 G1 能替代 CMS</strong></h2><p>接下来，我们呼应文章标题：G1为什么能替代 CMS收集器？我觉得最核心的两个因素是：设计思想更好 以及 算法更优。</p>
+<h3 id="设计思想"><a href="#设计思想" class="headerlink" title="设计思想"></a><strong>设计思想</strong></h3><p>思想决定高度，对于垃圾回收器也一样，G1 的三个优秀的设计思想，为后面的垃圾收集器（ZGC）奠定了坚实的基础：</p>
+<ol>
+<li>基于 Region 的内存布局</li>
+<li>面向局部收集的设计思想</li>
+<li>GC停顿时间和吞吐量的平衡</li>
+</ol>
+<p>Region化整为零，面向局部收集的思想完全碾压了 CMS这种需要收集整个老年代的设计。</p>
+<p>基于 Region可以同时兼顾年轻代和老年代的回收，而 CMS只能回收老年代。</p>
+<p>基于 Region，因为回收的粒度更细，范围更小，使得 G1的停顿时间更加可预测。</p>
+<p>实际生产中，并非全部是非此即彼的选择题，很多时候是即要…又要…，因此，CMS为了追求低延时，牺牲了吞吐量，这显然和这种即又场景格格不入。而<br>G1则吸取了 CMS的经验教训，尽量做到 GC停顿时间和吞吐量的平衡，它更符合当代大内存的场景需求。</p>
+<h3 id="算法"><a href="#算法" class="headerlink" title="算法"></a><strong>算法</strong></h3><p>CMS使用的是标记-清除算法，这种算法的最大缺点是产生内存碎片，当内存碎片过多，无法找到足够的连续空间来分配新对象，就会产生一次并发模式失败（Concurrent<br>Mode Failure），启动 Full GC，</p>
+<p>而 G1采用的是标记-整理算法，在每次垃圾回收后会进行内存压缩，因此，不会产生内存碎片，便于新生对象的分配。</p>
+<p>当然，还有其他一些的性能提升也促成了 G1能替换 CMS，这里就不一一列举了</p>
+<h2 id="06-总结"><a href="#06-总结" class="headerlink" title="06 总结"></a><strong>06 总结</strong></h2><p>因为 G1涉及的知识点太多，所以本文通过两条主线（回收过程和回收周期）进行讲解，作为普通的开发， 个人觉得能够把握<br>G1的整体流程和一些重要的技术点以及掌握重要的调优参数，就 OK了。</p>
+<p>本文同时分析了 G1为什么能替代 CMS回收器，最核心是设计思想以及算法，其他的一些功能也多少有影响。</p>
+<p>为了更好的阅读本文，建议先阅读《<a href="https://cloud.tencent.com/developer/tools/blog-entry?target=https://mp.weixin.qq.com/s?__biz=MzIwNDAyOTI2Nw==&mid=2247494932&idx=1&sn=1e0a7a74e947dd03967c36cc3270f8a1&chksm=96c4c128a1b3483e78405fa2b1cf2f2f901b91593c56fc4d6ee086eb1b7c8a27e4d9be1fbf7d&token=2016670857&lang=zh_CN&scene=21%23wechat_redirect&source=article&objectId=2400306">肝了一周，彻底弄懂了 CMS收集器原理，这个轮子造的真值！</a><br>》这篇文章。</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202406261707194.webp" alt="图片"></p>
 
                 
                 <p class="end">__END__</p>
@@ -105,7 +227,7 @@
     <div class="suffix-box-right">
         <span class="suffix-box-title">文章作者：</span>Live For Code
         <br>
-        <span class="suffix-box-title">文章出处：</span><a href="/article/1305786655/" target="_blank">LeetCode02-两数加法计算-链表逆序</a>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1717418917/" target="_blank">为什么G1能够替代CMS回收器</a>
         <br>
         <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
         <br>
@@ -128,17 +250,17 @@
                     <div class="tag">
                         标签：
                         
-                            <a href="/tag/LeetCode/">LeetCode</a>
+                            <a href="/tag/GC/">GC</a>
                         
                     </div>
                 
                 <div class="article-prev-next">
                     
-                        <a href="/article/1305786654/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1305786654/" title="发布于 2023-02-15 10:08">LeetCode01-两数之和</a>
+                        <a href="/article/1717618917/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1717618917/" title="发布于 2023-05-20 11:21">CMS垃圾回收器概念</a>
                         <br>
                     
                     
-                        <a href="/article/1623358581/" class="next-prefix">» </a> 下一篇：    <a href="/article/1623358581/" title="发布于 2023-01-29 09:36">设计模式学习</a>
+                        <a href="/article/1717408917/" class="next-prefix">» </a> 下一篇：    <a href="/article/1717408917/" title="发布于 2023-05-19 09:21">XXL-JOB源码分析</a>
                     
                 </div>
             </div>
