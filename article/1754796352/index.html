@@ -9,7 +9,7 @@
     <meta http-equiv="Cache-Control" content="no-siteapp">
     <title>
         
-            Live For Code
+            LRU最近最少使用缓存
         
     </title>
     <link rel="shortcut icon" href="#"/>
@@ -32,294 +32,129 @@
 <meta name="generator" content="Hexo 6.2.0"></head>
 <body>
     <a id="cover"></a>
-    <link type="text/css" rel="stylesheet" href="/css/index.css">
-<div id="count"></div>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
 <header>
     <meta name="referrer" content="no-referrer">
 </header>
-<div id="header" >
+<div id="header" class="header">
     <div class="vertical">
         <div class="inner">
             
-                <h1 class="header-title">Live For Code</h1>
-                <h2 class="header-description" id="hitokoto"></h2>
-                <h3 class="header-info" id="hitokotoAuthor"></h3>
+                <h1 class="header-subtitle">LRU最近最少使用缓存</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2024-04-26
+                        </span>
+                        
+                            <span id="/article/1754796352/" class="leancloud_visitors" data-flag-title="LRU最近最少使用缓存">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1754796352/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">LeetCode</span>
+                        
+                    
+                </div>
             
         </div>
     </div>
-    
-        <a class="scroll-down" href="javascript:;" target="_self" data-offset="-45">
-            <i class="scroll-down-icon iconfont icon-return"></i>
-        </a>
     
 </div>
 <div id="container">
     
-        
-            <!-- 首页 -->
-            <div class="articles">
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <p><a target="_blank" rel="noopener" href="https://leetcode.cn/problems/lru-cache/">146. LRU 缓存</a></p>
+<p>已解答</p>
+<p>中等</p>
+<p>相关标签</p>
+<p>相关企业</p>
+<p>请你设计并实现一个满足 <a target="_blank" rel="noopener" href="https://baike.baidu.com/item/LRU">LRU (最近最少使用) 缓存</a> 约束的数据结构。</p>
+<p>实现 <code>LRUCache</code> 类：</p>
+<ul>
+<li><code>LRUCache(int capacity)</code> 以 <strong>正整数</strong> 作为容量 <code>capacity</code> 初始化 LRU 缓存</li>
+<li><code>int get(int key)</code> 如果关键字 <code>key</code> 存在于缓存中，则返回关键字的值，否则返回 <code>-1</code> 。</li>
+<li><code>void put(int key, int value)</code> 如果关键字 <code>key</code> 已经存在，则变更其数据值 <code>value</code><br>；如果不存在，则向缓存中插入该组 <code>key-value</code> 。如果插入操作导致关键字数量超过 <code>capacity</code> ，则应该 <strong>逐出</strong> 最久未使用的关键字。</li>
+</ul>
+<p>函数 <code>get</code> 和 <code>put</code> 必须以 <code>O(1)</code> 的平均时间复杂度运行</p>
+<p><strong>示例：</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">输入</span><br><span class="line">[<span class="string">&quot;LRUCache&quot;</span>, <span class="string">&quot;put&quot;</span>, <span class="string">&quot;put&quot;</span>, <span class="string">&quot;get&quot;</span>, <span class="string">&quot;put&quot;</span>, <span class="string">&quot;get&quot;</span>, <span class="string">&quot;put&quot;</span>, <span class="string">&quot;get&quot;</span>, <span class="string">&quot;get&quot;</span>, <span class="string">&quot;get&quot;</span>]</span><br><span class="line">[[<span class="number">2</span>], [<span class="number">1</span>, <span class="number">1</span>], [<span class="number">2</span>, <span class="number">2</span>], [<span class="number">1</span>], [<span class="number">3</span>, <span class="number">3</span>], [<span class="number">2</span>], [<span class="number">4</span>, <span class="number">4</span>], [<span class="number">1</span>], [<span class="number">3</span>], [<span class="number">4</span>]]</span><br><span class="line">输出</span><br><span class="line">[<span class="literal">null</span>, <span class="literal">null</span>, <span class="literal">null</span>, <span class="number">1</span>, <span class="literal">null</span>, -<span class="number">1</span>, <span class="literal">null</span>, -<span class="number">1</span>, <span class="number">3</span>, <span class="number">4</span>]</span><br><span class="line"></span><br><span class="line">解释</span><br><span class="line"><span class="type">LRUCache</span> <span class="variable">lRUCache</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">LRUCache</span>(<span class="number">2</span>);</span><br><span class="line">lRUCache.put(<span class="number">1</span>, <span class="number">1</span>); <span class="comment">// 缓存是 &#123;1=1&#125;</span></span><br><span class="line">lRUCache.put(<span class="number">2</span>, <span class="number">2</span>); <span class="comment">// 缓存是 &#123;1=1, 2=2&#125;</span></span><br><span class="line">lRUCache.get(<span class="number">1</span>);    <span class="comment">// 返回 1</span></span><br><span class="line">lRUCache.put(<span class="number">3</span>, <span class="number">3</span>); <span class="comment">// 该操作会使得关键字 2 作废，缓存是 &#123;1=1, 3=3&#125;</span></span><br><span class="line">lRUCache.get(<span class="number">2</span>);    <span class="comment">// 返回 -1 (未找到)</span></span><br><span class="line">lRUCache.put(<span class="number">4</span>, <span class="number">4</span>); <span class="comment">// 该操作会使得关键字 1 作废，缓存是 &#123;4=4, 3=3&#125;</span></span><br><span class="line">lRUCache.get(<span class="number">1</span>);    <span class="comment">// 返回 -1 (未找到)</span></span><br><span class="line">lRUCache.get(<span class="number">3</span>);    <span class="comment">// 返回 3</span></span><br><span class="line">lRUCache.get(<span class="number">4</span>);    <span class="comment">// 返回 4</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">LRUCache</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">class</span> <span class="title class_">DlinkedNode</span>&#123;</span><br><span class="line">        <span class="type">int</span> key;</span><br><span class="line">        <span class="type">int</span> value;</span><br><span class="line">        DlinkedNode prev;</span><br><span class="line">        DlinkedNode next;</span><br><span class="line">        <span class="keyword">public</span> <span class="title function_">DlinkedNode</span> <span class="params">()</span>&#123;&#125;</span><br><span class="line">        <span class="keyword">public</span> <span class="title function_">DlinkedNode</span><span class="params">(<span class="type">int</span> _key,<span class="type">int</span> _value)</span>&#123;</span><br><span class="line">            <span class="built_in">this</span>.key = _key;</span><br><span class="line">            <span class="built_in">this</span>.value = _value;</span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">   <span class="keyword">public</span> Map&lt;Integer,DlinkedNode&gt; cache = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">   <span class="keyword">private</span> <span class="type">int</span> size;</span><br><span class="line">   <span class="keyword">private</span> <span class="type">int</span> capacity;</span><br><span class="line">   <span class="keyword">private</span> DlinkedNode head;</span><br><span class="line">   <span class="keyword">private</span> DlinkedNode tail; </span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">LRUCache</span><span class="params">(<span class="type">int</span> capacity)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.size = <span class="number">0</span> ;</span><br><span class="line">        <span class="built_in">this</span>.capacity = capacity;</span><br><span class="line">        head = <span class="keyword">new</span> <span class="title class_">DlinkedNode</span>();</span><br><span class="line">        tail = <span class="keyword">new</span> <span class="title class_">DlinkedNode</span>();</span><br><span class="line">        head.next = tail;</span><br><span class="line">        tail.prev = head;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">get</span><span class="params">(<span class="type">int</span> key)</span> &#123;</span><br><span class="line">        <span class="type">DlinkedNode</span> <span class="variable">node</span> <span class="operator">=</span> cache.get(key);</span><br><span class="line">        <span class="keyword">if</span>(node == <span class="literal">null</span>)&#123;</span><br><span class="line">            <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        moveTohead(node);</span><br><span class="line">        <span class="keyword">return</span> node.value;</span><br><span class="line">    </span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">moveTohead</span><span class="params">(DlinkedNode  node )</span>&#123;</span><br><span class="line">        removeNode(node);</span><br><span class="line">        addToHead(node);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span>  <span class="title function_">addToHead</span><span class="params">(DlinkedNode node)</span>&#123;</span><br><span class="line">        node.prev= head;</span><br><span class="line">        node.next = head.next;</span><br><span class="line">        head.next.prev = node;</span><br><span class="line">        head.next= node;</span><br><span class="line">    &#125; </span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> DlinkedNode <span class="title function_">removeTail</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="type">DlinkedNode</span> <span class="variable">prev</span> <span class="operator">=</span> tail.prev;</span><br><span class="line">        prev.prev.next = tail;</span><br><span class="line">        tail.prev = prev.prev;</span><br><span class="line">        <span class="keyword">return</span> prev;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">removeNode</span><span class="params">(DlinkedNode  node)</span>&#123;</span><br><span class="line">        node.prev.next = node.next;</span><br><span class="line">        node.next.prev = node.prev;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">put</span><span class="params">(<span class="type">int</span> key, <span class="type">int</span> value)</span> &#123;</span><br><span class="line">        <span class="type">DlinkedNode</span> <span class="variable">node</span> <span class="operator">=</span> cache.get(key);</span><br><span class="line">        <span class="keyword">if</span>(node ==<span class="literal">null</span>)&#123;</span><br><span class="line">            node = <span class="keyword">new</span> <span class="title class_">DlinkedNode</span>(key,value);</span><br><span class="line"></span><br><span class="line">            cache.put(key,node);</span><br><span class="line">            addToHead(node);</span><br><span class="line">            ++size;</span><br><span class="line">            <span class="keyword">if</span>(size &gt; capacity)&#123;</span><br><span class="line">               <span class="type">DlinkedNode</span> <span class="variable">tail</span> <span class="operator">=</span> removeTail();</span><br><span class="line">                cache.remove(tail.key);</span><br><span class="line">                --size;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">        &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">            node.value = value;</span><br><span class="line">            moveTohead(node);</span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Your LRUCache object will be instantiated and called as such:</span></span><br><span class="line"><span class="comment"> * LRUCache obj = new LRUCache(capacity);</span></span><br><span class="line"><span class="comment"> * int param_1 = obj.get(key);</span></span><br><span class="line"><span class="comment"> * obj.put(key,value);</span></span><br><span class="line"><span class="comment"> */</span></span><br></pre></td></tr></table></figure>
+
+
                 
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1753358582/">Kubernetes-Pod升级与回滚</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-29
-                            </span>
-                            
-                                <span id="/article/1753358582/" class="leancloud_visitors" data-flag-title="Kubernetes-Pod升级与回滚">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1753358582/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1754796352/" target="_blank">LRU最近最少使用缓存</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
+                        
+                            <a href="/category/Web/">Web</a>
+                        
                     </div>
                 
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1753358581/">Kubernetes-Pod扩容与缩容</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-29
-                            </span>
-                            
-                                <span id="/article/1753358581/" class="leancloud_visitors" data-flag-title="Kubernetes-Pod扩容与缩容">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1753358581/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
+                
+                    <div class="tag">
+                        标签：
+                        
+                            <a href="/tag/LeetCode/">LeetCode</a>
+                        
                     </div>
                 
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1753358571/">二叉树学习笔记</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-29
-                            </span>
-                            
-                                <span id="/article/1753358571/" class="leancloud_visitors" data-flag-title="二叉树学习笔记">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1753358571/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
-                    </div>
-                
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1753358579/">Kubernetes-Pod基础</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-29
-                            </span>
-                            
-                                <span id="/article/1753358579/" class="leancloud_visitors" data-flag-title="Kubernetes-Pod基础">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1753358579/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
-                    </div>
-                
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1753358583/">Kubernetes-Pod管理对象与调度策略</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-29
-                            </span>
-                            
-                                <span id="/article/1753358583/" class="leancloud_visitors" data-flag-title="Kubernetes-Pod管理对象与调度策略">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1753358583/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
-                    </div>
-                
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1177767762/">docker实践和运用</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-17
-                            </span>
-                            
-                                <span id="/article/1177767762/" class="leancloud_visitors" data-flag-title="docker实践和运用">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1177767762/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
-                    </div>
-                
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1177767760/">LeetCode23-[下一个排列]</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-16
-                            </span>
-                            
-                                <span id="/article/1177767760/" class="leancloud_visitors" data-flag-title="LeetCode23-[下一个排列]">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1177767760/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
-                    </div>
-                
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1177767761/">Window软件分享</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-16
-                            </span>
-                            
-                                <span id="/article/1177767761/" class="leancloud_visitors" data-flag-title="Window软件分享">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1177767761/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
-                    </div>
-                
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1177767761/">快速排序</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-16
-                            </span>
-                            
-                                <span id="/article/1177767761/" class="leancloud_visitors" data-flag-title="快速排序">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1177767761/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
-                    </div>
-                
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1177767759/">LeetCode22-[Pow(x, n)]</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-10
-                            </span>
-                            
-                                <span id="/article/1177767759/" class="leancloud_visitors" data-flag-title="LeetCode22-[Pow(x, n)]">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1177767759/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
-                    </div>
-                
+                <div class="article-prev-next">
+                    
+                        <a href="/article/1715260887683/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1715260887683/" title="发布于 2024-05-09 09:21">LeetCode判断回文链表</a>
+                        <br>
+                    
+                    
+                        <a href="/article/1753796352/" class="next-prefix">» </a> 下一篇：    <a href="/article/1753796352/" title="发布于 2024-04-22 09:34">LeetCode460-LFU缓存</a>
+                    
+                </div>
             </div>
             
+    <div class="article-comments">
         
-    <div class="pagination-bottom">
-        <div class="pagination">
-            
-                <a class="extend prev" rel="prev" href="/page/4/">上一页</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><a class="page-number" href="/page/7/">7</a><a class="page-number" href="/page/8/">8</a><a class="extend next" rel="next" href="/page/6/">下一页</a>
-            
-        </div>
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
     </div>
 
+        </div>
     
 </div>
     <div id="footer"></div>
@@ -345,7 +180,7 @@
             <div class="menu-list">
                 <ul>
                     
-                        <li class=" active "><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
                     
                         <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
                     
