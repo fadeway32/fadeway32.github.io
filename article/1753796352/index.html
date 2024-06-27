@@ -9,7 +9,7 @@
     <meta http-equiv="Cache-Control" content="no-siteapp">
     <title>
         
-            Live For Code
+            LeetCode460-LFU缓存
         
     </title>
     <link rel="shortcut icon" href="#"/>
@@ -32,294 +32,123 @@
 <meta name="generator" content="Hexo 6.2.0"></head>
 <body>
     <a id="cover"></a>
-    <link type="text/css" rel="stylesheet" href="/css/index.css">
-<div id="count"></div>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
 <header>
     <meta name="referrer" content="no-referrer">
 </header>
-<div id="header" >
+<div id="header" class="header">
     <div class="vertical">
         <div class="inner">
             
-                <h1 class="header-title">Live For Code</h1>
-                <h2 class="header-description" id="hitokoto"></h2>
-                <h3 class="header-info" id="hitokotoAuthor"></h3>
+                <h1 class="header-subtitle">LeetCode460-LFU缓存</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2024-04-22
+                        </span>
+                        
+                            <span id="/article/1753796352/" class="leancloud_visitors" data-flag-title="LeetCode460-LFU缓存">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1753796352/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">LeetCode</span>
+                        
+                    
+                </div>
             
         </div>
     </div>
-    
-        <a class="scroll-down" href="javascript:;" target="_self" data-offset="-45">
-            <i class="scroll-down-icon iconfont icon-return"></i>
-        </a>
     
 </div>
 <div id="container">
     
-        
-            <!-- 首页 -->
-            <div class="articles">
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="LettoCode460-LFU-缓存"><a href="#LettoCode460-LFU-缓存" class="headerlink" title="LettoCode460-LFU 缓存"></a><a target="_blank" rel="noopener" href="https://leetcode.cn/problems/lfu-cache/">LettoCode460-LFU 缓存</a></h1><p>请你为 <a target="_blank" rel="noopener" href="https://baike.baidu.com/item/%E7%BC%93%E5%AD%98%E7%AE%97%E6%B3%95">最不经常使用（LFU）</a>缓存算法设计并实现数据结构。</p>
+<p>实现 <code>LFUCache</code> 类：</p>
+<ul>
+<li><code>LFUCache(int capacity)</code> - 用数据结构的容量 <code>capacity</code> 初始化对象</li>
+<li><code>int get(int key)</code> - 如果键 <code>key</code> 存在于缓存中，则获取键的值，否则返回 <code>-1</code> 。</li>
+<li><code>void put(int key, int value)</code> - 如果键 <code>key</code> 已存在，则变更其值；如果键不存在，请插入键值对。当缓存达到其容量 <code>capacity</code><br>时，则应该在插入新项之前，移除最不经常使用的项。在此问题中，当存在平局（即两个或更多个键具有相同使用频率）时，应该去除 *<br><em>最久未使用</em>* 的键。</li>
+</ul>
+<p>为了确定最不常使用的键，可以为缓存中的每个键维护一个 <strong>使用计数器</strong> 。使用计数最小的键是最久未使用的键。</p>
+<p>当一个键首次插入到缓存中时，它的使用计数器被设置为 <code>1</code> (由于 put 操作)。对缓存中的键执行 <code>get</code> 或 <code>put</code> 操作，使用计数器的值将会递增。</p>
+<p>函数 <code>get</code> 和 <code>put</code> 必须以 <code>O(1)</code> 的平均时间复杂度运行</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">LFUCache</span> &#123;</span><br><span class="line"></span><br><span class="line"> <span class="type">int</span> minfreq;</span><br><span class="line">    <span class="type">int</span> capacity;</span><br><span class="line">    Map&lt;Integer, Node&gt; keyTable;</span><br><span class="line">    Map&lt;Integer,DoublyLinkedList&gt;  freqTable;</span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">LFUCache</span><span class="params">(<span class="type">int</span> capacity)</span> &#123;</span><br><span class="line">           <span class="built_in">this</span>.minfreq =<span class="number">0</span> ;</span><br><span class="line">            <span class="built_in">this</span>.capacity = capacity;</span><br><span class="line">           keyTable = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;Integer,Node&gt;();</span><br><span class="line">            freqTable = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;Integer,DoublyLinkedList&gt;();</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">get</span><span class="params">(<span class="type">int</span> key)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (capacity == <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (!keyTable.containsKey(key)) &#123;</span><br><span class="line">            <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">Node</span> <span class="variable">node</span> <span class="operator">=</span> keyTable.get(key);</span><br><span class="line">        <span class="type">int</span> <span class="variable">val</span> <span class="operator">=</span> node.val, freq = node.freq;</span><br><span class="line">        freqTable.get(freq).remove(node);</span><br><span class="line">        <span class="comment">// 如果当前链表为空，我们需要在哈希表中删除，且更新minFreq</span></span><br><span class="line">        <span class="keyword">if</span> (freqTable.get(freq).size == <span class="number">0</span>) &#123;</span><br><span class="line">            freqTable.remove(freq);</span><br><span class="line">            <span class="keyword">if</span> (minfreq == freq) &#123;</span><br><span class="line">                minfreq += <span class="number">1</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 插入到 freq + 1 中</span></span><br><span class="line">        <span class="type">DoublyLinkedList</span> <span class="variable">list</span> <span class="operator">=</span> freqTable.getOrDefault(freq + <span class="number">1</span>, <span class="keyword">new</span> <span class="title class_">DoublyLinkedList</span>());</span><br><span class="line">        list.addFirst(<span class="keyword">new</span> <span class="title class_">Node</span>(key, val, freq + <span class="number">1</span>));</span><br><span class="line">        freqTable.put(freq + <span class="number">1</span>, list);</span><br><span class="line">        keyTable.put(key, freqTable.get(freq + <span class="number">1</span>).getHead());</span><br><span class="line">        <span class="keyword">return</span> val;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">put</span><span class="params">(<span class="type">int</span> key, <span class="type">int</span> value)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (capacity == <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (!keyTable.containsKey(key)) &#123;</span><br><span class="line">            <span class="comment">// 缓存已满，需要进行删除操作</span></span><br><span class="line">            <span class="keyword">if</span> (keyTable.size() == capacity) &#123;</span><br><span class="line">                <span class="comment">// 通过 minFreq 拿到 freqTable[minFreq] 链表的末尾节点</span></span><br><span class="line">                <span class="type">Node</span> <span class="variable">node</span> <span class="operator">=</span> freqTable.get(minfreq).getTail();</span><br><span class="line">                keyTable.remove(node.key);</span><br><span class="line">                freqTable.get(minfreq).remove(node);</span><br><span class="line">                <span class="keyword">if</span> (freqTable.get(minfreq).size == <span class="number">0</span>) &#123;</span><br><span class="line">                    freqTable.remove(minfreq);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="type">DoublyLinkedList</span> <span class="variable">list</span> <span class="operator">=</span> freqTable.getOrDefault(<span class="number">1</span>, <span class="keyword">new</span> <span class="title class_">DoublyLinkedList</span>());</span><br><span class="line">            list.addFirst(<span class="keyword">new</span> <span class="title class_">Node</span>(key, value, <span class="number">1</span>));</span><br><span class="line">            freqTable.put(<span class="number">1</span>, list);</span><br><span class="line">            keyTable.put(key, freqTable.get(<span class="number">1</span>).getHead());</span><br><span class="line">            minfreq = <span class="number">1</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">// 与 get 操作基本一致，除了需要更新缓存的值</span></span><br><span class="line">            <span class="type">Node</span> <span class="variable">node</span> <span class="operator">=</span> keyTable.get(key);</span><br><span class="line">            <span class="type">int</span> <span class="variable">freq</span> <span class="operator">=</span> node.freq;</span><br><span class="line">            freqTable.get(freq).remove(node);</span><br><span class="line">            <span class="keyword">if</span> (freqTable.get(freq).size == <span class="number">0</span>) &#123;</span><br><span class="line">                freqTable.remove(freq);</span><br><span class="line">                <span class="keyword">if</span> (minfreq == freq) &#123;</span><br><span class="line">                    minfreq += <span class="number">1</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="type">DoublyLinkedList</span> <span class="variable">list</span> <span class="operator">=</span> freqTable.getOrDefault(freq + <span class="number">1</span>, <span class="keyword">new</span> <span class="title class_">DoublyLinkedList</span>());</span><br><span class="line">            list.addFirst(<span class="keyword">new</span> <span class="title class_">Node</span>(key, value, freq + <span class="number">1</span>));</span><br><span class="line">            freqTable.put(freq + <span class="number">1</span>, list);</span><br><span class="line">            keyTable.put(key, freqTable.get(freq + <span class="number">1</span>).getHead());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 初始化Node DoublyLinkedList</span></span><br><span class="line">   <span class="keyword">class</span> <span class="title class_">Node</span> &#123;</span><br><span class="line">    <span class="type">int</span> key, val, freq;</span><br><span class="line">    Node prev, next;</span><br><span class="line"></span><br><span class="line">    Node() &#123;</span><br><span class="line">        <span class="built_in">this</span>(-<span class="number">1</span>, -<span class="number">1</span>, <span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    Node(<span class="type">int</span> key, <span class="type">int</span> val, <span class="type">int</span> freq) &#123;</span><br><span class="line">        <span class="built_in">this</span>.key = key;</span><br><span class="line">        <span class="built_in">this</span>.val = val;</span><br><span class="line">        <span class="built_in">this</span>.freq = freq;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">DoublyLinkedList</span> &#123;</span><br><span class="line">    Node dummyHead, dummyTail;</span><br><span class="line">    <span class="type">int</span> size;</span><br><span class="line"></span><br><span class="line">    DoublyLinkedList() &#123;</span><br><span class="line">        dummyHead = <span class="keyword">new</span> <span class="title class_">Node</span>();</span><br><span class="line">        dummyTail = <span class="keyword">new</span> <span class="title class_">Node</span>();</span><br><span class="line">        dummyHead.next = dummyTail;</span><br><span class="line">        dummyTail.prev = dummyHead;</span><br><span class="line">        size = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addFirst</span><span class="params">(Node node)</span> &#123;</span><br><span class="line">        <span class="type">Node</span> <span class="variable">prevHead</span> <span class="operator">=</span> dummyHead.next;</span><br><span class="line">        node.prev = dummyHead;</span><br><span class="line">        dummyHead.next = node;</span><br><span class="line">        node.next = prevHead;</span><br><span class="line">        prevHead.prev = node;</span><br><span class="line">        size++;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">remove</span><span class="params">(Node node)</span> &#123;</span><br><span class="line">        <span class="type">Node</span> <span class="variable">prev</span> <span class="operator">=</span> node.prev, next = node.next;</span><br><span class="line">        prev.next = next;</span><br><span class="line">        next.prev = prev;</span><br><span class="line">        size--;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> Node <span class="title function_">getHead</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> dummyHead.next;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> Node <span class="title function_">getTail</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> dummyTail.prev;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Your LFUCache object will be instantiated and called as such:</span></span><br><span class="line"><span class="comment"> * LFUCache obj = new LFUCache(capacity);</span></span><br><span class="line"><span class="comment"> * int param_1 = obj.get(key);</span></span><br><span class="line"><span class="comment"> * obj.put(key,value);</span></span><br><span class="line"><span class="comment"> */</span></span><br></pre></td></tr></table></figure>
+
+
                 
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1753358582/">Kubernetes-Pod升级与回滚</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-29
-                            </span>
-                            
-                                <span id="/article/1753358582/" class="leancloud_visitors" data-flag-title="Kubernetes-Pod升级与回滚">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1753358582/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1753796352/" target="_blank">LeetCode460-LFU缓存</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
+                        
+                            <a href="/category/Web/">Web</a>
+                        
                     </div>
                 
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1753358581/">Kubernetes-Pod扩容与缩容</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-29
-                            </span>
-                            
-                                <span id="/article/1753358581/" class="leancloud_visitors" data-flag-title="Kubernetes-Pod扩容与缩容">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1753358581/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
+                
+                    <div class="tag">
+                        标签：
+                        
+                            <a href="/tag/LeetCode/">LeetCode</a>
+                        
                     </div>
                 
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1753358571/">二叉树学习笔记</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-29
-                            </span>
-                            
-                                <span id="/article/1753358571/" class="leancloud_visitors" data-flag-title="二叉树学习笔记">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1753358571/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
-                    </div>
-                
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1753358579/">Kubernetes-Pod基础</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-29
-                            </span>
-                            
-                                <span id="/article/1753358579/" class="leancloud_visitors" data-flag-title="Kubernetes-Pod基础">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1753358579/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
-                    </div>
-                
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1753358583/">Kubernetes-Pod管理对象与调度策略</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-29
-                            </span>
-                            
-                                <span id="/article/1753358583/" class="leancloud_visitors" data-flag-title="Kubernetes-Pod管理对象与调度策略">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1753358583/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
-                    </div>
-                
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1177767762/">docker实践和运用</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-17
-                            </span>
-                            
-                                <span id="/article/1177767762/" class="leancloud_visitors" data-flag-title="docker实践和运用">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1177767762/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
-                    </div>
-                
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1177767760/">LeetCode23-[下一个排列]</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-16
-                            </span>
-                            
-                                <span id="/article/1177767760/" class="leancloud_visitors" data-flag-title="LeetCode23-[下一个排列]">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1177767760/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
-                    </div>
-                
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1177767761/">Window软件分享</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-16
-                            </span>
-                            
-                                <span id="/article/1177767761/" class="leancloud_visitors" data-flag-title="Window软件分享">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1177767761/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
-                    </div>
-                
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1177767761/">快速排序</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-16
-                            </span>
-                            
-                                <span id="/article/1177767761/" class="leancloud_visitors" data-flag-title="快速排序">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1177767761/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
-                    </div>
-                
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="/article/1177767759/">LeetCode22-[Pow(x, n)]</a>
-                            
-                        </div>
-                        <div class="article-abstract">
-                            
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> 发表时间：2023-04-10
-                            </span>
-                            
-                                <span id="/article/1177767759/" class="leancloud_visitors" data-flag-title="LeetCode22-[Pow(x, n)]">
-                                    <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            
-                            <span>
-                                <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1177767759/"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
-                    </div>
-                
+                <div class="article-prev-next">
+                    
+                        <a href="/article/1754796352/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1754796352/" title="发布于 2024-04-26 09:34">LRU最近最少使用缓存</a>
+                        <br>
+                    
+                    
+                        <a href="/article/1713796351/" class="next-prefix">» </a> 下一篇：    <a href="/article/1713796351/" title="发布于 2024-04-21 10:33">Leetcode最长公共子串</a>
+                    
+                </div>
             </div>
             
+    <div class="article-comments">
         
-    <div class="pagination-bottom">
-        <div class="pagination">
-            
-                <a class="extend prev" rel="prev" href="/page/4/">上一页</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><a class="page-number" href="/page/7/">7</a><a class="page-number" href="/page/8/">8</a><a class="extend next" rel="next" href="/page/6/">下一页</a>
-            
-        </div>
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
     </div>
 
+        </div>
     
 </div>
     <div id="footer"></div>
@@ -345,7 +174,7 @@
             <div class="menu-list">
                 <ul>
                     
-                        <li class=" active "><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
                     
                         <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
                     
