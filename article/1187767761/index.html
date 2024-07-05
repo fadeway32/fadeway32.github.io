@@ -9,7 +9,7 @@
     <meta http-equiv="Cache-Control" content="no-siteapp">
     <title>
         
-            标签 - LeetCode
+            归并和快排
         
     </title>
     <link rel="shortcut icon" href="#"/>
@@ -32,7 +32,7 @@
 <meta name="generator" content="Hexo 6.2.0"></head>
 <body>
     <a id="cover"></a>
-    <link type="text/css" rel="stylesheet" href="/css/archive.css">
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
 <header>
     <meta name="referrer" content="no-referrer">
 </header>
@@ -40,10 +40,31 @@
     <div class="vertical">
         <div class="inner">
             
-                <h1 class="header-subtitle">标签归档</h1>
+                <h1 class="header-subtitle">归并和快排</h1>
                 <div class="header-subinfo">
-                    <p class="article-info-text Chinese"></p>
-                    <p class="article-info-text English"></p>
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2023-05-16
+                        </span>
+                        
+                            <span id="/article/1187767761/" class="leancloud_visitors" data-flag-title="归并和快排">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1187767761/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">Web</span>
+                        
+                    
                 </div>
             
         </div>
@@ -52,175 +73,75 @@
 </div>
 <div id="container">
     
-        
-            <!-- 归档页面、分类归档页面、标签归档页面 -->
-            <div class="articles">
-                <div class="articles-wrap">
-                    <span class="archive-move-on"></span>
-                    <span class="archive-counter">
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">public</span> <span class="keyword">void</span>  <span class="title function_">guibing</span><span class="params">(<span class="type">int</span>[] array,<span class="type">int</span> low,<span class="type">int</span> high)</span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(low &lt; high)&#123;</span><br><span class="line">            <span class="type">int</span> <span class="variable">mid</span> <span class="operator">=</span> (high + low)/<span class="number">2</span>;</span><br><span class="line">            guibing(array,low,mid);</span><br><span class="line">            guidbing(array,mid+<span class="number">1</span>,high);</span><br><span class="line">            merge(array,low,mid,high);</span><br><span class="line">           </span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        </span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 时间复杂度 nO(logN)</span></span><br><span class="line">    <span class="keyword">public</span>  <span class="keyword">void</span> <span class="title function_">merge</span><span class="params">(<span class="type">int</span>[] array,<span class="type">int</span> left,<span class="type">int</span> mid,<span class="type">int</span> right)</span>&#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">n1</span> <span class="operator">=</span> mid - left +<span class="number">1</span>;</span><br><span class="line">        <span class="type">int</span> <span class="variable">n2</span> <span class="operator">=</span> right - mid;</span><br><span class="line">        <span class="type">int</span>[] array1 = <span class="keyword">new</span> <span class="title class_">int</span>[n1];</span><br><span class="line">        <span class="type">int</span>[] array1 = <span class="keyword">new</span> <span class="title class_">int</span>[n2];</span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> i=<span class="number">0</span>;i&lt; n1;i++)&#123;</span><br><span class="line">            <span class="comment">//</span></span><br><span class="line">            array1[i] = array[left+i];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> j=<span class="number">0</span>;j&lt;n2;j++)&#123;</span><br><span class="line">            <span class="comment">//</span></span><br><span class="line">            array2[j] = array[mid+<span class="number">1</span>+j];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">int</span> i=<span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> j=<span class="number">0</span>;</span><br><span class="line">        <span class="comment">//</span></span><br><span class="line">        <span class="type">int</span> k=left;</span><br><span class="line">        <span class="keyword">while</span>(i &lt; n1 &amp;&amp; j &lt; n2)&#123;</span><br><span class="line">            <span class="keyword">if</span>(array1[i] &lt;= array2[j])&#123;</span><br><span class="line">                <span class="comment">// 注意点</span></span><br><span class="line">               array[k] = array1[i];</span><br><span class="line">                i++;</span><br><span class="line"> </span><br><span class="line">            &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">               array[k] = array2[j];</span><br><span class="line">                j++;</span><br><span class="line">             </span><br><span class="line">            &#125;</span><br><span class="line">            k++;</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">while</span>(i &lt; n1)&#123;</span><br><span class="line">            array[k]= array1[i];</span><br><span class="line">            i++;</span><br><span class="line">            k++</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">while</span>(j &lt; n2)&#123;</span><br><span class="line">            <span class="comment">//</span></span><br><span class="line">            array[k] = array2[j];</span><br><span class="line">            j++;</span><br><span class="line">            k++;</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        </span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>快速排序</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span>&#123;</span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">quickSort</span><span class="params">(<span class="type">int</span>[] array,<span class="type">int</span> low,<span class="type">int</span> higth)</span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(low &lt; hight)&#123;</span><br><span class="line">            <span class="type">int</span> <span class="variable">partition</span> <span class="operator">=</span>  getPartition(array,low,higth);</span><br><span class="line">            quickSort(array,low,partition);</span><br><span class="line">            quickSort(array,partition+<span class="number">1</span>,hight);</span><br><span class="line">        &#125;</span><br><span class="line">            </span><br><span class="line">        </span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">getPartition</span><span class="params">(<span class="type">int</span>[] array,<span class="type">int</span> low,<span class="type">int</span> higth)</span>&#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">pivot</span>  <span class="operator">=</span> array[higth];</span><br><span class="line">        <span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> low -<span class="number">1</span>;</span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> j=low;j&lt; higth;j++)&#123;</span><br><span class="line">            <span class="keyword">if</span>(array[j] &lt;pivot)&#123;</span><br><span class="line">                i++;</span><br><span class="line">                swap(array,i,j);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        swap(array,i+<span class="number">1</span>,higth);</span><br><span class="line">        <span class="keyword">return</span>  i;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">swap</span><span class="params">(<span class="type">int</span>[] array,<span class="type">int</span> left,<span class="type">int</span> right)</span>&#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">temp</span> <span class="operator">=</span> array[left];</span><br><span class="line">        array[left]= array[right];</span><br><span class="line">        array[right]= temp;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1187767761/" target="_blank">归并和快排</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
                         
-                            当前标签：<span class="tag">LeetCode</span>
+                            <a href="/category/Web/">Web</a>
                         
-                    </span>
-                    
-                    
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
                         
-                            <div class="archive-title">
-                                <h2 class="archive-year">2023</h2>
-                            </div>
-                            
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1677767744/"><span>LeetCode15-求最接近目标的三数之和</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">03-02</span>
-                                </div>
-                            </div>
-                        </div>
+                            <a href="/tag/Web/">Web</a>
+                        
+                    </div>
+                
+                <div class="article-prev-next">
                     
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1677767743/"><span>LeetCode14-三数之和</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">03-02</span>
-                                </div>
-                            </div>
-                        </div>
+                        <a href="/article/1717408917/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1717408917/" title="发布于 2023-05-19 09:21">XXL-JOB源码分析</a>
+                        <br>
                     
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1677767742/"><span>LeetCode13-最长公共前缀</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">03-02</span>
-                                </div>
-                            </div>
-                        </div>
                     
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1677767741/"><span>LeetCode12-罗马数字转成数字</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">03-02</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1677767740/"><span>LeetCode11-数字转成罗马数字</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">03-02</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1677767739/"><span>LeetCode10-倒水面积最大</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">03-02</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1677767738/"><span>LeetCode09-判断是否是回文数</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">03-02</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1677767737/"><span>LeetCode08-字符转成数字</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">03-01</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1677507585/"><span>LeetCode07-求数字翻转</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-28</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1677507385/"><span>LeetCode05打印Z型</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-28</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1305786657/"><span>LeetCode04-求字符串最长长度</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-15</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1677333023/"><span>LeetCode03-手写一个生产消费者队列</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-15</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1305786654/"><span>LeetCode01-两数之和</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-15</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1305786655/"><span>LeetCode02-两数加法计算-链表逆序</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-15</span>
-                                </div>
-                            </div>
-                        </div>
+                        <a href="/article/1683208917/" class="next-prefix">» </a> 下一篇：    <a href="/article/1683208917/" title="发布于 2023-05-04 12:00">搭建自己的chatgpt</a>
                     
                 </div>
             </div>
             
+    <div class="article-comments">
         
-    <div class="pagination-bottom">
-        <div class="pagination">
-            
-                <a class="extend prev" rel="prev" href="/tag/LeetCode/">上一页</a><a class="page-number" href="/tag/LeetCode/">1</a><span class="page-number current">2</span>
-            
-        </div>
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
     </div>
 
+        </div>
     
 </div>
     <div id="footer"></div>
