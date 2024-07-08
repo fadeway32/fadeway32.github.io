@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <!--    <meta name="referrer" content="origin">-->
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>
+        
+            Nacos服务注册源码分析
+        
+    </title>
+    <link rel="shortcut icon" href="#"/>
+
+    <link type="text/css" rel="stylesheet" href="/font/LongCang.css">
+    <link type="text/css" rel="stylesheet" href="/font/Monda.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSansSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSerifSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/Playball.css">
+    <link type="text/css" rel="stylesheet" href="/font/PTMono.css">
+    <link type="text/css" rel="stylesheet" href="/font/Roboto.css">
+    <link type="text/css" rel="stylesheet" href="/font/RobotoSlab.css">
+    <link type="text/css" rel="stylesheet" href="/font/Rosario.css">
+    <link type="text/css" rel="stylesheet" href="/font/UbuntuMono.css">
+
+    <link type="text/css" rel="stylesheet" href="/css/base.css">
+    <link type="text/css" rel="stylesheet" href="/css/code.css">
+
+    <script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
+<meta name="generator" content="Hexo 6.2.0"></head>
+<body>
+    <a id="cover"></a>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
+<header>
+    <meta name="referrer" content="no-referrer">
+</header>
+<div id="header" class="header">
+    <div class="vertical">
+        <div class="inner">
+            
+                <h1 class="header-subtitle">Nacos服务注册源码分析</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2024-06-20
+                        </span>
+                        
+                            <span id="/article/1718893282/" class="leancloud_visitors" data-flag-title="Nacos服务注册源码分析">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1718893282/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">WEB</span>
+                        
+                    
+                </div>
+            
+        </div>
+    </div>
+    
+</div>
+<div id="container">
+    
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="Nacos服务注册源码分析"><a href="#Nacos服务注册源码分析" class="headerlink" title="Nacos服务注册源码分析"></a>Nacos服务注册源码分析</h1><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082039283.png" alt="在这里插入图片描述" style="zoom:100%;" />
+
+<h2 id="服务注册表serviceMap"><a href="#服务注册表serviceMap" class="headerlink" title="服务注册表serviceMap"></a>服务注册表serviceMap</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * Map(namespace, Map(group::serviceName, Service)).</span><br><span class="line"> */</span><br><span class="line">private final Map&lt;String, Map&lt;String, Service&gt;&gt; serviceMap = new ConcurrentHashMap&lt;&gt;();</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082039447.png" alt="在这里插入图片描述"></p>
+<h1 id="二、Nacos服务注册入口"><a href="#二、Nacos服务注册入口" class="headerlink" title="二、Nacos服务注册入口"></a>二、Nacos服务注册入口</h1><h2 id="1、SpringBoot自动装配"><a href="#1、SpringBoot自动装配" class="headerlink" title="1、SpringBoot自动装配"></a>1、SpringBoot自动装配</h2><p>使用Nacos做为注册中心，首先要在pom中引入：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">    &lt;groupId&gt;com.alibaba.cloud&lt;/groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;spring-cloud-starter-alibaba-nacos-discovery&lt;/artifactId&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br></pre></td></tr></table></figure>
+
+<p>嗯，然后呢？SpringBoot项目大家都知道有一个很重要的东西：spring.factories，这个是针对引入的jar包做自动装配用的；在SpringBoot项目运行时，SpringFactoriesLoader<br>类会去寻找<code>META-INF/spring.factories</code><br>文件，spring.factories用键值对的方式记录了所有需要加入容器的类，key为：<code>org.springframework.boot.autoconfigure.EnableAutoConfiguration</code><br>，value为各种<code>xxxAutoConfiguration</code>；或key为：<code>org.springframework.cloud.bootstrap.BootstrapConfiguration</code><br>，value为各种<code>xxxBootstrapConfiguration</code>。</p>
+<p>大家对<code>EnableAutoConfiguration</code>都比较熟悉了，自动装配的撒；而<code>BootstrapConfiguration</code><br>可能会相对陌生一点，它呢是做自定义启动配置的，也就是说：所有的Bean都会在SpingApplicatin启动前加入到它的上下文中。</p>
+<h2 id="2、Nacos中的spring-factories"><a href="#2、Nacos中的spring-factories" class="headerlink" title="2、Nacos中的spring.factories"></a>2、Nacos中的spring.factories</h2><p>查看引入的nacos-discovery包的层级结构，找到spring.factories文件；<br><img src="https://ucc.alicdn.com/images/user-upload-01/4763464c9b8e4efaa3d607865cf948e1.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5qWg546W5p-S,size_20,color_FFFFFF,t_70,g_se,x_16&x-oss-process=image/resize,w_1400/format,webp" alt="在这里插入图片描述"><br>打开这文件瞅一瞅：<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041169.png" alt="在这里插入图片描述"><br>上面我有聊到<code>BootstrapConfiguration</code>是在SpringBoot项目启动时自动加载配置到SpingApplicatin的上下文中。<br>我们进去点进去看一下这个类<code>NacosDiscoveryClientConfigServiceBootstrapConfiguration</code>：<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041120.png" alt="在这里插入图片描述"><br>emmm，它好像啥也没干，就引入了两个自动配置类：<code>NacosDiscoveryClientAutoConfiguration</code>，<code>NacosDiscoveryAutoConfiguration</code><br>；咱也不知道哪个是和服务注册相关的，先都点进去看看撒。</p>
+<p>（1）NacosDiscoveryClientAutoConfiguration：<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041190.png" alt="在这里插入图片描述"><br>额额额，从命名来看，好像没有和注册相关的，先看看下一个类吧。</p>
+<p>（2）NacosDiscoveryAutoConfiguration：</p>
+<p><img src="https://ucc.alicdn.com/images/user-upload-01/d4bae685920841f38789f227ec999fd2.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5qWg546W5p-S,size_20,color_FFFFFF,t_70,g_se,x_16&x-oss-process=image/resize,w_1400/format,webp" alt="在这里插入图片描述"><br>卧槽，这个好。这个类里能看到用注册register命名的方法；感觉就它了。</p>
+<h2 id="3、客户端自动注册入口类NacosDiscoveryClientAutoConfiguration"><a href="#3、客户端自动注册入口类NacosDiscoveryClientAutoConfiguration" class="headerlink" title="3、客户端自动注册入口类NacosDiscoveryClientAutoConfiguration"></a>3、客户端自动注册入口类NacosDiscoveryClientAutoConfiguration</h2><p><code>NacosDiscoveryAutoConfiguration</code>类内部内部管理了三个类：<code>NacosServiceRegistry</code><br>（完成服务注册功能，实现ServiceRegistry接口），<code>NacosRegistration</code><br>（注册时用来存储nacos服务端的相关信息），<code>NacosAutoServiceRegistration</code>（自动注册功能）。</p>
+<p>这个自动注册功能是怎么实现的呢？从类的命名上来看，感觉是在<code>NacosAutoServiceRegistration</code>中的，我们跟进去看一下：<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041349.png" alt="在这里插入图片描述"><br><code>NacosAutoServiceRegistration</code>类继承自<code>AbstractAutoServiceRegistration</code>类；<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041601.webp" alt="在这里插入图片描述"><br>再看<code>AbstractAutoServiceRegistration</code>类实现了<code>ApplicationListener</code><br>接口。ApplicationListener接口实际是一个事件监听器，其监听<code>WebServerInitializedEvent</code>事件。</p>
+<p>在<code>AbstractAutoServiceRegistration</code>类的bind()方法中会绑定一个事件，启动调用start()方法进行事件的绑定操作。<br><img src="https://ucc.alicdn.com/images/user-upload-01/69ec2713d72f4eb9b705a1201cc4b419.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5qWg546W5p-S,size_20,color_FFFFFF,t_70,g_se,x_16&x-oss-process=image/resize,w_1400/format,webp" alt="在这里插入图片描述"><br>start()方法中再调用register()方法实现注册功能，具体的register()内部逻辑由子类实现。<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041112.png" alt="在这里插入图片描述"><br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041795.png" alt="在这里插入图片描述"></p>
+<blockquote>
+<p>这里和AQS一样，是典型模板方法设计模式。</p>
+</blockquote>
+<p>go on，go on；我们接着看<code>ServiceRegistry</code>接口的实现类，点一下发现直接蹦到了<code>NacosServiceRegistry</code>类上；感觉对味了。</p>
+<p>虽然我们找到了服务注册的入口，但是呢，其实<code>spring-cloud-commons</code>包中定义了一套服务注册规范，集成Spring<br>Cloud实现服务注册的组件都会实现<code>ServiceRegistry</code>接口。</p>
+<h2 id="4、Nacos服务注册类NacosServiceRegistry"><a href="#4、Nacos服务注册类NacosServiceRegistry" class="headerlink" title="4、Nacos服务注册类NacosServiceRegistry"></a>4、Nacos服务注册类NacosServiceRegistry</h2><p>现在我们继续接着NacosServiceRegistry#register()方法来看：<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041896.png" alt="在这里插入图片描述"><br>先是组装服务实例信息，然后走入到了<code>NamingService</code>接口#registerInstance()方法，我跟，我继续往里跟；点到<code>NamingService</code><br>接口的实现类<code>NacosNamingService</code>；</p>
+<p>NacosNamingService类在初始化的时候会实例几个比较关键的类：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">// 1）发送心跳的</span><br><span class="line">private BeatReactor beatReactor;</span><br><span class="line"></span><br><span class="line">// 2）事件分发器：订阅的服务发生改变时，Nacos服务端就会通知到当前Nacos Client端；</span><br><span class="line">//    Client端收到这个通知后，将通知的事件给到观察者，也就是我们自己实现的listener</span><br><span class="line">private EventDispatcher eventDispatcher;</span><br><span class="line"></span><br><span class="line">// 3）与Nacos服务端通信的</span><br><span class="line">private NamingProxy serverProxy;</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041318.png" alt="在这里插入图片描述"></p>
+<p><code>NacosNamingService</code>#registerInstance()方法套娃如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">registerInstance</span><span class="params">(String serviceName, Instance instance)</span> <span class="keyword">throws</span> NacosException &#123;</span><br><span class="line">    registerInstance(serviceName, Constants.DEFAULT_GROUP, instance);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">registerInstance</span><span class="params">(String serviceName, String groupName, Instance instance)</span> <span class="keyword">throws</span> NacosException &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (instance.isEphemeral()) &#123;</span><br><span class="line">        <span class="comment">// 组装心跳信息</span></span><br><span class="line">        <span class="type">BeatInfo</span> <span class="variable">beatInfo</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">BeatInfo</span>();</span><br><span class="line">        beatInfo.setServiceName(NamingUtils.getGroupedName(serviceName, groupName));</span><br><span class="line">        beatInfo.setIp(instance.getIp());</span><br><span class="line">        beatInfo.setPort(instance.getPort());</span><br><span class="line">        beatInfo.setCluster(instance.getClusterName());</span><br><span class="line">        beatInfo.setWeight(instance.getWeight());</span><br><span class="line">        beatInfo.setMetadata(instance.getMetadata());</span><br><span class="line">        beatInfo.setScheduled(<span class="literal">false</span>);</span><br><span class="line">        <span class="type">long</span> <span class="variable">instanceInterval</span> <span class="operator">=</span> instance.getInstanceHeartBeatInterval();</span><br><span class="line">        beatInfo.setPeriod(instanceInterval == <span class="number">0</span> ? DEFAULT_HEART_BEAT_INTERVAL : instanceInterval);</span><br><span class="line">        </span><br><span class="line">        <span class="comment">// 1）发送心跳</span></span><br><span class="line">        beatReactor.addBeatInfo(NamingUtils.getGroupedName(serviceName, groupName), beatInfo);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 2）注册服务    </span></span><br><span class="line">    serverProxy.registerService(NamingUtils.getGroupedName(serviceName, groupName), groupName, instance);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里有两个重要的点：</p>
+<blockquote>
+<p>1、如果实例节点是临时节点的话（默认是临时的），会组装一个心跳信息，然后通过 <code>BeatReactor</code>组件 <code>发送心跳到服务端</code><br>，也就是 <code>服务续约</code>；<br>2、调用 <code>ServerProxy</code>组件 <code>注册服务</code>到服务端，即 <code>服务上线</code>。</p>
+</blockquote>
+<p>在聊服务续约和服务注册之前，我们先看一下serviceName的组成，其实就是就是上面传递下来的groupName和serviceName用@@拼接起来作为新的serviceName，以达到Group层的数据隔离。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">NamingUtils.getGroupedName(serviceName, groupName)</span><br><span class="line"></span><br><span class="line"><span class="comment">// NamingUtils</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> String <span class="title function_">getGroupedName</span><span class="params">(String serviceName, String groupName)</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> groupName + Constants.SERVICE_INFO_SPLITER + serviceName;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="1）Client服务续约"><a href="#1）Client服务续约" class="headerlink" title="1）Client服务续约"></a>1）Client服务续约</h3><p>即Nacos Client端定时发送心跳到服务端。<br>在<code>BeatReactor</code>#addBeatInfo()方法中，会启动一个定时任务，立即执行BeatTask这个任务。<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041554.png" alt="在这里插入图片描述"><br>我们接着来看BeatTask这个Runnable接口的实现类，是如何运行的？<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041835.png" alt="在这里插入图片描述"></p>
+<p>我们可以看到它主要展现两个能力：</p>
+<blockquote>
+<p>（1）调用 <code>NamingProxy</code>向Nacos服务端发送心跳；<br>（2）再开启一个定时任务，延时5S再持续发送心跳到Nacos服务端，即默认每5s向Nacos服务端发送一次心跳。</p>
+</blockquote>
+<p>发送心跳就很简单了，直接采用<code>HTTP接口调用</code>的方式，调用服务端的<code>/nacos/v1/ns/instance/beat</code>接口。<br><img src="https://ucc.alicdn.com/images/user-upload-01/1d10fa39daea4f12917f7384a78e5aca.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5qWg546W5p-S,size_20,color_FFFFFF,t_70,g_se,x_16&x-oss-process=image/resize,w_1400/format,webp" alt="在这里插入图片描述"></p>
+<h3 id="2）Client服务注册"><a href="#2）Client服务注册" class="headerlink" title="2）Client服务注册"></a>2）Client服务注册</h3><p>在<code>NamingProxy</code>#registerService()方法中直接做HTTP请求调用Nacos Server的接口<code>/nacos/v1/ns/instance</code>做服务注册：<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041208.png" alt="在这里插入图片描述"></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="type">String</span> <span class="variable">WEB_CONTEXT</span> <span class="operator">=</span> <span class="string">&quot;/nacos&quot;</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="type">String</span> <span class="variable">NACOS_URL_BASE</span> <span class="operator">=</span> WEB_CONTEXT + <span class="string">&quot;/v1/ns&quot;</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="type">String</span> <span class="variable">NACOS_URL_INSTANCE</span> <span class="operator">=</span> NACOS_URL_BASE + <span class="string">&quot;/instance&quot;</span>;</span><br></pre></td></tr></table></figure>
+
+<h2 id="5、Nacos-Server端如何接收心跳、服务注册请求"><a href="#5、Nacos-Server端如何接收心跳、服务注册请求" class="headerlink" title="5、Nacos Server端如何接收心跳、服务注册请求"></a>5、Nacos Server端如何接收心跳、服务注册请求</h2><p>上面我们聊到了Nacos Client端分别调用服务端的<code>/nacos/v1/ns/instance/beat</code>、<code>/nacos/v1/ns/instance</code><br>接口进行服务续约和服务注册，下面我们聊一下服务端对这个两个请求是如何处理的？</p>
+<h3 id="0）先找入口"><a href="#0）先找入口" class="headerlink" title="0）先找入口"></a>0）先找入口</h3><p>Nacos Client通过<code>NamingProxy</code>类调用Nacos Server，以开源框架的命名规范来看，Nacos Server的源码中应该有个和naming相关命名的模块；<br><img src="https://ucc.alicdn.com/images/user-upload-01/a275b527d6e540d2ab8312e2d2247bf2.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5qWg546W5p-S,size_20,color_FFFFFF,t_70,g_se,x_16&x-oss-process=image/resize,w_1400/format,webp" alt="在这里插入图片描述"><br>接着往下展开，找到controllers包下的<code>InstanceController</code>：<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041865.png" alt="在这里插入图片描述"></p>
+<h3 id="1）Server端接收服务注册请求"><a href="#1）Server端接收服务注册请求" class="headerlink" title="1）Server端接收服务注册请求"></a>1）Server端接收服务注册请求</h3><p><code>InstanceController#register()</code>方法是Nacos Server接收服务注册请求的入口：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@CanDistro</span></span><br><span class="line"><span class="meta">@PostMapping</span></span><br><span class="line"><span class="meta">@Secured(parser = NamingResourceParser.class, action = ActionTypes.WRITE)</span></span><br><span class="line"><span class="keyword">public</span> String <span class="title function_">register</span><span class="params">(HttpServletRequest request)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">final</span> <span class="type">String</span> <span class="variable">namespaceId</span> <span class="operator">=</span> WebUtils</span><br><span class="line">            .optional(request, CommonParams.NAMESPACE_ID, Constants.DEFAULT_NAMESPACE_ID);</span><br><span class="line">    <span class="keyword">final</span> <span class="type">String</span> <span class="variable">serviceName</span> <span class="operator">=</span> WebUtils.required(request, CommonParams.SERVICE_NAME);</span><br><span class="line">    NamingUtils.checkServiceNameFormat(serviceName);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">final</span> <span class="type">Instance</span> <span class="variable">instance</span> <span class="operator">=</span> HttpRequestInstanceBuilder.newBuilder()</span><br><span class="line">            .setDefaultInstanceEphemeral(switchDomain.isDefaultInstanceEphemeral()).setRequest(request).build();</span><br><span class="line">    <span class="comment">// 真正注册服务的地方，serviceName为注册的服务名，namespaceId默认为public</span></span><br><span class="line">    getInstanceOperator().registerInstance(namespaceId, serviceName, instance);</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;ok&quot;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其中namespaceId可以做一层数据隔离；<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041014.png" alt="在这里插入图片描述"><br>我们接着往里看<code>getInstanceOperator().registerInstance()</code>：<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041456.webp" alt="在这里插入图片描述"><br>InstanceOperator接口有两个实现类，分别是：<code>InstanceOperatorClientImpl</code>，<code>InstanceOperatorServiceImpl</code><br>，由于我这里是作为服务端，我们关注<code>InstanceOperatorServiceImpl</code>；<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041509.png" alt="在这里插入图片描述"></p>
+<blockquote>
+<p>1、组装服务的实例信息，包含：IP、Port<br>2、调用ServiceManager的registerInstanc()方法，完成真正的服务注册操作。</p>
+</blockquote>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041640.png" alt="在这里插入图片描述"></p>
+<p>ServiceManager#registerInstanc()方法中主要做四件事：</p>
+<blockquote>
+<p>1、如果服务不存在，则创建一个服务；<br>2、从本地缓存《Map(namespace, Map(group::serviceName, Service))》中获取服务信息；<br>3、校验服务不能为null；<br>4、将服务的实例信息添加到DataStore的dataMap缓存中</p>
+</blockquote>
+<h4 id="（1）创建服务"><a href="#（1）创建服务" class="headerlink" title="（1）创建服务"></a>（1）创建服务</h4><p>这里的操作也很简单，套娃套娃套娃，不对是封装、抽象。最终将服务信息保存到本地缓存serviceMap中。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">createEmptyService</span><span class="params">(String namespaceId, String serviceName, <span class="type">boolean</span> local)</span> <span class="keyword">throws</span> NacosException &#123;</span><br><span class="line">    createServiceIfAbsent(namespaceId, serviceName, local, <span class="literal">null</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">createServiceIfAbsent</span><span class="params">(String namespaceId, String serviceName, <span class="type">boolean</span> local, Cluster cluster)</span></span><br><span class="line">        <span class="keyword">throws</span> NacosException &#123;</span><br><span class="line">    <span class="type">Service</span> <span class="variable">service</span> <span class="operator">=</span> getService(namespaceId, serviceName);</span><br><span class="line">    <span class="keyword">if</span> (service == <span class="literal">null</span>) &#123;</span><br><span class="line">        </span><br><span class="line">        Loggers.SRV_LOG.info(<span class="string">&quot;creating empty service &#123;&#125;:&#123;&#125;&quot;</span>, namespaceId, serviceName);</span><br><span class="line">        service = <span class="keyword">new</span> <span class="title class_">Service</span>();</span><br><span class="line">        service.setName(serviceName);</span><br><span class="line">        service.setNamespaceId(namespaceId);</span><br><span class="line">        service.setGroupName(NamingUtils.getGroupName(serviceName));</span><br><span class="line">        <span class="comment">// now validate the service. if failed, exception will be thrown</span></span><br><span class="line">        service.setLastModifiedMillis(System.currentTimeMillis());</span><br><span class="line">        service.recalculateChecksum();</span><br><span class="line">        <span class="keyword">if</span> (cluster != <span class="literal">null</span>) &#123;</span><br><span class="line">            cluster.setService(service);</span><br><span class="line">            service.getClusterMap().put(cluster.getName(), cluster);</span><br><span class="line">        &#125;</span><br><span class="line">        service.validate();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 存储服务信息和初始化，点进去</span></span><br><span class="line">        putServiceAndInit(service);</span><br><span class="line">        <span class="keyword">if</span> (!local) &#123;</span><br><span class="line">            addOrReplaceService(service);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">putServiceAndInit</span><span class="params">(Service service)</span> <span class="keyword">throws</span> NacosException &#123;</span><br><span class="line">    putService(service);</span><br><span class="line">    service = getService(service.getNamespaceId(), service.getName());</span><br><span class="line">    <span class="comment">// 服务初始化，会做健康检查</span></span><br><span class="line">    service.init();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 添加两个监听器，使用Raft协议和 Distro协议维护数据一致性的，，包括：Nacos Client感知服务提供者实例变更</span></span><br><span class="line">    consistencyService</span><br><span class="line">            .listen(KeyBuilder.buildInstanceListKey(service.getNamespaceId(), service.getName(), <span class="literal">true</span>), service);</span><br><span class="line">    consistencyService</span><br><span class="line">            .listen(KeyBuilder.buildInstanceListKey(service.getNamespaceId(), service.getName(), <span class="literal">false</span>), service);</span><br><span class="line">    Loggers.SRV_LOG.info(<span class="string">&quot;[NEW-SERVICE] &#123;&#125;&quot;</span>, service.toJson());</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// ”服务注册“操作，也就是将服务信息保存到本地缓存serviceMap中。</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">putService</span><span class="params">(Service service)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (!serviceMap.containsKey(service.getNamespaceId())) &#123;</span><br><span class="line">        serviceMap.putIfAbsent(service.getNamespaceId(), <span class="keyword">new</span> <span class="title class_">ConcurrentSkipListMap</span>&lt;&gt;());</span><br><span class="line">    &#125;</span><br><span class="line">    serviceMap.get(service.getNamespaceId()).putIfAbsent(service.getName(), service);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>注意：在service.init()初始化服务时，会启动一个定时任务做不健康服务的<code>服务剔除</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Service#init()</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">init</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="comment">// 开始一个定时任务，对不健康的服务实例做服务下线/剔除，点进去</span></span><br><span class="line">    HealthCheckReactor.scheduleCheck(clientBeatCheckTask);</span><br><span class="line">    <span class="keyword">for</span> (Map.Entry&lt;String, Cluster&gt; entry : clusterMap.entrySet()) &#123;</span><br><span class="line">        entry.getValue().setService(<span class="built_in">this</span>);</span><br><span class="line">        entry.getValue().init();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@JsonIgnore</span></span><br><span class="line"><span class="keyword">private</span> <span class="type">ClientBeatCheckTask</span> <span class="variable">clientBeatCheckTask</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ClientBeatCheckTask</span>(<span class="built_in">this</span>);</span><br></pre></td></tr></table></figure>
+
+<p>走到<code>HealthCheckReactor.scheduleCheck()</code>方法中，会延时5s开启一个固定延时5s的FixedDelay类型的定时任务执行服务剔除操作；<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041684.png" alt="在这里插入图片描述"><br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041746.webp" alt="在这里插入图片描述"></p>
+<p>另外：由于<code>ClientBeatCheckTask</code>不是<code>NacosHealthCheckTask</code>的实现类，所以定时任务中执行的方法为<code>ClientBeatCheckTask</code><br>中的run()方法；<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041875.webp" alt="在这里插入图片描述"><br>看一下<code>ClientBeatCheckTask</code>的run()方法：</p>
+<blockquote>
+<p>通过判断当前时间和实例最后一次心跳时间的间隔是否大于阈值（默认15s），决定是否进行服务剔除&#x2F;下线；<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041335.png" alt="在这里插入图片描述"></p>
+</blockquote>
+<h4 id="（2）从本地缓存Map中获取服务信息"><a href="#（2）从本地缓存Map中获取服务信息" class="headerlink" title="（2）从本地缓存Map中获取服务信息"></a>（2）从本地缓存Map中获取服务信息</h4><p>从本地缓存serviceMap中获取服务信息，没别的啥操作</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> Service <span class="title function_">getService</span><span class="params">(String namespaceId, String serviceName)</span> &#123;</span><br><span class="line">   <span class="comment">// 如果namespaceId没有的话</span></span><br><span class="line">    <span class="keyword">if</span> (serviceMap.get(namespaceId) == <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 点进去</span></span><br><span class="line">    <span class="keyword">return</span> chooseServiceMap(namespaceId).get(serviceName);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> Map&lt;String, Service&gt; <span class="title function_">chooseServiceMap</span><span class="params">(String namespaceId)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> serviceMap.get(namespaceId);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="（3）校验服务不能为null"><a href="#（3）校验服务不能为null" class="headerlink" title="（3）校验服务不能为null"></a>（3）校验服务不能为null</h4><p>一个单纯的判空处理；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">checkServiceIsNull</span><span class="params">(Service service, String namespaceId, String serviceName)</span> <span class="keyword">throws</span> NacosException &#123;</span><br><span class="line">    <span class="keyword">if</span> (service == <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">NacosException</span>(NacosException.INVALID_PARAM,</span><br><span class="line">                <span class="string">&quot;service not found, namespace: &quot;</span> + namespaceId + <span class="string">&quot;, serviceName: &quot;</span> + serviceName);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="（4）-服务实例信息”持久化”"><a href="#（4）-服务实例信息”持久化”" class="headerlink" title="（4）**服务实例信息”持久化”"></a>（4）**服务实例信息”持久化”</h4><p>将服务的相应实例信息保存到DataStore的serviceMap中；由于存在多个服务实例同时注册的场景，所以要加一个synchronized锁。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addInstance</span><span class="params">(String namespaceId, String serviceName, <span class="type">boolean</span> ephemeral, Instance... ips)</span></span><br><span class="line">        <span class="keyword">throws</span> NacosException &#123;</span><br><span class="line">    </span><br><span class="line">    <span class="type">String</span> <span class="variable">key</span> <span class="operator">=</span> KeyBuilder.buildInstanceListKey(namespaceId, serviceName, ephemeral);</span><br><span class="line">    </span><br><span class="line">    <span class="type">Service</span> <span class="variable">service</span> <span class="operator">=</span> getService(namespaceId, serviceName);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">synchronized</span> (service) &#123;</span><br><span class="line">        List&lt;Instance&gt; instanceList = addIpAddresses(service, ephemeral, ips);</span><br><span class="line">        </span><br><span class="line">        <span class="type">Instances</span> <span class="variable">instances</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Instances</span>();</span><br><span class="line">        instances.setInstanceList(instanceList);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 保存服务信息，key为namespaceId和serviceName的结合体，点进去</span></span><br><span class="line">        consistencyService.put(key, instances);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>ConsistencyService</code>是一个接口，由于我们默认是采用<code>ephemeral</code>方式（在聊Nacos<br>Client时我们也有提到，服务端见<code>Instance#isEphemeral()</code> 或 <code>SwitchDomain#isDefaultInstanceEphemeral()</code><br>），所以以临时Client为例，我们看一下<code>DistroConsistencyServiceImpl</code>；<strong>如果是持久client，则关注RaftConsistencyServiceImpl。</strong><br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041744.png" alt="在这里插入图片描述"></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">put</span><span class="params">(String key, Record value)</span> <span class="keyword">throws</span> NacosException &#123;</span><br><span class="line">    <span class="comment">// 服务实例信息持久化，点进去</span></span><br><span class="line">    onPut(key, value);</span><br><span class="line">    <span class="comment">// If upgrade to 2.0.X, do not sync for v1.</span></span><br><span class="line">    <span class="keyword">if</span> (ApplicationUtils.getBean(UpgradeJudgement.class).isUseGrpcFeatures()) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Nacos集群间数据同步</span></span><br><span class="line">    distroProtocol.sync(<span class="keyword">new</span> <span class="title class_">DistroKey</span>(key, KeyBuilder.INSTANCE_LIST_KEY_PREFIX), DataOperation.CHANGE,</span><br><span class="line">            DistroConfig.getInstance().getSyncDelayMillis());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>进入到<code>DistroConsistencyServiceImpl</code>类的onPut()方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onPut</span><span class="params">(String key, Record value)</span> &#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> (KeyBuilder.matchEphemeralInstanceListKey(key)) &#123;</span><br><span class="line">        Datum&lt;Instances&gt; datum = <span class="keyword">new</span> <span class="title class_">Datum</span>&lt;&gt;();</span><br><span class="line">        datum.value = (Instances) value;</span><br><span class="line">        datum.key = key;</span><br><span class="line">        datum.timestamp.incrementAndGet();</span><br><span class="line">        <span class="comment">// 往DataStore的dataMap中添加数据，点进去</span></span><br><span class="line">        dataStore.put(key, datum);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果listener中没有这个key的话直接返回，key是在创建Service时添加进去的，见ServiceManager#putServiceAndInit()方法</span></span><br><span class="line">    <span class="keyword">if</span> (!listeners.containsKey(key)) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 通知Nacos client服务端服务实例信息发生变更，这里是先添加任务；点进去</span></span><br><span class="line">    notifier.addTask(key, DataOperation.CHANGE);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="1-往DataStore的dataMap中添加数据"><a href="#1-往DataStore的dataMap中添加数据" class="headerlink" title="1. 往DataStore的dataMap中添加数据"></a>1. 往DataStore的dataMap中添加数据</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">DataStore</span> &#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">private</span> Map&lt;String, Datum&gt; dataMap = <span class="keyword">new</span> <span class="title class_">ConcurrentHashMap</span>&lt;&gt;(<span class="number">1024</span>);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">put</span><span class="params">(String key, Datum value)</span> &#123;</span><br><span class="line">        <span class="comment">// 单纯的往一个Map缓存放一下数据</span></span><br><span class="line">        dataMap.put(key, value);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="2-进入到Notifier类内部，通知服务实例信息变更"><a href="#2-进入到Notifier类内部，通知服务实例信息变更" class="headerlink" title="2. 进入到Notifier类内部，通知服务实例信息变更"></a>2. 进入到Notifier类内部，通知服务实例信息变更</h5><p>进入到DistroConsistencyServiceImpl的内部类<code>Notifier</code>，先看其addTask()方法：<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041651.png" alt="在这里插入图片描述"><br><img src="https://ucc.alicdn.com/images/user-upload-01/371886888b5b43b58af622977c853260.png?x-oss-process=image/resize,w_1400/format,webp" alt="在这里插入图片描述"><br>最重要的一步将服务实例信息添加到tasks任务队列中，按常理来说到这也就结束了；但是添加到任务队列之后呢，怎么处理嘞？<br>我们注意到<code>DistroConsistencyServiceImpl</code>中有一个<code>@PostConstruct</code>修饰的init()<br>方法，也就是说在<code>DistroConsistencyServiceImpl</code>类构造器执行之后会执行这个方法<code>启动Notifier通知器</code>:<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041691.webp" alt="在这里插入图片描述"><br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041949.webp" alt="在这里插入图片描述"><br>我们走入<code>Notifer#run()</code>方法：</p>
+<p>首先从tasks任务丢列中取出任务，调用自己的handle()方法处理任务：<br><img src="https://ucc.alicdn.com/images/user-upload-01/8f8b355d405a4cd4831792df6a51e1a7.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5qWg546W5p-S,size_20,color_FFFFFF,t_70,g_se,x_16&x-oss-process=image/resize,w_1400/format,webp" alt="在这里插入图片描述"><br>handle()方法中调用监听器listener的onChange()&#x2F;onDelete()方法执行相应通知数据更新、删除的逻辑。<br><img src="https://ucc.alicdn.com/images/user-upload-01/88586cd76f564b10bdbd0c54285f1478.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5qWg546W5p-S,size_20,color_FFFFFF,t_70,g_se,x_16&x-oss-process=image/resize,w_1400/format,webp" alt="在这里插入图片描述"><br>下面我着重看一下通知数据变更的onChange()方法：</p>
+<p><code>RecordListener</code>是一个接口，它有三个实现，我们进入到它的实现类<code>Service</code>中；<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041580.webp" alt="在这里插入图片描述"><br>着重看一下updateIPs()方法，其他代码不涉及到主链路；<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041728.png" alt="在这里插入图片描述"><br>遍历要注册的instance集合，采用一个临时的Map记录clusterName和Instance实例的对应关系，然后更新clusterMap&lt;clusterName,<br>Cluster&gt;：</p>
+<blockquote>
+<p>维护 <code>Cluster</code>中实例的代码大家感兴趣可以点进去看看，主要思想还是比对新老数据，找出新的instance，与挂掉的instance，最后更新<br>cluster对象里面的存放临时节点的集合 <code>或 存放永久节点的集合</code>。</p>
+</blockquote>
+<p>最后调用PushService通知单客户端服务信息发生变更。<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041826.png" alt="在这里插入图片描述"></p>
+<p>OK，fine！Nacos服务注册，服务端主要是将服务信息和服务的实例信息保存到两个Map（serviceMap、dataMap）中；启动一个延时5s执行的定时任务做服务剔除&#x2F;下线；<code>Notifier</code><br>做普通服务集群实例信息维护，调用PushService通知客户端服务信息发生变更。</p>
+<h3 id="2）Server端接收心跳请求"><a href="#2）Server端接收心跳请求" class="headerlink" title="2）Server端接收心跳请求"></a>2）Server端接收心跳请求</h3><p><code>InstanceController#beat()</code>方法是Nacos Server接收心跳请求的入口：</p>
+<p>其内部调用<code>InstanceOperator</code>接口的handleBeat()方法做心跳判断；<br><img src="https://ucc.alicdn.com/images/user-upload-01/b4be0067498b4a4f9e51fdf7cf15dde8.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5qWg546W5p-S,size_20,color_FFFFFF,t_70,g_se,x_16&x-oss-process=image/resize,w_1400/format,webp" alt="在这里插入图片描述"><br><code>InstanceOperator</code>有两个实现类，我们这里讨论的是服务端如何处理客户端的心跳请求，因此我们看<code>InstanceOperatorServiceImpl</code>类；<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041393.png" alt="在这里插入图片描述"><br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041469.webp" alt="在这里插入图片描述"><br><code>InstanceOperatorServiceImpl</code>#handleBeat()：</p>
+<blockquote>
+<p>1、如果服务还没有注册，就先注册；<br>2、接着获取服务信息，校验服务不能为null；<br>3、最后，调用 <code>Service#processClientBeat()</code>处理客户端心跳；</p>
+</blockquote>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041767.png" alt="在这里插入图片描述"></p>
+<p><code>Service#processClientBeat()</code>中启动一个只执行一次的任务：<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041751.webp" alt="在这里插入图片描述"><br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041041.webp" alt="在这里插入图片描述"><br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041173.webp" alt="在这里插入图片描述"><br>任务的逻辑体现在<code>ClientBeatProcessor</code>#run()方法中：</p>
+<blockquote>
+<p>1、更新实例的最后一次心跳时间，进而决定服务是否需要下线&#x2F;剔除；<br>2、如果服务之前是不可用的，则设置服务为可用的，并调用 <code>PushService</code>通知客户端；</p>
+</blockquote>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082041472.png" alt="在这里插入图片描述"></p>
+<p>服务端对于心跳的处理，主要两件事：维护心跳的最后一次时间，如果服务变为可用状态则通知客户端；另外在服务注册创建Service服务时会启动一个固定延时5S执行的定时任务做服务的剔除，其中以心跳时间为根本逻辑。</p>
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1718893282/" target="_blank">Nacos服务注册源码分析</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
+                        
+                            <a href="/category/Web/">Web</a>
+                        
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
+                        
+                            <a href="/tag/WEB/">WEB</a>
+                        
+                    </div>
+                
+                <div class="article-prev-next">
+                    
+                    
+                        <a href="/article/1718893281/" class="next-prefix">» </a> 下一篇：    <a href="/article/1718893281/" title="发布于 2024-06-20 10:21">二分查找模版</a>
+                    
+                </div>
+            </div>
+            
+    <div class="article-comments">
+        
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
+    
+</div>
+    <div id="footer"></div>
+    <div id="sidebar">
+    <div class="menu-wrap" style="display:none;">
+        
+            <div class="menu-notice">
+                <span class="iconfont icon-notice"></span>
+                <div class="notice">
+                    <span>简单地活着，肆意而又精彩！</span>
+                </div>
+            </div>
+        
+        <nav class="menu">
+            <div class="menu-introduce"> 
+                <div class="introduce-avatar">
+                    <img src="/image/sidebar/avatar.jpg">
+                </div> 
+                <div class="introduce-info"> 
+                    <div class="introduce-user"><span>Live For Code</span></div>
+                </div> 
+            </div> 
+            <div class="menu-list">
+                <ul>
+                    
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                    
+                        <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
+                    
+                        <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
+                    
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                    
+                        <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
+                    
+                        <li class=""><a href="/about" class="" target="_self"><span class="iconfont icon-about-fill"></span>关于</a></li>
+                    
+                        <li class=""><a href="/atom.xml" class="" target="_blank"><span class="iconfont icon-rss"></span>订阅</a></li>
+                    
+                        <li class=""><a href="javascript:;" class="search" target="_self"><span class="iconfont icon-search-menu"></span>搜索</a></li>
+                    
+                        <li class=""><a href="/comment" class="" target="_self"><span class="iconfont icon-comments-fill"></span>留言板</a></li>
+                    
+                        <li class=""><a href="/friend" class="" target="_self"><span class="iconfont icon-link"></span>友情链接</a></li>
+                    
+                </ul> 
+            </div> 
+            <div class="menu-link">
+                <div class="box">
+                    <div class="image-box"></div>
+                </div>
+                
+                    <a name="知乎" href="https://www.zhihu.com/people/wo-xin-de-love" class="" target="_blank" data=""><span class="iconfont icon-zhihu"></span></a>
+                
+                    <a name="微博" href="https://weibo.com/u/3939432776" class="" target="_blank" data=""><span class="iconfont icon-weibo"></span></a>
+                
+                    <a name="QQ" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"><span class="iconfont icon-qq"></span></a>
+                
+                    <a name="微信" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"><span class="iconfont icon-wechat"></span></a>
+                
+                    <a name="GitHub" href="https://github.com/first19326" class="" target="_blank" data=""><span class="iconfont icon-github"></span></a>
+                
+            </div> 
+        </nav>
+        <button class="menu-button-close"></button>
+        <div class="morph-shape" id="morph-shape" data-morph-open="M-7.312,0H15c0,0,66,113.339,66,399.5C81,664.006,15,800,15,800H-7.312V0z;M-7.312,0H100c0,0,0,113.839,0,400c0,264.506,0,400,0,400H-7.312V0z">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 800" preserveAspectRatio="none">
+                <path d="M-7.312,0H0c0,0,0,113.839,0,400c0,264.506,0,400,0,400h-7.312V0z"/>
+            </svg>
+        </div>
+    </div>
+    <button class="menu-button-open">MENU</button>
+    <div class="menu-cover"></div>
+</div>
+    <link type="text/css" rel="stylesheet" href="/css/search.css">
+<script type="text/javascript" src="/js/iscroll.js"></script>
+<script type="text/javascript" src="/js/instantsearch.min.js"></script>
+<div class="search-window">
+    <div class="search-content">
+        <div class="search-content-icon">
+            <i class="iconfont icon-search"></i>
+        </div>
+        <div id="search-input" class="search-input"></div>
+    </div>
+
+    <div class="search-scroll">
+        <div class="search-result">
+            <div id="search-stats" class="search-stats"></div>
+            <div id="search-hits"></div>
+            <div id="search-pagination" class="search-pagination"></div>
+        </div>
+    </div>
+
+    <span class="search-close-icon">
+        <i class="iconfont icon-close"></i>
+    </span>
+</div>
+    <div id="tools">
+    <div class="progressbar-top"></div>
+
+    
+        <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
+        <script type="text/javascript" src="/js/APlayer.min.js"></script>
+        <script type="text/javascript" src="/js/Meting.min.js"></script>
+        <meting-js id="3778678" lrcshow="false" server="netease" type="playlist" fixed="true" autoplay="false" loop="all" order="random" preload="auto" volume="0.67" mutex="true"></meting-js>
+    
+    
+    <div class="wrap-right">
+        <div class="setting">
+            <div class="iconbox favorites" switch="false">
+                <span class="iconfont icon-favorites"></span>
+                <span class="icontext">关注</span>
+            </div>
+            <div class="iconbox mode">
+                <div class="light">
+                    <span class="iconfont icon-daymode"></span>
+                    <span class="icontext">浅色模式</span>
+                </div>
+                <div class="dark">
+                    <span class="iconfont icon-nightmode-fill"></span>
+                    <span class="icontext">深色模式</span>
+                </div>
+            </div>
+            <a href="javascript:;" target="_self" class="search">
+                <div class="iconbox">
+                    <span class="iconfont icon-search-menu"></span>
+                    <span class="icontext">搜索</span>
+                </div>
+            </a>
+            <div class="iconbox bottom">
+                <div style="display: inline-block; transform: rotate(180deg);">
+                    <span class="iconfont icon-top"></span>
+                </div>
+                <span class="icontext">跳至底部</span>
+            </div>
+        </div>
+        <div class="iconbox set">
+            <div style="display: inline-block;">
+                <span class="iconfont icon-setting"></span>
+            </div>
+            <span class="icontext">设置</span>
+        </div>
+        <div class="iconbox top">
+            <span class="iconfont icon-top"></span>
+            <span class="icontext">返回顶部</span>
+        </div>
+    </div>
+    <div class="loading"></div>
+</div>
+    <script>
+    window.config = {
+        GitHubUserName     : "first19326",
+        GitHubRepositories : "Hexo-LiveForCode",
+
+        User             : "Live For Code",
+        UserAvatar       : "/image/sidebar/avatar.jpg",
+        WebsiteStartDate : "2020-01-01",
+
+        WebsiteTitleBlur         : "(◍´꒳`◍) Hi, Live For Code",
+        WebsiteTitleBlurTimeOut  : 500,
+        WebsiteTitleFocus        : "(*´∇｀*) 欢迎回来!",
+        WebsiteTitleFocusTimeOut : 1000,
+        WebsiteFavicon           : "/image/website/logo.png",
+
+        ProgressBar : {
+            id       : "topProgressBar",
+            color    : "#77B6FF",
+            height   : "2px",
+            duration : 0.2
+        },
+
+        Loading: {
+            rebound : {
+                tension  : 16,
+                friction : 5
+            },
+            spinner : {
+                id     : "spinner",
+                radius : 90,
+                sides  : 3,
+                depth  : 4,
+                colors : {
+                    background : "#F0F0F0",
+                    stroke     : "#272633",
+                    base       : "",
+                    child      : "#272633"
+                },
+                alwaysForward : true,
+                restAt        : 0.5,
+                renderBase    : false
+            }
+        },
+
+        HomeHeaderAnimationRendered : true,
+        HomeHeaderAnimation         : {
+            radius      : 15,
+            density     : 0.2,
+            color       : "rgba(255, 255, 255, .2)",
+            clearOffset : 0.3
+        },
+
+        BackAnimationRendered          : true,
+        IEBrowserBackAnimationRendered : false,
+        BackAnimation                  : {
+            colorSaturation  : "60%",
+            colorBrightness  : "50%",
+            colorAlpha       : 0.5,
+            colorCycleSpeed  : 5,
+            verticalPosition : "random",
+            horizontalSpeed  : 200,
+            ribbonCount      : 3,
+            strokeSize       : 0,
+            parallaxAmount   : -0.2,
+            animateSections  : true
+        },
+
+        HomeHeaderImage : [
+            
+                "/image/header/home.jpg",
+            
+                "/image/header/home.jpeg",
+            
+                "/image/header/2023-04-17-20-51-03.jpg",
+            
+                "/image/header/2023-04-17-20-54-07.jpg",
+            
+                "/image/header/2023-04-17-20-54-22.jpg",
+            
+                "/image/header/2023-04-17-20-55-25.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+        HomeBannerText  : "",
+
+        ArticleHeaderImage : [
+            
+                "/image/header/article.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+
+        OtherBannerText : "",
+
+        Error : {
+            icon    : "icon-swimming",
+            title   : "PAGE NOT FOUND",
+            content : [
+                
+                    "很抱歉，您访问的页面不存在！",
+                
+                    "可能是输入地址有误或该地址已变更。",
+                
+            ],
+            buttons : [
+                
+                    {
+                        icon  : "icon-home",
+                        text  : "返回首页",
+                        href  : "https://fadeway32.gitee.io/",
+                        class : ""
+                    },
+                
+            ]
+        },
+
+        MenuNotice : {
+            enable : true,
+            notice : "简单地活着，肆意而又精彩！",
+            speed  : 20
+        },
+        MenuList : [
+            
+                {
+                    name   : "首页",
+                    icon   : "icon-home-fill",
+                    href   : "/",
+                    type   : "index",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "分类",
+                    icon   : "icon-folder-fill",
+                    href   : "/category",
+                    type   : "category",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "标签",
+                    icon   : "icon-discount-fill",
+                    href   : "/tag",
+                    type   : "tag",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "归档",
+                    icon   : "icon-calendar-fill",
+                    href   : "/archive",
+                    type   : "archive",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "赞赏",
+                    icon   : "icon-heart-fill",
+                    href   : "/donate",
+                    type   : "donate",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "关于",
+                    icon   : "icon-about-fill",
+                    href   : "/about",
+                    type   : "about",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "订阅",
+                    icon   : "icon-rss",
+                    href   : "/atom.xml",
+                    type   : "",
+                    class  : "",
+                    target : "_blank"
+                },
+            
+                {
+                    name   : "搜索",
+                    icon   : "icon-search-menu",
+                    href   : "javascript:;",
+                    type   : "",
+                    class  : "search",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "留言板",
+                    icon   : "icon-comments-fill",
+                    href   : "/comment",
+                    type   : "comment",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "友情链接",
+                    icon   : "icon-link",
+                    href   : "/friend",
+                    type   : "friend",
+                    class  : "",
+                    target : "_self"
+                },
+            
+        ],
+        MenuLink : [
+            
+                
+                    {
+                        name   : "知乎",
+                        icon   : "icon-zhihu",
+                        href   : "https://www.zhihu.com/people/wo-xin-de-love",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "微博",
+                        icon   : "icon-weibo",
+                        href   : "https://weibo.com/u/3939432776",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "QQ",
+                        icon   : "icon-qq",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"
+                    },
+                
+                    {
+                        name   : "微信",
+                        icon   : "icon-wechat",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"
+                    },
+                
+                    {
+                        name   : "GitHub",
+                        icon   : "icon-github",
+                        href   : "https://github.com/first19326",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+            
+        ],
+
+        FooterStyle : 2,
+        BottomText  : "<div><span class='face'>ღゝ◡╹)ノ♡</span></div><div>【人生若只如初见<span><i class='iconfont icon-like-fill'></i></span>何事秋风悲画扇】</div><div>&copy; 2020-2022 WorstOne. All Rights Reserved.</div>",
+
+        ConsoleList : [
+            
+                
+                    [
+                        
+                            
+                                "Based on cnblogs theme SimpleMemory.",
+                            
+                                "",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "SimpleMemory Author:",
+                            
+                                "BNDong",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "Theme:",
+                            
+                                "LiveForCode",
+                            
+                        
+                    ],
+                
+            
+        ],
+
+        FontIconExtend : "",
+
+        Donate : {
+            paypal  : "",
+            bitcoin : "",
+            alipay  : "/image/donate/alipay.png",
+            wechat  : "/image/donate/wechat.png"
+        },
+
+        Search : {
+            applicationID : "W44GC4V748",
+            apiKey        : "25b43f2c37a0cac32049b98740c3fd6d",
+            indexName     : "hexo2",
+            hits          : {
+                page : 30
+            },
+            labels        : {
+                placeholder : "搜索",
+                empty       : "未发现与 「${query}」 相关的内容",
+                stats       : "${hits} 条相关条目，使用了 ${time} 毫秒",
+            }
+        }, 
+
+        Valine : {
+            switch         : true,
+            el             : ".comments-content",
+            appId          : "srhKtvWPQTWYKh3qX8G8M7v0-gzGzoHsz",
+            appKey         : "8uVSP1q6UlALVC5igYfIfv2h",
+            serverURLs     : "",
+            placeholder    : "你是我一生只会遇见一次的惊喜...",
+            avatar         : "mm",
+            meta           : "nick,mail,link",
+            requiredFields : "nick,mail",
+            pageSize       : 5,
+            lang           : "zh-cn",
+            visitor        : true,
+            enableQQ       : true
+        },
+
+        Tocbot : {
+            switch                : true,
+            tocSelector           : ".toc",
+            contentSelector       : ".article-body",
+            headingSelector       : "h1, h2, h3, h4, h5",
+            headingsOffset        : 0,
+            scrollSmooth          : true,
+            scrollSmoothOffset    : -5,
+            positionFixedSelector : ".toc",
+            positionFixedClass    : "toc-fixed",
+            fixedSidebarOffset    : "",
+        },
+
+        Require : {
+            baseUrl     : "/js/",
+            waitSeconds : 100
+        },
+
+        Music : {
+            type : "Meting"
+        },
+        APlayer : {
+            container : ".aplayer",
+            fixed     : true,
+            autoplay  : true,
+            loop      : "all",
+            order     : "random",
+            preload   : "auto",
+            volume    : 0.67,
+            mutex     : true,
+            lrcType   : 2,
+            audio     : [
+                
+                    {
+                        name   : "Endless Tears",
+                        artist : "CLIFF EDGE",
+                        cover  : "/music/cover/Endless Tears.jpg",
+                        url    : "/music/song/Endless Tears.mp3",
+                        lrc    : "/music/lrc/Endless Tears.lrc"
+                    },
+                
+            ]
+        },
+        Meting : {
+            id       : "3778678", 
+            lrcshow  : false, 
+            server   : "netease", 
+            type     : "playlist", 
+            fixed    : true, 
+            autoplay : false, 
+            loop     : "all", 
+            order    : "random", 
+            preload  : "auto", 
+            volume   : 0.67, 
+            mutex    : true
+        },
+
+        Mouse : {
+            enable  : true,
+            options : {
+                size  : 6,
+                sizeF : 24
+            }
+        },
+
+        LazyLoad : {
+            default : "/image/website/lazyload.svg"
+        },
+  
+        Style : {
+            aplayer          : "/css/APlayer.css",
+            archive          : "/css/archive.css",
+            base             : "/css/base.css",
+            clipboard        : "/css/clipboard.css",
+            code             : "/css/code.css",
+            donate           : "/css/donate.css",
+            fancybox         : "/css/jquery.fancybox.css",
+            footer           : "/css/footer.css",
+            iconfont         : "/iconfont/iconfont.css",
+            index            : "/css/index.css",
+            menuBubble       : "/css/menu-bubble.css",
+            mouse            : "/css/mouse.css",
+            page             : "/css/page.css",
+            post             : "/css/post.css",
+            search           : "/css/search.css",
+            tocbot           : "/css/tocbot.css",
+            valine           : "/css/valine.css"
+        },
+
+        Script: {
+            aplayer          : "/js/APlayer.min.js",
+            config           : "/js/require.config.js",
+            index            : "/js/index.js",
+            instantSearch    : "/js/instantsearch.min.js",
+            iscroll          : "/js/iscroll.js",
+            jQuery           : "/js/jquery-3.4.1.min.js",
+            loading          : "/js/loading.js",
+            meting           : "/js/Meting.min.js",
+            require          : "/js/require.min.js"
+        },
+
+        Font: {
+            LongCang    : "/font/LongCang.css",
+            Monda       : "/font/Monda.css",
+            NotoSansSC  : "/font/NotoSansSC.css",
+            NotoSerifSC : "/font/NotoSerifSC.css",
+            Playball    : "/font/Playball.css",
+            PTMono      : "/font/PTMono.css",
+            Roboto      : "/font/Roboto.css",
+            RobotoSlab  : "/font/RobotoSlab.css",
+            Rosario     : "/font/Rosario.css",
+            UbuntuMono  : "/font/UbuntuMono.css"
+        },
+
+        Suffix : {
+            about : "你知道的越多,你不知道的越多"
+        },
+            
+        Theme : {
+            url  : "https://fadeway32.gitee.io/",
+            name : "fadeway32"
+        }  
+    };
+</script>
+    <script type="text/javascript" src="/js/index.js"></script>
+</body>
+</html>
