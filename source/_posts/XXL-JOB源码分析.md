@@ -4,7 +4,7 @@ layout: XXL-JOB源码分析
 
 title: XXL-JOB源码分析
 
-tags: redis
+tags: Web
 
 categories: Web
 
