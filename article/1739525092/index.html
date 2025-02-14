@@ -9,7 +9,7 @@
     <meta http-equiv="Cache-Control" content="no-siteapp">
     <title>
         
-            分类 - Web
+            2025面试总结
         
     </title>
     <link rel="shortcut icon" href="#"/>
@@ -32,7 +32,7 @@
 <meta name="generator" content="Hexo 6.2.0"></head>
 <body>
     <a id="cover"></a>
-    <link type="text/css" rel="stylesheet" href="/css/archive.css">
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
 <header>
     <meta name="referrer" content="no-referrer">
 </header>
@@ -40,10 +40,31 @@
     <div class="vertical">
         <div class="inner">
             
-                <h1 class="header-subtitle">分类归档</h1>
+                <h1 class="header-subtitle">2025面试总结</h1>
                 <div class="header-subinfo">
-                    <p class="article-info-text Chinese"></p>
-                    <p class="article-info-text English"></p>
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2025-02-15
+                        </span>
+                        
+                            <span id="/article/1739525092/" class="leancloud_visitors" data-flag-title="2025面试总结">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1739525092/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">WEB</span>
+                        
+                    
                 </div>
             
         </div>
@@ -52,240 +73,230 @@
 </div>
 <div id="container">
     
-        
-            <!-- 归档页面、分类归档页面、标签归档页面 -->
-            <div class="articles">
-                <div class="articles-wrap">
-                    <span class="archive-move-on"></span>
-                    <span class="archive-counter">
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <p>视壮科技面试</p>
+<h1 id="1、你最熟悉的技术点是什么？"><a href="#1、你最熟悉的技术点是什么？" class="headerlink" title="1、你最熟悉的技术点是什么？"></a>1、你最熟悉的技术点是什么？</h1><p>消息队列</p>
+<h2 id="1、架构组成"><a href="#1、架构组成" class="headerlink" title="1、架构组成"></a>1、架构组成</h2><p><strong>NameServer</strong></p>
+<p>也是一个 <strong>注册中心</strong> ，主要提供两个功能：<strong>Broker 管理</strong> 和 <strong>路由信息管理</strong> 。说白了就是 <code>Broker</code><br>会将自己的信息注册到 <code>NameServer</code> 中，此时 <code>NameServer</code> 就存放了很多 <code>Broker</code> 的信息(Broker 的路由表)<br>，消费者和生产者就从 <code>NameServer</code> 中获取路由表然后照着路由表的信息和对应的 <code>Broker</code> 进行通信(<br>生产者和消费者定期会向 <code>NameServer</code> 去查询相关的 <code>Broker</code> 的信息)</p>
+<p><strong>Broker启动</strong></p>
+<p>Consumer首次请求Broker Broker中是否有符合条件的消息 如果有</p>
+<p>响应Consumer 等待下次Consumer的请求</p>
+<p>如果没有DefaultMessageStore#ReputMessageService#run方法</p>
+<p>PullRequestHoldService 来Hold连接，每个5s执行一次检查pullRequestTable有没有消 息，有的话立即推送</p>
+<p>每隔1ms检查commitLog中是否有新消息，有的话写入到pullRequestTable</p>
+<p>当有新消息的时候返回请求挂起consumer的请求，即不断开连接，也不返回数据</p>
+<p>使用consumer的offset</p>
+<p><strong>Producer生产者</strong></p>
+<p>消息发布的角色，支持分布式集群方式部署。说白了就是生产者。</p>
+<p><strong>Consumer消费者</strong></p>
+<p>消息消费的角色，支持分布式集群方式部署。支持以 push 推，pull 拉两种模式对消息进行消费。同时也支持集群方式和广播方式的消费，它提供实时消息订阅机制。说白了就是消费者</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202502141617461.jpeg" alt="img"></p>
+<p>2、特点</p>
+<p><strong>3、流程</strong></p>
+<p><strong>4、高可用</strong></p>
+<p><strong>5、消息类型</strong></p>
+<p>普通消息：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202502141619693.png" alt="img"></p>
+<ul>
+<li>初始化：消息被生产者构建并完成初始化，待发送到服务端的状态。</li>
+<li>待消费：消息被发送到服务端，对消费者可见，等待消费者消费的状态。</li>
+<li>消费中：消息被消费者获取，并按照消费者本地的业务逻辑进行处理的过程。 此时服务端会等待消费者完成消费并提交消费结果，如果一定时间后没有收到消费者的响应，RocketMQ<br>会对消息进行重试处理。</li>
+<li>消费提交：消费者完成消费处理，并向服务端提交消费结果，服务端标记当前消息已经被处理（包括消费成功和失败）。RocketMQ<br>默认支持保留所有消息，此时消息数据并不会立即被删除，只是逻辑标记已消费。消息在保存时间到期或存储空间不足被删除前，消费者仍然可以回溯消息重新消费。</li>
+<li>消息删除：RocketMQ 按照消息保存机制滚动清理最早的消息数据，将消息从物理文件中删除。</li>
+</ul>
+<p>定时消息：</p>
+<p>在 4.x 版本中，只支持延时消息，默认分为 18 个等级分别为：1s 5s 10s 30s 1m 2m 3m 4m 5m 6m 7m 8m 9m 10m 20m 30m 1h 2h</p>
+<p>在 5.x 版本中，开始支持定时消息，在构造消息时提供了 3 个 API 来指定延迟时间或定时时间</p>
+<p>定时生命周期</p>
+<ul>
+<li>初始化：消息被生产者构建并完成初始化，待发送到服务端的状态。</li>
+<li>定时中：消息被发送到服务端，和普通消息不同的是，服务端不会直接构建消息索引，而是会将定时消息<strong>单独存储在定时存储系统中</strong><br>，等待定时时刻到达。</li>
+<li>待消费：定时时刻到达后，服务端将消息重新写入普通存储引擎，对下游消费者可见，等待消费者消费的状态。</li>
+<li>消费中：消息被消费者获取，并按照消费者本地的业务逻辑进行处理的过程。 此时服务端会等待消费者完成消费并提交消费结果，如果一定时间后没有收到消费者的响应，RocketMQ<br>会对消息进行重试处理。</li>
+<li>消费提交：消费者完成消费处理，并向服务端提交消费结果，服务端标记当前消息已经被处理（包括消费成功和失败）。RocketMQ<br>默认支持保留所有消息，此时消息数据并不会立即被删除，只是逻辑标记已消费。消息在保存时间到期或存储空间不足被删除前，消费者仍然可以回溯消息重新消费。</li>
+<li>消息删除：Apache RocketMQ 按照消息保存机制滚动清理最早的消息数据，将消息从物理文件中删除。</li>
+</ul>
+<hr>
+<p>顺序消息</p>
+<p>顺序消息仅支持使用 MessageType 为 FIFO 的主题，即顺序消息只能发送至类型为顺序消息的主题中，发送的消息的类型必须和主题的类型一致。和普通消息发送相比，顺序消息发送必须要设置消息组。（推荐实现<br>MessageQueueSelector 的方式，见下文）。要保证消息的顺序性需要单一生产者串行发送。</p>
+<p>单线程使用 MessageListenerConcurrently 可以顺序消费，多线程环境下使用 MessageListenerOrderly 才能顺序消费</p>
+<p><strong><code>RocketMQ</code> 在主题上是无序的、它只有在队列层面才是保证有序</strong> 的。</p>
+<p><strong>普通顺序</strong> 和 <strong>严格顺序</strong> 。</p>
+<p>所谓普通顺序是指 消费者通过 <strong>同一个消费队列收到的消息是有顺序的</strong><br>，不同消息队列收到的消息则可能是无顺序的。普通顺序消息在 <code>Broker</code> <strong>重启情况下不会保证消息顺序性</strong> (短暂时间) 。</p>
+<p>一般而言，我们的 <code>MQ</code> 都是能容忍短暂的乱序，所以推荐使用普通顺序模式。</p>
+<p>那么，我们现在使用了 <strong>普通顺序模式</strong> ，我们从上面学习知道了在 <code>Producer</code> 生产消息的时候会进行轮询(取决你的负载均衡策略)<br>来向同一主题的不同消息队列发送消息。那么如果此时我有几个消息分别是同一个订单的创建、支付、发货，在轮询的策略下这 *<br><em>三个消息会被发送到不同队列</em>* ，因为在不同的队列此时就无法使用 <code>RocketMQ</code> 带来的队列有序特性来保证消息有序性了。</p>
+<p>那么，怎么解决呢？</p>
+<p>其实很简单，我们需要处理的仅仅是将同一语义下的消息放入同一个队列(比如这里是同一个订单)，那我们就可以使用 <strong>Hash 取模法</strong><br>来保证同一个订单在同一个队列中就行了</p>
+<p>RocketMQ 实现了两种队列选择算法，也可以自己实现</p>
+<ul>
+<li><p>轮询算法</p>
+<ul>
+<li>轮询算法就是向消息指定的 topic 所在队列中依次发送消息，保证消息均匀分布</li>
+<li>是 RocketMQ 默认队列选择算法</li>
+</ul>
+</li>
+<li><p>最小投递延迟算法</p>
+<ul>
+<li><p>每次消息投递的时候统计消息投递的延迟，选择队列时优先选择消息延时小的队列，导致消息分布不均匀,按照如下设置即可</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">producer.setSendLatencyFaultEnable(<span class="literal">true</span>);</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p>继承 MessageQueueSelector 实现</p>
+</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">SendResult</span> <span class="variable">sendResult</span> <span class="operator">=</span> producer.send(msg, <span class="keyword">new</span> <span class="title class_">MessageQueueSelector</span>() &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> MessageQueue <span class="title function_">select</span><span class="params">(List&lt;MessageQueue&gt; mqs, Message msg, Object arg)</span> &#123;</span><br><span class="line">        <span class="comment">//从mqs中选择一个队列,可以根据msg特点选择</span></span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;, <span class="keyword">new</span> <span class="title class_">Object</span>());</span><br></pre></td></tr></table></figure>
+
+<p>选择队列后会与 Broker 建立连接，通过网络请求将消息发送到 Broker 上，如果 Broker 挂了或者网络波动发送消息超时此时 RocketMQ<br>会进行重试。 重新选择其他 Broker 中的消息队列进行发送，默认重试两次，可以手动设置。</p>
+<p>producer.setRetryTimesWhenSendFailed</p>
+<p>(5); 消息过大 消息超过 4k 时 RocketMQ 会将消息压缩后在发送到 Broker 上，减少网络资源的占用。 重复消费 emmm，就两个字—— 幂等<br>。在编程中一个幂等<br>操作的特点是其任意多次执行所产生的影响均与一次执行的影响相同。比如说，这个时候我们有一个订单的处理积分的系统，每当来一个消息的时候它就负责为创建这个订单的用户的积分加上相应的数值。可是有一次，消息队列发送给订单系统<br>FrancisQ 的订单信息，其要求是给 FrancisQ 的积分加上 500。但是积分系统在收到 FrancisQ<br>的订单信息处理完成之后返回给消息队列处理成功的信息的时候出现了网络波动(当然还有很多种情况，比如 Broker 意外重启等等)<br>，这条回应没有发送成功。 那么，消息队列没收到积分系统的回应会不会尝试重发这个消息？问题就来了，我再发这个消息，万一它又给<br>FrancisQ 的账户加上 500 积分怎么办呢？ 所以我们需要给我们的消费者实现 幂等 ，也就是对同一个消息的处理结果，执行多少次都不变。<br>那么如何给业务实现幂等呢？这个还是需要结合具体的业务的。你可以使用 写入 Redis 来保证，因为 Redis 的 key 和 value<br>就是天然支持幂等的。当然还有使用 数据库插入法 ，基于数据库的唯一键来保证重复数据不会被插入多条。 不过最主要的还是需要<br>根据特定场景使用特定的解决方案 ，你要知道你的消息消费是否是完全不可重复消费还是可以忍受重复消费的，然后再选择强校验和弱校验的方式。毕竟在<br>CS 领域还是很少有技术银弹的说法。 而在整个互联网领域，幂等不仅仅适用于消息队列的重复消费问题，这些实现幂等的方法，也同样适用于，在其他场景中来解决重复请求或者重复调用的问题<br>。比如将 HTTP 服务设计成幂等的，解决前端或者 APP 重复提交表单数据的问题 ，也可以将一个微服务设计成幂等的，解决 RPC 框架自动重试导致的<br>重复调用问题 。 RocketMQ 如何实现分布式事务？</p>
+<hr>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202502141632423.png"></p>
+<hr>
+<hr>
+<p>事务消息</p>
+<p>事务消息是 Apache RocketMQ 提供的一种高级消息类型，支持在分布式场景下保障消息生产和本地事务的最终一致性。简单来讲，就是将本地事务（数据库的<br>DML<br>操作）与发送消息合并在同一个事务中。例如，新增一个订单。在事务未提交之前，不发送订阅的消息。发送消息的动作随着事务的成功提交而发送，随着事务的回滚而取消。当然真正地处理过程不止这么简单，包含了半消息、事务监听和事务回查等概念，下面有更详细的说明</p>
+<hr>
+<h2 id="消息重复消费如何解决？"><a href="#消息重复消费如何解决？" class="headerlink" title="消息重复消费如何解决？"></a>消息重复消费如何解决？</h2><p>影响消息正常发送和消费的重要原因是网络的不确定性。</p>
+<p>引起重复消费的原因</p>
+<p>1）ACK</p>
+<p>正常情况下在consumer真正消费完消息后应该发送ack，通知broker该消息已正常消费，从 queue中剔除</p>
+<p>当ack因为网络原因无法发送到broker，broker会认为词条消息没有被消费，此后会开启消息 重投机制把消息再次投递到consumer</p>
+<p>2）消费模式</p>
+<p>在CLUSTERING模式下，消息在broker中会保证相同group的consumer消费一次，但是针 对不同group的consumer会推送多次</p>
+<p>解决方案</p>
+<p>1）数据库表</p>
+<p>处理消息前，使用消息主键在表中带有约束的字段中insert</p>
+<p>2）Map</p>
+<p>单机时可以使用map ConcurrentHashMap -&gt; putIfAbsent guava cache</p>
+<p>3）Redis</p>
+<p>分布式锁搞起来。</p>
+<h2 id="如何让RocketMQ保证消息的顺序消费？"><a href="#如何让RocketMQ保证消息的顺序消费？" class="headerlink" title="如何让RocketMQ保证消息的顺序消费？"></a>如何让RocketMQ保证消息的顺序消费？</h2><blockquote>
+<p>原文：<a target="_blank" rel="noopener" href="https://zwmst.com/1465.html">https://zwmst.com/1465.html</a></p>
+</blockquote>
+<p>首先多个queue只能保证单个queue里的顺序，queue是典型的FIFO，天然顺序。多个queue 同时消费是无法绝对保证消息的有序性的。所以总结如下：</p>
+<p>同一topic，同一个QUEUE，发消息的时候一个线程去发送消息，消费的时候 一个线程去消费 一个queue里的消息。</p>
+<h2 id="RocketMQ如何保证消息不丢失？"><a href="#RocketMQ如何保证消息不丢失？" class="headerlink" title="RocketMQ如何保证消息不丢失？"></a>RocketMQ如何保证消息不丢失？</h2><blockquote>
+<p>原文：<a target="_blank" rel="noopener" href="https://zwmst.com/1467.html">https://zwmst.com/1467.html</a></p>
+</blockquote>
+<p>首先在如下三个部分都可能会出现丢失消息的情况：</p>
+<p>Producer端</p>
+<p>Broker端</p>
+<p>Consumer端</p>
+<p>1）Producer端如何保证消息不丢失</p>
+<p>采取send()同步发消息，发送结果是同步感知的。 发送失败后可以重试，设置重试次数。默认3次。</p>
+<p>producer.setRetryTimesWhenSendFailed(10);</p>
+<p>集群部署，比如发送失败了的原因可能是当前Broker宕机了，重试的时候会发送到其他 Broker上。</p>
+<p>2）Broker端如何保证消息不丢失</p>
+<p>修改刷盘策略为同步刷盘。默认情况下是异步刷盘的。</p>
+<p>flushDiskType &#x3D; SYNC_FLUSH</p>
+<p>集群部署，主从模式，高可用。</p>
+<p>3）Consumer端如何保证消息不丢失</p>
+<p>完全消费正常后在进行手动ack确认</p>
+<h2 id="RocketMQ的消息堆积如何处理"><a href="#RocketMQ的消息堆积如何处理" class="headerlink" title="RocketMQ的消息堆积如何处理"></a>RocketMQ的消息堆积如何处理</h2><p>首先要找到是什么原因导致的消息堆积，是Producer太多了，Consumer太少了导致的还是说 其他情况，总之先定位问题(dashboard）。</p>
+<p>然后看下消息消费速度是否正常，正常的话，可以通过上线更多consumer临时解决消息堆积 问题。</p>
+<h2 id="RocketMQ在分布式事务支持这块机制的底层原理"><a href="#RocketMQ在分布式事务支持这块机制的底层原理" class="headerlink" title="RocketMQ在分布式事务支持这块机制的底层原理?"></a>RocketMQ在分布式事务支持这块机制的底层原理?</h2><p>分布式系统中的事务可以使用TCC（Try、Confirm、Cancel）、2pc来解决分布式系统中的 消息原子性</p>
+<p>RocketMQ 4.3+提供分布事务功能，通过 RocketMQ 事务消息能达到分布式事务的最终一致</p>
+<p>RocketMQ实现方式：</p>
+<p>Half Message：预处理消息，当broker收到此类消息后，会存储到RMQ_SYS_TRANS_HALF_TOPIC的消息消费队列中</p>
+<p>检查事务状态：Broker会开启一个定时任务，消费RMQ_SYS_TRANS_HALF_TOPIC队列 中的消息，每次执行任务会向消息发送者确认事务执行状态（提交、回滚、未知），如果是未<br>知，Broker会定时去回调在重新检查。</p>
+<p>超时：如果超过回查次数，默认回滚消息。</p>
+<p>也就是他并未真正进入Topic的queue，而是用了临时queue来放所谓的half message，等提交事务后才会真正的将half<br>message转移到topic下的queue</p>
+<h2 id="如果让你来动手实现一个分布式消息中间件，整体架构你会如何设计实现"><a href="#如果让你来动手实现一个分布式消息中间件，整体架构你会如何设计实现" class="headerlink" title="如果让你来动手实现一个分布式消息中间件，整体架构你会如何设计实现?"></a>如果让你来动手实现一个分布式消息中间件，整体架构你会如何设计实现?</h2><h2 id="高吞吐量下如何优化生产者和消费者的性能"><a href="#高吞吐量下如何优化生产者和消费者的性能" class="headerlink" title="高吞吐量下如何优化生产者和消费者的性能?"></a>高吞吐量下如何优化生产者和消费者的性能?</h2><p>1）开发</p>
+<p>同一group下，多机部署，并行消费</p>
+<p>单个Consumer提高消费线程个数</p>
+<p>批量消费。消息批量拉取，业务逻辑批量处理。</p>
+<p>2）运维</p>
+<p>网卡调优</p>
+<p>jvm调优</p>
+<p>多线程与cpu调优 Page Cache</p>
+<h2 id="再说说RocketMQ-是如何保证数据的高容错性的"><a href="#再说说RocketMQ-是如何保证数据的高容错性的" class="headerlink" title="再说说RocketMQ 是如何保证数据的高容错性的?"></a>再说说RocketMQ 是如何保证数据的高容错性的?</h2><p>在不开启容错的情况下，轮询队列进行发送，如果失败了，重试的时候过滤失败的Broker</p>
+<p>如果开启了容错策略，会通过RocketMQ的预测机制来预测一个Broker是否可用</p>
+<p>如果上次失败的Broker可用那么还是会选择该Broker的队列</p>
+<p>如果上述情况失败，则随机选择一个进行发送</p>
+<p>在发送消息的时候会记录一下调用的时间与是否报错，根据该时间去预测broker的可用时间</p>
+<h2 id="任何一台Broker突然宕机了怎么办？"><a href="#任何一台Broker突然宕机了怎么办？" class="headerlink" title="任何一台Broker突然宕机了怎么办？"></a>任何一台Broker突然宕机了怎么办？</h2><blockquote>
+<p>原文：<a target="_blank" rel="noopener" href="https://zwmst.com/1479.html">https://zwmst.com/1479.html</a></p>
+</blockquote>
+<p>Broker主从架构以及多副本策略。Master收到消息后会同步给Slave，这样一条消息就不止一<br>份了，Master宕机了还有slave中的消息可用，保证了MQ的可靠性和高可用性。而且Rocket MQ4.5.0开始就支持了Dlegder模式，基于raft的，做到了真正意义的HA。</p>
+<p>2、你上家公司的是的内容？</p>
+<p>1、负责用户限制数消息协议业务对接</p>
+<p>2、负责优惠劵从0到1的设计</p>
+<p>3、负责风控体系建设，抵制诈骗风险及高风险地区识别及黑白名单及ip开发</p>
+<p>4、负责AI客服搭建</p>
+<p>3、你彩讯公司的负责的内容体系，在项目担任了什么角色？</p>
+<p>1、负责redis分布式组件开发、leaf分布式id组件开发</p>
+<p>2、架构升级梳理拆分（邮箱业务&#x2F;通讯录&#x2F;邮箱组&#x2F;用户&#x2F;后台管理系统），ssm升级到springboot（升级spring包、去除application.xml配置依赖、升级mybatis、重新配置过滤器、监听器、配置加载机制、前后端分离）<br>在到微服务拆分（采用AKF原则 x折 值得是单元化部署、机器叠加，y折指的是服务拆分<br>z折基于数据拆分）分为基础组件沉淀（redis&#x2F;es）、邮箱服务、用户服务、日志服务、通讯录服务等等）</p>
+<p>升级微服务过程及CICD集成</p>
+<p>springboot接入springCloud Alibaba过程总结</p>
+<p>1、引入discover依赖，包扫描改造</p>
+<p>2、feign远程调用，及fallback机制</p>
+<p>3、feign接口调用拦截器处理</p>
+<p>4、引入dockerfile及打包上传到docker hub镜像仓库，上私有云改造</p>
+<p>5、k8s apply应用部署pod&#x2F;svr节点（nodepod)方式。不过后面要引入ingress进行接口管理 梳理</p>
+<p>在项目中担任了核心开发岗角色，负责对接需求及需求拆分，带有2个组员一起开发。</p>
+<p>4、MQ对于主从架构 消息数量量大导致master是 怎么处理</p>
+<p>1、4.5版本之前master down需要手动重启 ，slave接管读请求(改broker id为0表示主 大于0表示 slave)</p>
+<p>2、dledger模式下自动选举， 基于raft算法采用过半机制完成自动完成选举</p>
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1739525092/" target="_blank">2025面试总结</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
                         
-                            当前分类：<span class="category">Web</span>
+                            <a href="/category/Web/">Web</a>
                         
-                    </span>
-                    
-                    
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
                         
-                            <div class="archive-title">
-                                <h2 class="archive-year">2024</h2>
-                            </div>
-                            
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1784846433/"><span>编程满天星题解分享</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">04-03</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/178484731/"><span>LeetCode437路径总和</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-27</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1784846531/"><span>LeetCode779递归序列</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-27</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1784846431/"><span>LeetCode779递归序列</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-27</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1784846430/"><span>LinkedList源码阅读分析</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-25</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1784846428/"><span>Spring事务机制的个人总结</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-25</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1784846423/"><span>Chatgpt4Free</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">02-23</span>
-                                </div>
-                            </div>
-                        </div>
-                    
+                            <a href="/tag/WEB/">WEB</a>
                         
-                            <div class="archive-title">
-                                <h2 class="archive-year">2023</h2>
-                            </div>
-                            
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1305786659/"><span>gitee及hexo搭建教程</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">09-01</span>
-                                </div>
-                            </div>
-                        </div>
+                    </div>
+                
+                <div class="article-prev-next">
                     
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1727406918/"><span>InstantiationAwareBeanPostProcesser&BeanPostProcesser</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">08-20</span>
-                                </div>
-                            </div>
-                        </div>
                     
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1727406918/"><span>深入理解BeanFactoryPostProcessor&BeanDefinitionRegistryPostProcessor&BeanPostProcesser&BeanPostProcesser</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">08-20</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1727406918/"><span>深入理解AOP原理</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">08-20</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1690804405/"><span>多线程事务同时回滚案例demo</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">07-30</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1684846498/"><span>刷题地址</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">07-06</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1717406918/"><span>datax性能优化</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">06-20</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1717406917/"><span>Datax实现原理</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">06-19</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1685194583/"><span>代码同步命令</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">05-27</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1684846423/"><span>资源导航</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">05-23</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1717618917/"><span>CMS垃圾回收器概念</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">05-20</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1717418917/"><span>为什么G1能够替代CMS回收器</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">05-20</span>
-                                </div>
-                            </div>
-                        </div>
-                    
-                           
-                        <div class="article">
-                            <div class="article-header">
-                                <h1 class="article-title"><a href="/article/1717408917/"><span>XXL-JOB源码分析</span></a></h1>
-                                <div class="article-meta">
-                                    <span class="article-time">05-19</span>
-                                </div>
-                            </div>
-                        </div>
+                        <a href="/article/1738893281/" class="next-prefix">» </a> 下一篇：    <a href="/article/1738893281/" title="发布于 2024-07-08 10:21">2024面试-高级java</a>
                     
                 </div>
             </div>
             
+    <div class="article-comments">
         
-    <div class="pagination-bottom">
-        <div class="pagination">
-            
-                <a class="extend prev" rel="prev" href="/category/Web/">上一页</a><a class="page-number" href="/category/Web/">1</a><span class="page-number current">2</span><a class="page-number" href="/category/Web/page/3/">3</a><a class="page-number" href="/category/Web/page/4/">4</a><a class="extend next" rel="next" href="/category/Web/page/3/">下一页</a>
-            
-        </div>
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
     </div>
 
+        </div>
     
 </div>
     <div id="footer"></div>
