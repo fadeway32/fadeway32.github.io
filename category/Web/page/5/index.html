@@ -9,7 +9,7 @@
     <meta http-equiv="Cache-Control" content="no-siteapp">
     <title>
         
-            LeetCode18- 删除倒数第n个节点
+            分类 - Web
         
     </title>
     <link rel="shortcut icon" href="#"/>
@@ -32,7 +32,7 @@
 <meta name="generator" content="Hexo 6.2.0"></head>
 <body>
     <a id="cover"></a>
-    <link type="text/css" rel="stylesheet" href="/css/post.css">
+    <link type="text/css" rel="stylesheet" href="/css/archive.css">
 <header>
     <meta name="referrer" content="no-referrer">
 </header>
@@ -40,31 +40,10 @@
     <div class="vertical">
         <div class="inner">
             
-                <h1 class="header-subtitle">LeetCode18- 删除倒数第n个节点</h1>
+                <h1 class="header-subtitle">分类归档</h1>
                 <div class="header-subinfo">
-                    <p class="article-info-text">
-                        <span>
-                            <i class="iconfont icon-time"></i> 发表时间：2023-03-17
-                        </span>
-                        
-                            <span id="/article/1677767747/" class="leancloud_visitors" data-flag-title="LeetCode18- 删除倒数第n个节点">
-                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
-                            </span>
-                        
-                        <span>
-                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1677767747/"></span>
-                        </span>
-                    </p>
-                    
-                        
-                            <span class="category-color">Web</span>
-                        
-                    
-                    
-                        
-                            <span class="tag-color">LeetCode</span>
-                        
-                    
+                    <p class="article-info-text Chinese"></p>
+                    <p class="article-info-text English"></p>
                 </div>
             
         </div>
@@ -73,74 +52,45 @@
 </div>
 <div id="container">
     
-        <!-- 文章页面 -->
-        <div id="article">
-            <div class="toc"></div>
-            <div class="article-body">
-                <h1 id="LeetCode18-删除倒数第n个节点"><a href="#LeetCode18-删除倒数第n个节点" class="headerlink" title="LeetCode18- 删除倒数第n个节点"></a>LeetCode18- 删除倒数第n个节点</h1><p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202303182113068.png" alt="image-20230318211344007"></p>
-<p>ans:</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 常用写法</span></span><br><span class="line">    <span class="keyword">public</span> ListNode  <span class="title function_">deleteNode</span><span class="params">(ListNode head ,<span class="type">int</span>  n)</span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(head = <span class="literal">null</span>)<span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">        </span><br><span class="line">       	<span class="comment">// 定义虚拟头节点dw</span></span><br><span class="line">       <span class="type">ListNode</span> <span class="variable">dump</span>  <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ListNode</span>();</span><br><span class="line">        dump.next = head;</span><br><span class="line">        <span class="type">ListNode</span>  <span class="variable">cur</span> <span class="operator">=</span> dump;</span><br><span class="line">        <span class="comment">// 先找出长度</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">length</span> <span class="operator">=</span> getLength(head);</span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> i=<span class="number">1</span>;i&lt; length-n+<span class="number">1</span>;i++)&#123;</span><br><span class="line">            cur =cur.next;</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">       	cur.next = cur.next.next;</span><br><span class="line">        <span class="keyword">return</span> dump.next;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">getLength</span><span class="params">(ListNode node)</span>&#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">length</span> <span class="operator">=</span><span class="number">0</span>;</span><br><span class="line">        <span class="keyword">while</span>(node != <span class="literal">null</span>)&#123;</span><br><span class="line">            ++length;</span><br><span class="line">            node  = node.next;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> node;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> ListNode <span class="title function_">slowNode</span><span class="params">(ListNode head,<span class="type">int</span> n)</span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(head = <span class="literal">null</span>)<span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">        </span><br><span class="line">       	<span class="comment">// 定义虚拟头节点dw</span></span><br><span class="line">       <span class="type">ListNode</span> <span class="variable">dump</span>  <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ListNode</span>();</span><br><span class="line">        dump.next = head;</span><br><span class="line">        <span class="type">ListNode</span>  <span class="variable">cur</span> <span class="operator">=</span> dump;</span><br><span class="line">        <span class="type">ListNode</span> <span class="variable">slow</span> <span class="operator">=</span> cur;</span><br><span class="line">        <span class="type">ListNode</span> <span class="variable">fast</span> <span class="operator">=</span>cur;</span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> i=<span class="number">0</span>;i&lt;=n ;i++)&#123;</span><br><span class="line">            fast = fast.next;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">while</span>(fast.next != <span class="literal">null</span>)&#123;</span><br><span class="line">            fast = fast.next;</span><br><span class="line">            slow = slow.next;</span><br><span class="line">        &#125;</span><br><span class="line">        slow.next = slow.next.next;</span><br><span class="line">        <span class="keyword">return</span> dump.next;</span><br><span class="line">        </span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-
-                
-                <p class="end">__END__</p>
-            </div>
-            <div class="article-footer">
-                <div class="suffix-box">
-    <div class="suffix-box-left">
-        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
-    </div>
-    <div class="suffix-box-right">
-        <span class="suffix-box-title">文章作者：</span>Live For Code
-        <br>
-        <span class="suffix-box-title">文章出处：</span><a href="/article/1677767747/" target="_blank">LeetCode18- 删除倒数第n个节点</a>
-        <br>
-        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
-        <br>
-        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
-        <br>
-        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
-        <br>
-    </div>
-    <div style="clear: both;"></div>
-</div>
-                
-                    <div class="category">
-                        分类：
+        
+            <!-- 归档页面、分类归档页面、标签归档页面 -->
+            <div class="articles">
+                <div class="articles-wrap">
+                    <span class="archive-move-on"></span>
+                    <span class="archive-counter">
                         
-                            <a href="/category/Web/">Web</a>
+                            当前分类：<span class="category">Web</span>
                         
-                    </div>
-                
-                
-                    <div class="tag">
-                        标签：
-                        
-                            <a href="/tag/LeetCode/">LeetCode</a>
-                        
-                    </div>
-                
-                <div class="article-prev-next">
-                    
-                        <a href="/article/1677767748/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1677767748/" title="发布于 2023-03-18 11:49">LeetCode19-判断[括号生成]</a>
-                        <br>
+                    </span>
                     
                     
-                        <a href="/article/1677767746/" class="next-prefix">» </a> 下一篇：    <a href="/article/1677767746/" title="发布于 2023-03-15 11:49">LeetCode17-字符串匹配子串返回第一个符合要求的下标</a>
+                        
+                            <div class="archive-title">
+                                <h2 class="archive-year">2020</h2>
+                            </div>
+                            
+                           
+                        <div class="article">
+                            <div class="article-header">
+                                <h1 class="article-title"><a href="/article/1112885395/"><span>Hexo主题LiveForCode介绍</span></a></h1>
+                                <div class="article-meta">
+                                    <span class="article-time">08-01</span>
+                                </div>
+                            </div>
+                        </div>
                     
                 </div>
             </div>
             
-    <div class="article-comments">
         
-            <div class="comments-title">
-                评论列表
-            </div>
-        
-        <div class="comments-content"></div>
+    <div class="pagination-bottom">
+        <div class="pagination">
+            
+                <a class="extend prev" rel="prev" href="/category/Web/page/4/">上一页</a><a class="page-number" href="/category/Web/">1</a><span class="space">&hellip;</span><a class="page-number" href="/category/Web/page/3/">3</a><a class="page-number" href="/category/Web/page/4/">4</a><span class="page-number current">5</span>
+            
+        </div>
     </div>
 
-        </div>
     
 </div>
     <div id="footer"></div>
