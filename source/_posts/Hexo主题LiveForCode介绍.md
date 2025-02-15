@@ -159,7 +159,7 @@ algolia:
 4.当配置完成，在站点根目录下执行一下命令更新 Index。请注意观察命令的输出。  
 
 ```shell
-export HEXO_ALGOLIA_INDEXING_KEY=38aa295443f42340375d56d65b39534b
+export HEXO_ALGOLIA_INDEXING_KEY=2e038c318ac6813e4b4baa91f6ccfa63
 hexo algolia
 ```
 
