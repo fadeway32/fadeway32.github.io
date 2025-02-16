@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <!--    <meta name="referrer" content="origin">-->
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>
+        
+            02 RocketMQ源码：NameServer启动流程源码解析
+        
+    </title>
+    <link rel="shortcut icon" href="#"/>
+
+    <link type="text/css" rel="stylesheet" href="/font/LongCang.css">
+    <link type="text/css" rel="stylesheet" href="/font/Monda.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSansSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSerifSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/Playball.css">
+    <link type="text/css" rel="stylesheet" href="/font/PTMono.css">
+    <link type="text/css" rel="stylesheet" href="/font/Roboto.css">
+    <link type="text/css" rel="stylesheet" href="/font/RobotoSlab.css">
+    <link type="text/css" rel="stylesheet" href="/font/Rosario.css">
+    <link type="text/css" rel="stylesheet" href="/font/UbuntuMono.css">
+
+    <link type="text/css" rel="stylesheet" href="/css/base.css">
+    <link type="text/css" rel="stylesheet" href="/css/code.css">
+
+    <script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
+<meta name="generator" content="Hexo 6.2.0"></head>
+<body>
+    <a id="cover"></a>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
+<header>
+    <meta name="referrer" content="no-referrer">
+</header>
+<div id="header" class="header">
+    <div class="vertical">
+        <div class="inner">
+            
+                <h1 class="header-subtitle">02 RocketMQ源码：NameServer启动流程源码解析</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2025-02-16
+                        </span>
+                        
+                            <span id="/article/1739713327/" class="leancloud_visitors" data-flag-title="02 RocketMQ源码：NameServer启动流程源码解析">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1739713327/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">RocketMq</span>
+                        
+                    
+                </div>
+            
+        </div>
+    </div>
+    
+</div>
+<div id="container">
+    
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="RocketMQ源码：NameServer启动流程源码解析"><a href="#RocketMQ源码：NameServer启动流程源码解析" class="headerlink" title="RocketMQ源码：NameServer启动流程源码解析"></a>RocketMQ源码：NameServer启动流程源码解析</h1><h1 id="02、RocketMQ源码分析：NameServer启动流程源码解析"><a href="#02、RocketMQ源码分析：NameServer启动流程源码解析" class="headerlink" title="02、RocketMQ源码分析：NameServer启动流程源码解析"></a>02、RocketMQ源码分析：NameServer启动流程源码解析</h1><p>分类：<a target="_blank" rel="noopener" href="https://cxykk.com/?cat=318">RocketMQ源码分析（1）</a>  2024-03-27 阅读(222)</p>
+<blockquote>
+<p>详细介绍了RocketMQ的NameServer启动流程源码解析，包括RocketMQ的RPC通信模型。</p>
+</blockquote>
+<h4 id="文章目录"><a href="#文章目录" class="headerlink" title="文章目录"></a>文章目录</h4><ul>
+<li>0 NameServer概述</li>
+<li>1 NamesrvStartup启动入口</li>
+<li>2 createNamesrvController创建NamesrvController</li>
+<li><ul>
+<li>2.1 new NamesrvController创建控制器</li>
+</ul>
+</li>
+<li>3 start启动NamesrvController</li>
+<li><ul>
+<li>3.1 initialize初始化NettyServer</li>
+</ul>
+</li>
+<li><ul>
+<li>3.1.1 创建NettyRemotingServer</li>
+<li>3.1.2 registerProcessor注册默认请求处理器</li>
+<li>3.1.3 启动定时任务</li>
+</ul>
+</li>
+<li>3.2 注册销毁钩子函数</li>
+<li>3.3 start启动NettyServer</li>
+<li>4 RocaktMQ的RPC通信模型设计初探</li>
+<li>5 NameServer启动流程总结</li>
+</ul>
+<h2 id="0-NameServer概述"><a href="#0-NameServer概述" class="headerlink" title="0 NameServer概述"></a>0 NameServer概述</h2><p>我们要先学会了如何使用RocketMQ，并且看了官方文档之后再来看源码，那样就能节约很多的时间。比如RocketMQ的<a href="https://github.com/apache/rocketmq/blob/master/docs/cn/architecture.md">架构设计</a><br>，以及<a href="https://github.com/apache/rocketmq/tree/master/docs/cn">Apache RocketMQ开发者指南</a>。</p>
+<p>下面是RocketMQ的<a href="https://github.com/apache/rocketmq/blob/master/docs/cn/architecture.md">架构设计</a>图：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202502162021048.png" alt="*"></p>
+<p>在<a href="https://github.com/apache/rocketmq/blob/master/docs/cn/architecture.md">官方文档</a><br>中可以得知，NameServer是一个非常简单的Topic路由注册中心，其角色类似Dubbo中的zookeeper，支持Broker的动态注册与发现。主要包括两个功能：</p>
+<p><strong>1、</strong> Broker管理，NameServer接受Broker集群的注册信息并且保存下来作为路由信息的基本数据然后提供心跳检测机制，检查Broker是否还存活；<br><strong>2、</strong><br>路由信息管理，每个NameServer将保存关于Broker集群的整个路由信息和用于客户端查询的队列信息然后Producer和Conumser通过NameServer就可以知道整个Broker集群的路由信息，从而进行消息的投递和消费；</p>
+<p>从上面可以得知，无论是Producer、Conumser、Broker都会直接和NameServer进行通信，实际上NameServer是非常重要的角色。但是由于大多数程序员都是一个“使用者”的角色，而使用RocketMQ的API的时候一般也不会接触到NameServer，因此对于NameServer的了解较少。更多的NameServer的特性需要查看<a href="https://github.com/apache/rocketmq/blob/master/docs/cn/architecture.md">官方文档</a>。</p>
+<p>**实际上RocketMQ在部署启动时，会首先启动NameServer，因此本系列的源码分析文章中，将会以NameServer的启动作为入口，一步步的向后分析Broker、Consumer、Producer的核心源码。<br>**</p>
+<h2 id="1-NamesrvStartup启动入口"><a href="#1-NamesrvStartup启动入口" class="headerlink" title="1 NamesrvStartup启动入口"></a>1 NamesrvStartup启动入口</h2><p>NameServer的启动入口就是namesrv模块的NamesrvStartup类的main方法。该方法将会创建并且初始化一个NamesrvController实例。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">     main0(args);</span><br><span class="line"> &#125;</span><br><span class="line"></span><br><span class="line"> <span class="keyword">public</span> <span class="keyword">static</span> NamesrvController <span class="title function_">main0</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line"></span><br><span class="line">     <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">         <span class="comment">/*</span></span><br><span class="line"><span class="comment">          * 1、创建NamesrvController</span></span><br><span class="line"><span class="comment">          */</span></span><br><span class="line">         <span class="type">NamesrvController</span> <span class="variable">controller</span> <span class="operator">=</span> createNamesrvController(args);</span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * 2、启动NamesrvController</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">         start(controller);</span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * 启动成功打印日志</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">         <span class="type">String</span> <span class="variable">tip</span> <span class="operator">=</span> <span class="string">&quot;The Name Server boot success. serializeType=&quot;</span> + RemotingCommand.getSerializeTypeConfigInThisServer();</span><br><span class="line">         log.info(tip);</span><br><span class="line">         System.out.printf(<span class="string">&quot;%s%n&quot;</span>, tip);</span><br><span class="line">         <span class="keyword">return</span> controller;</span><br><span class="line">     &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">         e.printStackTrace();</span><br><span class="line">         System.exit(-<span class="number">1</span>);</span><br><span class="line">     &#125;</span><br><span class="line"></span><br><span class="line">     <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>可以看到入口方法还是比较简单的，我们主要看createNamesrvController创建以及start启动NamesrvController的两个方法的源码。</strong></p>
+<h2 id="2-createNamesrvController创建NamesrvController"><a href="#2-createNamesrvController创建NamesrvController" class="headerlink" title="2 createNamesrvController创建NamesrvController"></a>2 createNamesrvController创建NamesrvController</h2><p>该方法主要是解析命令行，加载NameServer配置和NettyServer各种配置（解析命令行中-c指定的配置文件）并保存起来然后创建一个NamesrvController。NamesrvController相当于NameServer的一个中央控制器类。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> NamesrvController <span class="title function_">createNamesrvController</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException, JoranException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//设置RocketMQ的版本信息，属性名为rocketmq.remoting.version</span></span><br><span class="line">    System.setProperty(RemotingCommand.REMOTING_VERSION_KEY, Integer.toString(MQVersion.CURRENT_VERSION));</span><br><span class="line">    <span class="comment">//PackageConflictDetect.detectFastjson();</span></span><br><span class="line">    <span class="comment">/*jar包启动时，构建命令行操作的指令，使用main方法启动可以忽略*/</span></span><br><span class="line">    <span class="type">Options</span> <span class="variable">options</span> <span class="operator">=</span> ServerUtil.buildCommandlineOptions(<span class="keyword">new</span> <span class="title class_">Options</span>());</span><br><span class="line">    <span class="comment">//mqnamesrv命令文件</span></span><br><span class="line">    commandLine = ServerUtil.parseCmdLine(<span class="string">&quot;mqnamesrv&quot;</span>, args, buildCommandlineOptions(options), <span class="keyword">new</span> <span class="title class_">PosixParser</span>());</span><br><span class="line">    <span class="keyword">if</span> (<span class="literal">null</span> == commandLine) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        System.exit(-<span class="number">1</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//创建NameServer的配置类，包含NameServer的配置，比如ROCKETMQ_HOME</span></span><br><span class="line">    <span class="keyword">final</span> <span class="type">NamesrvConfig</span> <span class="variable">namesrvConfig</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">NamesrvConfig</span>();</span><br><span class="line">    <span class="comment">//和NettyServer的配置类</span></span><br><span class="line">    <span class="keyword">final</span> <span class="type">NettyServerConfig</span> <span class="variable">nettyServerConfig</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">NettyServerConfig</span>();</span><br><span class="line">    <span class="comment">//netty服务的监听端口设置为9876</span></span><br><span class="line">    nettyServerConfig.setListenPort(<span class="number">9876</span>);</span><br><span class="line">    <span class="comment">//判断命令行中是否包含字符&#x27;c&#x27;，即是否包含通过命令行指定配置文件的命令</span></span><br><span class="line">    <span class="comment">//例如，启动Broker的时候添加的 -c /Volumes/Samsung/Idea/rocketmq/config/conf/broker.conf命令</span></span><br><span class="line">    <span class="keyword">if</span> (commandLine.hasOption(<span class="string">&#x27;c&#x27;</span>)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">/*解析配置文件并且存入NamesrvConfig和NettyServerConfig中，没有的话就不用管*/</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">file</span> <span class="operator">=</span> commandLine.getOptionValue(<span class="string">&#x27;c&#x27;</span>);</span><br><span class="line">        <span class="keyword">if</span> (file != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="type">InputStream</span> <span class="variable">in</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">BufferedInputStream</span>(<span class="keyword">new</span> <span class="title class_">FileInputStream</span>(file));</span><br><span class="line">            properties = <span class="keyword">new</span> <span class="title class_">Properties</span>();</span><br><span class="line">            properties.load(in);</span><br><span class="line">            MixAll.properties2Object(properties, namesrvConfig);</span><br><span class="line">            MixAll.properties2Object(properties, nettyServerConfig);</span><br><span class="line"></span><br><span class="line">            namesrvConfig.setConfigStorePath(file);</span><br><span class="line"></span><br><span class="line">            System.out.printf(<span class="string">&quot;load config properties file OK, %s%n&quot;</span>, file);</span><br><span class="line">            in.close();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/*判断命令行中是否包含字符&#x27;p&#x27;，如果存在则打印配置信息并结束jvm运行，没有的话就不用管*/</span></span><br><span class="line">    <span class="keyword">if</span> (commandLine.hasOption(<span class="string">&#x27;p&#x27;</span>)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="type">InternalLogger</span> <span class="variable">console</span> <span class="operator">=</span> InternalLoggerFactory.getLogger(LoggerName.NAMESRV_CONSOLE_NAME);</span><br><span class="line">        MixAll.printObjectProperties(console, namesrvConfig);</span><br><span class="line">        MixAll.printObjectProperties(console, nettyServerConfig);</span><br><span class="line">        System.exit(<span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//把命令行的配置解析到namesrvConfig</span></span><br><span class="line">    MixAll.properties2Object(ServerUtil.commandLine2Properties(commandLine), namesrvConfig);</span><br><span class="line">    <span class="comment">//如果不存在ROCKETMQ_HOME的配置，那么打印异常并退出程序，这就是最开始启动NameServer是抛出异常的位置</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="literal">null</span> == namesrvConfig.getRocketmqHome()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        System.out.printf(<span class="string">&quot;Please set the %s variable in your environment to match the location of the RocketMQ installation%n&quot;</span>, MixAll.ROCKETMQ_HOME_ENV);</span><br><span class="line">        System.exit(-<span class="number">2</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/*一系列日志的配置*/</span></span><br><span class="line">    <span class="type">LoggerContext</span> <span class="variable">lc</span> <span class="operator">=</span> (LoggerContext) LoggerFactory.getILoggerFactory();</span><br><span class="line">    <span class="type">JoranConfigurator</span> <span class="variable">configurator</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">JoranConfigurator</span>();</span><br><span class="line">    configurator.setContext(lc);</span><br><span class="line">    lc.reset();</span><br><span class="line">    configurator.doConfigure(namesrvConfig.getRocketmqHome() + <span class="string">&quot;/conf/logback_namesrv.xml&quot;</span>);</span><br><span class="line"></span><br><span class="line">    log = InternalLoggerFactory.getLogger(LoggerName.NAMESRV_LOGGER_NAME);</span><br><span class="line">    <span class="comment">//打印nameServer 服务器配置类和 netty 服务器配置类的配置信息</span></span><br><span class="line">    MixAll.printObjectProperties(log, namesrvConfig);</span><br><span class="line">    MixAll.printObjectProperties(log, nettyServerConfig);</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 根据namesrvConfig和nettyServerConfig创建NamesrvController</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">final</span> <span class="type">NamesrvController</span> <span class="variable">controller</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">NamesrvController</span>(namesrvConfig, nettyServerConfig);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 将所有的-c的外部配置信息保存到NamesrvController中的Configuration对象属性的allConfigs属性中</span></span><br><span class="line">    controller.getConfiguration().registerConfig(properties);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> controller;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-1-new-NamesrvController创建控制器"><a href="#2-1-new-NamesrvController创建控制器" class="headerlink" title="2.1 new NamesrvController创建控制器"></a>2.1 new NamesrvController创建控制器</h3><p><strong>createNamesrvController方法中，会根据NamesrvConfig和NettyServerConfig调用NamesrvController的构造器创建一个实例。</strong></p>
+<p><strong>这个构造器源码也比较简单，就是初始化一些属性。</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="title function_">NamesrvController</span><span class="params">(NamesrvConfig namesrvConfig, NettyServerConfig nettyServerConfig)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//nameserver的配置</span></span><br><span class="line">    <span class="built_in">this</span>.namesrvConfig = namesrvConfig;</span><br><span class="line">    <span class="comment">//nameserver的netty服务的配置</span></span><br><span class="line">    <span class="built_in">this</span>.nettyServerConfig = nettyServerConfig;</span><br><span class="line">    <span class="comment">//kv配置管理器</span></span><br><span class="line">    <span class="built_in">this</span>.kvConfigManager = <span class="keyword">new</span> <span class="title class_">KVConfigManager</span>(<span class="built_in">this</span>);</span><br><span class="line">    <span class="comment">//路由信息管理器</span></span><br><span class="line">    <span class="built_in">this</span>.routeInfoManager = <span class="keyword">new</span> <span class="title class_">RouteInfoManager</span>();</span><br><span class="line">    <span class="comment">//Broker连接的各种事件的处理服务，是处理Broker连接发生变化的服务</span></span><br><span class="line">    <span class="comment">//主要用于监听在Channel通道关闭事件触发时调用RouteInfoManager#onChannelDestroy清除路由信息</span></span><br><span class="line">    <span class="built_in">this</span>.brokerHousekeepingService = <span class="keyword">new</span> <span class="title class_">BrokerHousekeepingService</span>(<span class="built_in">this</span>);</span><br><span class="line">    <span class="comment">//配置类，并将namesrvConfig和nettyServerConfig的配置注册到内部的allConfigs集合中</span></span><br><span class="line">    <span class="built_in">this</span>.configuration = <span class="keyword">new</span> <span class="title class_">Configuration</span>(log, <span class="built_in">this</span>.namesrvConfig, <span class="built_in">this</span>.nettyServerConfig);</span><br><span class="line">    <span class="comment">//存储路径配置</span></span><br><span class="line">    <span class="built_in">this</span>.configuration.setStorePathFromConfig(<span class="built_in">this</span>.namesrvConfig, <span class="string">&quot;configStorePath&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里面还会初始化一个<strong>brokerHousekeepingService</strong>，他是一个ChannelEventListener的实现，主要用于主要用于监听Broker的Channel通道关闭事件，并在事件触发时调用<br><strong>RouteInfoManager#onChannelDestroy</strong>清除路由信息。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">BrokerHousekeepingService</span> <span class="keyword">implements</span> <span class="title class_">ChannelEventListener</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">InternalLogger</span> <span class="variable">log</span> <span class="operator">=</span> InternalLoggerFactory.getLogger(LoggerName.NAMESRV_LOGGER_NAME);</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> NamesrvController namesrvController;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">BrokerHousekeepingService</span><span class="params">(NamesrvController namesrvController)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="built_in">this</span>.namesrvController = namesrvController;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//连接事件，不处理</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onChannelConnect</span><span class="params">(String remoteAddr, Channel channel)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//连接关闭事件</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onChannelClose</span><span class="params">(String remoteAddr, Channel channel)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="built_in">this</span>.namesrvController.getRouteInfoManager().onChannelDestroy(remoteAddr, channel);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//连接异常事件</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onChannelException</span><span class="params">(String remoteAddr, Channel channel)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="built_in">this</span>.namesrvController.getRouteInfoManager().onChannelDestroy(remoteAddr, channel);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//连接闲置事件</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onChannelIdle</span><span class="params">(String remoteAddr, Channel channel)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="built_in">this</span>.namesrvController.getRouteInfoManager().onChannelDestroy(remoteAddr, channel);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="3-start启动NamesrvController"><a href="#3-start启动NamesrvController" class="headerlink" title="3 start启动NamesrvController"></a>3 start启动NamesrvController</h2><p>在创建NamesrvController之后，调用start方法对其进行启动，实际上就是启动NameServer中的NettyServer服务。</p>
+<p>该方法主要做了三件事：</p>
+<p><strong>1、</strong> 调用initialize方法初始化NettyServer创建netty远程服务，初始化Netty线程池，注册请求处理器，配置定时任务，用于扫描并移除不活跃的Broker等操作；<br><strong>2、</strong> 对JVM添加关闭钩子方法，在NameServer的JVM关闭之前执行，关闭NameServerController中线程池，NettyServer进行关闭进行一些内存清理、对象销毁等操作；<br><strong>3、</strong> 调用start方法启动NettyServer，并进行监听；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> NamesrvController <span class="title function_">start</span><span class="params">(<span class="keyword">final</span> NamesrvController controller)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//不能为null</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="literal">null</span> == controller) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>(<span class="string">&quot;NamesrvController is null&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 1 初始化NettyServer</span></span><br><span class="line"><span class="comment">     * 创建netty远程服务，初始化Netty线程池，注册请求处理器，配置定时任务，用于扫描并移除不活跃的Broker等操作。</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="type">boolean</span> <span class="variable">initResult</span> <span class="operator">=</span> controller.initialize();</span><br><span class="line">    <span class="comment">//初始化失败则退出程序</span></span><br><span class="line">    <span class="keyword">if</span> (!initResult) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        controller.shutdown();</span><br><span class="line">        System.exit(-<span class="number">3</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 2 添加关闭钩子方法，在NameServer关闭之前执行，进行一些内存清理、对象销毁等操作</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    Runtime.getRuntime().addShutdownHook(<span class="keyword">new</span> <span class="title class_">ShutdownHookThread</span>(log, <span class="keyword">new</span> <span class="title class_">Callable</span>&lt;Void&gt;() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="keyword">public</span> Void <span class="title function_">call</span><span class="params">()</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            controller.shutdown();</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;));</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 3 启动NettyServer，并进行监听</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    controller.start();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> controller;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-1-initialize初始化NettyServer"><a href="#3-1-initialize初始化NettyServer" class="headerlink" title="3.1 initialize初始化NettyServer"></a>3.1 initialize初始化NettyServer</h3><p>**该方法用于初始化NettyServer。将会执行创建netty远程服务，初始化Netty线程池，注册请求处理器，配置定时任务，用于扫描并移除不活跃的Broker等初始化操作。<br>**</p>
+<p><strong>initialize的大概步骤为：</strong></p>
+<p><strong>1、</strong> 加载KV配置并存储到kvConfigManager内部的configTable属性中；<br><strong>2、</strong> 创建NameServer的netty远程服务remotingServer是一个基于Netty的用于NameServer与Broker、Consumer、Producer进行网络通信的服务端；<br><strong>3、</strong> 创建netty远程通信执行器线程池remotingExecutor，线程数默认8，线程名以RemotingExecutorThread_为前缀，用作默认的请求处理线程池；<br><strong>4、</strong> 注册默认请求处理器DefaultRequestProcessor到remotingServer中；<br><strong>5、</strong> 启动两个定时任务其中一个每隔十秒钟检测不活跃的Broker并清理相关路由信息，这是一个核心知识点，另一个任务则是每隔十分钟打印kv配置信息；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">initialize</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 1 加载KV配置并存储到kvConfigManager内部的configTable属性中</span></span><br><span class="line"><span class="comment">     * KVConfig配置文件默认路径是 $&#123;user.home&#125;/namesrv/kvConfig.json</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="built_in">this</span>.kvConfigManager.load();</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 2 创建NameServer的netty远程服务</span></span><br><span class="line"><span class="comment">     * 设置了一个ChannelEventListener，为此前创建brokerHousekeepingService</span></span><br><span class="line"><span class="comment">     * remotingServer是一个基于Netty的用于NameServer与Broker、Consumer、Producer进行网络通信的服务端</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="built_in">this</span>.remotingServer = <span class="keyword">new</span> <span class="title class_">NettyRemotingServer</span>(<span class="built_in">this</span>.nettyServerConfig, <span class="built_in">this</span>.brokerHousekeepingService);</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 3 创建netty远程通信执行器线程池，用作默认的请求处理线程池，线程名以RemotingExecutorThread_为前缀</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="built_in">this</span>.remotingExecutor =</span><br><span class="line">        Executors.newFixedThreadPool(nettyServerConfig.getServerWorkerThreads(), <span class="keyword">new</span> <span class="title class_">ThreadFactoryImpl</span>(<span class="string">&quot;RemotingExecutorThread_&quot;</span>));</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 4 注册默认请求处理器DefaultRequestProcessor</span></span><br><span class="line"><span class="comment">     * 将remotingExecutor绑定到DefaultRequestProcessor上，用作默认的请求处理线程池</span></span><br><span class="line"><span class="comment">     * DefaultRequestProcessor绑定到remotingServer的defaultRequestProcessor属性上</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="built_in">this</span>.registerProcessor();</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 5 启动一个定时任务</span></span><br><span class="line"><span class="comment">     * 首次启动延迟5秒执行，此后每隔10秒执行一次扫描无效的Broker，并清除Broker相关路由信息的任务</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="built_in">this</span>.scheduledExecutorService.scheduleAtFixedRate(<span class="keyword">new</span> <span class="title class_">Runnable</span>() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//扫描notActive的broker</span></span><br><span class="line">            NamesrvController.<span class="built_in">this</span>.routeInfoManager.scanNotActiveBroker();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;, <span class="number">5</span>, <span class="number">10</span>, TimeUnit.SECONDS);</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 6 启动一个定时任务</span></span><br><span class="line"><span class="comment">     * 首次启动延迟1分钟执行，此后每隔10分钟执行一次打印kv配置信息的任务</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="built_in">this</span>.scheduledExecutorService.scheduleAtFixedRate(<span class="keyword">new</span> <span class="title class_">Runnable</span>() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//打印kv配置信息</span></span><br><span class="line">            NamesrvController.<span class="built_in">this</span>.kvConfigManager.printAllPeriodically();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;, <span class="number">1</span>, <span class="number">10</span>, TimeUnit.MINUTES);</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * Tls传输相关配置，通信安全的文件监听模块，用来观察网络加密配置文件的更改</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">if</span> (TlsSystemConfig.tlsMode != TlsMode.DISABLED) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">// Register a listener to reload SslContext</span></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            fileWatchService = <span class="keyword">new</span> <span class="title class_">FileWatchService</span>(</span><br><span class="line">                <span class="keyword">new</span> <span class="title class_">String</span>[] &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    TlsSystemConfig.tlsServerCertPath,</span><br><span class="line">                    TlsSystemConfig.tlsServerKeyPath,</span><br><span class="line">                    TlsSystemConfig.tlsServerTrustCertPath</span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="keyword">new</span> <span class="title class_">FileWatchService</span>.Listener() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="type">boolean</span> certChanged, keyChanged = <span class="literal">false</span>;</span><br><span class="line">                    <span class="meta">@Override</span></span><br><span class="line">                    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onChanged</span><span class="params">(String path)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        <span class="keyword">if</span> (path.equals(TlsSystemConfig.tlsServerTrustCertPath)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                            log.info(<span class="string">&quot;The trust certificate changed, reload the ssl context&quot;</span>);</span><br><span class="line">                            reloadServerSslContext();</span><br><span class="line">                        &#125;</span><br><span class="line">                        <span class="keyword">if</span> (path.equals(TlsSystemConfig.tlsServerCertPath)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                            certChanged = <span class="literal">true</span>;</span><br><span class="line">                        &#125;</span><br><span class="line">                        <span class="keyword">if</span> (path.equals(TlsSystemConfig.tlsServerKeyPath)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                            keyChanged = <span class="literal">true</span>;</span><br><span class="line">                        &#125;</span><br><span class="line">                        <span class="keyword">if</span> (certChanged &amp;&amp; keyChanged) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                            log.info(<span class="string">&quot;The certificate and private key changed, reload the ssl context&quot;</span>);</span><br><span class="line">                            certChanged = keyChanged = <span class="literal">false</span>;</span><br><span class="line">                            reloadServerSslContext();</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">reloadServerSslContext</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        ((NettyRemotingServer) remotingServer).loadSslContext();</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.warn(<span class="string">&quot;FileWatchService created error, can&#x27;t load the certificate dynamically&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="3-1-1-创建NettyRemotingServer"><a href="#3-1-1-创建NettyRemotingServer" class="headerlink" title="3.1.1 创建NettyRemotingServer"></a>3.1.1 创建NettyRemotingServer</h4><p>**initialize方法的第一步是创建一个NettyRemotingServer，remotingServer是一个基于Netty的用于NameServer与Broker、Consumer、Producer进行网络通信的服务端。<br>**</p>
+<p><strong>NettyRemotingServer的构造器主要做了以下事：</strong></p>
+<p><strong>1、</strong> 创建serverBootstrap，这是etty服务端启动类，引导启动服务端；<br><strong>2、</strong><br>创建一个公共线程池publicExecutor，线程数默认4个线程，线程名以NettyServerPublicExecutor_为前缀用在registerProcessor方法中，在该方法注册Netty事件处理器时如果没指定线程池，则会统一使用publicExecutor来处理具体的业务，用于处理某些特定的请求业务，例如异步发送消息的回调；<br><strong>3、</strong><br>根据是否使用epoll模型初始化BossEventLoopGroup和WorkerEventLoopGroup这两个事件循环组，线程数分别默认1个和3个线程，线程名分别以NettyEPOLLBoss_和NettyServerEPOLLSelector_为前缀这两个线程组对于熟悉Netty的同学应该不陌生了，boss用于处理连接事件，worker用于处理读写事件；</p>
+<p><strong>1、</strong> 如果是linux内核，并且指定开启epoll，并且系统支持epoll，才会使用EpollEventLoopGroup类型，否则使用NioEventLoopGroup类型；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="title function_">NettyRemotingServer</span><span class="params">(<span class="keyword">final</span> NettyServerConfig nettyServerConfig,</span></span><br><span class="line"><span class="params">    <span class="keyword">final</span> ChannelEventListener channelEventListener)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//设置服务器单向、异步发送信号量</span></span><br><span class="line">    <span class="built_in">super</span>(nettyServerConfig.getServerOnewaySemaphoreValue(), nettyServerConfig.getServerAsyncSemaphoreValue());</span><br><span class="line">    <span class="comment">//创建Netty服务端启动类，引导启动服务端</span></span><br><span class="line">    <span class="built_in">this</span>.serverBootstrap = <span class="keyword">new</span> <span class="title class_">ServerBootstrap</span>();</span><br><span class="line">    <span class="built_in">this</span>.nettyServerConfig = nettyServerConfig;</span><br><span class="line">    <span class="built_in">this</span>.channelEventListener = channelEventListener;</span><br><span class="line">    <span class="comment">//服务器回调执行线程数量，默认设置为4</span></span><br><span class="line">    <span class="type">int</span> <span class="variable">publicThreadNums</span> <span class="operator">=</span> nettyServerConfig.getServerCallbackExecutorThreads();</span><br><span class="line">    <span class="keyword">if</span> (publicThreadNums &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        publicThreadNums = <span class="number">4</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//创建一个公共线程池，负责处理某些请求业务，例如发送异步消息回调，线程名以NettyServerPublicExecutor_为前缀</span></span><br><span class="line">    <span class="built_in">this</span>.publicExecutor = Executors.newFixedThreadPool(publicThreadNums, <span class="keyword">new</span> <span class="title class_">ThreadFactory</span>() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">private</span> <span class="type">AtomicInteger</span> <span class="variable">threadIndex</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">AtomicInteger</span>(<span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="keyword">public</span> Thread <span class="title function_">newThread</span><span class="params">(Runnable r)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">Thread</span>(r, <span class="string">&quot;NettyServerPublicExecutor_&quot;</span> + <span class="built_in">this</span>.threadIndex.incrementAndGet());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 是否使用epoll模型，并且初始化Boss EventLoopGroup和Worker EventLoopGroup这两个事件循环组</span></span><br><span class="line"><span class="comment">     * 如果是linux内核，并且指定开启epoll，并且系统支持epoll，才会使用EpollEventLoopGroup，否则使用NioEventLoopGroup</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">if</span> (useEpoll()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">/*采用了epoll*/</span></span><br><span class="line">        <span class="built_in">this</span>.eventLoopGroupBoss = <span class="keyword">new</span> <span class="title class_">EpollEventLoopGroup</span>(<span class="number">1</span>, <span class="keyword">new</span> <span class="title class_">ThreadFactory</span>() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="keyword">private</span> <span class="type">AtomicInteger</span> <span class="variable">threadIndex</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">AtomicInteger</span>(<span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> Thread <span class="title function_">newThread</span><span class="params">(Runnable r)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">Thread</span>(r, String.format(<span class="string">&quot;NettyEPOLLBoss_%d&quot;</span>, <span class="built_in">this</span>.threadIndex.incrementAndGet()));</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line">        <span class="built_in">this</span>.eventLoopGroupSelector = <span class="keyword">new</span> <span class="title class_">EpollEventLoopGroup</span>(nettyServerConfig.getServerSelectorThreads(), <span class="keyword">new</span> <span class="title class_">ThreadFactory</span>() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="keyword">private</span> <span class="type">AtomicInteger</span> <span class="variable">threadIndex</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">AtomicInteger</span>(<span class="number">0</span>);</span><br><span class="line">            <span class="keyword">private</span> <span class="type">int</span> <span class="variable">threadTotal</span> <span class="operator">=</span> nettyServerConfig.getServerSelectorThreads();</span><br><span class="line"></span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> Thread <span class="title function_">newThread</span><span class="params">(Runnable r)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">Thread</span>(r, String.format(<span class="string">&quot;NettyServerEPOLLSelector_%d_%d&quot;</span>, threadTotal, <span class="built_in">this</span>.threadIndex.incrementAndGet()));</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">/*未采用epoll*/</span></span><br><span class="line">        <span class="comment">//Boss EventLoopGroup 默认1个线程，线程名以NettyNIOBoss_为前缀</span></span><br><span class="line">        <span class="built_in">this</span>.eventLoopGroupBoss = <span class="keyword">new</span> <span class="title class_">NioEventLoopGroup</span>(<span class="number">1</span>, <span class="keyword">new</span> <span class="title class_">ThreadFactory</span>() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="keyword">private</span> <span class="type">AtomicInteger</span> <span class="variable">threadIndex</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">AtomicInteger</span>(<span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> Thread <span class="title function_">newThread</span><span class="params">(Runnable r)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">Thread</span>(r, String.format(<span class="string">&quot;NettyNIOBoss_%d&quot;</span>, <span class="built_in">this</span>.threadIndex.incrementAndGet()));</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">        <span class="comment">//Worker EventLoopGroup 默认3个线程，线程名以NettyServerNIOSelector_为前缀</span></span><br><span class="line">        <span class="built_in">this</span>.eventLoopGroupSelector = <span class="keyword">new</span> <span class="title class_">NioEventLoopGroup</span>(nettyServerConfig.getServerSelectorThreads(), <span class="keyword">new</span> <span class="title class_">ThreadFactory</span>() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="keyword">private</span> <span class="type">AtomicInteger</span> <span class="variable">threadIndex</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">AtomicInteger</span>(<span class="number">0</span>);</span><br><span class="line">            <span class="keyword">private</span> <span class="type">int</span> <span class="variable">threadTotal</span> <span class="operator">=</span> nettyServerConfig.getServerSelectorThreads();</span><br><span class="line"></span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> Thread <span class="title function_">newThread</span><span class="params">(Runnable r)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">Thread</span>(r, String.format(<span class="string">&quot;NettyServerNIOSelector_%d_%d&quot;</span>, threadTotal, <span class="built_in">this</span>.threadIndex.incrementAndGet()));</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//加载ssl信息</span></span><br><span class="line">    loadSslContext();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="3-1-2-registerProcessor注册默认请求处理器"><a href="#3-1-2-registerProcessor注册默认请求处理器" class="headerlink" title="3.1.2 registerProcessor注册默认请求处理器"></a>3.1.2 registerProcessor注册默认请求处理器</h4><p>**该方法将remotingExecutor绑定到DefaultRequestProcessor上，用作默认的请求处理线程池，并且将DefaultRequestProcessor注册到remotingServer中。<br>**</p>
+<ul>
+<li>*当有请求到来时，首先根据请求的业务code，获取对应的RequestProcessor进行处理，如果该Code没有注册的RequestProcessor，则采用DefaultRequestProcessor处理（逻辑位于NettyRemotingAbstract#processRequestCommand方法中）。<br>**</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">registerProcessor</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="keyword">if</span> (namesrvConfig.isClusterTest()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line"></span><br><span class="line">        <span class="built_in">this</span>.remotingServer.registerDefaultProcessor(<span class="keyword">new</span> <span class="title class_">ClusterTestRequestProcessor</span>(<span class="built_in">this</span>, namesrvConfig.getProductEnvName()),</span><br><span class="line">            <span class="built_in">this</span>.remotingExecutor);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//将remotingExecutor绑定到DefaultRequestProcessor上，用作默认的请求处理线程池</span></span><br><span class="line">        <span class="comment">//将DefaultRequestProcessor绑定到remotingServer的defaultRequestProcessor属性上</span></span><br><span class="line">        <span class="built_in">this</span>.remotingServer.registerDefaultProcessor(<span class="keyword">new</span> <span class="title class_">DefaultRequestProcessor</span>(<span class="built_in">this</span>), <span class="built_in">this</span>.remotingExecutor);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>设置为NettyRemotingServer的defaultRequestProcessor属性：</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">registerDefaultProcessor</span><span class="params">(NettyRequestProcessor processor, ExecutorService executor)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//defaultRequestProcessor属性</span></span><br><span class="line">    <span class="built_in">this</span>.defaultRequestProcessor = <span class="keyword">new</span> <span class="title class_">Pair</span>&lt;NettyRequestProcessor, ExecutorService&gt;(processor, executor);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="3-1-3-启动定时任务"><a href="#3-1-3-启动定时任务" class="headerlink" title="3.1.3 启动定时任务"></a>3.1.3 启动定时任务</h4><p><strong>在创建了remotingServer并且注册了默认请求处理器之后，将会创建两个定时任务：</strong></p>
+<p><strong>1、</strong> 其中一个首次启动延迟5秒执行，此后每隔10秒执行一次扫描无效的Broker，并清除Broker相关路由信息的任务；<br><strong>2、</strong> 另一个首次启动延迟1分钟执行，此后每隔10分钟执行一次打印kvConfig配置信息的任务；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * 5 启动一个定时任务</span></span><br><span class="line"><span class="comment"> * 首次启动延迟5秒执行，此后每隔10秒执行一次扫描无效的Broker，并清除Broker相关路由信息的任务</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="built_in">this</span>.scheduledExecutorService.scheduleAtFixedRate(<span class="keyword">new</span> <span class="title class_">Runnable</span>() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//扫描notActive的broker</span></span><br><span class="line">        NamesrvController.<span class="built_in">this</span>.routeInfoManager.scanNotActiveBroker();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;, <span class="number">5</span>, <span class="number">10</span>, TimeUnit.SECONDS);</span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * 6 启动一个定时任务</span></span><br><span class="line"><span class="comment"> * 首次启动延迟1分钟执行，此后每隔10分钟执行一次打印kv配置信息的任务</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="built_in">this</span>.scheduledExecutorService.scheduleAtFixedRate(<span class="keyword">new</span> <span class="title class_">Runnable</span>() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//打印kv配置信息</span></span><br><span class="line">        NamesrvController.<span class="built_in">this</span>.kvConfigManager.printAllPeriodically();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;, <span class="number">1</span>, <span class="number">10</span>, TimeUnit.MINUTES);</span><br></pre></td></tr></table></figure>
+
+<p>我们主要关注第一个定时任务，它是非常重要的！但是现在我们不会分析具体的源码，后面会专门的分析。</p>
+<h3 id="3-2-注册销毁钩子函数"><a href="#3-2-注册销毁钩子函数" class="headerlink" title="3.2 注册销毁钩子函数"></a>3.2 注册销毁钩子函数</h3><p>**initialize方法执行完毕之后，对JVM添加关闭钩子方法，在NameServer的JVM关闭之前执行，关闭NameServerController中线程池，NettyServer进行关闭进行一些内存清理、对象销毁等操作。<br>**</p>
+<p><strong>内部主要是调用controller的shutdown方法：</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">shutdown</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//关闭nettyserver</span></span><br><span class="line">    <span class="built_in">this</span>.remotingServer.shutdown();</span><br><span class="line">    <span class="comment">//关闭线程池</span></span><br><span class="line">    <span class="built_in">this</span>.remotingExecutor.shutdown();</span><br><span class="line">    <span class="comment">//关闭定时任务</span></span><br><span class="line">    <span class="built_in">this</span>.scheduledExecutorService.shutdown();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">this</span>.fileWatchService != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="built_in">this</span>.fileWatchService.shutdown();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-3-start启动NettyServer"><a href="#3-3-start启动NettyServer" class="headerlink" title="3.3 start启动NettyServer"></a>3.3 start启动NettyServer</h3><p><strong>在初始化NettyServer完毕并且注册了钩子函数之后，将会启动NettyServer。</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * NamesrvController的方法</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">start</span><span class="params">()</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//调用remotingServer的启动方法</span></span><br><span class="line">    <span class="built_in">this</span>.remotingServer.start();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">this</span>.fileWatchService != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//监听tts相关文件是否发生变化</span></span><br><span class="line">        <span class="built_in">this</span>.fileWatchService.start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>*内部会调用remotingServer（NettyRemotingServer）的start方法，该方法才是核心方法，将会启动一个Netty服务端。实际上NettyRemotingServer类属于remoting远程通信模块，因此它是NameServer和Broker共用的进入网络通信类。<br>**</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">start</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 1 创建默认事件处理器组，线程数默认8个线程，线程名以NettyServerCodecThread_为前缀。</span></span><br><span class="line"><span class="comment">     * 主要用于执行在真正执行业务逻辑之前需要进行的SSL验证、编解码、空闲检查、网络连接管理等操作</span></span><br><span class="line"><span class="comment">     * 其工作时间位于IO线程组之后，process线程组之前</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="built_in">this</span>.defaultEventExecutorGroup = <span class="keyword">new</span> <span class="title class_">DefaultEventExecutorGroup</span>(</span><br><span class="line">            nettyServerConfig.getServerWorkerThreads(),</span><br><span class="line">            <span class="keyword">new</span> <span class="title class_">ThreadFactory</span>() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line"></span><br><span class="line">                <span class="keyword">private</span> <span class="type">AtomicInteger</span> <span class="variable">threadIndex</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">AtomicInteger</span>(<span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="keyword">public</span> Thread <span class="title function_">newThread</span><span class="params">(Runnable r)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">Thread</span>(r, <span class="string">&quot;NettyServerCodecThread_&quot;</span> + <span class="built_in">this</span>.threadIndex.incrementAndGet());</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 2 准备一些共享handler</span></span><br><span class="line"><span class="comment">     * 包括handshakeHandler、encoder、connectionManageHandler、serverHandler</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    prepareSharableHandlers();</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 3 配置NettyServer的启动参数</span></span><br><span class="line"><span class="comment">     * 包括handshakeHandler、encoder、connectionManageHandler、serverHandler</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="type">ServerBootstrap</span> <span class="variable">childHandler</span> <span class="operator">=</span></span><br><span class="line">            <span class="comment">//配置bossGroup为此前创建的eventLoopGroupBoss，默认1个线程，用于处理连接时间</span></span><br><span class="line">            <span class="comment">//配置workerGroup为此前创建的eventLoopGroupSelector，默认三个线程，用于处理IO事件</span></span><br><span class="line">            <span class="built_in">this</span>.serverBootstrap.group(<span class="built_in">this</span>.eventLoopGroupBoss, <span class="built_in">this</span>.eventLoopGroupSelector)</span><br><span class="line">                    <span class="comment">//IO模型</span></span><br><span class="line">                    .channel(useEpoll() ? EpollServerSocketChannel.class : NioServerSocketChannel.class)</span><br><span class="line">                    <span class="comment">/*设置通道的选项参数， 对于服务端而言就是ServerSocketChannel， 客户端而言就是SocketChannel*/</span></span><br><span class="line">                    <span class="comment">/*option主要是针对boss线程组，child主要是针对worker线程组*/</span></span><br><span class="line">                    <span class="comment">//对应的是tcp/ip协议listen函数中的backlog参数</span></span><br><span class="line">                    .option(ChannelOption.SO_BACKLOG, nettyServerConfig.getServerSocketBacklog())</span><br><span class="line">                    <span class="comment">//对应于套接字选项中的SO_REUSEADDR，这个参数表示允许重复使用本地地址和端口</span></span><br><span class="line">                    .option(ChannelOption.SO_REUSEADDR, <span class="literal">true</span>)</span><br><span class="line">                    <span class="comment">//对应于套接字选项中的SO_KEEPALIVE，该参数用于设置TCP连接，当设置该选项以后，连接会测试链接的状态</span></span><br><span class="line">                    .option(ChannelOption.SO_KEEPALIVE, <span class="literal">false</span>)</span><br><span class="line">                    <span class="comment">//对应于套接字选项中的TCP_NODELAY，该参数的使用与Nagle算法有关</span></span><br><span class="line">                    .childOption(ChannelOption.TCP_NODELAY, <span class="literal">true</span>)</span><br><span class="line">                    <span class="comment">//配置本地地址，监听端口为此前设置的9876</span></span><br><span class="line">                    .localAddress(<span class="keyword">new</span> <span class="title class_">InetSocketAddress</span>(<span class="built_in">this</span>.nettyServerConfig.getListenPort()))</span><br><span class="line">                    <span class="comment">/*设置用于为 Channel 的请求提供服务的 ChannelHandler*/</span></span><br><span class="line">                    .childHandler(<span class="keyword">new</span> <span class="title class_">ChannelInitializer</span>&lt;SocketChannel&gt;() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        <span class="meta">@Override</span></span><br><span class="line">                        <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">initChannel</span><span class="params">(SocketChannel ch)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                            <span class="comment">//ChannelPipeline一个ChannelHandler的链表，Netty处理请求基于责任链默认</span></span><br><span class="line">                            <span class="comment">//里面的ChannelHandler就是用于处理请求的</span></span><br><span class="line">                            ch.pipeline()</span><br><span class="line">                                    <span class="comment">//处理TSL协议握手的Handler</span></span><br><span class="line">                                    .addLast(defaultEventExecutorGroup, HANDSHAKE_HANDLER_NAME, handshakeHandler)</span><br><span class="line">                                    <span class="comment">//为defaultEventExecutorGroup，添加handler</span></span><br><span class="line">                                    .addLast(defaultEventExecutorGroup,</span><br><span class="line">                                            <span class="comment">//RocketMQ自定义的请求解码器</span></span><br><span class="line">                                            encoder,</span><br><span class="line">                                            <span class="comment">//RocketMQ自定义的请求编码器</span></span><br><span class="line">                                            <span class="keyword">new</span> <span class="title class_">NettyDecoder</span>(),</span><br><span class="line">                                            <span class="comment">//Netty自带的心跳管理器，主要是用来检测远端是否存活</span></span><br><span class="line">                                            <span class="comment">//即测试端一定时间内未接受到被测试端消息和一定时间内向被测试端发送消息的超时时间为120秒</span></span><br><span class="line">                                            <span class="keyword">new</span> <span class="title class_">IdleStateHandler</span>(<span class="number">0</span>, <span class="number">0</span>, nettyServerConfig.getServerChannelMaxIdleTimeSeconds()),</span><br><span class="line">                                            <span class="comment">//连接管理器，他负责连接的激活、断开、超时、异常等事件</span></span><br><span class="line">                                            connectionManageHandler,</span><br><span class="line">                                            <span class="comment">//服务请求处理器，处理RemotingCommand消息，即请求和响应的业务处理，并且返回相应的处理结果。这是重点</span></span><br><span class="line">                                            <span class="comment">//例如broker注册、producer/consumer获取Broker、Topic信息等请求都是该处理器处理</span></span><br><span class="line">                                            <span class="comment">//serverHandler最终会将请求根据不同的消息类型code分发到不同的process线程池处理</span></span><br><span class="line">                                            serverHandler</span><br><span class="line">                                    );</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;);</span><br><span class="line">    <span class="comment">//对应于套接字选项中的SO_SNDBUF，接收缓冲区，默认是65535</span></span><br><span class="line">    <span class="keyword">if</span> (nettyServerConfig.getServerSocketSndBufSize() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        log.info(<span class="string">&quot;server set SO_SNDBUF to &#123;&#125;&quot;</span>, nettyServerConfig.getServerSocketSndBufSize());</span><br><span class="line">        childHandler.childOption(ChannelOption.SO_SNDBUF, nettyServerConfig.getServerSocketSndBufSize());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//对应于套接字选项中的SO_SNDBUF，发送缓冲区，默认是65535</span></span><br><span class="line">    <span class="keyword">if</span> (nettyServerConfig.getServerSocketRcvBufSize() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        log.info(<span class="string">&quot;server set SO_RCVBUF to &#123;&#125;&quot;</span>, nettyServerConfig.getServerSocketRcvBufSize());</span><br><span class="line">        childHandler.childOption(ChannelOption.SO_RCVBUF, nettyServerConfig.getServerSocketRcvBufSize());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//用于设置写缓冲区的低水位线和高水位线。</span></span><br><span class="line">    <span class="keyword">if</span> (nettyServerConfig.getWriteBufferLowWaterMark() &gt; <span class="number">0</span> &amp;&amp; nettyServerConfig.getWriteBufferHighWaterMark() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        log.info(<span class="string">&quot;server set netty WRITE_BUFFER_WATER_MARK to &#123;&#125;,&#123;&#125;&quot;</span>,</span><br><span class="line">                nettyServerConfig.getWriteBufferLowWaterMark(), nettyServerConfig.getWriteBufferHighWaterMark());</span><br><span class="line">        childHandler.childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, <span class="keyword">new</span> <span class="title class_">WriteBufferWaterMark</span>(</span><br><span class="line">                nettyServerConfig.getWriteBufferLowWaterMark(), nettyServerConfig.getWriteBufferHighWaterMark()));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//分配缓冲区</span></span><br><span class="line">    <span class="keyword">if</span> (nettyServerConfig.isServerPooledByteBufAllocatorEnable()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        childHandler.childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 启动Netty服务</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="type">ChannelFuture</span> <span class="variable">sync</span> <span class="operator">=</span> <span class="built_in">this</span>.serverBootstrap.bind().sync();</span><br><span class="line">        <span class="type">InetSocketAddress</span> <span class="variable">addr</span> <span class="operator">=</span> (InetSocketAddress) sync.channel().localAddress();</span><br><span class="line">        <span class="comment">//设置端口号，默认9876</span></span><br><span class="line">        <span class="built_in">this</span>.port = addr.getPort();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (InterruptedException e1) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(<span class="string">&quot;this.serverBootstrap.bind().sync() InterruptedException&quot;</span>, e1);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//如果channelEventListener不为null，那么启动netty事件执行器</span></span><br><span class="line">    <span class="comment">//这里的listener就是之前初始化的BrokerHousekeepingService</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">this</span>.channelEventListener != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="built_in">this</span>.nettyEventExecutor.start();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 启动定时任务，初始启动3秒后执行，此后每隔1秒执行一次</span></span><br><span class="line"><span class="comment">     * 扫描responseTable，将超时的ResponseFuture直接移除，并且执行这些超时ResponseFuture的回调</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="built_in">this</span>.timer.scheduleAtFixedRate(<span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                NettyRemotingServer.<span class="built_in">this</span>.scanResponseTable();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                log.error(<span class="string">&quot;scanResponseTable exception&quot;</span>, e);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;, <span class="number">1000</span> * <span class="number">3</span>, <span class="number">1000</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Rocketmq的远程通信是基于<strong>Netty</strong>的，从上面的start方法中可以明显的看出来典型的netty服务的启动流程，通过serverBootstrap的一系列方法帮助设置启动配置，包括配置<br><strong>parentGroup</strong>和childGroup，配置IO模型，配置连接属性，配置服务端口固定为<strong>9876</strong><br>，配置用于执行在真正执行业务逻辑之前需要进行的SSL验证、编解码、空闲检查、网络连接管理等操作的<strong>defaultEventExecutorGroup</strong><br>，配置真正处理请求的<strong>serverHandler</strong>等等。</p>
+<p>我们主要看上面几个handler。如果Channel是出现了连接&#x2F;读&#x2F;写等事件，是会在Pipeline的ChannelHandler之间流转，当然这是Netty架构的特性，我们不做过多讲述，所以说要想看懂这些框架的底层源码，我们最好能够明白Netty的主要源码和流程，因为很多的框架的通信都是基于Netty这个框架的。</p>
+<p><strong>上面设置的Handler包括：</strong></p>
+<p><strong>1、</strong> handshakeHandler：这是用来处理TSL协议握手的Handler，无需过多关注；<br><strong>2、</strong> NettyEncoder和NettyDecoder：这是RocketMQ自定义的请求解码和编码器，处理报文的编解码操作负责网络传输数据和RemotingCommand之间的编解码；<br><strong>3、</strong> IdleStateHandler：这是Netty自带的心跳管理器，主要是用来检测远端是否存活默认情况下，测试端一定时间内未接受到被测试端消息和一定时间内向被测试端发送消息的超时时间为120秒心跳检测就是在这里；<br><strong>4、</strong> connectionManageHandler：处理连接事件的handler，负责连接的激活、断开、超时、异常等事件；<br><strong>5、</strong> serverHandler：处理读写事件的handler，简单的说真正处理业务请求的，这是重点，后面会在专门学习通信的时候解析；</p>
+<p>最后，通过<strong>serverBootstrap#sync</strong>方法启动netty服务端的，方法执行完毕后，NameServer启动完毕，此时NameServer就可以对外提供远程通信服务了，然后就可以启动Broker服务了。</p>
+<p>start方法的最后，还启动了一个定时任务<strong>scanResponseTable</strong>。这里主要是<strong>用于处理通信时的异常情况</strong><br>。RocketMQ会将请求结果封装为一个ResponseFuture并且存入responseTable中。那么在发送消息时候，如果遇到服务端没有response返回给客户端或者response因网络而丢失等异常情况。此时可能造成responseTable中的ResponseFuture累积，因此该任务会每隔一秒扫描一次responseTable，将超时的ResponseFuture直接移除，并且执行这些超时ResponseFuture的回调。具体的源码和逻辑，我们同样会在RocketMQ的请求和相应部分解析。</p>
+<h2 id="4-RocaktMQ的RPC通信模型设计初探"><a href="#4-RocaktMQ的RPC通信模型设计初探" class="headerlink" title="4 RocaktMQ的RPC通信模型设计初探"></a>4 RocaktMQ的RPC通信模型设计初探</h2><p>**从上面的源码也能大概看出来NettyRemotingServer的线程模型，实际上这就是RocaktMQ的RPC通信模型，RPC设计是RocketMQ源码中的精华，其中有非常好的思想可以让我们学习，如何实现高性能的RPC通信。<br>**</p>
+<p>**因为RocketMQ的RPC通信采用Netty组件作为底层通信库，同样也遵循了Reactor多线程模型，同时又在这之上做了一些扩展和优化。RocketMQ中RPC通信的通过1+N+M1+M2的Reactor多线程实现：<br>**</p>
+<p><strong>1、</strong> <strong>1</strong>就是parentGroup，即eventLoopGroupBoss，内部只包含1个线程，线程名以NettyNIOBoss_为前缀负责监听TCP网络连接请求事件，并建立好连接随后将连接交给childGroup；<br><strong>2、</strong> <strong>N</strong>就是childGroup，即eventLoopGroupSelector，内部默认包含3个线程线程名以NettyServerNIOSelector_为前缀用于监听IO读写事件，并负责从网络读取数据；<br><strong>3、</strong> <strong>M1</strong><br>就是defaultEventExecutorGroup，当线程数默认8个线程，线程名以NettyServerCodecThread_为前缀主要用于执行在真正执行业务逻辑之前需要进行的SSL验证、编解码、空闲检查、网络连接管理等操作；<br><strong>4、</strong> <strong>M2</strong><br>是什么呢？我们上面说执行的业务请求的ChannelHandler是serverHandler，这个serverHander的源码如果进入看就会知道，它实际上也是一个分发请求的handler，也就是说serverHandler最终会将请求根据不同的消息类型code分发到不同的process线程池处理具体的源码我们后面会分析不同类型的请求可能会使用不同的process线程池，这就是M2当然我如果某个也i按没有设置线程池，那就会使用默认的process线程池，即前面初始化的defaultRequestProcessor内部的remotingExecutor线程池（默认8个线程）；</p>
+<p>**可以看到，从入口到业务逻辑的几个步骤中线程池一直再增加，这跟每一步逻辑复杂性相关，越复杂，需要的并发通道越宽，这就是RocketMQ的PRC通信设计。<br>**</p>
+<p>下面是官方的描述：<a href="https://github.com/apache/rocketmq/blob/master/docs/cn/design.md#24-reactor%E5%A4%9A%E7%BA%BF%E7%A8%8B%E8%AE%BE%E8%AE%A1">Reactor多线程设计</a>：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202502162021582.png" alt="*"></p>
+<blockquote>
+<p>上面的框图中可以大致了解RocketMQ中NettyRemotingServer的Reactor 多线程模型。一个 Reactor<br>主线程（eventLoopGroupBoss，即为上面的1）负责监听</p>
+</blockquote>
+<p>TCP网络连接请求，建立好连接，创建SocketChannel，并注册到selector上。RocketMQ的源码中会自动根据OS的类型选择NIO和Epoll，也可以通过参数配置）,然后监听真正的网络数据。拿到网络数据后，再丢给Worker线程池（eventLoopGroupSelector，即为上面的“N”，源码中默认设置为3），在真正执行业务逻辑之前需要进行SSL验证、编解码、空闲检查、网络连接管理，这些工作交给defaultEventExecutorGroup（即为上面的“M1”，源码中默认设置为8）去做。而处理业务操作放在业务线程池中执行，根据</p>
+<blockquote>
+<p>RomotingCommand 的业务请求码code去processorTable这个本地缓存变量中找到对应的<br>processor，然后封装成task任务后，提交给对应的业务processor处理线程池来执行（sendMessageExecutor，以发送消息为例，即为上面的<br>“M2”）。从入口到业务逻辑的几个步骤中线程池一直再增加，这跟每一步逻辑复杂性相关，越复杂，需要的并发通道越宽。</p>
+</blockquote>
+<h2 id="5-NameServer启动流程总结"><a href="#5-NameServer启动流程总结" class="headerlink" title="5 NameServer启动流程总结"></a>5 NameServer启动流程总结</h2><p>**通过对NameServer模块启动源码的整体通读，其实我们可以发现NameServer启动的源码和原理还是比较简单的，就是进行一些初始化的配置的读取，然后最重要的是启动一个基于Netty的服务端，端口为9876。<br>**</p>
+<ul>
+<li>*在启动的时候，还会启动一些定时任务，比如printAllPeriodically每一分钟打印kv信息，比如scanResponseTable每一秒钟清除无效ResponseFuture，最重要的就是scanNotActiveBroker这个定时任务，该定时任务每隔10秒执行一次扫描，检测无效的Broker，并清除Broker相关路由信息的任务，用于实现Broker相关数据的更新。<br>**</li>
+</ul>
+<p><strong>后面我们会学习Broker的启动流程源码，它的源码将会更加复杂！NameServer的启动源码仅仅是开胃菜而已！</strong></p>
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1739713327/" target="_blank">02 RocketMQ源码：NameServer启动流程源码解析</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
+                        
+                            <a href="/category/Web/">Web</a>
+                        
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
+                        
+                            <a href="/tag/RocketMq/">RocketMq</a>
+                        
+                    </div>
+                
+                <div class="article-prev-next">
+                    
+                    
+                        <a href="/article/1739713328/" class="next-prefix">» </a> 下一篇：    <a href="/article/1739713328/" title="发布于 2025-02-16 09:42">03、RocketMQ源码分析：Broker启动流程源码解析【一万字】</a>
+                    
+                </div>
+            </div>
+            
+    <div class="article-comments">
+        
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
+    
+</div>
+    <div id="footer"></div>
+    <div id="sidebar">
+    <div class="menu-wrap" style="display:none;">
+        
+            <div class="menu-notice">
+                <span class="iconfont icon-notice"></span>
+                <div class="notice">
+                    <span>简单地活着，肆意而又精彩！</span>
+                </div>
+            </div>
+        
+        <nav class="menu">
+            <div class="menu-introduce"> 
+                <div class="introduce-avatar">
+                    <img src="/image/sidebar/avatar.jpg">
+                </div> 
+                <div class="introduce-info"> 
+                    <div class="introduce-user"><span>Live For Code</span></div>
+                </div> 
+            </div> 
+            <div class="menu-list">
+                <ul>
+                    
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                    
+                        <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
+                    
+                        <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
+                    
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                    
+                        <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
+                    
+                        <li class=""><a href="/about" class="" target="_self"><span class="iconfont icon-about-fill"></span>关于</a></li>
+                    
+                        <li class=""><a href="/atom.xml" class="" target="_blank"><span class="iconfont icon-rss"></span>订阅</a></li>
+                    
+                        <li class=""><a href="javascript:;" class="search" target="_self"><span class="iconfont icon-search-menu"></span>搜索</a></li>
+                    
+                        <li class=""><a href="/comment" class="" target="_self"><span class="iconfont icon-comments-fill"></span>留言板</a></li>
+                    
+                        <li class=""><a href="/friend" class="" target="_self"><span class="iconfont icon-link"></span>友情链接</a></li>
+                    
+                </ul> 
+            </div> 
+            <div class="menu-link">
+                <div class="box">
+                    <div class="image-box"></div>
+                </div>
+                
+                    <a name="知乎" href="https://www.zhihu.com/people/wo-xin-de-love" class="" target="_blank" data=""><span class="iconfont icon-zhihu"></span></a>
+                
+                    <a name="微博" href="https://weibo.com/u/3939432776" class="" target="_blank" data=""><span class="iconfont icon-weibo"></span></a>
+                
+                    <a name="QQ" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"><span class="iconfont icon-qq"></span></a>
+                
+                    <a name="微信" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"><span class="iconfont icon-wechat"></span></a>
+                
+                    <a name="GitHub" href="https://github.com/first19326" class="" target="_blank" data=""><span class="iconfont icon-github"></span></a>
+                
+            </div> 
+        </nav>
+        <button class="menu-button-close"></button>
+        <div class="morph-shape" id="morph-shape" data-morph-open="M-7.312,0H15c0,0,66,113.339,66,399.5C81,664.006,15,800,15,800H-7.312V0z;M-7.312,0H100c0,0,0,113.839,0,400c0,264.506,0,400,0,400H-7.312V0z">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 800" preserveAspectRatio="none">
+                <path d="M-7.312,0H0c0,0,0,113.839,0,400c0,264.506,0,400,0,400h-7.312V0z"/>
+            </svg>
+        </div>
+    </div>
+    <button class="menu-button-open">MENU</button>
+    <div class="menu-cover"></div>
+</div>
+    <link type="text/css" rel="stylesheet" href="/css/search.css">
+<script type="text/javascript" src="/js/iscroll.js"></script>
+<script type="text/javascript" src="/js/instantsearch.min.js"></script>
+<div class="search-window">
+    <div class="search-content">
+        <div class="search-content-icon">
+            <i class="iconfont icon-search"></i>
+        </div>
+        <div id="search-input" class="search-input"></div>
+    </div>
+
+    <div class="search-scroll">
+        <div class="search-result">
+            <div id="search-stats" class="search-stats"></div>
+            <div id="search-hits"></div>
+            <div id="search-pagination" class="search-pagination"></div>
+        </div>
+    </div>
+
+    <span class="search-close-icon">
+        <i class="iconfont icon-close"></i>
+    </span>
+</div>
+    <div id="tools">
+    <div class="progressbar-top"></div>
+
+    
+        <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
+        <script type="text/javascript" src="/js/APlayer.min.js"></script>
+        <script type="text/javascript" src="/js/Meting.min.js"></script>
+        <meting-js id="3778678" lrcshow="false" server="netease" type="playlist" fixed="true" autoplay="false" loop="all" order="random" preload="auto" volume="0.67" mutex="true"></meting-js>
+    
+    
+    <div class="wrap-right">
+        <div class="setting">
+            <div class="iconbox favorites" switch="false">
+                <span class="iconfont icon-favorites"></span>
+                <span class="icontext">关注</span>
+            </div>
+            <div class="iconbox mode">
+                <div class="light">
+                    <span class="iconfont icon-daymode"></span>
+                    <span class="icontext">浅色模式</span>
+                </div>
+                <div class="dark">
+                    <span class="iconfont icon-nightmode-fill"></span>
+                    <span class="icontext">深色模式</span>
+                </div>
+            </div>
+            <a href="javascript:;" target="_self" class="search">
+                <div class="iconbox">
+                    <span class="iconfont icon-search-menu"></span>
+                    <span class="icontext">搜索</span>
+                </div>
+            </a>
+            <div class="iconbox bottom">
+                <div style="display: inline-block; transform: rotate(180deg);">
+                    <span class="iconfont icon-top"></span>
+                </div>
+                <span class="icontext">跳至底部</span>
+            </div>
+        </div>
+        <div class="iconbox set">
+            <div style="display: inline-block;">
+                <span class="iconfont icon-setting"></span>
+            </div>
+            <span class="icontext">设置</span>
+        </div>
+        <div class="iconbox top">
+            <span class="iconfont icon-top"></span>
+            <span class="icontext">返回顶部</span>
+        </div>
+    </div>
+    <div class="loading"></div>
+</div>
+    <script>
+    window.config = {
+        GitHubUserName     : "first19326",
+        GitHubRepositories : "Hexo-LiveForCode",
+
+        User             : "Live For Code",
+        UserAvatar       : "/image/sidebar/avatar.jpg",
+        WebsiteStartDate : "2020-01-01",
+
+        WebsiteTitleBlur         : "(◍´꒳`◍) Hi, Live For Code",
+        WebsiteTitleBlurTimeOut  : 500,
+        WebsiteTitleFocus        : "(*´∇｀*) 欢迎回来!",
+        WebsiteTitleFocusTimeOut : 1000,
+        WebsiteFavicon           : "/image/website/logo.png",
+
+        ProgressBar : {
+            id       : "topProgressBar",
+            color    : "#77B6FF",
+            height   : "2px",
+            duration : 0.2
+        },
+
+        Loading: {
+            rebound : {
+                tension  : 16,
+                friction : 5
+            },
+            spinner : {
+                id     : "spinner",
+                radius : 90,
+                sides  : 3,
+                depth  : 4,
+                colors : {
+                    background : "#F0F0F0",
+                    stroke     : "#272633",
+                    base       : "",
+                    child      : "#272633"
+                },
+                alwaysForward : true,
+                restAt        : 0.5,
+                renderBase    : false
+            }
+        },
+
+        HomeHeaderAnimationRendered : true,
+        HomeHeaderAnimation         : {
+            radius      : 15,
+            density     : 0.2,
+            color       : "rgba(255, 255, 255, .2)",
+            clearOffset : 0.3
+        },
+
+        BackAnimationRendered          : true,
+        IEBrowserBackAnimationRendered : false,
+        BackAnimation                  : {
+            colorSaturation  : "60%",
+            colorBrightness  : "50%",
+            colorAlpha       : 0.5,
+            colorCycleSpeed  : 5,
+            verticalPosition : "random",
+            horizontalSpeed  : 200,
+            ribbonCount      : 3,
+            strokeSize       : 0,
+            parallaxAmount   : -0.2,
+            animateSections  : true
+        },
+
+        HomeHeaderImage : [
+            
+                "/image/header/home.jpg",
+            
+                "/image/header/home.jpeg",
+            
+                "/image/header/2023-04-17-20-51-03.jpg",
+            
+                "/image/header/2023-04-17-20-54-07.jpg",
+            
+                "/image/header/2023-04-17-20-54-22.jpg",
+            
+                "/image/header/2023-04-17-20-55-25.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+        HomeBannerText  : "",
+
+        ArticleHeaderImage : [
+            
+                "/image/header/article.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+
+        OtherBannerText : "",
+
+        Error : {
+            icon    : "icon-swimming",
+            title   : "PAGE NOT FOUND",
+            content : [
+                
+                    "很抱歉，您访问的页面不存在！",
+                
+                    "可能是输入地址有误或该地址已变更。",
+                
+            ],
+            buttons : [
+                
+                    {
+                        icon  : "icon-home",
+                        text  : "返回首页",
+                        href  : "https://fadeway32.gitee.io/",
+                        class : ""
+                    },
+                
+            ]
+        },
+
+        MenuNotice : {
+            enable : true,
+            notice : "简单地活着，肆意而又精彩！",
+            speed  : 20
+        },
+        MenuList : [
+            
+                {
+                    name   : "首页",
+                    icon   : "icon-home-fill",
+                    href   : "/",
+                    type   : "index",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "分类",
+                    icon   : "icon-folder-fill",
+                    href   : "/category",
+                    type   : "category",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "标签",
+                    icon   : "icon-discount-fill",
+                    href   : "/tag",
+                    type   : "tag",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "归档",
+                    icon   : "icon-calendar-fill",
+                    href   : "/archive",
+                    type   : "archive",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "赞赏",
+                    icon   : "icon-heart-fill",
+                    href   : "/donate",
+                    type   : "donate",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "关于",
+                    icon   : "icon-about-fill",
+                    href   : "/about",
+                    type   : "about",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "订阅",
+                    icon   : "icon-rss",
+                    href   : "/atom.xml",
+                    type   : "",
+                    class  : "",
+                    target : "_blank"
+                },
+            
+                {
+                    name   : "搜索",
+                    icon   : "icon-search-menu",
+                    href   : "javascript:;",
+                    type   : "",
+                    class  : "search",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "留言板",
+                    icon   : "icon-comments-fill",
+                    href   : "/comment",
+                    type   : "comment",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "友情链接",
+                    icon   : "icon-link",
+                    href   : "/friend",
+                    type   : "friend",
+                    class  : "",
+                    target : "_self"
+                },
+            
+        ],
+        MenuLink : [
+            
+                
+                    {
+                        name   : "知乎",
+                        icon   : "icon-zhihu",
+                        href   : "https://www.zhihu.com/people/wo-xin-de-love",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "微博",
+                        icon   : "icon-weibo",
+                        href   : "https://weibo.com/u/3939432776",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "QQ",
+                        icon   : "icon-qq",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"
+                    },
+                
+                    {
+                        name   : "微信",
+                        icon   : "icon-wechat",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"
+                    },
+                
+                    {
+                        name   : "GitHub",
+                        icon   : "icon-github",
+                        href   : "https://github.com/first19326",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+            
+        ],
+
+        FooterStyle : 2,
+        BottomText  : "<div><span class='face'>ღゝ◡╹)ノ♡</span></div><div>【人生若只如初见<span><i class='iconfont icon-like-fill'></i></span>何事秋风悲画扇】</div><div>&copy; 2020-2022 WorstOne. All Rights Reserved.</div>",
+
+        ConsoleList : [
+            
+                
+                    [
+                        
+                            
+                                "Based on cnblogs theme SimpleMemory.",
+                            
+                                "",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "SimpleMemory Author:",
+                            
+                                "BNDong",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "Theme:",
+                            
+                                "LiveForCode",
+                            
+                        
+                    ],
+                
+            
+        ],
+
+        FontIconExtend : "",
+
+        Donate : {
+            paypal  : "",
+            bitcoin : "",
+            alipay  : "/image/donate/alipay.png",
+            wechat  : "/image/donate/wechat.png"
+        },
+
+        Search : {
+            applicationID : "758UIQ1V0H",
+            apiKey        : "2e038c318ac6813e4b4baa91f6ccfa63",
+            indexName     : "hexo2",
+            hits          : {
+                page : 30
+            },
+            labels        : {
+                placeholder : "搜索",
+                empty       : "未发现与 「${query}」 相关的内容",
+                stats       : "${hits} 条相关条目，使用了 ${time} 毫秒",
+            }
+        }, 
+
+        Valine : {
+            switch         : true,
+            el             : ".comments-content",
+            appId          : "srhKtvWPQTWYKh3qX8G8M7v0-gzGzoHsz",
+            appKey         : "8uVSP1q6UlALVC5igYfIfv2h",
+            serverURLs     : "",
+            placeholder    : "你是我一生只会遇见一次的惊喜...",
+            avatar         : "mm",
+            meta           : "nick,mail,link",
+            requiredFields : "nick,mail",
+            pageSize       : 5,
+            lang           : "zh-cn",
+            visitor        : true,
+            enableQQ       : true
+        },
+
+        Tocbot : {
+            switch                : true,
+            tocSelector           : ".toc",
+            contentSelector       : ".article-body",
+            headingSelector       : "h1, h2, h3, h4, h5",
+            headingsOffset        : 0,
+            scrollSmooth          : true,
+            scrollSmoothOffset    : -5,
+            positionFixedSelector : ".toc",
+            positionFixedClass    : "toc-fixed",
+            fixedSidebarOffset    : "",
+        },
+
+        Require : {
+            baseUrl     : "/js/",
+            waitSeconds : 100
+        },
+
+        Music : {
+            type : "Meting"
+        },
+        APlayer : {
+            container : ".aplayer",
+            fixed     : true,
+            autoplay  : true,
+            loop      : "all",
+            order     : "random",
+            preload   : "auto",
+            volume    : 0.67,
+            mutex     : true,
+            lrcType   : 2,
+            audio     : [
+                
+                    {
+                        name   : "Endless Tears",
+                        artist : "CLIFF EDGE",
+                        cover  : "/music/cover/Endless Tears.jpg",
+                        url    : "/music/song/Endless Tears.mp3",
+                        lrc    : "/music/lrc/Endless Tears.lrc"
+                    },
+                
+            ]
+        },
+        Meting : {
+            id       : "3778678", 
+            lrcshow  : false, 
+            server   : "netease", 
+            type     : "playlist", 
+            fixed    : true, 
+            autoplay : false, 
+            loop     : "all", 
+            order    : "random", 
+            preload  : "auto", 
+            volume   : 0.67, 
+            mutex    : true
+        },
+
+        Mouse : {
+            enable  : true,
+            options : {
+                size  : 6,
+                sizeF : 24
+            }
+        },
+
+        LazyLoad : {
+            default : "/image/website/lazyload.svg"
+        },
+  
+        Style : {
+            aplayer          : "/css/APlayer.css",
+            archive          : "/css/archive.css",
+            base             : "/css/base.css",
+            clipboard        : "/css/clipboard.css",
+            code             : "/css/code.css",
+            donate           : "/css/donate.css",
+            fancybox         : "/css/jquery.fancybox.css",
+            footer           : "/css/footer.css",
+            iconfont         : "/iconfont/iconfont.css",
+            index            : "/css/index.css",
+            menuBubble       : "/css/menu-bubble.css",
+            mouse            : "/css/mouse.css",
+            page             : "/css/page.css",
+            post             : "/css/post.css",
+            search           : "/css/search.css",
+            tocbot           : "/css/tocbot.css",
+            valine           : "/css/valine.css"
+        },
+
+        Script: {
+            aplayer          : "/js/APlayer.min.js",
+            config           : "/js/require.config.js",
+            index            : "/js/index.js",
+            instantSearch    : "/js/instantsearch.min.js",
+            iscroll          : "/js/iscroll.js",
+            jQuery           : "/js/jquery-3.4.1.min.js",
+            loading          : "/js/loading.js",
+            meting           : "/js/Meting.min.js",
+            require          : "/js/require.min.js"
+        },
+
+        Font: {
+            LongCang    : "/font/LongCang.css",
+            Monda       : "/font/Monda.css",
+            NotoSansSC  : "/font/NotoSansSC.css",
+            NotoSerifSC : "/font/NotoSerifSC.css",
+            Playball    : "/font/Playball.css",
+            PTMono      : "/font/PTMono.css",
+            Roboto      : "/font/Roboto.css",
+            RobotoSlab  : "/font/RobotoSlab.css",
+            Rosario     : "/font/Rosario.css",
+            UbuntuMono  : "/font/UbuntuMono.css"
+        },
+
+        Suffix : {
+            about : "你知道的越多,你不知道的越多"
+        },
+            
+        Theme : {
+            url  : "https://fadeway32.gitee.io/",
+            name : "fadeway32"
+        }  
+    };
+</script>
+    <script type="text/javascript" src="/js/index.js"></script>
+</body>
+</html>

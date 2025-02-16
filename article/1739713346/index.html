@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <!--    <meta name="referrer" content="origin">-->
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>
+        
+            21、RocketMQ源码分析：ConsumeMessageConcurrentlyService并发消费消息源码
+        
+    </title>
+    <link rel="shortcut icon" href="#"/>
+
+    <link type="text/css" rel="stylesheet" href="/font/LongCang.css">
+    <link type="text/css" rel="stylesheet" href="/font/Monda.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSansSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSerifSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/Playball.css">
+    <link type="text/css" rel="stylesheet" href="/font/PTMono.css">
+    <link type="text/css" rel="stylesheet" href="/font/Roboto.css">
+    <link type="text/css" rel="stylesheet" href="/font/RobotoSlab.css">
+    <link type="text/css" rel="stylesheet" href="/font/Rosario.css">
+    <link type="text/css" rel="stylesheet" href="/font/UbuntuMono.css">
+
+    <link type="text/css" rel="stylesheet" href="/css/base.css">
+    <link type="text/css" rel="stylesheet" href="/css/code.css">
+
+    <script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
+<meta name="generator" content="Hexo 6.2.0"></head>
+<body>
+    <a id="cover"></a>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
+<header>
+    <meta name="referrer" content="no-referrer">
+</header>
+<div id="header" class="header">
+    <div class="vertical">
+        <div class="inner">
+            
+                <h1 class="header-subtitle">21、RocketMQ源码分析：ConsumeMessageConcurrentlyService并发消费消息源码</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2025-02-16
+                        </span>
+                        
+                            <span id="/article/1739713346/" class="leancloud_visitors" data-flag-title="21、RocketMQ源码分析：ConsumeMessageConcurrentlyService并发消费消息源码">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1739713346/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">RocketMq</span>
+                        
+                    
+                </div>
+            
+        </div>
+    </div>
+    
+</div>
+<div id="container">
+    
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="21、RocketMQ源码分析：ConsumeMessageConcurrentlyService并发消费消息源码"><a href="#21、RocketMQ源码分析：ConsumeMessageConcurrentlyService并发消费消息源码" class="headerlink" title="21、RocketMQ源码分析：ConsumeMessageConcurrentlyService并发消费消息源码"></a>21、RocketMQ源码分析：ConsumeMessageConcurrentlyService并发消费消息源码</h1><p>此前我们学习了consumer消息的拉取流程源码：</p>
+<p>**1、<br>** <a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_43767015/article/details/128563451">RocketMQ源码(18)—DefaultMQPushConsumer消费者发起拉取消息请求源码</a>；<br>**2、<br>** <a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_43767015/article/details/128694893">RocketMQ源码(19)—Broker处理DefaultMQPushConsumer发起的拉取消息请求源码【一万字】</a>；<br>**3、<br>** <a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_43767015/article/details/128783131">RocketMQ源码(20)—DefaultMQPushConsumer处理Broker的拉取消息响应源码</a>；</p>
+<p>当前DefaultMQPushConsumer拉取到消息之后，会将消息提交到对应的processQueue处理队列内部的msgTreeMap中。然后通过consumeMessageService#submitConsumeRequest方法将拉取到的消息构建为ConsumeRequest，然后通过内部的consumeExecutor线程池消费消息。</p>
+<p>consumeMessageService有ConsumeMessageConcurrentlyService并发消费和ConsumeMessageOrderlyService顺序消费两种实现，下面我们来看看这两种实现如何消费消息，本次我们先学习ConsumeMessageConcurrentlyService并发消费的源码。</p>
+<h4 id="文章目录"><a href="#文章目录" class="headerlink" title="文章目录"></a>文章目录</h4><ul>
+<li>1 start启动服务定时清理过期消息</li>
+<li><ul>
+<li>1.1 cleanExpireMsg清理过期消息</li>
+</ul>
+</li>
+<li>1.2cleanExpiredMsg清理过期消息</li>
+<li>2 submitConsumeRequest提交消费请求</li>
+<li><ul>
+<li>2.2 submitConsumeRequestLater延迟提交</li>
+</ul>
+</li>
+<li>2.2 consumeMessageBatchMaxSize和pullBatchSize</li>
+<li>3 ConsumeRequest执行消费任务</li>
+<li><ul>
+<li>3.1 resetRetryAndNamespace重设重试topic</li>
+</ul>
+</li>
+<li>4 processConsumeResult处理消费结果</li>
+<li><ul>
+<li>4.1 removeMessage移除消息</li>
+</ul>
+</li>
+<li>4.2 updateOffset更新offset</li>
+<li><ul>
+<li>4.2.1 compareAndIncreaseOnly仅增加offset</li>
+</ul>
+</li>
+</ul>
+<h2 id="1-start启动服务定时清理过期消息"><a href="#1-start启动服务定时清理过期消息" class="headerlink" title="1 start启动服务定时清理过期消息"></a>1 start启动服务定时清理过期消息</h2><p><strong>consumeMessageService服务在DefaultMQPushConsumerImpl#start方法中被初始化并启动，即调用start方法。</strong></p>
+<ul>
+<li>*ConsumeMessageConcurrentlyService#start方法将会通过cleanExpireMsgExecutors定时任务清理过期的消息，启动后15min开始执行，后每15min执行一次，这里的15min是RocketMQ大的默认超时时间，可通过defaultMQPushConsumer#consumeTimeout属性设置。<br>**</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ConsumeMessageConcurrentlyService的方法</span></span><br><span class="line"><span class="comment"> * 启动服务</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">start</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//通过cleanExpireMsgExecutors定时任务清理过期的消息</span></span><br><span class="line">    <span class="comment">//启动后15min开始执行，后每15min执行一次，这里的15min时RocketMQ大的默认超时时间，可通过defaultMQPushConsumer#consumeTimeout属性设置</span></span><br><span class="line">    <span class="built_in">this</span>.cleanExpireMsgExecutors.scheduleAtFixedRate(<span class="keyword">new</span> <span class="title class_">Runnable</span>() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//清理过期消息</span></span><br><span class="line">                cleanExpireMsg();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                log.error(<span class="string">&quot;scheduleAtFixedRate cleanExpireMsg exception&quot;</span>, e);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;, <span class="built_in">this</span>.defaultMQPushConsumer.getConsumeTimeout(), <span class="built_in">this</span>.defaultMQPushConsumer.getConsumeTimeout(), TimeUnit.MINUTES);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-1-cleanExpireMsg清理过期消息"><a href="#1-1-cleanExpireMsg清理过期消息" class="headerlink" title="1.1 cleanExpireMsg清理过期消息"></a>1.1 cleanExpireMsg清理过期消息</h3><p>该方法获取所有的消息队列和处理队列的键值对，循环遍历并且调用ProcessQueue#cleanExpiredMsg方法清理过期消息。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ConsumeMessageConcurrentlyService的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 清理过期消息</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">cleanExpireMsg</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//获取所有的消息队列和处理队列的键值对</span></span><br><span class="line">    Iterator&lt;Map.Entry&lt;MessageQueue, ProcessQueue&gt;&gt; it =</span><br><span class="line">            <span class="built_in">this</span>.defaultMQPushConsumerImpl.getRebalanceImpl().getProcessQueueTable().entrySet().iterator();</span><br><span class="line">    <span class="comment">//循环遍历</span></span><br><span class="line">    <span class="keyword">while</span> (it.hasNext()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        Map.Entry&lt;MessageQueue, ProcessQueue&gt; next = it.next();</span><br><span class="line">        <span class="type">ProcessQueue</span> <span class="variable">pq</span> <span class="operator">=</span> next.getValue();</span><br><span class="line">        <span class="comment">//调用ProcessQueue#cleanExpiredMsg方法清理过期消息</span></span><br><span class="line">        pq.cleanExpiredMsg(<span class="built_in">this</span>.defaultMQPushConsumer);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-2cleanExpiredMsg清理过期消息"><a href="#1-2cleanExpiredMsg清理过期消息" class="headerlink" title="1.2cleanExpiredMsg清理过期消息"></a>1.2cleanExpiredMsg清理过期消息</h3><p><strong>循环清理msgTreeMap中的过期消息，每次最多循环清理16条消息。</strong></p>
+<p><strong>1、</strong> 每次循环首先获取msgTreeMap中的第一次元素的起始消费时间，msgTreeMap是一个红黑树，第一个节点就是offset最小的节点；<br><strong>2、</strong> 如果消费时间距离现在时间超过默认15min，那么获取这个msg，如果没有被消费，或者消费时间距离现在时间不超过默认15min，则结束循环；<br><strong>3、</strong> 将获取到的消息通过sendMessageBack发回broker延迟topic，将在给定延迟时间（默认从level3，即10s开始）之后发回进行重试消费；<br><strong>4、</strong> 加锁判断如果这个消息还没有被消费完，并且还是在第一位，那么调用removeMessage方法从msgTreeMap中移除消息，进行下一轮判断；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ProcessQueue的方法</span></span><br><span class="line"><span class="comment"> * 清理过期消息</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> pushConsumer 消费者</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">cleanExpiredMsg</span><span class="params">(DefaultMQPushConsumer pushConsumer)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//如果是顺序消费，直接返回，只有并发消费才会清理</span></span><br><span class="line">    <span class="keyword">if</span> (pushConsumer.getDefaultMQPushConsumerImpl().isConsumeOrderly()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//一次循环最多处理16个消息</span></span><br><span class="line">    <span class="type">int</span> <span class="variable">loop</span> <span class="operator">=</span> msgTreeMap.size() &lt; <span class="number">16</span> ? msgTreeMap.size() : <span class="number">16</span>;</span><br><span class="line">    <span class="comment">//遍历消息，最多处理前16个消息</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; loop; i++) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="type">MessageExt</span> <span class="variable">msg</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//加锁</span></span><br><span class="line">            <span class="built_in">this</span>.treeMapLock.readLock().lockInterruptibly();</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="keyword">if</span> (!msgTreeMap.isEmpty()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//获取msgTreeMap中的第一次元素的起始消费时间，msgTreeMap是一个红黑树，第一个节点就是offset最小的节点</span></span><br><span class="line">                    <span class="type">String</span> <span class="variable">consumeStartTimeStamp</span> <span class="operator">=</span> MessageAccessor.getConsumeStartTimeStamp(msgTreeMap.firstEntry().getValue());</span><br><span class="line">                    <span class="comment">//如果消费时间距离现在时间超过默认15min，那么获取这个msg</span></span><br><span class="line">                    <span class="keyword">if</span> (StringUtils.isNotEmpty(consumeStartTimeStamp) &amp;&amp; System.currentTimeMillis() - Long.parseLong(consumeStartTimeStamp) &gt; pushConsumer.getConsumeTimeout() * <span class="number">60</span> * <span class="number">1000</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        msg = msgTreeMap.firstEntry().getValue();</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        <span class="comment">//如果没有被消费，或者消费时间距离现在时间不超过默认15min，则结束循环</span></span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//msgTreeMap为空，结束循环</span></span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="built_in">this</span>.treeMapLock.readLock().unlock();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.error(<span class="string">&quot;getExpiredMsg exception&quot;</span>, e);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//将消息发回broker延迟topic，将在给定延迟时间（默认从level3，即10s开始）之后进行重试消费</span></span><br><span class="line">            pushConsumer.sendMessageBack(msg, <span class="number">3</span>);</span><br><span class="line">            log.info(<span class="string">&quot;send expire msg back. topic=&#123;&#125;, msgId=&#123;&#125;, storeHost=&#123;&#125;, queueId=&#123;&#125;, queueOffset=&#123;&#125;&quot;</span>, msg.getTopic(), msg.getMsgId(), msg.getStoreHost(), msg.getQueueId(), msg.getQueueOffset());</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="built_in">this</span>.treeMapLock.writeLock().lockInterruptibly();</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//如果这个消息还没有被消费完</span></span><br><span class="line">                    <span class="keyword">if</span> (!msgTreeMap.isEmpty() &amp;&amp; msg.getQueueOffset() == msgTreeMap.firstKey()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                            <span class="comment">//移除消息</span></span><br><span class="line">                            removeMessage(Collections.singletonList(msg));</span><br><span class="line">                        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                            log.error(<span class="string">&quot;send expired msg exception&quot;</span>, e);</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="built_in">this</span>.treeMapLock.writeLock().unlock();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                log.error(<span class="string">&quot;getExpiredMsg exception&quot;</span>, e);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.error(<span class="string">&quot;send expired msg exception&quot;</span>, e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-submitConsumeRequest提交消费请求"><a href="#2-submitConsumeRequest提交消费请求" class="headerlink" title="2 submitConsumeRequest提交消费请求"></a>2 submitConsumeRequest提交消费请求</h2><ul>
+<li>*该方法将消息批量的封装为ConsumeRequest提交到ConsumeMessageConcurrentlyService内部的consumeExecutor线程池中进行异步消费，如果提交失败，则调用submitConsumeRequestLater方法延迟5s进行提交，而不是丢弃。<br>**</li>
+</ul>
+<p><strong>1、</strong> 首先获取单次批量消费的数量，<strong>默认1</strong>，通过DefaultMQPushConsumer的consumeMessageBatchMaxSize属性配置；<br><strong>2、</strong> 如果消息数量&lt;&#x3D;单次批量消费的数量，那么直接全量消费，构建一个ConsumeRequest并提交到consumeExecutor线程池；<br>**3、** 如果消息数量&gt;单次批量消费的数量，那么需要分割消息进行分批提交；</p>
+<p>**从该方法可以得知，对于并发消费模式，拉取到的一批消息被分批次提交到线程池之后，就由线程池里面的线程异步的消费，我们知道线程池里面的线程执行先后顺序时不可控制的，因此这些不同批次的消息会被并发、的无序的消费。<br>**</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ConsumeMessageOrderlyService的方法</span></span><br><span class="line"><span class="comment"> * 提交并发消费请求</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> msgs              拉取到的消息</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> processQueue      处理队列</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> messageQueue      消息队列</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> dispatchToConsume 是否分发消费，对于并发消费无影响</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">submitConsumeRequest</span><span class="params">(</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> List&lt;MessageExt&gt; msgs,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> ProcessQueue processQueue,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> MessageQueue messageQueue,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> <span class="type">boolean</span> dispatchToConsume)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//单次批量消费的数量，默认1</span></span><br><span class="line">    <span class="keyword">final</span> <span class="type">int</span> <span class="variable">consumeBatchSize</span> <span class="operator">=</span> <span class="built_in">this</span>.defaultMQPushConsumer.getConsumeMessageBatchMaxSize();</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 如果消息数量 &lt;= 单次批量消费的数量，那么直接全量消费</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">if</span> (msgs.size() &lt;= consumeBatchSize) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//构建消费请求，将消息全部放进去</span></span><br><span class="line">        <span class="type">ConsumeRequest</span> <span class="variable">consumeRequest</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ConsumeRequest</span>(msgs, processQueue, messageQueue);</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//将请求提交到consumeExecutor线程池中进行消费</span></span><br><span class="line">            <span class="built_in">this</span>.consumeExecutor.submit(consumeRequest);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (RejectedExecutionException e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//提交的任务被线程池拒绝，那么延迟5s进行提交，而不是丢弃</span></span><br><span class="line">            <span class="built_in">this</span>.submitConsumeRequestLater(consumeRequest);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 如果消息数量 &gt; 单次批量消费的数量，那么需要分割消息进行分批提交</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//遍历</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">total</span> <span class="operator">=</span> <span class="number">0</span>; total &lt; msgs.size(); ) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//一批消息集合，每批消息最多consumeBatchSize条，默认1</span></span><br><span class="line">            List&lt;MessageExt&gt; msgThis = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;MessageExt&gt;(consumeBatchSize);</span><br><span class="line">            <span class="comment">//将消息按顺序加入集合</span></span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; consumeBatchSize; i++, total++) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="keyword">if</span> (total &lt; msgs.size()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    msgThis.add(msgs.get(total));</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//将本批次消息构建为ConsumeRequest</span></span><br><span class="line">            <span class="type">ConsumeRequest</span> <span class="variable">consumeRequest</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ConsumeRequest</span>(msgThis, processQueue, messageQueue);</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//将请求提交到consumeExecutor线程池中进行消费</span></span><br><span class="line">                <span class="built_in">this</span>.consumeExecutor.submit(consumeRequest);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (RejectedExecutionException e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="keyword">for</span> (; total &lt; msgs.size(); total++) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    msgThis.add(msgs.get(total));</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">//提交的任务被线程池拒绝，那么延迟5s进行提交，而不是丢弃</span></span><br><span class="line">                <span class="built_in">this</span>.submitConsumeRequestLater(consumeRequest);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>consumeExecutor线程池用于消费消息，其定义如下：最小、最大线程数默认20，阻塞队列为无界阻塞队列LinkedBlockingQueue。</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * 并发消费线程池</span></span><br><span class="line"><span class="comment"> * 最小、最大线程数默认20，阻塞队列为无界阻塞队列LinkedBlockingQueue</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="built_in">this</span>.consumeExecutor = <span class="keyword">new</span> <span class="title class_">ThreadPoolExecutor</span>(</span><br><span class="line">        <span class="built_in">this</span>.defaultMQPushConsumer.getConsumeThreadMin(),</span><br><span class="line">        <span class="built_in">this</span>.defaultMQPushConsumer.getConsumeThreadMax(),</span><br><span class="line">        <span class="number">1000</span> * <span class="number">60</span>,</span><br><span class="line">        TimeUnit.MILLISECONDS,</span><br><span class="line">        <span class="built_in">this</span>.consumeRequestQueue,</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">ThreadFactoryImpl</span>(consumeThreadPrefix));</span><br><span class="line"><span class="comment">//单线程的延迟任务线程池，用于延迟提交消费请求</span></span><br><span class="line"><span class="built_in">this</span>.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(<span class="keyword">new</span> <span class="title class_">ThreadFactoryImpl</span>(<span class="string">&quot;ConsumeMessageScheduledThread_&quot;</span>));</span><br><span class="line"><span class="comment">//单线程的延迟任务线程池，用于处理过期的消息</span></span><br><span class="line"><span class="built_in">this</span>.cleanExpireMsgExecutors = Executors.newSingleThreadScheduledExecutor(<span class="keyword">new</span> <span class="title class_">ThreadFactoryImpl</span>(<span class="string">&quot;CleanExpireMsgScheduledThread_&quot;</span>));</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-2-submitConsumeRequestLater延迟提交"><a href="#2-2-submitConsumeRequestLater延迟提交" class="headerlink" title="2.2 submitConsumeRequestLater延迟提交"></a>2.2 submitConsumeRequestLater延迟提交</h3><p><strong>提交的任务被线程池拒绝，那么延迟5s进行提交，而不是丢弃。</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ConsumeMessageConcurrentlyService的方法</span></span><br><span class="line"><span class="comment"> * </span></span><br><span class="line"><span class="comment"> * 提交的任务被线程池拒绝，那么延迟5s进行提交，而不是丢弃</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> consumeRequest 提交请求</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">submitConsumeRequestLater</span><span class="params">(<span class="keyword">final</span> ConsumeRequest consumeRequest</span></span><br><span class="line"><span class="params">)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="built_in">this</span>.scheduledExecutorService.schedule(<span class="keyword">new</span> <span class="title class_">Runnable</span>() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//将提交的行为封装为一个线程任务，提交到scheduledExecutorService延迟线程池，5s之后执行</span></span><br><span class="line">            ConsumeMessageConcurrentlyService.<span class="built_in">this</span>.consumeExecutor.submit(consumeRequest);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;, <span class="number">5000</span>, TimeUnit.MILLISECONDS);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-2-consumeMessageBatchMaxSize和pullBatchSize"><a href="#2-2-consumeMessageBatchMaxSize和pullBatchSize" class="headerlink" title="2.2 consumeMessageBatchMaxSize和pullBatchSize"></a>2.2 consumeMessageBatchMaxSize和pullBatchSize</h3><p>co*<br><em>nsumeMessageBatchMaxSize是什么意思呢？他的字面意思就是单次批量消费的数量，实际上它代表着每次发送给消息监听器MessageListenerOrderly或者MessageListenerConcurrently的consumeMessage方法中的参数List<br>msgs中的最多的消息数量。</em>*</p>
+<ul>
+<li>*consumeMessageBatchMaxSize默认值为1，所以说，无论是并发消费还是顺序消费，每次的consumeMessage方法的执行，msgs集合默认都只有一条消息。同理，如果把它设置为其他值n，无论是并发消费还是顺序消费，每次的consumeMessage的执行，msgs集合默认都最多只有n条消息。<br>**</li>
+</ul>
+<p>**另外，在此前拉取消息的源码中，我们还学习了另一个参数pullBatchSize，默认值为32，其代表的是每一次拉取请求最多批量拉取的消费数量。也就是说无论是并发消费还是顺序消费，每次最多拉取32条消息。<br>**</p>
+<h2 id="3-ConsumeRequest执行消费任务"><a href="#3-ConsumeRequest执行消费任务" class="headerlink" title="3 ConsumeRequest执行消费任务"></a>3 ConsumeRequest执行消费任务</h2><p>ConsumeRequest本身是一个线程任务，当拉取到消息之后，会将一批消息构建为一个ConsumeRequest对象，提交给consumeExecutor，由线程池异步的执行，它的run方法就是并发消费的核心方法。大概逻辑为：</p>
+<p><strong>1、</strong> 如果处理队列被丢弃，即dropped&#x3D;true，那么直接返回，不再消费，例如负载均衡时该队列被分配给了其他新上线的消费者，尽量避免重复消费；<br><strong>2、</strong> 调用resetRetryAndNamespace方法，当消息是重试消息的时候，将msg的topic属性从重试topic还原为真实的topic；</p>
+<ol start="3">
+<li>如果有消费钩子，那么执行钩子函数的前置方法consumeMessageBefore。我们可以通过DefaultMQPushConsumerImpl#registerConsumeMessageHook方法注册消费钩子ConsumeMessageHook，在消费消息的前后调用。</li>
+<li>调用listener#consumeMessage方法，进行消息消费，调用实际的业务逻辑，返回执行状态结果如status为null。</li>
+</ol>
+<p><strong>1、</strong><br>正常情况下可返回两种状态：ConsumeConcurrentlyStatus.CONSUME_SUCCESS表示消费成功，ConsumeConcurrentlyStatus.RECONSUME_LATER表示消费失败，如果中途抛出异常，则status为null；<br><strong>5、</strong> 对返回的执行状态结果进行判断处理从这里可得知消费超时时间为15min，另外如果返回的status为null，那么status将会被设置为RECONSUME_LATER，即消费失败；</p>
+<p><strong>1、</strong> 计算消费时间consumeRT如果status为null，如果业务的执行抛出了异常，设置returnType为EXCEPTION，否则设置returnType为RETURNNULL；<br><strong>2、</strong><br>如消费时间consumeRT大于等于consumeTimeout，默认15min设置returnType为TIME_OUT消费超时时间可通过DefaultMQPushConsumer.consumeTimeout属性配置，默认15，单位分钟；<br><strong>3、</strong> 如status为RECONSUME_LATER，即消费失败，设置returnType为FAILED；<br><strong>4、</strong> 如status为CONSUME_SUCCESS，即消费成功，设置returnType为SUCCESS；<br><strong>6、</strong> 如果有消费钩子，那么执行钩子函数的后置方法consumeMessageAfter；</p>
+<ol start="7">
+<li>如果处理队列没有被丢弃，即dropped&#x3D;false，*<br><em>那么调用ConsumeMessageConcurrentlyService#processConsumeResult方法处理消费结果，包含消费重试、提交offset等操作。</em>*</li>
+</ol>
+<p>需*<br>*要注意的是，如果在执行了listener#consumeMessage方法，即执行了业务逻辑之后，处理消费结果之前，该消息队列被丢弃了，例如负载均衡时该队列被分配给了其他新上线的消费者，那么由于dropped&#x3D;false，导致不会进行最后的消费结果处理，将会导致消息的重复消费，因此必须做好业务层面的幂等性！<br>**</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">ConsumeRequest</span> <span class="keyword">implements</span> <span class="title class_">Runnable</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//一次消费的消息集合，默认1条消息</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> List&lt;MessageExt&gt; msgs;</span><br><span class="line">    <span class="comment">//处理队列</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ProcessQueue processQueue;</span><br><span class="line">    <span class="comment">//消息队列</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> MessageQueue messageQueue;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">ConsumeRequest</span><span class="params">(List&lt;MessageExt&gt; msgs, ProcessQueue processQueue, MessageQueue messageQueue)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="built_in">this</span>.msgs = msgs;</span><br><span class="line">        <span class="built_in">this</span>.processQueue = processQueue;</span><br><span class="line">        <span class="built_in">this</span>.messageQueue = messageQueue;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> List&lt;MessageExt&gt; <span class="title function_">getMsgs</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">return</span> msgs;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> ProcessQueue <span class="title function_">getProcessQueue</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">return</span> processQueue;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * ConsumeMessageConcurrentlyService的内部类ConsumeRequest的方法</span></span><br><span class="line"><span class="comment">     * &lt;p&gt;</span></span><br><span class="line"><span class="comment">     * 执行并发消费</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//如果处理队列被丢弃，那么直接返回，不再消费，例如负载均衡时该队列被分配给了其他新上线的消费者，尽量避免重复消费</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="built_in">this</span>.processQueue.isDropped()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.info(<span class="string">&quot;the message queue not be able to consume, because it&#x27;s dropped. group=&#123;&#125; &#123;&#125;&quot;</span>, ConsumeMessageConcurrentlyService.<span class="built_in">this</span>.consumerGroup, <span class="built_in">this</span>.messageQueue);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 1 获取并发消费的消息监听器，push模式模式下是我们需要开发的，通过registerMessageListener方法注册，内部包含了要执行的业务逻辑</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="type">MessageListenerConcurrently</span> <span class="variable">listener</span> <span class="operator">=</span> ConsumeMessageConcurrentlyService.<span class="built_in">this</span>.messageListener;</span><br><span class="line">        <span class="type">ConsumeConcurrentlyContext</span> <span class="variable">context</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ConsumeConcurrentlyContext</span>(messageQueue);</span><br><span class="line">        <span class="type">ConsumeConcurrentlyStatus</span> <span class="variable">status</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">        <span class="comment">//重置重试topic</span></span><br><span class="line">        defaultMQPushConsumerImpl.resetRetryAndNamespace(msgs, defaultMQPushConsumer.getConsumerGroup());</span><br><span class="line"></span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 2 如果有消费钩子，那么执行钩子函数的前置方法consumeMessageBefore</span></span><br><span class="line"><span class="comment">         * 我们可以注册钩子ConsumeMessageHook，再消费消息的前后调用</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="type">ConsumeMessageContext</span> <span class="variable">consumeMessageContext</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">        <span class="keyword">if</span> (ConsumeMessageConcurrentlyService.<span class="built_in">this</span>.defaultMQPushConsumerImpl.hasHook()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            consumeMessageContext = <span class="keyword">new</span> <span class="title class_">ConsumeMessageContext</span>();</span><br><span class="line">            consumeMessageContext.setNamespace(defaultMQPushConsumer.getNamespace());</span><br><span class="line">            consumeMessageContext.setConsumerGroup(defaultMQPushConsumer.getConsumerGroup());</span><br><span class="line">            consumeMessageContext.setProps(<span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;String, String&gt;());</span><br><span class="line">            consumeMessageContext.setMq(messageQueue);</span><br><span class="line">            consumeMessageContext.setMsgList(msgs);</span><br><span class="line">            consumeMessageContext.setSuccess(<span class="literal">false</span>);</span><br><span class="line">            ConsumeMessageConcurrentlyService.<span class="built_in">this</span>.defaultMQPushConsumerImpl.executeHookBefore(consumeMessageContext);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//起始时间戳</span></span><br><span class="line">        <span class="type">long</span> <span class="variable">beginTimestamp</span> <span class="operator">=</span> System.currentTimeMillis();</span><br><span class="line">        <span class="type">boolean</span> <span class="variable">hasException</span> <span class="operator">=</span> <span class="literal">false</span>;</span><br><span class="line">        <span class="comment">//消费返回类型，初始化为SUCCESS</span></span><br><span class="line">        <span class="type">ConsumeReturnType</span> <span class="variable">returnType</span> <span class="operator">=</span> ConsumeReturnType.SUCCESS;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="keyword">if</span> (msgs != <span class="literal">null</span> &amp;&amp; !msgs.isEmpty()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//循环设置每个消息的起始消费时间</span></span><br><span class="line">                <span class="keyword">for</span> (MessageExt msg : msgs) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    MessageAccessor.setConsumeStartTimeStamp(msg, String.valueOf(System.currentTimeMillis()));</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">/*</span></span><br><span class="line"><span class="comment">             * 3 调用listener#consumeMessage方法，进行消息消费，调用实际的业务逻辑，返回执行状态结果</span></span><br><span class="line"><span class="comment">             * 有两种状态ConsumeConcurrentlyStatus.CONSUME_SUCCESS 和 ConsumeConcurrentlyStatus.RECONSUME_LATER</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            status = listener.consumeMessage(Collections.unmodifiableList(msgs), context);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.warn(String.format(<span class="string">&quot;consumeMessage exception: %s Group: %s Msgs: %s MQ: %s&quot;</span>,</span><br><span class="line">                    RemotingHelper.exceptionSimpleDesc(e),</span><br><span class="line">                    ConsumeMessageConcurrentlyService.<span class="built_in">this</span>.consumerGroup,</span><br><span class="line">                    msgs,</span><br><span class="line">                    messageQueue), e);</span><br><span class="line">            <span class="comment">//抛出异常之后，设置异常标志位</span></span><br><span class="line">            hasException = <span class="literal">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 4 对返回的执行状态结果进行判断处理</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="comment">//计算消费时间</span></span><br><span class="line">        <span class="type">long</span> <span class="variable">consumeRT</span> <span class="operator">=</span> System.currentTimeMillis() - beginTimestamp;</span><br><span class="line">        <span class="comment">//如status为null</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="literal">null</span> == status) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//如果业务的执行抛出了异常</span></span><br><span class="line">            <span class="keyword">if</span> (hasException) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//设置returnType为EXCEPTION</span></span><br><span class="line">                returnType = ConsumeReturnType.EXCEPTION;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//设置returnType为RETURNNULL</span></span><br><span class="line">                returnType = ConsumeReturnType.RETURNNULL;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//如消费时间consumeRT大于等于consumeTimeout，默认15min</span></span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (consumeRT &gt;= defaultMQPushConsumer.getConsumeTimeout() * <span class="number">60</span> * <span class="number">1000</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//设置returnType为TIME_OUT</span></span><br><span class="line">            returnType = ConsumeReturnType.TIME_OUT;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//如status为RECONSUME_LATER，即消费失败</span></span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (ConsumeConcurrentlyStatus.RECONSUME_LATER == status) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//设置returnType为FAILED</span></span><br><span class="line">            returnType = ConsumeReturnType.FAILED;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//如status为CONSUME_SUCCESS，即消费成功</span></span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (ConsumeConcurrentlyStatus.CONSUME_SUCCESS == status) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//设置returnType为SUCCESS，即消费成功</span></span><br><span class="line">            returnType = ConsumeReturnType.SUCCESS;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//如果有钩子，则将returnType设置进去</span></span><br><span class="line">        <span class="keyword">if</span> (ConsumeMessageConcurrentlyService.<span class="built_in">this</span>.defaultMQPushConsumerImpl.hasHook()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            consumeMessageContext.getProps().put(MixAll.CONSUME_CONTEXT_TYPE, returnType.name());</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//如果status为null</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="literal">null</span> == status) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.warn(<span class="string">&quot;consumeMessage return null, Group: &#123;&#125; Msgs: &#123;&#125; MQ: &#123;&#125;&quot;</span>,</span><br><span class="line">                    ConsumeMessageConcurrentlyService.<span class="built_in">this</span>.consumerGroup,</span><br><span class="line">                    msgs,</span><br><span class="line">                    messageQueue);</span><br><span class="line">            <span class="comment">//将status设置为RECONSUME_LATER，即消费失败</span></span><br><span class="line">            status = ConsumeConcurrentlyStatus.RECONSUME_LATER;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 5 如果有消费钩子，那么执行钩子函数的后置方法consumeMessageAfter</span></span><br><span class="line"><span class="comment">         * 我们可以注册钩子ConsumeMessageHook，在消费消息的前后调用</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">if</span> (ConsumeMessageConcurrentlyService.<span class="built_in">this</span>.defaultMQPushConsumerImpl.hasHook()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            consumeMessageContext.setStatus(status.toString());</span><br><span class="line">            consumeMessageContext.setSuccess(ConsumeConcurrentlyStatus.CONSUME_SUCCESS == status);</span><br><span class="line">            ConsumeMessageConcurrentlyService.<span class="built_in">this</span>.defaultMQPushConsumerImpl.executeHookAfter(consumeMessageContext);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//增加消费时间</span></span><br><span class="line">        ConsumeMessageConcurrentlyService.<span class="built_in">this</span>.getConsumerStatsManager()</span><br><span class="line">                .incConsumeRT(ConsumeMessageConcurrentlyService.<span class="built_in">this</span>.consumerGroup, messageQueue.getTopic(), consumeRT);</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 6 如果处理队列没有被丢弃，那么调用ConsumeMessageConcurrentlyService#processConsumeResult方法处理消费结果，包含重试等逻辑</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">if</span> (!processQueue.isDropped()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            ConsumeMessageConcurrentlyService.<span class="built_in">this</span>.processConsumeResult(status, context, <span class="built_in">this</span>);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.warn(<span class="string">&quot;processQueue is dropped without process consume result. messageQueue=&#123;&#125;, msgs=&#123;&#125;&quot;</span>, messageQueue, msgs);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> MessageQueue <span class="title function_">getMessageQueue</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">return</span> messageQueue;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-1-resetRetryAndNamespace重设重试topic"><a href="#3-1-resetRetryAndNamespace重设重试topic" class="headerlink" title="3.1 resetRetryAndNamespace重设重试topic"></a>3.1 resetRetryAndNamespace重设重试topic</h3><p>当消息是重试消息的时候，将msg的topic属性从重试topic还原为真实的topic。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">resetRetryAndNamespace</span><span class="params">(<span class="keyword">final</span> List&lt;MessageExt&gt; msgs, String consumerGroup)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//获取重试topic</span></span><br><span class="line">    <span class="keyword">final</span> <span class="type">String</span> <span class="variable">groupTopic</span> <span class="operator">=</span> MixAll.getRetryTopic(consumerGroup);</span><br><span class="line">    <span class="keyword">for</span> (MessageExt msg : msgs) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//尝试通过PROPERTY_RETRY_TOPIC属性获取每个消息的真实topic</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">retryTopic</span> <span class="operator">=</span> msg.getProperty(MessageConst.PROPERTY_RETRY_TOPIC);</span><br><span class="line">        <span class="comment">//如果该属性不为null，并且重试topic和消息的topic相等，则表示当前消息是重试消息</span></span><br><span class="line">        <span class="keyword">if</span> (retryTopic != <span class="literal">null</span> &amp;&amp; groupTopic.equals(msg.getTopic())) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//那么设置消息的topic为真实topic，即还原回来</span></span><br><span class="line">            msg.setTopic(retryTopic);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (StringUtils.isNotEmpty(<span class="built_in">this</span>.defaultMQPushConsumer.getNamespace())) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            msg.setTopic(NamespaceUtil.withoutNamespace(msg.getTopic(), <span class="built_in">this</span>.defaultMQPushConsumer.getNamespace()));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="4-processConsumeResult处理消费结果"><a href="#4-processConsumeResult处理消费结果" class="headerlink" title="4 processConsumeResult处理消费结果"></a>4 processConsumeResult处理消费结果</h2><p><strong>对于并发消费的消费结果通过ConsumeMessageConcurrentlyService#processConsumeResult方法处理。</strong></p>
+<ul>
+<li>*需要注意的是，如果在执行了listener#consumeMessage方法，即执行了业务逻辑之后，处理消费结果之前，该消息队列被丢弃了，例如负载均衡时该队列被分配给了其他新上线的消费者，那么由于dropped&#x3D;false，导致不会进行最后的消费结果处理，将会导致消息的重复消费，因此必须做好业务层面的幂等性！<br>**</li>
+</ul>
+<p>processConsumeResult方法的大概步骤为：</p>
+<p><strong>1、</strong> 获取ackIndex，默认初始值为Integer.MAX_VALUE，该值表示消费成功的消息在消息集合中的索引，用于辅助进行消息重试；<br><strong>2、</strong> 判断消费状态，设置ackIndex的值：；</p>
+<p><strong>1、</strong> CONSUME_SUCCESS消费成功：ackIndex&#x3D;消息数量–1；<br><strong>2、</strong> RECONSUME_LATER消费失败：ackIndex&#x3D;-1；<br><strong>3、</strong> 判断消息模式，处理消费失败的情况：；</p>
+<p><strong>1、</strong> BROADCASTING广播模式：对于没有消费成功的消息仅仅打印日志；<br><strong>2、</strong> CLUSTERING集群模式：；</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">1.  对于消费失败的消息，调用sendMessageBack方法向broker发送发回当前消息作为延迟消息到重试队列，等待重试消费。对于sendMessageBack发送失败的消息加入msgBackFailed失败集合，设置消息的重试次数属性reconsumeTimes+1</span><br><span class="line">2.  对于sendMessageBack发送失败的消息，调用submitConsumeRequestLater方法，延迟5s将sendMessageBack执行失败的消息再次提交到consumeExecutor进行消费。</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>调用ProcessQueue#removeMessage方法从处理队列的msgTreeMap中将消费成功的消息，以及消费失败但是发回broker成功的这批消息移除，然后返回msgTreeMap中的最小的偏移量。</li>
+<li>如果偏移量大于等于0并且处理队列没有被丢弃，调用OffsetStore#<br>updateOffset方法，尝试更新内存中的offsetTable中的最新偏移量信息，第三个参数是否仅单调增加offset为true，表示只会尝试更新offset为更大的值。这里仅仅是更新内存中的数据，而offset除了在拉取消息时上报broker进行持久化之外，还会定时每5s调用persistAllConsumerOffset定时持久化。我们在后面Consumer消费进度管理部分会学习相关源码。</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ConsumeMessageConcurrentlyService的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 处理消费结果</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> status         消费状态</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> context        上下文</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> consumeRequest 消费请求</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">processConsumeResult</span><span class="params">(</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> ConsumeConcurrentlyStatus status,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> ConsumeConcurrentlyContext context,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> ConsumeRequest consumeRequest</span></span><br><span class="line"><span class="params">)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//ackIndex，默认初始值为Integer.MAX_VALUE，表示消费成功的消息在消息集合中的索引</span></span><br><span class="line">    <span class="type">int</span> <span class="variable">ackIndex</span> <span class="operator">=</span> context.getAckIndex();</span><br><span class="line">    <span class="comment">//如果消息为空则直接返回</span></span><br><span class="line">    <span class="keyword">if</span> (consumeRequest.getMsgs().isEmpty())</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 1 判断消费状态，设置ackIndex的值</span></span><br><span class="line"><span class="comment">     * 消费成功： ackIndex = 消息数量 - 1</span></span><br><span class="line"><span class="comment">     * 消费失败： ackIndex = -1</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">switch</span> (status) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//如果消费成功</span></span><br><span class="line">        <span class="keyword">case</span> CONSUME_SUCCESS:</span><br><span class="line">            <span class="comment">//如果大于等于消息数量，则设置为消息数量减1</span></span><br><span class="line">            <span class="comment">//初始值为Integer.MAX_VALUE，因此一般都会设置为消息数量减1</span></span><br><span class="line">            <span class="keyword">if</span> (ackIndex &gt;= consumeRequest.getMsgs().size()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                ackIndex = consumeRequest.getMsgs().size() - <span class="number">1</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//消费成功的个数，即消息数量</span></span><br><span class="line">            <span class="type">int</span> <span class="variable">ok</span> <span class="operator">=</span> ackIndex + <span class="number">1</span>;</span><br><span class="line">            <span class="comment">//消费失败的个数，即0</span></span><br><span class="line">            <span class="type">int</span> <span class="variable">failed</span> <span class="operator">=</span> consumeRequest.getMsgs().size() - ok;</span><br><span class="line">            <span class="comment">//统计</span></span><br><span class="line">            <span class="built_in">this</span>.getConsumerStatsManager().incConsumeOKTPS(consumerGroup, consumeRequest.getMessageQueue().getTopic(), ok);</span><br><span class="line">            <span class="built_in">this</span>.getConsumerStatsManager().incConsumeFailedTPS(consumerGroup, consumeRequest.getMessageQueue().getTopic(), failed);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="comment">//如果消费失败</span></span><br><span class="line">        <span class="keyword">case</span> RECONSUME_LATER:</span><br><span class="line">            <span class="comment">//ackIndex初始化为-1</span></span><br><span class="line">            ackIndex = -<span class="number">1</span>;</span><br><span class="line">            <span class="comment">//统计</span></span><br><span class="line">            <span class="built_in">this</span>.getConsumerStatsManager().incConsumeFailedTPS(consumerGroup, consumeRequest.getMessageQueue().getTopic(),</span><br><span class="line">                    consumeRequest.getMsgs().size());</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 2 判断消息模式，处理消费失败的情况</span></span><br><span class="line"><span class="comment">     * 广播模式：打印日志</span></span><br><span class="line"><span class="comment">     * 集群模式：向broker发送当前消息作为延迟消息，等待重试消费</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">switch</span> (<span class="built_in">this</span>.defaultMQPushConsumer.getMessageModel()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//广播模式下</span></span><br><span class="line">        <span class="keyword">case</span> BROADCASTING:</span><br><span class="line">            <span class="comment">//从消费成功的消息在消息集合中的索引+1开始，仅仅是对于消费失败的消息打印日志，并不会重试</span></span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> ackIndex + <span class="number">1</span>; i &lt; consumeRequest.getMsgs().size(); i++) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="type">MessageExt</span> <span class="variable">msg</span> <span class="operator">=</span> consumeRequest.getMsgs().get(i);</span><br><span class="line">                log.warn(<span class="string">&quot;BROADCASTING, the message consume failed, drop it, &#123;&#125;&quot;</span>, msg.toString());</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="comment">//集群模式下</span></span><br><span class="line">        <span class="keyword">case</span> CLUSTERING:</span><br><span class="line">            List&lt;MessageExt&gt; msgBackFailed = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;MessageExt&gt;(consumeRequest.getMsgs().size());</span><br><span class="line">            <span class="comment">//消费成功的消息在消息集合中的索引+1开始，遍历消息</span></span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> ackIndex + <span class="number">1</span>; i &lt; consumeRequest.getMsgs().size(); i++) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//获取该索引对应的消息</span></span><br><span class="line">                <span class="type">MessageExt</span> <span class="variable">msg</span> <span class="operator">=</span> consumeRequest.getMsgs().get(i);</span><br><span class="line">                <span class="comment">/*</span></span><br><span class="line"><span class="comment">                 * 2.1 消费失败后，将该消息重新发送至重试队列，延迟消费</span></span><br><span class="line"><span class="comment">                 */</span></span><br><span class="line">                <span class="type">boolean</span> <span class="variable">result</span> <span class="operator">=</span> <span class="built_in">this</span>.sendMessageBack(msg, context);</span><br><span class="line">                <span class="comment">//如果执行发送失败</span></span><br><span class="line">                <span class="keyword">if</span> (!result) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//设置重试次数+！</span></span><br><span class="line">                    msg.setReconsumeTimes(msg.getReconsumeTimes() + <span class="number">1</span>);</span><br><span class="line">                    <span class="comment">//加入失败的集合</span></span><br><span class="line">                    msgBackFailed.add(msg);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (!msgBackFailed.isEmpty()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//从consumeRequest中移除消费失败并且发回broker失败的消息</span></span><br><span class="line">                consumeRequest.getMsgs().removeAll(msgBackFailed);</span><br><span class="line">                <span class="comment">/*</span></span><br><span class="line"><span class="comment">                 * 2.2 调用submitConsumeRequestLater方法，延迟5s将sendMessageBack执行失败的消息再次提交到consumeExecutor进行消费</span></span><br><span class="line"><span class="comment">                 */</span></span><br><span class="line">                <span class="built_in">this</span>.submitConsumeRequestLater(msgBackFailed, consumeRequest.getProcessQueue(), consumeRequest.getMessageQueue());</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 3 从处理队列的msgTreeMap中将消费成功以及消费失败但是发回broker成功的这批消息移除，然后返回msgTreeMap中的最小的偏移量</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="type">long</span> <span class="variable">offset</span> <span class="operator">=</span> consumeRequest.getProcessQueue().removeMessage(consumeRequest.getMsgs());</span><br><span class="line">    <span class="comment">//如果偏移量大于等于0并且处理队列没有被丢弃</span></span><br><span class="line">    <span class="keyword">if</span> (offset &gt;= <span class="number">0</span> &amp;&amp; !consumeRequest.getProcessQueue().isDropped()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//尝试更新内存中的offsetTable中的最新偏移量信息，第三个参数是否仅单调增加offset为true</span></span><br><span class="line">        <span class="built_in">this</span>.defaultMQPushConsumerImpl.getOffsetStore().updateOffset(consumeRequest.getMessageQueue(), offset, <span class="literal">true</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-1-removeMessage移除消息"><a href="#4-1-removeMessage移除消息" class="headerlink" title="4.1 removeMessage移除消息"></a>4.1 removeMessage移除消息</h3><p>**从处理队列的msgTreeMap中将消费成功，以及消费失败但是发回broker成功的这批消息移除，然后返回msgTreeMap中的最小的消息偏移量。如果移除后msgTreeMap为空了，那么直接返回该处理队列记录的最大的消息偏移量+1。<br>**</p>
+<ul>
+<li>*这个返回的offset将会尝试用于更新在内存中的offsetTable中的最新偏移量信息，而offset除了在拉取消息时持久化之外，还会定时每5s调用persistAllConsumerOffset定时持久化。我们在后面Consumer消费进度管理部分会学习源码。<br>**</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ProcessQueue的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 移除执行集合中的所有消息，然后返回msgTreeMap中的最小的消息偏移量</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> msgs 需要被移除的消息集合</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> msgTreeMap中的最小的消息偏移量</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">long</span> <span class="title function_">removeMessage</span><span class="params">(<span class="keyword">final</span> List&lt;MessageExt&gt; msgs)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="type">long</span> <span class="variable">result</span> <span class="operator">=</span> -<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">final</span> <span class="type">long</span> <span class="variable">now</span> <span class="operator">=</span> System.currentTimeMillis();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//获取锁</span></span><br><span class="line">        <span class="built_in">this</span>.treeMapLock.writeLock().lockInterruptibly();</span><br><span class="line">        <span class="comment">//更新时间戳</span></span><br><span class="line">        <span class="built_in">this</span>.lastConsumeTimestamp = now;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//如果msgTreeMap存在数据</span></span><br><span class="line">            <span class="keyword">if</span> (!msgTreeMap.isEmpty()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//首先将result设置为该队列最大的消息偏移量+1</span></span><br><span class="line">                result = <span class="built_in">this</span>.queueOffsetMax + <span class="number">1</span>;</span><br><span class="line">                <span class="type">int</span> <span class="variable">removedCnt</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">                <span class="comment">//遍历每一条消息尝试异常</span></span><br><span class="line">                <span class="keyword">for</span> (MessageExt msg : msgs) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="type">MessageExt</span> <span class="variable">prev</span> <span class="operator">=</span> msgTreeMap.remove(msg.getQueueOffset());</span><br><span class="line">                    <span class="keyword">if</span> (prev != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        removedCnt--;</span><br><span class="line">                        msgSize.addAndGet(<span class="number">0</span> - msg.getBody().length);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">                msgCount.addAndGet(removedCnt);</span><br><span class="line">                <span class="comment">//如果移除消息之后msgTreeMap不为空集合，那么result设置为msgTreeMap当前最小的消息偏移量</span></span><br><span class="line">                <span class="keyword">if</span> (!msgTreeMap.isEmpty()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    result = msgTreeMap.firstKey();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="built_in">this</span>.treeMapLock.writeLock().unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        log.error(<span class="string">&quot;removeMessage exception&quot;</span>, t);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-2-updateOffset更新offset"><a href="#4-2-updateOffset更新offset" class="headerlink" title="4.2 updateOffset更新offset"></a>4.2 updateOffset更新offset</h3><p><strong>尝试更新内存中的offsetTable中的最新偏移量信息，第三个参数是否仅单调增加offset，顺序消费为false，并发消费为true。</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * RemoteBrokerOffsetStore的方法</span></span><br><span class="line"><span class="comment"> * 更新内存中的offset</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> mq           消息队列</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> offset       偏移量</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> increaseOnly 是否仅单调增加offset，顺序消费为false，并发消费为true</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">updateOffset</span><span class="params">(MessageQueue mq, <span class="type">long</span> offset, <span class="type">boolean</span> increaseOnly)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="keyword">if</span> (mq != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//获取已存在的offset</span></span><br><span class="line">        <span class="type">AtomicLong</span> <span class="variable">offsetOld</span> <span class="operator">=</span> <span class="built_in">this</span>.offsetTable.get(mq);</span><br><span class="line">        <span class="comment">//如果没有老的offset，那么将新的offset存进去</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="literal">null</span> == offsetOld) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            offsetOld = <span class="built_in">this</span>.offsetTable.putIfAbsent(mq, <span class="keyword">new</span> <span class="title class_">AtomicLong</span>(offset));</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//如果有老的offset，那么尝试更新offset</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="literal">null</span> != offsetOld) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//如果仅单调增加offset，顺序消费为false，并发消费为true</span></span><br><span class="line">            <span class="keyword">if</span> (increaseOnly) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//如果新的offset大于已存在offset，则尝试在循环中CAS的更新为新offset</span></span><br><span class="line">                MixAll.compareAndIncreaseOnly(offsetOld, offset);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//直接设置为新offset，可能导致offset变小</span></span><br><span class="line">                offsetOld.set(offset);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="4-2-1-compareAndIncreaseOnly仅增加offset"><a href="#4-2-1-compareAndIncreaseOnly仅增加offset" class="headerlink" title="4.2.1 compareAndIncreaseOnly仅增加offset"></a>4.2.1 compareAndIncreaseOnly仅增加offset</h4><p>如果目标对象目前的值已经大于目标值，则返回false，否则在一个循环中尝试CAS的更新目标对象的值为目标值。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * MixAll的方法</span></span><br><span class="line"><span class="comment"> * 仅增加offset</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> target 目标值</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> value  目标对象</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> 是否增加成功</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="type">boolean</span> <span class="title function_">compareAndIncreaseOnly</span><span class="params">(<span class="keyword">final</span> AtomicLong target, <span class="keyword">final</span> <span class="type">long</span> value)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//获取目标对象目前的值</span></span><br><span class="line">    <span class="type">long</span> <span class="variable">prev</span> <span class="operator">=</span> target.get();</span><br><span class="line">    <span class="comment">//如果目标值大于当前值，则在循环中CAS的设置值</span></span><br><span class="line">    <span class="keyword">while</span> (value &gt; prev) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//那么尝试CAS的设置当前值为目标值</span></span><br><span class="line">        <span class="type">boolean</span> <span class="variable">updated</span> <span class="operator">=</span> target.compareAndSet(prev, value);</span><br><span class="line">        <span class="comment">//如果CAS成功则返回true</span></span><br><span class="line">        <span class="keyword">if</span> (updated)</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">        <span class="comment">//如果AS失败，则重新获取目标对象目前的值</span></span><br><span class="line">        prev = target.get();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//获取目标对象目前的值已经大于目标值，则返回false</span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1739713346/" target="_blank">21、RocketMQ源码分析：ConsumeMessageConcurrentlyService并发消费消息源码</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
+                        
+                            <a href="/category/Web/">Web</a>
+                        
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
+                        
+                            <a href="/tag/RocketMq/">RocketMq</a>
+                        
+                    </div>
+                
+                <div class="article-prev-next">
+                    
+                        <a href="/article/1739713345/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1739713345/" title="发布于 2025-02-16 09:42">20、RocketMQ源码分析：DefaultMQPushConsumer处理Broker的拉取消息响应源码</a>
+                        <br>
+                    
+                    
+                        <a href="/article/1739713347/" class="next-prefix">» </a> 下一篇：    <a href="/article/1739713347/" title="发布于 2025-02-16 09:42">22、RocketMQ源码分析：ConsumeMessageOrderlyService顺序消费消息源码</a>
+                    
+                </div>
+            </div>
+            
+    <div class="article-comments">
+        
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
+    
+</div>
+    <div id="footer"></div>
+    <div id="sidebar">
+    <div class="menu-wrap" style="display:none;">
+        
+            <div class="menu-notice">
+                <span class="iconfont icon-notice"></span>
+                <div class="notice">
+                    <span>简单地活着，肆意而又精彩！</span>
+                </div>
+            </div>
+        
+        <nav class="menu">
+            <div class="menu-introduce"> 
+                <div class="introduce-avatar">
+                    <img src="/image/sidebar/avatar.jpg">
+                </div> 
+                <div class="introduce-info"> 
+                    <div class="introduce-user"><span>Live For Code</span></div>
+                </div> 
+            </div> 
+            <div class="menu-list">
+                <ul>
+                    
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                    
+                        <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
+                    
+                        <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
+                    
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                    
+                        <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
+                    
+                        <li class=""><a href="/about" class="" target="_self"><span class="iconfont icon-about-fill"></span>关于</a></li>
+                    
+                        <li class=""><a href="/atom.xml" class="" target="_blank"><span class="iconfont icon-rss"></span>订阅</a></li>
+                    
+                        <li class=""><a href="javascript:;" class="search" target="_self"><span class="iconfont icon-search-menu"></span>搜索</a></li>
+                    
+                        <li class=""><a href="/comment" class="" target="_self"><span class="iconfont icon-comments-fill"></span>留言板</a></li>
+                    
+                        <li class=""><a href="/friend" class="" target="_self"><span class="iconfont icon-link"></span>友情链接</a></li>
+                    
+                </ul> 
+            </div> 
+            <div class="menu-link">
+                <div class="box">
+                    <div class="image-box"></div>
+                </div>
+                
+                    <a name="知乎" href="https://www.zhihu.com/people/wo-xin-de-love" class="" target="_blank" data=""><span class="iconfont icon-zhihu"></span></a>
+                
+                    <a name="微博" href="https://weibo.com/u/3939432776" class="" target="_blank" data=""><span class="iconfont icon-weibo"></span></a>
+                
+                    <a name="QQ" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"><span class="iconfont icon-qq"></span></a>
+                
+                    <a name="微信" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"><span class="iconfont icon-wechat"></span></a>
+                
+                    <a name="GitHub" href="https://github.com/first19326" class="" target="_blank" data=""><span class="iconfont icon-github"></span></a>
+                
+            </div> 
+        </nav>
+        <button class="menu-button-close"></button>
+        <div class="morph-shape" id="morph-shape" data-morph-open="M-7.312,0H15c0,0,66,113.339,66,399.5C81,664.006,15,800,15,800H-7.312V0z;M-7.312,0H100c0,0,0,113.839,0,400c0,264.506,0,400,0,400H-7.312V0z">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 800" preserveAspectRatio="none">
+                <path d="M-7.312,0H0c0,0,0,113.839,0,400c0,264.506,0,400,0,400h-7.312V0z"/>
+            </svg>
+        </div>
+    </div>
+    <button class="menu-button-open">MENU</button>
+    <div class="menu-cover"></div>
+</div>
+    <link type="text/css" rel="stylesheet" href="/css/search.css">
+<script type="text/javascript" src="/js/iscroll.js"></script>
+<script type="text/javascript" src="/js/instantsearch.min.js"></script>
+<div class="search-window">
+    <div class="search-content">
+        <div class="search-content-icon">
+            <i class="iconfont icon-search"></i>
+        </div>
+        <div id="search-input" class="search-input"></div>
+    </div>
+
+    <div class="search-scroll">
+        <div class="search-result">
+            <div id="search-stats" class="search-stats"></div>
+            <div id="search-hits"></div>
+            <div id="search-pagination" class="search-pagination"></div>
+        </div>
+    </div>
+
+    <span class="search-close-icon">
+        <i class="iconfont icon-close"></i>
+    </span>
+</div>
+    <div id="tools">
+    <div class="progressbar-top"></div>
+
+    
+        <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
+        <script type="text/javascript" src="/js/APlayer.min.js"></script>
+        <script type="text/javascript" src="/js/Meting.min.js"></script>
+        <meting-js id="3778678" lrcshow="false" server="netease" type="playlist" fixed="true" autoplay="false" loop="all" order="random" preload="auto" volume="0.67" mutex="true"></meting-js>
+    
+    
+    <div class="wrap-right">
+        <div class="setting">
+            <div class="iconbox favorites" switch="false">
+                <span class="iconfont icon-favorites"></span>
+                <span class="icontext">关注</span>
+            </div>
+            <div class="iconbox mode">
+                <div class="light">
+                    <span class="iconfont icon-daymode"></span>
+                    <span class="icontext">浅色模式</span>
+                </div>
+                <div class="dark">
+                    <span class="iconfont icon-nightmode-fill"></span>
+                    <span class="icontext">深色模式</span>
+                </div>
+            </div>
+            <a href="javascript:;" target="_self" class="search">
+                <div class="iconbox">
+                    <span class="iconfont icon-search-menu"></span>
+                    <span class="icontext">搜索</span>
+                </div>
+            </a>
+            <div class="iconbox bottom">
+                <div style="display: inline-block; transform: rotate(180deg);">
+                    <span class="iconfont icon-top"></span>
+                </div>
+                <span class="icontext">跳至底部</span>
+            </div>
+        </div>
+        <div class="iconbox set">
+            <div style="display: inline-block;">
+                <span class="iconfont icon-setting"></span>
+            </div>
+            <span class="icontext">设置</span>
+        </div>
+        <div class="iconbox top">
+            <span class="iconfont icon-top"></span>
+            <span class="icontext">返回顶部</span>
+        </div>
+    </div>
+    <div class="loading"></div>
+</div>
+    <script>
+    window.config = {
+        GitHubUserName     : "first19326",
+        GitHubRepositories : "Hexo-LiveForCode",
+
+        User             : "Live For Code",
+        UserAvatar       : "/image/sidebar/avatar.jpg",
+        WebsiteStartDate : "2020-01-01",
+
+        WebsiteTitleBlur         : "(◍´꒳`◍) Hi, Live For Code",
+        WebsiteTitleBlurTimeOut  : 500,
+        WebsiteTitleFocus        : "(*´∇｀*) 欢迎回来!",
+        WebsiteTitleFocusTimeOut : 1000,
+        WebsiteFavicon           : "/image/website/logo.png",
+
+        ProgressBar : {
+            id       : "topProgressBar",
+            color    : "#77B6FF",
+            height   : "2px",
+            duration : 0.2
+        },
+
+        Loading: {
+            rebound : {
+                tension  : 16,
+                friction : 5
+            },
+            spinner : {
+                id     : "spinner",
+                radius : 90,
+                sides  : 3,
+                depth  : 4,
+                colors : {
+                    background : "#F0F0F0",
+                    stroke     : "#272633",
+                    base       : "",
+                    child      : "#272633"
+                },
+                alwaysForward : true,
+                restAt        : 0.5,
+                renderBase    : false
+            }
+        },
+
+        HomeHeaderAnimationRendered : true,
+        HomeHeaderAnimation         : {
+            radius      : 15,
+            density     : 0.2,
+            color       : "rgba(255, 255, 255, .2)",
+            clearOffset : 0.3
+        },
+
+        BackAnimationRendered          : true,
+        IEBrowserBackAnimationRendered : false,
+        BackAnimation                  : {
+            colorSaturation  : "60%",
+            colorBrightness  : "50%",
+            colorAlpha       : 0.5,
+            colorCycleSpeed  : 5,
+            verticalPosition : "random",
+            horizontalSpeed  : 200,
+            ribbonCount      : 3,
+            strokeSize       : 0,
+            parallaxAmount   : -0.2,
+            animateSections  : true
+        },
+
+        HomeHeaderImage : [
+            
+                "/image/header/home.jpg",
+            
+                "/image/header/home.jpeg",
+            
+                "/image/header/2023-04-17-20-51-03.jpg",
+            
+                "/image/header/2023-04-17-20-54-07.jpg",
+            
+                "/image/header/2023-04-17-20-54-22.jpg",
+            
+                "/image/header/2023-04-17-20-55-25.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+        HomeBannerText  : "",
+
+        ArticleHeaderImage : [
+            
+                "/image/header/article.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+
+        OtherBannerText : "",
+
+        Error : {
+            icon    : "icon-swimming",
+            title   : "PAGE NOT FOUND",
+            content : [
+                
+                    "很抱歉，您访问的页面不存在！",
+                
+                    "可能是输入地址有误或该地址已变更。",
+                
+            ],
+            buttons : [
+                
+                    {
+                        icon  : "icon-home",
+                        text  : "返回首页",
+                        href  : "https://fadeway32.gitee.io/",
+                        class : ""
+                    },
+                
+            ]
+        },
+
+        MenuNotice : {
+            enable : true,
+            notice : "简单地活着，肆意而又精彩！",
+            speed  : 20
+        },
+        MenuList : [
+            
+                {
+                    name   : "首页",
+                    icon   : "icon-home-fill",
+                    href   : "/",
+                    type   : "index",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "分类",
+                    icon   : "icon-folder-fill",
+                    href   : "/category",
+                    type   : "category",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "标签",
+                    icon   : "icon-discount-fill",
+                    href   : "/tag",
+                    type   : "tag",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "归档",
+                    icon   : "icon-calendar-fill",
+                    href   : "/archive",
+                    type   : "archive",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "赞赏",
+                    icon   : "icon-heart-fill",
+                    href   : "/donate",
+                    type   : "donate",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "关于",
+                    icon   : "icon-about-fill",
+                    href   : "/about",
+                    type   : "about",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "订阅",
+                    icon   : "icon-rss",
+                    href   : "/atom.xml",
+                    type   : "",
+                    class  : "",
+                    target : "_blank"
+                },
+            
+                {
+                    name   : "搜索",
+                    icon   : "icon-search-menu",
+                    href   : "javascript:;",
+                    type   : "",
+                    class  : "search",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "留言板",
+                    icon   : "icon-comments-fill",
+                    href   : "/comment",
+                    type   : "comment",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "友情链接",
+                    icon   : "icon-link",
+                    href   : "/friend",
+                    type   : "friend",
+                    class  : "",
+                    target : "_self"
+                },
+            
+        ],
+        MenuLink : [
+            
+                
+                    {
+                        name   : "知乎",
+                        icon   : "icon-zhihu",
+                        href   : "https://www.zhihu.com/people/wo-xin-de-love",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "微博",
+                        icon   : "icon-weibo",
+                        href   : "https://weibo.com/u/3939432776",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "QQ",
+                        icon   : "icon-qq",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"
+                    },
+                
+                    {
+                        name   : "微信",
+                        icon   : "icon-wechat",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"
+                    },
+                
+                    {
+                        name   : "GitHub",
+                        icon   : "icon-github",
+                        href   : "https://github.com/first19326",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+            
+        ],
+
+        FooterStyle : 2,
+        BottomText  : "<div><span class='face'>ღゝ◡╹)ノ♡</span></div><div>【人生若只如初见<span><i class='iconfont icon-like-fill'></i></span>何事秋风悲画扇】</div><div>&copy; 2020-2022 WorstOne. All Rights Reserved.</div>",
+
+        ConsoleList : [
+            
+                
+                    [
+                        
+                            
+                                "Based on cnblogs theme SimpleMemory.",
+                            
+                                "",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "SimpleMemory Author:",
+                            
+                                "BNDong",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "Theme:",
+                            
+                                "LiveForCode",
+                            
+                        
+                    ],
+                
+            
+        ],
+
+        FontIconExtend : "",
+
+        Donate : {
+            paypal  : "",
+            bitcoin : "",
+            alipay  : "/image/donate/alipay.png",
+            wechat  : "/image/donate/wechat.png"
+        },
+
+        Search : {
+            applicationID : "758UIQ1V0H",
+            apiKey        : "2e038c318ac6813e4b4baa91f6ccfa63",
+            indexName     : "hexo2",
+            hits          : {
+                page : 30
+            },
+            labels        : {
+                placeholder : "搜索",
+                empty       : "未发现与 「${query}」 相关的内容",
+                stats       : "${hits} 条相关条目，使用了 ${time} 毫秒",
+            }
+        }, 
+
+        Valine : {
+            switch         : true,
+            el             : ".comments-content",
+            appId          : "srhKtvWPQTWYKh3qX8G8M7v0-gzGzoHsz",
+            appKey         : "8uVSP1q6UlALVC5igYfIfv2h",
+            serverURLs     : "",
+            placeholder    : "你是我一生只会遇见一次的惊喜...",
+            avatar         : "mm",
+            meta           : "nick,mail,link",
+            requiredFields : "nick,mail",
+            pageSize       : 5,
+            lang           : "zh-cn",
+            visitor        : true,
+            enableQQ       : true
+        },
+
+        Tocbot : {
+            switch                : true,
+            tocSelector           : ".toc",
+            contentSelector       : ".article-body",
+            headingSelector       : "h1, h2, h3, h4, h5",
+            headingsOffset        : 0,
+            scrollSmooth          : true,
+            scrollSmoothOffset    : -5,
+            positionFixedSelector : ".toc",
+            positionFixedClass    : "toc-fixed",
+            fixedSidebarOffset    : "",
+        },
+
+        Require : {
+            baseUrl     : "/js/",
+            waitSeconds : 100
+        },
+
+        Music : {
+            type : "Meting"
+        },
+        APlayer : {
+            container : ".aplayer",
+            fixed     : true,
+            autoplay  : true,
+            loop      : "all",
+            order     : "random",
+            preload   : "auto",
+            volume    : 0.67,
+            mutex     : true,
+            lrcType   : 2,
+            audio     : [
+                
+                    {
+                        name   : "Endless Tears",
+                        artist : "CLIFF EDGE",
+                        cover  : "/music/cover/Endless Tears.jpg",
+                        url    : "/music/song/Endless Tears.mp3",
+                        lrc    : "/music/lrc/Endless Tears.lrc"
+                    },
+                
+            ]
+        },
+        Meting : {
+            id       : "3778678", 
+            lrcshow  : false, 
+            server   : "netease", 
+            type     : "playlist", 
+            fixed    : true, 
+            autoplay : false, 
+            loop     : "all", 
+            order    : "random", 
+            preload  : "auto", 
+            volume   : 0.67, 
+            mutex    : true
+        },
+
+        Mouse : {
+            enable  : true,
+            options : {
+                size  : 6,
+                sizeF : 24
+            }
+        },
+
+        LazyLoad : {
+            default : "/image/website/lazyload.svg"
+        },
+  
+        Style : {
+            aplayer          : "/css/APlayer.css",
+            archive          : "/css/archive.css",
+            base             : "/css/base.css",
+            clipboard        : "/css/clipboard.css",
+            code             : "/css/code.css",
+            donate           : "/css/donate.css",
+            fancybox         : "/css/jquery.fancybox.css",
+            footer           : "/css/footer.css",
+            iconfont         : "/iconfont/iconfont.css",
+            index            : "/css/index.css",
+            menuBubble       : "/css/menu-bubble.css",
+            mouse            : "/css/mouse.css",
+            page             : "/css/page.css",
+            post             : "/css/post.css",
+            search           : "/css/search.css",
+            tocbot           : "/css/tocbot.css",
+            valine           : "/css/valine.css"
+        },
+
+        Script: {
+            aplayer          : "/js/APlayer.min.js",
+            config           : "/js/require.config.js",
+            index            : "/js/index.js",
+            instantSearch    : "/js/instantsearch.min.js",
+            iscroll          : "/js/iscroll.js",
+            jQuery           : "/js/jquery-3.4.1.min.js",
+            loading          : "/js/loading.js",
+            meting           : "/js/Meting.min.js",
+            require          : "/js/require.min.js"
+        },
+
+        Font: {
+            LongCang    : "/font/LongCang.css",
+            Monda       : "/font/Monda.css",
+            NotoSansSC  : "/font/NotoSansSC.css",
+            NotoSerifSC : "/font/NotoSerifSC.css",
+            Playball    : "/font/Playball.css",
+            PTMono      : "/font/PTMono.css",
+            Roboto      : "/font/Roboto.css",
+            RobotoSlab  : "/font/RobotoSlab.css",
+            Rosario     : "/font/Rosario.css",
+            UbuntuMono  : "/font/UbuntuMono.css"
+        },
+
+        Suffix : {
+            about : "你知道的越多,你不知道的越多"
+        },
+            
+        Theme : {
+            url  : "https://fadeway32.gitee.io/",
+            name : "fadeway32"
+        }  
+    };
+</script>
+    <script type="text/javascript" src="/js/index.js"></script>
+</body>
+</html>

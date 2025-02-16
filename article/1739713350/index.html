@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <!--    <meta name="referrer" content="origin">-->
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>
+        
+            25、RocketMQ源码分析：DefaultMQPushConsumer消费进度管理源码
+        
+    </title>
+    <link rel="shortcut icon" href="#"/>
+
+    <link type="text/css" rel="stylesheet" href="/font/LongCang.css">
+    <link type="text/css" rel="stylesheet" href="/font/Monda.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSansSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSerifSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/Playball.css">
+    <link type="text/css" rel="stylesheet" href="/font/PTMono.css">
+    <link type="text/css" rel="stylesheet" href="/font/Roboto.css">
+    <link type="text/css" rel="stylesheet" href="/font/RobotoSlab.css">
+    <link type="text/css" rel="stylesheet" href="/font/Rosario.css">
+    <link type="text/css" rel="stylesheet" href="/font/UbuntuMono.css">
+
+    <link type="text/css" rel="stylesheet" href="/css/base.css">
+    <link type="text/css" rel="stylesheet" href="/css/code.css">
+
+    <script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
+<meta name="generator" content="Hexo 6.2.0"></head>
+<body>
+    <a id="cover"></a>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
+<header>
+    <meta name="referrer" content="no-referrer">
+</header>
+<div id="header" class="header">
+    <div class="vertical">
+        <div class="inner">
+            
+                <h1 class="header-subtitle">25、RocketMQ源码分析：DefaultMQPushConsumer消费进度管理源码</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2025-02-16
+                        </span>
+                        
+                            <span id="/article/1739713350/" class="leancloud_visitors" data-flag-title="25、RocketMQ源码分析：DefaultMQPushConsumer消费进度管理源码">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1739713350/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">RocketMq</span>
+                        
+                    
+                </div>
+            
+        </div>
+    </div>
+    
+</div>
+<div id="container">
+    
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="25、RocketMQ源码分析：DefaultMQPushConsumer消费进度管理源码"><a href="#25、RocketMQ源码分析：DefaultMQPushConsumer消费进度管理源码" class="headerlink" title="25、RocketMQ源码分析：DefaultMQPushConsumer消费进度管理源码"></a>25、RocketMQ源码分析：DefaultMQPushConsumer消费进度管理源码</h1><p>分类：<a target="_blank" rel="noopener" href="https://cxykk.com/?cat=318">RocketMQ源码分析（1）</a>  2024-03-27 阅读(160)</p>
+<p>DefaultMQPushConsumer的消费进度由OffsetStore这个类提供统一的API来进行管理。集群模式使用RemoteBrokerOffsetStore实现类，广播模式使用LocalFileOffsetStore实现类。</p>
+<h4 id="文章目录"><a href="#文章目录" class="headerlink" title="文章目录"></a>文章目录</h4><ul>
+<li>1 load启动加载消费偏移量</li>
+<li>2 readOffset读取offset</li>
+<li>3 updateOffset消费完成更新内存offset</li>
+<li>4 persistAllConsumerOffset定时持久化offset</li>
+<li>5 persistAll持久化所有offset</li>
+<li><ul>
+<li>5.1 updateConsumeOffsetToBroker上报offset到Broker</li>
+</ul>
+</li>
+<li>5.2 broker处理更新offset请求</li>
+</ul>
+<h2 id="1-load启动加载消费偏移量"><a href="#1-load启动加载消费偏移量" class="headerlink" title="1 load启动加载消费偏移量"></a>1 load启动加载消费偏移量</h2><p>消费者启动时，DefaultMQPushConsumer构造器中的start方法内部会调用Offset#load方法初始化消费偏移量。</p>
+<p>LocalFileOffsetStore会加载本地磁盘中的数据，RemoteBrokerOffsetStore则是一个空实现。</p>
+<p>LocalFileOffsetStore的load方法，从本地文件恢复offset配置，地址为{user.home}&#x2F;.rocketmq_offsets&#x2F;{clientId}&#x2F;{groupName}&#x2F;offsets.json，配置在文件中以json形式存在。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * LocalFileOffsetStore</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 广播消费模式下，从本地文件恢复offset配置。</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">load</span><span class="params">()</span> <span class="keyword">throws</span> MQClientException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//加载本地offset文件 地址为&#123;user.home&#125;/.rocketmq_offsets/&#123;clientId&#125;/&#123;groupName&#125;/offsets.json</span></span><br><span class="line">    <span class="comment">//配置在文件中以json形式存在</span></span><br><span class="line">    <span class="type">OffsetSerializeWrapper</span> <span class="variable">offsetSerializeWrapper</span> <span class="operator">=</span> <span class="built_in">this</span>.readLocalOffset();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (offsetSerializeWrapper != <span class="literal">null</span> &amp;&amp; offsetSerializeWrapper.getOffsetTable() != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        offsetTable.putAll(offsetSerializeWrapper.getOffsetTable());</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (Entry&lt;MessageQueue, AtomicLong&gt; mqEntry : offsetSerializeWrapper.getOffsetTable().entrySet()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="type">AtomicLong</span> <span class="variable">offset</span> <span class="operator">=</span> mqEntry.getValue();</span><br><span class="line">            log.info(<span class="string">&quot;load consumer&#x27;s offset, &#123;&#125; &#123;&#125; &#123;&#125;&quot;</span>,</span><br><span class="line">                    <span class="built_in">this</span>.groupName,</span><br><span class="line">                    mqEntry.getKey(),</span><br><span class="line">                    offset.get());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>RemoteBrokerOffsetStore的load方法则是一个空实现。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * RemoteBrokerOffsetStore</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">load</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-readOffset读取offset"><a href="#2-readOffset读取offset" class="headerlink" title="2 readOffset读取offset"></a>2 readOffset读取offset</h2><p>负载均衡分配到新的消息队列时需要获取最新offset，以及集群模式拉取消息时都需要获取最新offset上报给broekr。</p>
+<p>该方法获取当前消费者组的offset，有三种读取类型：</p>
+<p><strong>1、</strong> <strong>READ_FROM_MEMORY</strong>：仅从本地内存offsetTable读取；<br><strong>2、</strong> <strong>READ_FROM_STORE</strong>：仅从存储服务中读取，可能是本地文件或者broker中读取；<br><strong>3、</strong> <strong>MEMORY_FIRST_THEN_STORE</strong>：先从本地内存offsetTable读取，读不到再从存储服务中读取；</p>
+<p>当出现异常或者是在本地或者broker没有找到对于消费者组的offset记录，则算作第一次启动该消费者组，那么返回-1。</p>
+<p>RemoteBrokerOffsetStore的offset存储服务是broker，因此READ_FROM_STORE就是从broker中读取，该方法的源码我们在DefaultMQPushConsumer负载均衡服务部分就讲过了。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * RemoteBrokerOffsetStore的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 获取offset</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> mq   需要获取offset的mq</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> type 读取类型</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">long</span> <span class="title function_">readOffset</span><span class="params">(<span class="keyword">final</span> MessageQueue mq, <span class="keyword">final</span> ReadOffsetType type)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="keyword">if</span> (mq != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">switch</span> (type) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">/*</span></span><br><span class="line"><span class="comment">             * 先从本地内存offsetTable读取，读不到再从broker中读取</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            <span class="keyword">case</span> MEMORY_FIRST_THEN_STORE:</span><br><span class="line">                <span class="comment">/*</span></span><br><span class="line"><span class="comment">                 * 仅从本地内存offsetTable读取</span></span><br><span class="line"><span class="comment">                 */</span></span><br><span class="line">            <span class="keyword">case</span> READ_FROM_MEMORY: &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="type">AtomicLong</span> <span class="variable">offset</span> <span class="operator">=</span> <span class="built_in">this</span>.offsetTable.get(mq);</span><br><span class="line">                <span class="keyword">if</span> (offset != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//如果本地内存有关于此mq的offset，那么直接返回</span></span><br><span class="line">                    <span class="keyword">return</span> offset.get();</span><br><span class="line">                &#125; <span class="keyword">else</span> <span class="keyword">if</span> (ReadOffsetType.READ_FROM_MEMORY == type) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//如果本地内存没有关于此mq的offset，但那读取类型为READ_FROM_MEMORY，那么直接返回-1</span></span><br><span class="line">                    <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">/*</span></span><br><span class="line"><span class="comment">             * 仅从broker中读取</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            <span class="keyword">case</span> READ_FROM_STORE: &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">/*</span></span><br><span class="line"><span class="comment">                     * 从broker中获取此消费者组的offset</span></span><br><span class="line"><span class="comment">                     */</span></span><br><span class="line">                    <span class="type">long</span> <span class="variable">brokerOffset</span> <span class="operator">=</span> <span class="built_in">this</span>.fetchConsumeOffsetFromBroker(mq);</span><br><span class="line">                    <span class="comment">//更新此mq的offset，并且存入本地offsetTable缓存</span></span><br><span class="line">                    <span class="type">AtomicLong</span> <span class="variable">offset</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">AtomicLong</span>(brokerOffset);</span><br><span class="line">                    <span class="built_in">this</span>.updateOffset(mq, offset.get(), <span class="literal">false</span>);</span><br><span class="line">                    <span class="keyword">return</span> brokerOffset;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">// No offset in broker</span></span><br><span class="line">                <span class="keyword">catch</span> (MQBrokerException e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//broker中没有关于此消费者组的offset，返回-1</span></span><br><span class="line">                    <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">//Other exceptions</span></span><br><span class="line">                <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    log.warn(<span class="string">&quot;fetchConsumeOffsetFromBroker exception, &quot;</span> + mq, e);</span><br><span class="line">                    <span class="keyword">return</span> -<span class="number">2</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">default</span>:</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>LocalFileOffsetStore的offset存储服务是本地文件，因此READ_FROM_STORE就是从本地文件中读取。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * LocalFileOffsetStore的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 获取offset</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> mq   需要获取offset的mq</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> type 读取类型</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">long</span> <span class="title function_">readOffset</span><span class="params">(<span class="keyword">final</span> MessageQueue mq, <span class="keyword">final</span> ReadOffsetType type)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="keyword">if</span> (mq != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">switch</span> (type) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">/*</span></span><br><span class="line"><span class="comment">             * 先从本地内存offsetTable读取，读不到再从broker中读取</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            <span class="keyword">case</span> MEMORY_FIRST_THEN_STORE:</span><br><span class="line">                <span class="comment">/*</span></span><br><span class="line"><span class="comment">                 * 仅从本地内存offsetTable读取</span></span><br><span class="line"><span class="comment">                 */</span></span><br><span class="line">            <span class="keyword">case</span> READ_FROM_MEMORY: &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="type">AtomicLong</span> <span class="variable">offset</span> <span class="operator">=</span> <span class="built_in">this</span>.offsetTable.get(mq);</span><br><span class="line">                <span class="keyword">if</span> (offset != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//如果本地内存有关于此mq的offset，那么直接返回</span></span><br><span class="line">                    <span class="keyword">return</span> offset.get();</span><br><span class="line">                &#125; <span class="keyword">else</span> <span class="keyword">if</span> (ReadOffsetType.READ_FROM_MEMORY == type) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//如果本地内存没有关于此mq的offset，但那读取类型为READ_FROM_MEMORY，那么直接返回-1</span></span><br><span class="line">                    <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">/*</span></span><br><span class="line"><span class="comment">             * 仅从本地文件中读取</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            <span class="keyword">case</span> READ_FROM_STORE: &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                OffsetSerializeWrapper offsetSerializeWrapper;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//加载本地offset文件 地址为&#123;user.home&#125;/.rocketmq_offsets/&#123;clientId&#125;/&#123;groupName&#125;/offsets.json</span></span><br><span class="line">                    <span class="comment">//配置在文件中以json形式存在</span></span><br><span class="line">                    offsetSerializeWrapper = <span class="built_in">this</span>.readLocalOffset();</span><br><span class="line">                &#125; <span class="keyword">catch</span> (MQClientException e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">//获取对应mq的偏移量</span></span><br><span class="line">                <span class="keyword">if</span> (offsetSerializeWrapper != <span class="literal">null</span> &amp;&amp; offsetSerializeWrapper.getOffsetTable() != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="type">AtomicLong</span> <span class="variable">offset</span> <span class="operator">=</span> offsetSerializeWrapper.getOffsetTable().get(mq);</span><br><span class="line">                    <span class="keyword">if</span> (offset != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        <span class="comment">//更新此mq的offset，并且存入本地offsetTable缓存</span></span><br><span class="line">                        <span class="built_in">this</span>.updateOffset(mq, offset.get(), <span class="literal">false</span>);</span><br><span class="line">                        <span class="keyword">return</span> offset.get();</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">default</span>:</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="3-updateOffset消费完成更新内存offset"><a href="#3-updateOffset消费完成更新内存offset" class="headerlink" title="3 updateOffset消费完成更新内存offset"></a>3 updateOffset消费完成更新内存offset</h2><p>消费者在成功之后将会调用该方法更新内存中的offsetTable的最新offset，RemoteBrokerOffsetStore和LocalFileOffsetStore方法的源码是一致的。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * RemoteBrokerOffsetStore的方法</span></span><br><span class="line"><span class="comment"> * 更新内存中的offset</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> mq           消息队列</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> offset       偏移量</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> increaseOnly 是否仅单调增加offset，顺序消费为false，并发消费为true</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">updateOffset</span><span class="params">(MessageQueue mq, <span class="type">long</span> offset, <span class="type">boolean</span> increaseOnly)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="keyword">if</span> (mq != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//获取已存在的offset</span></span><br><span class="line">        <span class="type">AtomicLong</span> <span class="variable">offsetOld</span> <span class="operator">=</span> <span class="built_in">this</span>.offsetTable.get(mq);</span><br><span class="line">        <span class="comment">//如果没有老的offset，那么将新的offset存进去</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="literal">null</span> == offsetOld) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            offsetOld = <span class="built_in">this</span>.offsetTable.putIfAbsent(mq, <span class="keyword">new</span> <span class="title class_">AtomicLong</span>(offset));</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//如果有老的offset，那么尝试更新offset</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="literal">null</span> != offsetOld) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//如果仅单调增加offset，顺序消费为false，并发消费为true</span></span><br><span class="line">            <span class="keyword">if</span> (increaseOnly) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//如果新的offset大于已存在offset，则尝试在循环中CAS的更新为新offset</span></span><br><span class="line">                MixAll.compareAndIncreaseOnly(offsetOld, offset);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//直接设置为新offset，可能导致offset变小</span></span><br><span class="line">                offsetOld.set(offset);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="4-persistAllConsumerOffset定时持久化offset"><a href="#4-persistAllConsumerOffset定时持久化offset" class="headerlink" title="4 persistAllConsumerOffset定时持久化offset"></a>4 persistAllConsumerOffset定时持久化offset</h2><p>消费者除了在拉取消息的时候，会上报上一次的消费点位进行持久化（集群模式），同时在Consumer启动过程中也会启动一个定时任务，每5秒钟进行一次offset的持久化（广播模式和集群模式）。</p>
+<p>Consumer的启动过程中，在MQClientInstance的startScheduledTask方法中会去启动各种定时延迟任务，其中一个定时任务，会每5秒钟进行一次offset的持久化。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 4 每隔5S尝试持久化消费者偏移量，即消费进度</span></span><br><span class="line"><span class="comment"> * 广播消费模式下持久化到本地，集群消费模式下推送到broker端</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="built_in">this</span>.scheduledExecutorService.scheduleAtFixedRate(<span class="keyword">new</span> <span class="title class_">Runnable</span>() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            MQClientInstance.<span class="built_in">this</span>.persistAllConsumerOffset();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.error(<span class="string">&quot;ScheduledTask persistAllConsumerOffset exception&quot;</span>, e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;, <span class="number">1000</span> * <span class="number">10</span>, <span class="built_in">this</span>.clientConfig.getPersistConsumerOffsetInterval(), TimeUnit.MILLISECONDS);</span><br></pre></td></tr></table></figure>
+
+<p>persistAllConsumerOffset用于持久化所有consumer的offset。集群模式持久化到broker，广播模式持久化到本地。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * MQClientInstance的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 每隔5S尝试持久化消费者偏移量，即消费进度</span></span><br><span class="line"><span class="comment"> * 广播消费模式下持久化到本地，集群消费模式下推送到broker端</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">persistAllConsumerOffset</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//遍历所有consumer集合</span></span><br><span class="line">    Iterator&lt;Entry&lt;String, MQConsumerInner&gt;&gt; it = <span class="built_in">this</span>.consumerTable.entrySet().iterator();</span><br><span class="line">    <span class="keyword">while</span> (it.hasNext()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        Entry&lt;String, MQConsumerInner&gt; entry = it.next();</span><br><span class="line">        <span class="type">MQConsumerInner</span> <span class="variable">impl</span> <span class="operator">=</span> entry.getValue();</span><br><span class="line">        <span class="comment">//依次调用DefaultMQPushConsumerImpl#persistConsumerOffset方法持久化</span></span><br><span class="line">        impl.persistConsumerOffset();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>persistConsumerOffset方法获取所有的mq集合，然后调用<strong>offsetStore#persistAll</strong>方法，持久化所有mq的offset到本地文件或者远程broker。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * DefaultMQPushConsumerImpl的方法</span></span><br><span class="line"><span class="comment"> * 持久化消费偏移量</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">persistConsumerOffset</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//确定此consumer的服务状态正常，如果服务状态不是RUNNING，那么抛出异常</span></span><br><span class="line">        <span class="built_in">this</span>.makeSureStateOK();</span><br><span class="line">        <span class="comment">//获取所有的mq集合</span></span><br><span class="line">        Set&lt;MessageQueue&gt; mqs = <span class="keyword">new</span> <span class="title class_">HashSet</span>&lt;MessageQueue&gt;();</span><br><span class="line">        Set&lt;MessageQueue&gt; allocateMq = <span class="built_in">this</span>.rebalanceImpl.getProcessQueueTable().keySet();</span><br><span class="line">        mqs.addAll(allocateMq);</span><br><span class="line">        <span class="comment">//持久化所有mq的offset到本地文件或者远程broker</span></span><br><span class="line">        <span class="built_in">this</span>.offsetStore.persistAll(mqs);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        log.error(<span class="string">&quot;group: &quot;</span> + <span class="built_in">this</span>.defaultMQPushConsumer.getConsumerGroup() + <span class="string">&quot; persistConsumerOffset exception&quot;</span>, e);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="5-persistAll持久化所有offset"><a href="#5-persistAll持久化所有offset" class="headerlink" title="5 persistAll持久化所有offset"></a>5 persistAll持久化所有offset</h2><p>该方法持久化所有mq的offset到本地文件或者远程broker。</p>
+<p>RemoteBrokerOffsetStore方法，持久化所有mq的offset到远程broker。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * RemoteBrokerOffsetStore的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 持久化所有mq的offset到远程broker</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> mqs 所有的mq</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">persistAll</span><span class="params">(Set&lt;MessageQueue&gt; mqs)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="keyword">if</span> (<span class="literal">null</span> == mqs || mqs.isEmpty())</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">//未上报的mq集合</span></span><br><span class="line">    <span class="keyword">final</span> HashSet&lt;MessageQueue&gt; unusedMQ = <span class="keyword">new</span> <span class="title class_">HashSet</span>&lt;MessageQueue&gt;();</span><br><span class="line">    <span class="comment">//偏移量集合</span></span><br><span class="line">    <span class="keyword">for</span> (Map.Entry&lt;MessageQueue, AtomicLong&gt; entry : <span class="built_in">this</span>.offsetTable.entrySet()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="type">MessageQueue</span> <span class="variable">mq</span> <span class="operator">=</span> entry.getKey();</span><br><span class="line">        <span class="type">AtomicLong</span> <span class="variable">offset</span> <span class="operator">=</span> entry.getValue();</span><br><span class="line">        <span class="keyword">if</span> (offset != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//mq集合中包含该mq</span></span><br><span class="line">            <span class="keyword">if</span> (mqs.contains(mq)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">/*</span></span><br><span class="line"><span class="comment">                     * 上报消费位点到Broker</span></span><br><span class="line"><span class="comment">                     */</span></span><br><span class="line">                    <span class="built_in">this</span>.updateConsumeOffsetToBroker(mq, offset.get());</span><br><span class="line">                    log.info(<span class="string">&quot;[persistAll] Group: &#123;&#125; ClientId: &#123;&#125; updateConsumeOffsetToBroker &#123;&#125; &#123;&#125;&quot;</span>,</span><br><span class="line">                            <span class="built_in">this</span>.groupName,</span><br><span class="line">                            <span class="built_in">this</span>.mQClientFactory.getClientId(),</span><br><span class="line">                            mq,</span><br><span class="line">                            offset.get());</span><br><span class="line">                &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    log.error(<span class="string">&quot;updateConsumeOffsetToBroker exception, &quot;</span> + mq.toString(), e);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//没有持久化的mq加入到未上报的mq集合中</span></span><br><span class="line">                unusedMQ.add(mq);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//对于未上报的mq，从offsetTable中进行移除</span></span><br><span class="line">    <span class="keyword">if</span> (!unusedMQ.isEmpty()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">for</span> (MessageQueue mq : unusedMQ) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="built_in">this</span>.offsetTable.remove(mq);</span><br><span class="line">            log.info(<span class="string">&quot;remove unused mq, &#123;&#125;, &#123;&#125;&quot;</span>, mq, <span class="built_in">this</span>.groupName);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-1-updateConsumeOffsetToBroker上报offset到Broker"><a href="#5-1-updateConsumeOffsetToBroker上报offset到Broker" class="headerlink" title="5.1 updateConsumeOffsetToBroker上报offset到Broker"></a>5.1 updateConsumeOffsetToBroker上报offset到Broker</h3><p>该方法向master的broker发送一个更新offset的请求，请求Code为UPDATE_CONSUMER_OFFSET。这是一个单向请求，即发送之后马上返回，不管broker是否真正的更新成功，可能导致重复消费。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * RemoteBrokerOffsetStore的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 更新消费偏移量</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">updateConsumeOffsetToBroker</span><span class="params">(MessageQueue mq, <span class="type">long</span> offset)</span> <span class="keyword">throws</span> RemotingException,</span><br><span class="line">        MQBrokerException, InterruptedException, MQClientException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//调用另一个updateConsumeOffsetToBroker方法</span></span><br><span class="line">    updateConsumeOffsetToBroker(mq, offset, <span class="literal">true</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * RemoteBrokerOffsetStore的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 更新消费偏移量</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> mq       消息队列</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> offset   偏移量</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> isOneway 是否是单向请求，自动提交offset请求为true</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">updateConsumeOffsetToBroker</span><span class="params">(MessageQueue mq, <span class="type">long</span> offset, <span class="type">boolean</span> isOneway)</span> <span class="keyword">throws</span> RemotingException,</span><br><span class="line">        MQBrokerException, InterruptedException, MQClientException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//获取指定brokerName的master地址。</span></span><br><span class="line">    <span class="type">FindBrokerResult</span> <span class="variable">findBrokerResult</span> <span class="operator">=</span> <span class="built_in">this</span>.mQClientFactory.findBrokerAddressInSubscribe(mq.getBrokerName(), MixAll.MASTER_ID, <span class="literal">true</span>);</span><br><span class="line">    <span class="keyword">if</span> (<span class="literal">null</span> == findBrokerResult) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//从nameServer拉取并更新topic的路由信息</span></span><br><span class="line">        <span class="built_in">this</span>.mQClientFactory.updateTopicRouteInfoFromNameServer(mq.getTopic());</span><br><span class="line">        <span class="comment">//获取指定brokerName的master地址</span></span><br><span class="line">        findBrokerResult = <span class="built_in">this</span>.mQClientFactory.findBrokerAddressInSubscribe(mq.getBrokerName(), MixAll.MASTER_ID, <span class="literal">false</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (findBrokerResult != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//构建请求头</span></span><br><span class="line">        <span class="type">UpdateConsumerOffsetRequestHeader</span> <span class="variable">requestHeader</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">UpdateConsumerOffsetRequestHeader</span>();</span><br><span class="line">        requestHeader.setTopic(mq.getTopic());</span><br><span class="line">        requestHeader.setConsumerGroup(<span class="built_in">this</span>.groupName);</span><br><span class="line">        requestHeader.setQueueId(mq.getQueueId());</span><br><span class="line">        requestHeader.setCommitOffset(offset);</span><br><span class="line">        <span class="comment">//是否是单向请求，自动提交offset请求为true，发送七个球即返回，不管最终是否持久化成功</span></span><br><span class="line">        <span class="keyword">if</span> (isOneway) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//发送更新offset的单向请求</span></span><br><span class="line">            <span class="built_in">this</span>.mQClientFactory.getMQClientAPIImpl().updateConsumerOffsetOneway(</span><br><span class="line">                    findBrokerResult.getBrokerAddr(), requestHeader, <span class="number">1000</span> * <span class="number">5</span>);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="built_in">this</span>.mQClientFactory.getMQClientAPIImpl().updateConsumerOffset(</span><br><span class="line">                    findBrokerResult.getBrokerAddr(), requestHeader, <span class="number">1000</span> * <span class="number">5</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">MQClientException</span>(<span class="string">&quot;The broker[&quot;</span> + mq.getBrokerName() + <span class="string">&quot;] not exist&quot;</span>, <span class="literal">null</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * MQClientAPIImpl的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 更新消费偏移量单向情求</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> addr          broker地址</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> requestHeader 请求头</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> timeoutMillis 超时时间</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">updateConsumerOffsetOneway</span><span class="params">(</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> String addr,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> UpdateConsumerOffsetRequestHeader requestHeader,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> <span class="type">long</span> timeoutMillis</span></span><br><span class="line"><span class="params">)</span> <span class="keyword">throws</span> RemotingConnectException, RemotingTooMuchRequestException, RemotingTimeoutException, RemotingSendRequestException,</span><br><span class="line">        InterruptedException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//请求Code为UPDATE_CONSUMER_OFFSET</span></span><br><span class="line">    <span class="type">RemotingCommand</span> <span class="variable">request</span> <span class="operator">=</span> RemotingCommand.createRequestCommand(RequestCode.UPDATE_CONSUMER_OFFSET, requestHeader);</span><br><span class="line">    <span class="comment">//单向调用，可以走vip通道</span></span><br><span class="line">    <span class="built_in">this</span>.remotingClient.invokeOneway(MixAll.brokerVIPChannel(<span class="built_in">this</span>.clientConfig.isVipChannelEnabled(), addr), request, timeoutMillis);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-2-broker处理更新offset请求"><a href="#5-2-broker处理更新offset请求" class="headerlink" title="5.2 broker处理更新offset请求"></a>5.2 broker处理更新offset请求</h3><p>broker接收到请求Code为UPDATE_CONSUMER_OFFSET的请求之后，将会进行offset更新。该请求的处理器是ConsumerManageProcessor。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ConsumerManageProcessor的方法</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> RemotingCommand <span class="title function_">processRequest</span><span class="params">(ChannelHandlerContext ctx, RemotingCommand request)</span></span><br><span class="line">        <span class="keyword">throws</span> RemotingCommandException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="keyword">switch</span> (request.getCode()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">case</span> RequestCode.GET_CONSUMER_LIST_BY_GROUP:</span><br><span class="line">            <span class="comment">//返回指定group的所有客户端id集合</span></span><br><span class="line">            <span class="keyword">return</span> <span class="built_in">this</span>.getConsumerListByGroup(ctx, request);</span><br><span class="line">        <span class="keyword">case</span> RequestCode.UPDATE_CONSUMER_OFFSET:</span><br><span class="line">            <span class="comment">//更新消费偏移量</span></span><br><span class="line">            <span class="keyword">return</span> <span class="built_in">this</span>.updateConsumerOffset(ctx, request);</span><br><span class="line">        <span class="keyword">case</span> RequestCode.QUERY_CONSUMER_OFFSET:</span><br><span class="line">            <span class="comment">//查询消费偏移量</span></span><br><span class="line">            <span class="keyword">return</span> <span class="built_in">this</span>.queryConsumerOffset(ctx, request);</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里提交偏移量实际上就是将新的偏移量存入ConsumerOffsetManager内部的offsetTable中。该缓存对应着磁盘上的{user.home}&#x2F;store&#x2F;config&#x2F;consumerOffset.json文件。这里实际上是存入到内存中的，并没有持久化。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ConsumerOffsetManager的方法</span></span><br><span class="line"><span class="comment"> * 提交偏移量</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> clientHost 客户端地址</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> group      消费者组</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> topic      消费topic</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> queueId    队列id</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> offset     提交的偏移量</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">commitOffset</span><span class="params">(<span class="keyword">final</span> String clientHost, <span class="keyword">final</span> String group, <span class="keyword">final</span> String topic, <span class="keyword">final</span> <span class="type">int</span> queueId,</span></span><br><span class="line"><span class="params">                         <span class="keyword">final</span> <span class="type">long</span> offset)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">// topic@group</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">key</span> <span class="operator">=</span> topic + TOPIC_GROUP_SEPARATOR + group;</span><br><span class="line">    <span class="built_in">this</span>.commitOffset(clientHost, key, queueId, offset);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ConsumerOffsetManager的方法</span></span><br><span class="line"><span class="comment"> * 提交偏移量</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> clientHost 客户端地址</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> key        缓存key</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> queueId    队列id</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> offset     提交的偏移量</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">commitOffset</span><span class="params">(<span class="keyword">final</span> String clientHost, <span class="keyword">final</span> String key, <span class="keyword">final</span> <span class="type">int</span> queueId, <span class="keyword">final</span> <span class="type">long</span> offset)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//获取topic@group对应的所有queue的消费偏移量map</span></span><br><span class="line">    ConcurrentMap&lt;Integer, Long&gt; map = <span class="built_in">this</span>.offsetTable.get(key);</span><br><span class="line">    <span class="keyword">if</span> (<span class="literal">null</span> == map) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        map = <span class="keyword">new</span> <span class="title class_">ConcurrentHashMap</span>&lt;Integer, Long&gt;(<span class="number">32</span>);</span><br><span class="line">        <span class="comment">//存入map，key为queueId value为offSet</span></span><br><span class="line">        map.put(queueId, offset);</span><br><span class="line">        <span class="built_in">this</span>.offsetTable.put(key, map);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//存入map，key为queueId value为offSet</span></span><br><span class="line">        <span class="type">Long</span> <span class="variable">storeOffset</span> <span class="operator">=</span> map.put(queueId, offset);</span><br><span class="line">        <span class="keyword">if</span> (storeOffset != <span class="literal">null</span> &amp;&amp; offset &lt; storeOffset) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.warn(<span class="string">&quot;[NOTIFYME]update consumer offset less than store. clientHost=&#123;&#125;, key=&#123;&#125;, queueId=&#123;&#125;, requestOffset=&#123;&#125;, storeOffset=&#123;&#125;&quot;</span>, clientHost, key, queueId, offset, storeOffset);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>broker启动过程中，在BrokerController#initialize方法中会启动一些定时调度任务，其中有一个任务每隔5s将消费者offset进行持久化（offsetTable中的数据），存入consumerOffset.json文件中。<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202502162138159.png" alt="*"><br>broker在shutdown的时候也会调用consumerOffsetManager#persist()持久化offset到consumerOffset.json文件中。</p>
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1739713350/" target="_blank">25、RocketMQ源码分析：DefaultMQPushConsumer消费进度管理源码</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
+                        
+                            <a href="/category/Web/">Web</a>
+                        
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
+                        
+                            <a href="/tag/RocketMq/">RocketMq</a>
+                        
+                    </div>
+                
+                <div class="article-prev-next">
+                    
+                        <a href="/article/1739713349/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1739713349/" title="发布于 2025-02-16 09:42">24、RocketMQ源码分析：延时消息实现原理解析</a>
+                        <br>
+                    
+                    
+                        <a href="/article/1739713351/" class="next-prefix">» </a> 下一篇：    <a href="/article/1739713351/" title="发布于 2025-02-16 09:42">26、RocketMQ源码分析：DefaultMQPushConsumer事务消息源码【一万字】</a>
+                    
+                </div>
+            </div>
+            
+    <div class="article-comments">
+        
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
+    
+</div>
+    <div id="footer"></div>
+    <div id="sidebar">
+    <div class="menu-wrap" style="display:none;">
+        
+            <div class="menu-notice">
+                <span class="iconfont icon-notice"></span>
+                <div class="notice">
+                    <span>简单地活着，肆意而又精彩！</span>
+                </div>
+            </div>
+        
+        <nav class="menu">
+            <div class="menu-introduce"> 
+                <div class="introduce-avatar">
+                    <img src="/image/sidebar/avatar.jpg">
+                </div> 
+                <div class="introduce-info"> 
+                    <div class="introduce-user"><span>Live For Code</span></div>
+                </div> 
+            </div> 
+            <div class="menu-list">
+                <ul>
+                    
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                    
+                        <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
+                    
+                        <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
+                    
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                    
+                        <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
+                    
+                        <li class=""><a href="/about" class="" target="_self"><span class="iconfont icon-about-fill"></span>关于</a></li>
+                    
+                        <li class=""><a href="/atom.xml" class="" target="_blank"><span class="iconfont icon-rss"></span>订阅</a></li>
+                    
+                        <li class=""><a href="javascript:;" class="search" target="_self"><span class="iconfont icon-search-menu"></span>搜索</a></li>
+                    
+                        <li class=""><a href="/comment" class="" target="_self"><span class="iconfont icon-comments-fill"></span>留言板</a></li>
+                    
+                        <li class=""><a href="/friend" class="" target="_self"><span class="iconfont icon-link"></span>友情链接</a></li>
+                    
+                </ul> 
+            </div> 
+            <div class="menu-link">
+                <div class="box">
+                    <div class="image-box"></div>
+                </div>
+                
+                    <a name="知乎" href="https://www.zhihu.com/people/wo-xin-de-love" class="" target="_blank" data=""><span class="iconfont icon-zhihu"></span></a>
+                
+                    <a name="微博" href="https://weibo.com/u/3939432776" class="" target="_blank" data=""><span class="iconfont icon-weibo"></span></a>
+                
+                    <a name="QQ" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"><span class="iconfont icon-qq"></span></a>
+                
+                    <a name="微信" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"><span class="iconfont icon-wechat"></span></a>
+                
+                    <a name="GitHub" href="https://github.com/first19326" class="" target="_blank" data=""><span class="iconfont icon-github"></span></a>
+                
+            </div> 
+        </nav>
+        <button class="menu-button-close"></button>
+        <div class="morph-shape" id="morph-shape" data-morph-open="M-7.312,0H15c0,0,66,113.339,66,399.5C81,664.006,15,800,15,800H-7.312V0z;M-7.312,0H100c0,0,0,113.839,0,400c0,264.506,0,400,0,400H-7.312V0z">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 800" preserveAspectRatio="none">
+                <path d="M-7.312,0H0c0,0,0,113.839,0,400c0,264.506,0,400,0,400h-7.312V0z"/>
+            </svg>
+        </div>
+    </div>
+    <button class="menu-button-open">MENU</button>
+    <div class="menu-cover"></div>
+</div>
+    <link type="text/css" rel="stylesheet" href="/css/search.css">
+<script type="text/javascript" src="/js/iscroll.js"></script>
+<script type="text/javascript" src="/js/instantsearch.min.js"></script>
+<div class="search-window">
+    <div class="search-content">
+        <div class="search-content-icon">
+            <i class="iconfont icon-search"></i>
+        </div>
+        <div id="search-input" class="search-input"></div>
+    </div>
+
+    <div class="search-scroll">
+        <div class="search-result">
+            <div id="search-stats" class="search-stats"></div>
+            <div id="search-hits"></div>
+            <div id="search-pagination" class="search-pagination"></div>
+        </div>
+    </div>
+
+    <span class="search-close-icon">
+        <i class="iconfont icon-close"></i>
+    </span>
+</div>
+    <div id="tools">
+    <div class="progressbar-top"></div>
+
+    
+        <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
+        <script type="text/javascript" src="/js/APlayer.min.js"></script>
+        <script type="text/javascript" src="/js/Meting.min.js"></script>
+        <meting-js id="3778678" lrcshow="false" server="netease" type="playlist" fixed="true" autoplay="false" loop="all" order="random" preload="auto" volume="0.67" mutex="true"></meting-js>
+    
+    
+    <div class="wrap-right">
+        <div class="setting">
+            <div class="iconbox favorites" switch="false">
+                <span class="iconfont icon-favorites"></span>
+                <span class="icontext">关注</span>
+            </div>
+            <div class="iconbox mode">
+                <div class="light">
+                    <span class="iconfont icon-daymode"></span>
+                    <span class="icontext">浅色模式</span>
+                </div>
+                <div class="dark">
+                    <span class="iconfont icon-nightmode-fill"></span>
+                    <span class="icontext">深色模式</span>
+                </div>
+            </div>
+            <a href="javascript:;" target="_self" class="search">
+                <div class="iconbox">
+                    <span class="iconfont icon-search-menu"></span>
+                    <span class="icontext">搜索</span>
+                </div>
+            </a>
+            <div class="iconbox bottom">
+                <div style="display: inline-block; transform: rotate(180deg);">
+                    <span class="iconfont icon-top"></span>
+                </div>
+                <span class="icontext">跳至底部</span>
+            </div>
+        </div>
+        <div class="iconbox set">
+            <div style="display: inline-block;">
+                <span class="iconfont icon-setting"></span>
+            </div>
+            <span class="icontext">设置</span>
+        </div>
+        <div class="iconbox top">
+            <span class="iconfont icon-top"></span>
+            <span class="icontext">返回顶部</span>
+        </div>
+    </div>
+    <div class="loading"></div>
+</div>
+    <script>
+    window.config = {
+        GitHubUserName     : "first19326",
+        GitHubRepositories : "Hexo-LiveForCode",
+
+        User             : "Live For Code",
+        UserAvatar       : "/image/sidebar/avatar.jpg",
+        WebsiteStartDate : "2020-01-01",
+
+        WebsiteTitleBlur         : "(◍´꒳`◍) Hi, Live For Code",
+        WebsiteTitleBlurTimeOut  : 500,
+        WebsiteTitleFocus        : "(*´∇｀*) 欢迎回来!",
+        WebsiteTitleFocusTimeOut : 1000,
+        WebsiteFavicon           : "/image/website/logo.png",
+
+        ProgressBar : {
+            id       : "topProgressBar",
+            color    : "#77B6FF",
+            height   : "2px",
+            duration : 0.2
+        },
+
+        Loading: {
+            rebound : {
+                tension  : 16,
+                friction : 5
+            },
+            spinner : {
+                id     : "spinner",
+                radius : 90,
+                sides  : 3,
+                depth  : 4,
+                colors : {
+                    background : "#F0F0F0",
+                    stroke     : "#272633",
+                    base       : "",
+                    child      : "#272633"
+                },
+                alwaysForward : true,
+                restAt        : 0.5,
+                renderBase    : false
+            }
+        },
+
+        HomeHeaderAnimationRendered : true,
+        HomeHeaderAnimation         : {
+            radius      : 15,
+            density     : 0.2,
+            color       : "rgba(255, 255, 255, .2)",
+            clearOffset : 0.3
+        },
+
+        BackAnimationRendered          : true,
+        IEBrowserBackAnimationRendered : false,
+        BackAnimation                  : {
+            colorSaturation  : "60%",
+            colorBrightness  : "50%",
+            colorAlpha       : 0.5,
+            colorCycleSpeed  : 5,
+            verticalPosition : "random",
+            horizontalSpeed  : 200,
+            ribbonCount      : 3,
+            strokeSize       : 0,
+            parallaxAmount   : -0.2,
+            animateSections  : true
+        },
+
+        HomeHeaderImage : [
+            
+                "/image/header/home.jpg",
+            
+                "/image/header/home.jpeg",
+            
+                "/image/header/2023-04-17-20-51-03.jpg",
+            
+                "/image/header/2023-04-17-20-54-07.jpg",
+            
+                "/image/header/2023-04-17-20-54-22.jpg",
+            
+                "/image/header/2023-04-17-20-55-25.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+        HomeBannerText  : "",
+
+        ArticleHeaderImage : [
+            
+                "/image/header/article.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+
+        OtherBannerText : "",
+
+        Error : {
+            icon    : "icon-swimming",
+            title   : "PAGE NOT FOUND",
+            content : [
+                
+                    "很抱歉，您访问的页面不存在！",
+                
+                    "可能是输入地址有误或该地址已变更。",
+                
+            ],
+            buttons : [
+                
+                    {
+                        icon  : "icon-home",
+                        text  : "返回首页",
+                        href  : "https://fadeway32.gitee.io/",
+                        class : ""
+                    },
+                
+            ]
+        },
+
+        MenuNotice : {
+            enable : true,
+            notice : "简单地活着，肆意而又精彩！",
+            speed  : 20
+        },
+        MenuList : [
+            
+                {
+                    name   : "首页",
+                    icon   : "icon-home-fill",
+                    href   : "/",
+                    type   : "index",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "分类",
+                    icon   : "icon-folder-fill",
+                    href   : "/category",
+                    type   : "category",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "标签",
+                    icon   : "icon-discount-fill",
+                    href   : "/tag",
+                    type   : "tag",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "归档",
+                    icon   : "icon-calendar-fill",
+                    href   : "/archive",
+                    type   : "archive",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "赞赏",
+                    icon   : "icon-heart-fill",
+                    href   : "/donate",
+                    type   : "donate",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "关于",
+                    icon   : "icon-about-fill",
+                    href   : "/about",
+                    type   : "about",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "订阅",
+                    icon   : "icon-rss",
+                    href   : "/atom.xml",
+                    type   : "",
+                    class  : "",
+                    target : "_blank"
+                },
+            
+                {
+                    name   : "搜索",
+                    icon   : "icon-search-menu",
+                    href   : "javascript:;",
+                    type   : "",
+                    class  : "search",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "留言板",
+                    icon   : "icon-comments-fill",
+                    href   : "/comment",
+                    type   : "comment",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "友情链接",
+                    icon   : "icon-link",
+                    href   : "/friend",
+                    type   : "friend",
+                    class  : "",
+                    target : "_self"
+                },
+            
+        ],
+        MenuLink : [
+            
+                
+                    {
+                        name   : "知乎",
+                        icon   : "icon-zhihu",
+                        href   : "https://www.zhihu.com/people/wo-xin-de-love",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "微博",
+                        icon   : "icon-weibo",
+                        href   : "https://weibo.com/u/3939432776",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "QQ",
+                        icon   : "icon-qq",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"
+                    },
+                
+                    {
+                        name   : "微信",
+                        icon   : "icon-wechat",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"
+                    },
+                
+                    {
+                        name   : "GitHub",
+                        icon   : "icon-github",
+                        href   : "https://github.com/first19326",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+            
+        ],
+
+        FooterStyle : 2,
+        BottomText  : "<div><span class='face'>ღゝ◡╹)ノ♡</span></div><div>【人生若只如初见<span><i class='iconfont icon-like-fill'></i></span>何事秋风悲画扇】</div><div>&copy; 2020-2022 WorstOne. All Rights Reserved.</div>",
+
+        ConsoleList : [
+            
+                
+                    [
+                        
+                            
+                                "Based on cnblogs theme SimpleMemory.",
+                            
+                                "",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "SimpleMemory Author:",
+                            
+                                "BNDong",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "Theme:",
+                            
+                                "LiveForCode",
+                            
+                        
+                    ],
+                
+            
+        ],
+
+        FontIconExtend : "",
+
+        Donate : {
+            paypal  : "",
+            bitcoin : "",
+            alipay  : "/image/donate/alipay.png",
+            wechat  : "/image/donate/wechat.png"
+        },
+
+        Search : {
+            applicationID : "758UIQ1V0H",
+            apiKey        : "2e038c318ac6813e4b4baa91f6ccfa63",
+            indexName     : "hexo2",
+            hits          : {
+                page : 30
+            },
+            labels        : {
+                placeholder : "搜索",
+                empty       : "未发现与 「${query}」 相关的内容",
+                stats       : "${hits} 条相关条目，使用了 ${time} 毫秒",
+            }
+        }, 
+
+        Valine : {
+            switch         : true,
+            el             : ".comments-content",
+            appId          : "srhKtvWPQTWYKh3qX8G8M7v0-gzGzoHsz",
+            appKey         : "8uVSP1q6UlALVC5igYfIfv2h",
+            serverURLs     : "",
+            placeholder    : "你是我一生只会遇见一次的惊喜...",
+            avatar         : "mm",
+            meta           : "nick,mail,link",
+            requiredFields : "nick,mail",
+            pageSize       : 5,
+            lang           : "zh-cn",
+            visitor        : true,
+            enableQQ       : true
+        },
+
+        Tocbot : {
+            switch                : true,
+            tocSelector           : ".toc",
+            contentSelector       : ".article-body",
+            headingSelector       : "h1, h2, h3, h4, h5",
+            headingsOffset        : 0,
+            scrollSmooth          : true,
+            scrollSmoothOffset    : -5,
+            positionFixedSelector : ".toc",
+            positionFixedClass    : "toc-fixed",
+            fixedSidebarOffset    : "",
+        },
+
+        Require : {
+            baseUrl     : "/js/",
+            waitSeconds : 100
+        },
+
+        Music : {
+            type : "Meting"
+        },
+        APlayer : {
+            container : ".aplayer",
+            fixed     : true,
+            autoplay  : true,
+            loop      : "all",
+            order     : "random",
+            preload   : "auto",
+            volume    : 0.67,
+            mutex     : true,
+            lrcType   : 2,
+            audio     : [
+                
+                    {
+                        name   : "Endless Tears",
+                        artist : "CLIFF EDGE",
+                        cover  : "/music/cover/Endless Tears.jpg",
+                        url    : "/music/song/Endless Tears.mp3",
+                        lrc    : "/music/lrc/Endless Tears.lrc"
+                    },
+                
+            ]
+        },
+        Meting : {
+            id       : "3778678", 
+            lrcshow  : false, 
+            server   : "netease", 
+            type     : "playlist", 
+            fixed    : true, 
+            autoplay : false, 
+            loop     : "all", 
+            order    : "random", 
+            preload  : "auto", 
+            volume   : 0.67, 
+            mutex    : true
+        },
+
+        Mouse : {
+            enable  : true,
+            options : {
+                size  : 6,
+                sizeF : 24
+            }
+        },
+
+        LazyLoad : {
+            default : "/image/website/lazyload.svg"
+        },
+  
+        Style : {
+            aplayer          : "/css/APlayer.css",
+            archive          : "/css/archive.css",
+            base             : "/css/base.css",
+            clipboard        : "/css/clipboard.css",
+            code             : "/css/code.css",
+            donate           : "/css/donate.css",
+            fancybox         : "/css/jquery.fancybox.css",
+            footer           : "/css/footer.css",
+            iconfont         : "/iconfont/iconfont.css",
+            index            : "/css/index.css",
+            menuBubble       : "/css/menu-bubble.css",
+            mouse            : "/css/mouse.css",
+            page             : "/css/page.css",
+            post             : "/css/post.css",
+            search           : "/css/search.css",
+            tocbot           : "/css/tocbot.css",
+            valine           : "/css/valine.css"
+        },
+
+        Script: {
+            aplayer          : "/js/APlayer.min.js",
+            config           : "/js/require.config.js",
+            index            : "/js/index.js",
+            instantSearch    : "/js/instantsearch.min.js",
+            iscroll          : "/js/iscroll.js",
+            jQuery           : "/js/jquery-3.4.1.min.js",
+            loading          : "/js/loading.js",
+            meting           : "/js/Meting.min.js",
+            require          : "/js/require.min.js"
+        },
+
+        Font: {
+            LongCang    : "/font/LongCang.css",
+            Monda       : "/font/Monda.css",
+            NotoSansSC  : "/font/NotoSansSC.css",
+            NotoSerifSC : "/font/NotoSerifSC.css",
+            Playball    : "/font/Playball.css",
+            PTMono      : "/font/PTMono.css",
+            Roboto      : "/font/Roboto.css",
+            RobotoSlab  : "/font/RobotoSlab.css",
+            Rosario     : "/font/Rosario.css",
+            UbuntuMono  : "/font/UbuntuMono.css"
+        },
+
+        Suffix : {
+            about : "你知道的越多,你不知道的越多"
+        },
+            
+        Theme : {
+            url  : "https://fadeway32.gitee.io/",
+            name : "fadeway32"
+        }  
+    };
+</script>
+    <script type="text/javascript" src="/js/index.js"></script>
+</body>
+</html>
