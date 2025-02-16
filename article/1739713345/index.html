@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <!--    <meta name="referrer" content="origin">-->
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>
+        
+            20、RocketMQ源码分析：DefaultMQPushConsumer处理Broker的拉取消息响应源码
+        
+    </title>
+    <link rel="shortcut icon" href="#"/>
+
+    <link type="text/css" rel="stylesheet" href="/font/LongCang.css">
+    <link type="text/css" rel="stylesheet" href="/font/Monda.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSansSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSerifSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/Playball.css">
+    <link type="text/css" rel="stylesheet" href="/font/PTMono.css">
+    <link type="text/css" rel="stylesheet" href="/font/Roboto.css">
+    <link type="text/css" rel="stylesheet" href="/font/RobotoSlab.css">
+    <link type="text/css" rel="stylesheet" href="/font/Rosario.css">
+    <link type="text/css" rel="stylesheet" href="/font/UbuntuMono.css">
+
+    <link type="text/css" rel="stylesheet" href="/css/base.css">
+    <link type="text/css" rel="stylesheet" href="/css/code.css">
+
+    <script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
+<meta name="generator" content="Hexo 6.2.0"></head>
+<body>
+    <a id="cover"></a>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
+<header>
+    <meta name="referrer" content="no-referrer">
+</header>
+<div id="header" class="header">
+    <div class="vertical">
+        <div class="inner">
+            
+                <h1 class="header-subtitle">20、RocketMQ源码分析：DefaultMQPushConsumer处理Broker的拉取消息响应源码</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2025-02-16
+                        </span>
+                        
+                            <span id="/article/1739713345/" class="leancloud_visitors" data-flag-title="20、RocketMQ源码分析：DefaultMQPushConsumer处理Broker的拉取消息响应源码">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1739713345/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">RocketMq</span>
+                        
+                    
+                </div>
+            
+        </div>
+    </div>
+    
+</div>
+<div id="container">
+    
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="20、RocketMQ源码分析：DefaultMQPushConsumer处理Broker的拉取消息响应源码"><a href="#20、RocketMQ源码分析：DefaultMQPushConsumer处理Broker的拉取消息响应源码" class="headerlink" title="20、RocketMQ源码分析：DefaultMQPushConsumer处理Broker的拉取消息响应源码"></a>20、RocketMQ源码分析：DefaultMQPushConsumer处理Broker的拉取消息响应源码</h1><p>此前我们学习了<a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_43767015/article/details/128563451">Consumer如何发起的拉取消息请求</a><br>，以及<a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_43767015/article/details/128694893">Broker如何处理拉取消息请求</a><br>，现在我们来学习Consumer如何处理Broker的拉取消息响应的源码。</p>
+<h4 id="文章目录"><a href="#文章目录" class="headerlink" title="文章目录"></a>文章目录</h4><ul>
+<li>1 客户端异步请求回调</li>
+<li><ul>
+<li>1.1.1.1. processPullResponse解析响应</li>
+</ul>
+</li>
+<li>2 PullCallback回调</li>
+<li><ul>
+<li>2.1 processPullResult处理拉取结果</li>
+</ul>
+</li>
+<li>2.2 executePullRequestImmediately再次拉取消息</li>
+<li>2.3 putMessage存放消息</li>
+<li>2.4 消息的两次过滤</li>
+<li>3 总结</li>
+</ul>
+<h2 id="1-客户端异步请求回调"><a href="#1-客户端异步请求回调" class="headerlink" title="1 客户端异步请求回调"></a>1 客户端异步请求回调</h2><p>此前我们讲过在<a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_43767015/article/details/128563451">consumer发起拉取消息请求</a><br>的时候，通过ASYNC模式异步的进行拉取，并且<strong>InvokeCallback#operationComplete</strong>方法将会在得到结果之后进行回调，内部调用*<br>*pullCallback**的回调方法。</p>
+<p>在回调方法中，如果解析到了响应结果，那么调用<strong>pullCallback#onSuccess</strong>方法处理，否则调用<strong>pullCallback#onException</strong>方法处理。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * MQClientAPIImpl的方法</span></span><br><span class="line"><span class="comment"> * 异步的拉取消息，并且触发回调函数</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> addr          broker地址</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> request       请求命令对象</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> timeoutMillis 消费者消息拉取超时时间，默认30s</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> pullCallback  拉取到消息之后调用的回调函数</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@throws</span> RemotingException</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@throws</span> InterruptedException</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">pullMessageAsync</span><span class="params">(</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> String addr,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> RemotingCommand request,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> <span class="type">long</span> timeoutMillis,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> PullCallback pullCallback</span></span><br><span class="line"><span class="params">)</span> <span class="keyword">throws</span> RemotingException, InterruptedException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 基于netty给broker发送异步消息，设置一个InvokeCallback回调对象</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * InvokeCallback#operationComplete方法将会在得到结果之后进行回调，内部调用pullCallback的回调方法</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="built_in">this</span>.remotingClient.invokeAsync(addr, request, timeoutMillis, <span class="keyword">new</span> <span class="title class_">InvokeCallback</span>() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">         * 异步执行的回调方法</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">operationComplete</span><span class="params">(ResponseFuture responseFuture)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//返回命令对象</span></span><br><span class="line">            <span class="type">RemotingCommand</span> <span class="variable">response</span> <span class="operator">=</span> responseFuture.getResponseCommand();</span><br><span class="line">            <span class="keyword">if</span> (response != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//解析响应获取结果</span></span><br><span class="line">                    <span class="type">PullResult</span> <span class="variable">pullResult</span> <span class="operator">=</span> MQClientAPIImpl.<span class="built_in">this</span>.processPullResponse(response, addr);</span><br><span class="line">                    <span class="keyword">assert</span> pullResult != <span class="literal">null</span>;</span><br><span class="line">                    <span class="comment">//如果解析到了结果，那么调用pullCallback#onSuccess方法处理</span></span><br><span class="line">                    pullCallback.onSuccess(pullResult);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//出现异常则调用pullCallback#onException方法处理异常</span></span><br><span class="line">                    pullCallback.onException(e);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//没有结果，都调用onException方法处理异常</span></span><br><span class="line">                <span class="keyword">if</span> (!responseFuture.isSendRequestOK()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//发送失败</span></span><br><span class="line">                    pullCallback.onException(<span class="keyword">new</span> <span class="title class_">MQClientException</span>(<span class="string">&quot;send request failed to &quot;</span> + addr + <span class="string">&quot;. Request: &quot;</span> + request, responseFuture.getCause()));</span><br><span class="line">                &#125; <span class="keyword">else</span> <span class="keyword">if</span> (responseFuture.isTimeout()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//超时</span></span><br><span class="line">                    pullCallback.onException(<span class="keyword">new</span> <span class="title class_">MQClientException</span>(<span class="string">&quot;wait response from &quot;</span> + addr + <span class="string">&quot; timeout :&quot;</span> + responseFuture.getTimeoutMillis() + <span class="string">&quot;ms&quot;</span> + <span class="string">&quot;. Request: &quot;</span> + request,</span><br><span class="line">                            responseFuture.getCause()));</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    pullCallback.onException(<span class="keyword">new</span> <span class="title class_">MQClientException</span>(<span class="string">&quot;unknown reason. addr: &quot;</span> + addr + <span class="string">&quot;, timeoutMillis: &quot;</span> + timeoutMillis + <span class="string">&quot;. Request: &quot;</span> + request, responseFuture.getCause()));</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-1-1-1-processPullResponse解析响应"><a href="#1-1-1-1-processPullResponse解析响应" class="headerlink" title="1.1.1.1. processPullResponse解析响应"></a>1.1.1.1. processPullResponse解析响应</h3><p>该方法处理response获取PullResult，根据响应的数据创建PullResultExt对象返回，注意此时拉取到的消息还是一个字节数组。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * MQClientAPIImpl的方法</span></span><br><span class="line"><span class="comment"> * 处理response获取PullResult</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> PullResult <span class="title function_">processPullResponse</span><span class="params">(</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> RemotingCommand response,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> String addr)</span> <span class="keyword">throws</span> MQBrokerException, RemotingCommandException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="type">PullStatus</span> <span class="variable">pullStatus</span> <span class="operator">=</span> PullStatus.NO_NEW_MSG;</span><br><span class="line">    <span class="comment">//设置结果状态码</span></span><br><span class="line">    <span class="keyword">switch</span> (response.getCode()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">case</span> ResponseCode.SUCCESS:</span><br><span class="line">            pullStatus = PullStatus.FOUND;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> ResponseCode.PULL_NOT_FOUND:</span><br><span class="line">            pullStatus = PullStatus.NO_NEW_MSG;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> ResponseCode.PULL_RETRY_IMMEDIATELY:</span><br><span class="line">            pullStatus = PullStatus.NO_MATCHED_MSG;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> ResponseCode.PULL_OFFSET_MOVED:</span><br><span class="line">            pullStatus = PullStatus.OFFSET_ILLEGAL;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">MQBrokerException</span>(response.getCode(), response.getRemark(), addr);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//解析响应头</span></span><br><span class="line">    <span class="type">PullMessageResponseHeader</span> <span class="variable">responseHeader</span> <span class="operator">=</span></span><br><span class="line">            (PullMessageResponseHeader) response.decodeCommandCustomHeader(PullMessageResponseHeader.class);</span><br><span class="line">    <span class="comment">//根据响应的数据创建PullResultExt对象返回，此时拉取到的消息还是一个字节数组</span></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">PullResultExt</span>(pullStatus, responseHeader.getNextBeginOffset(), responseHeader.getMinOffset(),</span><br><span class="line">            responseHeader.getMaxOffset(), <span class="literal">null</span>, responseHeader.getSuggestWhichBrokerId(), response.getBody());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-PullCallback回调"><a href="#2-PullCallback回调" class="headerlink" title="2 PullCallback回调"></a>2 PullCallback回调</h2><p>在processPullResponse处理response之后，会调用此前DefaultMQPushConsumerImpl#pullMessage方法中创建的PullCallback消息拉取的回调函数，执行onSuccess回调方法。如果解析过程中抛出异常，则调用onException方法。</p>
+<p><strong>onSuccess</strong>回调方法的大概逻辑为：</p>
+<p><strong>1、</strong> 调用<strong>processPullResult</strong>方法处理pullResult，进行<strong>消息解码、过滤以及设置其他属性的操作</strong>，返回pullResult；<br><strong>2、</strong> 如果<strong>没有拉取到消息</strong><br>，那么设置下一次拉取的起始offset到PullRequest中，调用executePullRequestImmediately方法立即将拉取请求再次放入PullMessageService的pullRequestQueue中，PullMessageService是一个线程服务，PullMessageService将会循环的获取pullRequestQueue中的pullRequest然后向broker发起新的拉取消息请求，<br><strong>进行下次消息的拉取</strong>；<br><strong>3、</strong> 如果<strong>拉取到了消息</strong>，将拉取到的所有消息，存入对应的<strong>processQueue处理队列</strong>内部的<strong>msgTreeMap中</strong>，等待被异步的消费；<br><strong>4、</strong> 通过<strong>consumeMessageService</strong>将拉取到的消息构建为ConsumeRequest，然后通过内部的<strong>consumeExecutor</strong><br>线程池消费消息，consumeMessageService有**ConsumeMessageConcurrentlyService并发消费和ConsumeMessageOrderlyService顺序消费<br>**两种实现；<br><strong>5、</strong><br>获取配置的消息拉取间隔，默认为0，如果大于0则调用executePullRequestLater方法，等待间隔时间后将拉取请求再次放入pullRequestQueue中，否则立即调用executePullRequestImmediately放入pullRequestQueue中，进行下次消息的拉取；</p>
+<p>如果是<strong>onException</strong>方法，那么延迟3s将拉取请求再次放入PullMessageService的pullRequestQueue中，等待下次拉取。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">PullCallback</span> <span class="variable">pullCallback</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">PullCallback</span>() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onSuccess</span><span class="params">(PullResult pullResult)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">if</span> (pullResult != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">/*</span></span><br><span class="line"><span class="comment">             * 1 处理pullResult，进行消息解码、过滤以及设置其他属性的操作</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            pullResult = DefaultMQPushConsumerImpl.<span class="built_in">this</span>.pullAPIWrapper.processPullResult(pullRequest.getMessageQueue(), pullResult,</span><br><span class="line">                    subscriptionData);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">switch</span> (pullResult.getPullStatus()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="keyword">case</span> FOUND:</span><br><span class="line">                    <span class="comment">//拉取的起始offset</span></span><br><span class="line">                    <span class="type">long</span> <span class="variable">prevRequestOffset</span> <span class="operator">=</span> pullRequest.getNextOffset();</span><br><span class="line">                    <span class="comment">//设置下一次拉取的起始offset到PullRequest中</span></span><br><span class="line">                    pullRequest.setNextOffset(pullResult.getNextBeginOffset());</span><br><span class="line">                    <span class="comment">//增加拉取耗时</span></span><br><span class="line">                    <span class="type">long</span> <span class="variable">pullRT</span> <span class="operator">=</span> System.currentTimeMillis() - beginTimestamp;</span><br><span class="line">                    DefaultMQPushConsumerImpl.<span class="built_in">this</span>.getConsumerStatsManager().incPullRT(pullRequest.getConsumerGroup(),</span><br><span class="line">                            pullRequest.getMessageQueue().getTopic(), pullRT);</span><br><span class="line"></span><br><span class="line">                    <span class="type">long</span> <span class="variable">firstMsgOffset</span> <span class="operator">=</span> Long.MAX_VALUE;</span><br><span class="line">                    <span class="comment">//如果没有消息</span></span><br><span class="line">                    <span class="keyword">if</span> (pullResult.getMsgFoundList() == <span class="literal">null</span> || pullResult.getMsgFoundList().isEmpty()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        <span class="comment">/*</span></span><br><span class="line"><span class="comment">                         * 立即将拉取请求再次放入PullMessageService的pullRequestQueue中，PullMessageService是一个线程服务</span></span><br><span class="line"><span class="comment">                         * PullMessageService将会循环的获取pullRequestQueue中的pullRequest然后向broker发起新的拉取消息请求</span></span><br><span class="line"><span class="comment">                         * 进行下次消息的拉取</span></span><br><span class="line"><span class="comment">                         */</span></span><br><span class="line">                        DefaultMQPushConsumerImpl.<span class="built_in">this</span>.executePullRequestImmediately(pullRequest);</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        <span class="comment">//获取第一个消息的offset</span></span><br><span class="line">                        firstMsgOffset = pullResult.getMsgFoundList().get(<span class="number">0</span>).getQueueOffset();</span><br><span class="line">                        <span class="comment">//增加拉取tps</span></span><br><span class="line">                        DefaultMQPushConsumerImpl.<span class="built_in">this</span>.getConsumerStatsManager().incPullTPS(pullRequest.getConsumerGroup(),</span><br><span class="line">                                pullRequest.getMessageQueue().getTopic(), pullResult.getMsgFoundList().size());</span><br><span class="line">                        <span class="comment">/*</span></span><br><span class="line"><span class="comment">                         * 2 将拉取到的所有消息，存入对应的processQueue处理队列内部的msgTreeMap中</span></span><br><span class="line"><span class="comment">                         */</span></span><br><span class="line">                        <span class="type">boolean</span> <span class="variable">dispatchToConsume</span> <span class="operator">=</span> processQueue.putMessage(pullResult.getMsgFoundList());</span><br><span class="line">                        <span class="comment">/*</span></span><br><span class="line"><span class="comment">                         * 3 通过consumeMessageService将拉取到的消息构建为ConsumeRequest，然后通过内部的consumeExecutor线程池消费消息</span></span><br><span class="line"><span class="comment">                         * consumeMessageService有ConsumeMessageConcurrentlyService并发消费和ConsumeMessageOrderlyService顺序消费两种实现</span></span><br><span class="line"><span class="comment">                         */</span></span><br><span class="line">                        DefaultMQPushConsumerImpl.<span class="built_in">this</span>.consumeMessageService.submitConsumeRequest(</span><br><span class="line">                                pullResult.getMsgFoundList(),</span><br><span class="line">                                processQueue,</span><br><span class="line">                                pullRequest.getMessageQueue(),</span><br><span class="line">                                dispatchToConsume);</span><br><span class="line">                        <span class="comment">/*</span></span><br><span class="line"><span class="comment">                         * 4 获取配置的消息拉取间隔，默认为0，则等待间隔时间后将拉取请求再次放入pullRequestQueue中，否则立即放入pullRequestQueue中</span></span><br><span class="line"><span class="comment">                         * 进行下次消息的拉取</span></span><br><span class="line"><span class="comment">                         */</span></span><br><span class="line">                        <span class="keyword">if</span> (DefaultMQPushConsumerImpl.<span class="built_in">this</span>.defaultMQPushConsumer.getPullInterval() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                            <span class="comment">/*</span></span><br><span class="line"><span class="comment">                             * 将executePullRequestImmediately的执行放入一个PullMessageService的scheduledExecutorService延迟任务线程池中</span></span><br><span class="line"><span class="comment">                             * 等待给定的延迟时间到了之后再执行executePullRequestImmediately方法</span></span><br><span class="line"><span class="comment">                             */</span></span><br><span class="line">                            DefaultMQPushConsumerImpl.<span class="built_in">this</span>.executePullRequestLater(pullRequest,</span><br><span class="line">                                    DefaultMQPushConsumerImpl.<span class="built_in">this</span>.defaultMQPushConsumer.getPullInterval());</span><br><span class="line">                        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                            <span class="comment">/*</span></span><br><span class="line"><span class="comment">                             * 立即将拉取请求再次放入PullMessageService的pullRequestQueue中，等待下次拉取</span></span><br><span class="line"><span class="comment">                             */</span></span><br><span class="line">                            DefaultMQPushConsumerImpl.<span class="built_in">this</span>.executePullRequestImmediately(pullRequest);</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">                    <span class="keyword">if</span> (pullResult.getNextBeginOffset() &lt; prevRequestOffset</span><br><span class="line">                            || firstMsgOffset &lt; prevRequestOffset) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        log.warn(</span><br><span class="line">                                <span class="string">&quot;[BUG] pull message result maybe data wrong, nextBeginOffset: &#123;&#125; firstMsgOffset: &#123;&#125; prevRequestOffset: &#123;&#125;&quot;</span>,</span><br><span class="line">                                pullResult.getNextBeginOffset(),</span><br><span class="line">                                firstMsgOffset,</span><br><span class="line">                                prevRequestOffset);</span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                <span class="keyword">case</span> NO_NEW_MSG:</span><br><span class="line">                    <span class="comment">//没有匹配到消息</span></span><br><span class="line">                <span class="keyword">case</span> NO_MATCHED_MSG:</span><br><span class="line">                    <span class="comment">//更新下一次拉取偏移量</span></span><br><span class="line">                    pullRequest.setNextOffset(pullResult.getNextBeginOffset());</span><br><span class="line"></span><br><span class="line">                    DefaultMQPushConsumerImpl.<span class="built_in">this</span>.correctTagsOffset(pullRequest);</span><br><span class="line">                    <span class="comment">//立即将拉取请求再次放入PullMessageService的pullRequestQueue中，等待下次拉取</span></span><br><span class="line">                    DefaultMQPushConsumerImpl.<span class="built_in">this</span>.executePullRequestImmediately(pullRequest);</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                <span class="comment">//请求offset不合法，过大或者过小</span></span><br><span class="line">                <span class="keyword">case</span> OFFSET_ILLEGAL:</span><br><span class="line">                    log.warn(<span class="string">&quot;the pull request offset illegal, &#123;&#125; &#123;&#125;&quot;</span>,</span><br><span class="line">                            pullRequest.toString(), pullResult.toString());</span><br><span class="line">                    <span class="comment">//更新下一次拉取偏移量</span></span><br><span class="line">                    pullRequest.setNextOffset(pullResult.getNextBeginOffset());</span><br><span class="line">                    <span class="comment">//丢弃拉取请求</span></span><br><span class="line">                    pullRequest.getProcessQueue().setDropped(<span class="literal">true</span>);</span><br><span class="line">                    DefaultMQPushConsumerImpl.<span class="built_in">this</span>.executeTaskLater(<span class="keyword">new</span> <span class="title class_">Runnable</span>() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line"></span><br><span class="line">                        <span class="meta">@Override</span></span><br><span class="line">                        <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                            <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                                <span class="comment">//更新下次拉取偏移量</span></span><br><span class="line">                                DefaultMQPushConsumerImpl.<span class="built_in">this</span>.offsetStore.updateOffset(pullRequest.getMessageQueue(),</span><br><span class="line">                                        pullRequest.getNextOffset(), <span class="literal">false</span>);</span><br><span class="line">                                <span class="comment">//持久化offset</span></span><br><span class="line">                                DefaultMQPushConsumerImpl.<span class="built_in">this</span>.offsetStore.persist(pullRequest.getMessageQueue());</span><br><span class="line">                                <span class="comment">//移除对应的消费队列，同时将消息队列从负载均衡服务中移除</span></span><br><span class="line">                                DefaultMQPushConsumerImpl.<span class="built_in">this</span>.rebalanceImpl.removeProcessQueue(pullRequest.getMessageQueue());</span><br><span class="line"></span><br><span class="line">                                log.warn(<span class="string">&quot;fix the pull request offset, &#123;&#125;&quot;</span>, pullRequest);</span><br><span class="line">                            &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                                log.error(<span class="string">&quot;executeTaskLater Exception&quot;</span>, e);</span><br><span class="line">                            &#125;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;, <span class="number">10000</span>);</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                <span class="keyword">default</span>:</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onException</span><span class="params">(Throwable e)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">if</span> (!pullRequest.getMessageQueue().getTopic().startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.warn(<span class="string">&quot;execute the pull request exception&quot;</span>, e);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 出现异常，延迟3s将拉取请求再次放入PullMessageService的pullRequestQueue中，等待下次拉取</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        DefaultMQPushConsumerImpl.<span class="built_in">this</span>.executePullRequestLater(pullRequest, pullTimeDelayMillsWhenException);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-1-processPullResult处理拉取结果"><a href="#2-1-processPullResult处理拉取结果" class="headerlink" title="2.1 processPullResult处理拉取结果"></a>2.1 processPullResult处理拉取结果</h3><p>处理pullResult，进行消息解码、过滤以及设置其他属性的操作。</p>
+<p><strong>1、</strong> 更新下次拉取建议的brokerId，下次拉取消息时从pullFromWhichNodeTable中直接取出；<br><strong>2、</strong> 对消息二进制字节数组进行解码转换为java的List消息集合；</p>
+<ol start="3">
+<li>如果存在tag，并且不是classFilterMode，那么按照tag过滤消息，这就是客户端的消息过滤。这采用String#equals方法过滤，而broker端则是比较的tagHash值，即hashCode。</li>
+</ol>
+<p><strong>4、</strong> 如果有消息过滤钩子，那么执行钩子方法，这里可以扩展自定义的消息过滤的逻辑；<br><strong>5、</strong> 遍历过滤通过的消息，设置属性例如事务id，最大、最小偏移量、brokerName；<br><strong>6、</strong> 将过滤后的消息存入msgFoundList集合；<br><strong>7、</strong> 因为消息已经被解析了，那么设置消息的字节数组为null，释放内存；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * PullAPIWrapper的方法</span></span><br><span class="line"><span class="comment"> * 处理pullResult，进行消息解码、过滤以及设置其他属性的操作</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> mq               消息队列</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> pullResult       拉取结果</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> subscriptionData 获取topic对应的SubscriptionData订阅关系</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> 处理后的PullResult</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> PullResult <span class="title function_">processPullResult</span><span class="params">(<span class="keyword">final</span> MessageQueue mq, <span class="keyword">final</span> PullResult pullResult,</span></span><br><span class="line"><span class="params">                                    <span class="keyword">final</span> SubscriptionData subscriptionData)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="type">PullResultExt</span> <span class="variable">pullResultExt</span> <span class="operator">=</span> (PullResultExt) pullResult;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 1 更新下次拉取建议的brokerId，下次拉取消息时从pullFromWhichNodeTable中直接取出</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="built_in">this</span>.updatePullFromWhichNode(mq, pullResultExt.getSuggestWhichBrokerId());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (PullStatus.FOUND == pullResult.getPullStatus()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 2 对二进制字节数组进行解码转换为java的List&lt;MessageExt&gt;消息集合</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="type">ByteBuffer</span> <span class="variable">byteBuffer</span> <span class="operator">=</span> ByteBuffer.wrap(pullResultExt.getMessageBinary());</span><br><span class="line">        List&lt;MessageExt&gt; msgList = MessageDecoder.decodes(byteBuffer);</span><br><span class="line"></span><br><span class="line">        List&lt;MessageExt&gt; msgListFilterAgain = msgList;</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 3 如果存在tag，并且不是classFilterMode，那么按照tag过滤消息，这就是客户端的消息过滤</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">if</span> (!subscriptionData.getTagsSet().isEmpty() &amp;&amp; !subscriptionData.isClassFilterMode()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            msgListFilterAgain = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;MessageExt&gt;(msgList.size());</span><br><span class="line">            <span class="keyword">for</span> (MessageExt msg : msgList) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="keyword">if</span> (msg.getTags() != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//这采用String#equals方法过滤，而broker端则是比较的tagHash值，即hashCode</span></span><br><span class="line">                    <span class="keyword">if</span> (subscriptionData.getTagsSet().contains(msg.getTags())) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        msgListFilterAgain.add(msg);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 4 如果有消息过滤钩子，那么执行钩子方法，这里可以扩展自定义的消息过滤的逻辑</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="built_in">this</span>.hasHook()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="type">FilterMessageContext</span> <span class="variable">filterMessageContext</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">FilterMessageContext</span>();</span><br><span class="line">            filterMessageContext.setUnitMode(unitMode);</span><br><span class="line">            filterMessageContext.setMsgList(msgListFilterAgain);</span><br><span class="line">            <span class="built_in">this</span>.executeHook(filterMessageContext);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 5 遍历过滤通过的消息，设置属性</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">for</span> (MessageExt msg : msgListFilterAgain) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//事务消息标识</span></span><br><span class="line">            <span class="type">String</span> <span class="variable">traFlag</span> <span class="operator">=</span> msg.getProperty(MessageConst.PROPERTY_TRANSACTION_PREPARED);</span><br><span class="line">            <span class="comment">//如果是事务消息，则设置事务id</span></span><br><span class="line">            <span class="keyword">if</span> (Boolean.parseBoolean(traFlag)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                msg.setTransactionId(msg.getProperty(MessageConst.PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX));</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//将响应中的最小和最大偏移量存入msg</span></span><br><span class="line">            MessageAccessor.putProperty(msg, MessageConst.PROPERTY_MIN_OFFSET,</span><br><span class="line">                    Long.toString(pullResult.getMinOffset()));</span><br><span class="line">            MessageAccessor.putProperty(msg, MessageConst.PROPERTY_MAX_OFFSET,</span><br><span class="line">                    Long.toString(pullResult.getMaxOffset()));</span><br><span class="line">            <span class="comment">//设置brokerName到msg</span></span><br><span class="line">            msg.setBrokerName(mq.getBrokerName());</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//将过滤后的消息存入msgFoundList集合</span></span><br><span class="line">        pullResultExt.setMsgFoundList(msgListFilterAgain);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//6 因为消息已经被解析了，那么设置消息的字节数组为null，释放内存</span></span><br><span class="line">    pullResultExt.setMessageBinary(<span class="literal">null</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> pullResult;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * PullAPIWrapper的方法</span></span><br><span class="line"><span class="comment"> * 更新下次拉取建议的brokerId</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> mq       消息队列</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> brokerId 建议的brokerId</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">updatePullFromWhichNode</span><span class="params">(<span class="keyword">final</span> MessageQueue mq, <span class="keyword">final</span> <span class="type">long</span> brokerId)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//存入pullFromWhichNodeTable集合</span></span><br><span class="line">    <span class="type">AtomicLong</span> <span class="variable">suggest</span> <span class="operator">=</span> <span class="built_in">this</span>.pullFromWhichNodeTable.get(mq);</span><br><span class="line">    <span class="keyword">if</span> (<span class="literal">null</span> == suggest) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="built_in">this</span>.pullFromWhichNodeTable.put(mq, <span class="keyword">new</span> <span class="title class_">AtomicLong</span>(brokerId));</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        suggest.set(brokerId);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-2-executePullRequestImmediately再次拉取消息"><a href="#2-2-executePullRequestImmediately再次拉取消息" class="headerlink" title="2.2 executePullRequestImmediately再次拉取消息"></a>2.2 executePullRequestImmediately再次拉取消息</h3><p>将拉取请求再次放入PullMessageService的pullRequestQueue中，PullMessageService是一个线程服务。PullMessageService将会循环的获取pullRequestQueue中的pullRequest然后向broker发起新的拉取消息请求，进行下次消息的拉取。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * DefaultMQPushConsumerImpl的方法</span></span><br><span class="line"><span class="comment"> * 下一次消息拉取</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> pullRequest 拉取请求</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">executePullRequestImmediately</span><span class="params">(<span class="keyword">final</span> PullRequest pullRequest)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//调用PullMessageService#executePullRequestImmediately方法</span></span><br><span class="line">    <span class="built_in">this</span>.mQClientFactory.getPullMessageService().executePullRequestImmediately(pullRequest);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * PullMessageService的方法</span></span><br><span class="line"><span class="comment"> * 下一次消息拉取</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> pullRequest 拉取请求</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">executePullRequestImmediately</span><span class="params">(<span class="keyword">final</span> PullRequest pullRequest)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//存入pullRequestQueue集合，等待下次拉取</span></span><br><span class="line">        <span class="built_in">this</span>.pullRequestQueue.put(pullRequest);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        log.error(<span class="string">&quot;executePullRequestImmediately pullRequestQueue.put&quot;</span>, e);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-3-putMessage存放消息"><a href="#2-3-putMessage存放消息" class="headerlink" title="2.3 putMessage存放消息"></a>2.3 putMessage存放消息</h3><p>该方法将拉取到的所有消息，存入对应的processQueue处理队列内部的msgTreeMap中。</p>
+<p>返回是否需要分发消费dispatchToConsume，当当前processQueue的内部的msgTreeMap中有消息并且consuming&#x3D;false，即还没有开始消费时，将会返回true。</p>
+<p>dispatchToConsume对并发消费无影响，只对顺序消费有影响。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ProcessQueue的方法</span></span><br><span class="line"><span class="comment"> * 消息存入msgTreeMap这个红黑树map集合中</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> msgs 一批消息</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> 是否需要分发消费，当当前processQueue的内部的msgTreeMap中有消息并且consuming=false，即还没有开始消费时，将会返回true</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">putMessage</span><span class="params">(<span class="keyword">final</span> List&lt;MessageExt&gt; msgs)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="type">boolean</span> <span class="variable">dispatchToConsume</span> <span class="operator">=</span> <span class="literal">false</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//尝试加写锁防止并发</span></span><br><span class="line">        <span class="built_in">this</span>.treeMapLock.writeLock().lockInterruptibly();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="type">int</span> <span class="variable">validMsgCnt</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">            <span class="keyword">for</span> (MessageExt msg : msgs) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//当该消息的偏移量以及该消息存入msgTreeMap</span></span><br><span class="line">                <span class="type">MessageExt</span> <span class="variable">old</span> <span class="operator">=</span> msgTreeMap.put(msg.getQueueOffset(), msg);</span><br><span class="line">                <span class="keyword">if</span> (<span class="literal">null</span> == old) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//如果集合没有这个offset的消息，那么增加统计数据</span></span><br><span class="line">                    validMsgCnt++;</span><br><span class="line">                    <span class="built_in">this</span>.queueOffsetMax = msg.getQueueOffset();</span><br><span class="line">                    msgSize.addAndGet(msg.getBody().length);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//消息计数</span></span><br><span class="line">            msgCount.addAndGet(validMsgCnt);</span><br><span class="line">            <span class="comment">//当前processQueue的内部的msgTreeMap中有消息并且consuming=false，即还没有开始消费时，dispatchToConsume = true，consuming = true</span></span><br><span class="line">            <span class="keyword">if</span> (!msgTreeMap.isEmpty() &amp;&amp; !<span class="built_in">this</span>.consuming) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                dispatchToConsume = <span class="literal">true</span>;</span><br><span class="line">                <span class="built_in">this</span>.consuming = <span class="literal">true</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//计算broker累计消息数量</span></span><br><span class="line">            <span class="keyword">if</span> (!msgs.isEmpty()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="type">MessageExt</span> <span class="variable">messageExt</span> <span class="operator">=</span> msgs.get(msgs.size() - <span class="number">1</span>);</span><br><span class="line">                <span class="type">String</span> <span class="variable">property</span> <span class="operator">=</span> messageExt.getProperty(MessageConst.PROPERTY_MAX_OFFSET);</span><br><span class="line">                <span class="keyword">if</span> (property != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="type">long</span> <span class="variable">accTotal</span> <span class="operator">=</span> Long.parseLong(property) - messageExt.getQueueOffset();</span><br><span class="line">                    <span class="keyword">if</span> (accTotal &gt; <span class="number">0</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        <span class="built_in">this</span>.msgAccCnt = accTotal;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="built_in">this</span>.treeMapLock.writeLock().unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        log.error(<span class="string">&quot;putMessage exception&quot;</span>, e);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> dispatchToConsume;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-4-消息的两次过滤"><a href="#2-4-消息的两次过滤" class="headerlink" title="2.4 消息的两次过滤"></a>2.4 消息的两次过滤</h3><ul>
+<li>*通过前面的源码可以看到，消息实际上经过了两次过滤，一次是在broekr中，一次是拉取到consumer之后，为什么经过两次过滤呢？因为broker中的过滤是比较的hashCode值，而hashCode存在哈希碰撞的可能，因此hashCode对比相等之后，还需要在consumer端进行equals的比较，再过滤一次。<br>**</li>
+</ul>
+<p>为*<br>*什么服务端不直接进行equals过滤呢？因为tag的长度是不固定的，而通过hash算法可以生成固定长度的hashCode值，这样才能保证每个consumequeue索引条目的长度一致。而tag的真正值保存在commitLog的消息体中，虽然broker最终会回去到commitLog中的消息并返回，但是获取的获取一段消息字节数组，并没有进行反序列化为Message对象，因此无法获取真实值，而在consumer端一定会做反序列化操作的，因此tag的equals比较放在了consumer端。<br>**</p>
+<h2 id="3-总结"><a href="#3-总结" class="headerlink" title="3 总结"></a>3 总结</h2><p>本次我们来学习Consumer如何处理Broker的拉取消息响应的源码。入口就是MQClientAPIImpl#pullMessageAsync方法内部的回调函数InvokeCallback#operationComplete方法。</p>
+<p><strong>1、</strong> 在这个方法中，首先进行消息的<strong>解码以及第二次过滤，然后将消息存入对应的processQueue处理队列内部的msgTreeMap中</strong>；</p>
+<ol start="2">
+<li>然后通过consumeMessageService#submitConsumeRequest方法将拉取到的消息构建为ConsumeRequest，然后通过内部的consumeExecutor线程池的消费消息。</li>
+</ol>
+<p><strong>1、</strong> consumeMessageService有ConsumeMessageConcurrentlyService并发消费和ConsumeMessageOrderlyService顺序消费两种实现；<br><strong>3、</strong> 最后是再次发起消息拉取请求；</p>
+<p>**下一篇文章，我们将会去看看ConsumeMessageConcurrentlyService并发消费和ConsumeMessageOrderlyService顺序消费两种实现如何消费消息。<br>**</p>
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1739713345/" target="_blank">20、RocketMQ源码分析：DefaultMQPushConsumer处理Broker的拉取消息响应源码</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
+                        
+                            <a href="/category/Web/">Web</a>
+                        
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
+                        
+                            <a href="/tag/RocketMq/">RocketMq</a>
+                        
+                    </div>
+                
+                <div class="article-prev-next">
+                    
+                        <a href="/article/1739713344/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1739713344/" title="发布于 2025-02-16 09:42">19、RocketMQ源码分析：Broker处理DefaultMQPushConsumer发起的拉取消息请求源码【一万字】</a>
+                        <br>
+                    
+                    
+                        <a href="/article/1739713346/" class="next-prefix">» </a> 下一篇：    <a href="/article/1739713346/" title="发布于 2025-02-16 09:42">21、RocketMQ源码分析：ConsumeMessageConcurrentlyService并发消费消息源码</a>
+                    
+                </div>
+            </div>
+            
+    <div class="article-comments">
+        
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
+    
+</div>
+    <div id="footer"></div>
+    <div id="sidebar">
+    <div class="menu-wrap" style="display:none;">
+        
+            <div class="menu-notice">
+                <span class="iconfont icon-notice"></span>
+                <div class="notice">
+                    <span>简单地活着，肆意而又精彩！</span>
+                </div>
+            </div>
+        
+        <nav class="menu">
+            <div class="menu-introduce"> 
+                <div class="introduce-avatar">
+                    <img src="/image/sidebar/avatar.jpg">
+                </div> 
+                <div class="introduce-info"> 
+                    <div class="introduce-user"><span>Live For Code</span></div>
+                </div> 
+            </div> 
+            <div class="menu-list">
+                <ul>
+                    
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                    
+                        <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
+                    
+                        <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
+                    
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                    
+                        <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
+                    
+                        <li class=""><a href="/about" class="" target="_self"><span class="iconfont icon-about-fill"></span>关于</a></li>
+                    
+                        <li class=""><a href="/atom.xml" class="" target="_blank"><span class="iconfont icon-rss"></span>订阅</a></li>
+                    
+                        <li class=""><a href="javascript:;" class="search" target="_self"><span class="iconfont icon-search-menu"></span>搜索</a></li>
+                    
+                        <li class=""><a href="/comment" class="" target="_self"><span class="iconfont icon-comments-fill"></span>留言板</a></li>
+                    
+                        <li class=""><a href="/friend" class="" target="_self"><span class="iconfont icon-link"></span>友情链接</a></li>
+                    
+                </ul> 
+            </div> 
+            <div class="menu-link">
+                <div class="box">
+                    <div class="image-box"></div>
+                </div>
+                
+                    <a name="知乎" href="https://www.zhihu.com/people/wo-xin-de-love" class="" target="_blank" data=""><span class="iconfont icon-zhihu"></span></a>
+                
+                    <a name="微博" href="https://weibo.com/u/3939432776" class="" target="_blank" data=""><span class="iconfont icon-weibo"></span></a>
+                
+                    <a name="QQ" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"><span class="iconfont icon-qq"></span></a>
+                
+                    <a name="微信" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"><span class="iconfont icon-wechat"></span></a>
+                
+                    <a name="GitHub" href="https://github.com/first19326" class="" target="_blank" data=""><span class="iconfont icon-github"></span></a>
+                
+            </div> 
+        </nav>
+        <button class="menu-button-close"></button>
+        <div class="morph-shape" id="morph-shape" data-morph-open="M-7.312,0H15c0,0,66,113.339,66,399.5C81,664.006,15,800,15,800H-7.312V0z;M-7.312,0H100c0,0,0,113.839,0,400c0,264.506,0,400,0,400H-7.312V0z">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 800" preserveAspectRatio="none">
+                <path d="M-7.312,0H0c0,0,0,113.839,0,400c0,264.506,0,400,0,400h-7.312V0z"/>
+            </svg>
+        </div>
+    </div>
+    <button class="menu-button-open">MENU</button>
+    <div class="menu-cover"></div>
+</div>
+    <link type="text/css" rel="stylesheet" href="/css/search.css">
+<script type="text/javascript" src="/js/iscroll.js"></script>
+<script type="text/javascript" src="/js/instantsearch.min.js"></script>
+<div class="search-window">
+    <div class="search-content">
+        <div class="search-content-icon">
+            <i class="iconfont icon-search"></i>
+        </div>
+        <div id="search-input" class="search-input"></div>
+    </div>
+
+    <div class="search-scroll">
+        <div class="search-result">
+            <div id="search-stats" class="search-stats"></div>
+            <div id="search-hits"></div>
+            <div id="search-pagination" class="search-pagination"></div>
+        </div>
+    </div>
+
+    <span class="search-close-icon">
+        <i class="iconfont icon-close"></i>
+    </span>
+</div>
+    <div id="tools">
+    <div class="progressbar-top"></div>
+
+    
+        <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
+        <script type="text/javascript" src="/js/APlayer.min.js"></script>
+        <script type="text/javascript" src="/js/Meting.min.js"></script>
+        <meting-js id="3778678" lrcshow="false" server="netease" type="playlist" fixed="true" autoplay="false" loop="all" order="random" preload="auto" volume="0.67" mutex="true"></meting-js>
+    
+    
+    <div class="wrap-right">
+        <div class="setting">
+            <div class="iconbox favorites" switch="false">
+                <span class="iconfont icon-favorites"></span>
+                <span class="icontext">关注</span>
+            </div>
+            <div class="iconbox mode">
+                <div class="light">
+                    <span class="iconfont icon-daymode"></span>
+                    <span class="icontext">浅色模式</span>
+                </div>
+                <div class="dark">
+                    <span class="iconfont icon-nightmode-fill"></span>
+                    <span class="icontext">深色模式</span>
+                </div>
+            </div>
+            <a href="javascript:;" target="_self" class="search">
+                <div class="iconbox">
+                    <span class="iconfont icon-search-menu"></span>
+                    <span class="icontext">搜索</span>
+                </div>
+            </a>
+            <div class="iconbox bottom">
+                <div style="display: inline-block; transform: rotate(180deg);">
+                    <span class="iconfont icon-top"></span>
+                </div>
+                <span class="icontext">跳至底部</span>
+            </div>
+        </div>
+        <div class="iconbox set">
+            <div style="display: inline-block;">
+                <span class="iconfont icon-setting"></span>
+            </div>
+            <span class="icontext">设置</span>
+        </div>
+        <div class="iconbox top">
+            <span class="iconfont icon-top"></span>
+            <span class="icontext">返回顶部</span>
+        </div>
+    </div>
+    <div class="loading"></div>
+</div>
+    <script>
+    window.config = {
+        GitHubUserName     : "first19326",
+        GitHubRepositories : "Hexo-LiveForCode",
+
+        User             : "Live For Code",
+        UserAvatar       : "/image/sidebar/avatar.jpg",
+        WebsiteStartDate : "2020-01-01",
+
+        WebsiteTitleBlur         : "(◍´꒳`◍) Hi, Live For Code",
+        WebsiteTitleBlurTimeOut  : 500,
+        WebsiteTitleFocus        : "(*´∇｀*) 欢迎回来!",
+        WebsiteTitleFocusTimeOut : 1000,
+        WebsiteFavicon           : "/image/website/logo.png",
+
+        ProgressBar : {
+            id       : "topProgressBar",
+            color    : "#77B6FF",
+            height   : "2px",
+            duration : 0.2
+        },
+
+        Loading: {
+            rebound : {
+                tension  : 16,
+                friction : 5
+            },
+            spinner : {
+                id     : "spinner",
+                radius : 90,
+                sides  : 3,
+                depth  : 4,
+                colors : {
+                    background : "#F0F0F0",
+                    stroke     : "#272633",
+                    base       : "",
+                    child      : "#272633"
+                },
+                alwaysForward : true,
+                restAt        : 0.5,
+                renderBase    : false
+            }
+        },
+
+        HomeHeaderAnimationRendered : true,
+        HomeHeaderAnimation         : {
+            radius      : 15,
+            density     : 0.2,
+            color       : "rgba(255, 255, 255, .2)",
+            clearOffset : 0.3
+        },
+
+        BackAnimationRendered          : true,
+        IEBrowserBackAnimationRendered : false,
+        BackAnimation                  : {
+            colorSaturation  : "60%",
+            colorBrightness  : "50%",
+            colorAlpha       : 0.5,
+            colorCycleSpeed  : 5,
+            verticalPosition : "random",
+            horizontalSpeed  : 200,
+            ribbonCount      : 3,
+            strokeSize       : 0,
+            parallaxAmount   : -0.2,
+            animateSections  : true
+        },
+
+        HomeHeaderImage : [
+            
+                "/image/header/home.jpg",
+            
+                "/image/header/home.jpeg",
+            
+                "/image/header/2023-04-17-20-51-03.jpg",
+            
+                "/image/header/2023-04-17-20-54-07.jpg",
+            
+                "/image/header/2023-04-17-20-54-22.jpg",
+            
+                "/image/header/2023-04-17-20-55-25.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+        HomeBannerText  : "",
+
+        ArticleHeaderImage : [
+            
+                "/image/header/article.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+
+        OtherBannerText : "",
+
+        Error : {
+            icon    : "icon-swimming",
+            title   : "PAGE NOT FOUND",
+            content : [
+                
+                    "很抱歉，您访问的页面不存在！",
+                
+                    "可能是输入地址有误或该地址已变更。",
+                
+            ],
+            buttons : [
+                
+                    {
+                        icon  : "icon-home",
+                        text  : "返回首页",
+                        href  : "https://fadeway32.gitee.io/",
+                        class : ""
+                    },
+                
+            ]
+        },
+
+        MenuNotice : {
+            enable : true,
+            notice : "简单地活着，肆意而又精彩！",
+            speed  : 20
+        },
+        MenuList : [
+            
+                {
+                    name   : "首页",
+                    icon   : "icon-home-fill",
+                    href   : "/",
+                    type   : "index",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "分类",
+                    icon   : "icon-folder-fill",
+                    href   : "/category",
+                    type   : "category",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "标签",
+                    icon   : "icon-discount-fill",
+                    href   : "/tag",
+                    type   : "tag",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "归档",
+                    icon   : "icon-calendar-fill",
+                    href   : "/archive",
+                    type   : "archive",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "赞赏",
+                    icon   : "icon-heart-fill",
+                    href   : "/donate",
+                    type   : "donate",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "关于",
+                    icon   : "icon-about-fill",
+                    href   : "/about",
+                    type   : "about",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "订阅",
+                    icon   : "icon-rss",
+                    href   : "/atom.xml",
+                    type   : "",
+                    class  : "",
+                    target : "_blank"
+                },
+            
+                {
+                    name   : "搜索",
+                    icon   : "icon-search-menu",
+                    href   : "javascript:;",
+                    type   : "",
+                    class  : "search",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "留言板",
+                    icon   : "icon-comments-fill",
+                    href   : "/comment",
+                    type   : "comment",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "友情链接",
+                    icon   : "icon-link",
+                    href   : "/friend",
+                    type   : "friend",
+                    class  : "",
+                    target : "_self"
+                },
+            
+        ],
+        MenuLink : [
+            
+                
+                    {
+                        name   : "知乎",
+                        icon   : "icon-zhihu",
+                        href   : "https://www.zhihu.com/people/wo-xin-de-love",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "微博",
+                        icon   : "icon-weibo",
+                        href   : "https://weibo.com/u/3939432776",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "QQ",
+                        icon   : "icon-qq",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"
+                    },
+                
+                    {
+                        name   : "微信",
+                        icon   : "icon-wechat",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"
+                    },
+                
+                    {
+                        name   : "GitHub",
+                        icon   : "icon-github",
+                        href   : "https://github.com/first19326",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+            
+        ],
+
+        FooterStyle : 2,
+        BottomText  : "<div><span class='face'>ღゝ◡╹)ノ♡</span></div><div>【人生若只如初见<span><i class='iconfont icon-like-fill'></i></span>何事秋风悲画扇】</div><div>&copy; 2020-2022 WorstOne. All Rights Reserved.</div>",
+
+        ConsoleList : [
+            
+                
+                    [
+                        
+                            
+                                "Based on cnblogs theme SimpleMemory.",
+                            
+                                "",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "SimpleMemory Author:",
+                            
+                                "BNDong",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "Theme:",
+                            
+                                "LiveForCode",
+                            
+                        
+                    ],
+                
+            
+        ],
+
+        FontIconExtend : "",
+
+        Donate : {
+            paypal  : "",
+            bitcoin : "",
+            alipay  : "/image/donate/alipay.png",
+            wechat  : "/image/donate/wechat.png"
+        },
+
+        Search : {
+            applicationID : "758UIQ1V0H",
+            apiKey        : "2e038c318ac6813e4b4baa91f6ccfa63",
+            indexName     : "hexo2",
+            hits          : {
+                page : 30
+            },
+            labels        : {
+                placeholder : "搜索",
+                empty       : "未发现与 「${query}」 相关的内容",
+                stats       : "${hits} 条相关条目，使用了 ${time} 毫秒",
+            }
+        }, 
+
+        Valine : {
+            switch         : true,
+            el             : ".comments-content",
+            appId          : "srhKtvWPQTWYKh3qX8G8M7v0-gzGzoHsz",
+            appKey         : "8uVSP1q6UlALVC5igYfIfv2h",
+            serverURLs     : "",
+            placeholder    : "你是我一生只会遇见一次的惊喜...",
+            avatar         : "mm",
+            meta           : "nick,mail,link",
+            requiredFields : "nick,mail",
+            pageSize       : 5,
+            lang           : "zh-cn",
+            visitor        : true,
+            enableQQ       : true
+        },
+
+        Tocbot : {
+            switch                : true,
+            tocSelector           : ".toc",
+            contentSelector       : ".article-body",
+            headingSelector       : "h1, h2, h3, h4, h5",
+            headingsOffset        : 0,
+            scrollSmooth          : true,
+            scrollSmoothOffset    : -5,
+            positionFixedSelector : ".toc",
+            positionFixedClass    : "toc-fixed",
+            fixedSidebarOffset    : "",
+        },
+
+        Require : {
+            baseUrl     : "/js/",
+            waitSeconds : 100
+        },
+
+        Music : {
+            type : "Meting"
+        },
+        APlayer : {
+            container : ".aplayer",
+            fixed     : true,
+            autoplay  : true,
+            loop      : "all",
+            order     : "random",
+            preload   : "auto",
+            volume    : 0.67,
+            mutex     : true,
+            lrcType   : 2,
+            audio     : [
+                
+                    {
+                        name   : "Endless Tears",
+                        artist : "CLIFF EDGE",
+                        cover  : "/music/cover/Endless Tears.jpg",
+                        url    : "/music/song/Endless Tears.mp3",
+                        lrc    : "/music/lrc/Endless Tears.lrc"
+                    },
+                
+            ]
+        },
+        Meting : {
+            id       : "3778678", 
+            lrcshow  : false, 
+            server   : "netease", 
+            type     : "playlist", 
+            fixed    : true, 
+            autoplay : false, 
+            loop     : "all", 
+            order    : "random", 
+            preload  : "auto", 
+            volume   : 0.67, 
+            mutex    : true
+        },
+
+        Mouse : {
+            enable  : true,
+            options : {
+                size  : 6,
+                sizeF : 24
+            }
+        },
+
+        LazyLoad : {
+            default : "/image/website/lazyload.svg"
+        },
+  
+        Style : {
+            aplayer          : "/css/APlayer.css",
+            archive          : "/css/archive.css",
+            base             : "/css/base.css",
+            clipboard        : "/css/clipboard.css",
+            code             : "/css/code.css",
+            donate           : "/css/donate.css",
+            fancybox         : "/css/jquery.fancybox.css",
+            footer           : "/css/footer.css",
+            iconfont         : "/iconfont/iconfont.css",
+            index            : "/css/index.css",
+            menuBubble       : "/css/menu-bubble.css",
+            mouse            : "/css/mouse.css",
+            page             : "/css/page.css",
+            post             : "/css/post.css",
+            search           : "/css/search.css",
+            tocbot           : "/css/tocbot.css",
+            valine           : "/css/valine.css"
+        },
+
+        Script: {
+            aplayer          : "/js/APlayer.min.js",
+            config           : "/js/require.config.js",
+            index            : "/js/index.js",
+            instantSearch    : "/js/instantsearch.min.js",
+            iscroll          : "/js/iscroll.js",
+            jQuery           : "/js/jquery-3.4.1.min.js",
+            loading          : "/js/loading.js",
+            meting           : "/js/Meting.min.js",
+            require          : "/js/require.min.js"
+        },
+
+        Font: {
+            LongCang    : "/font/LongCang.css",
+            Monda       : "/font/Monda.css",
+            NotoSansSC  : "/font/NotoSansSC.css",
+            NotoSerifSC : "/font/NotoSerifSC.css",
+            Playball    : "/font/Playball.css",
+            PTMono      : "/font/PTMono.css",
+            Roboto      : "/font/Roboto.css",
+            RobotoSlab  : "/font/RobotoSlab.css",
+            Rosario     : "/font/Rosario.css",
+            UbuntuMono  : "/font/UbuntuMono.css"
+        },
+
+        Suffix : {
+            about : "你知道的越多,你不知道的越多"
+        },
+            
+        Theme : {
+            url  : "https://fadeway32.gitee.io/",
+            name : "fadeway32"
+        }  
+    };
+</script>
+    <script type="text/javascript" src="/js/index.js"></script>
+</body>
+</html>

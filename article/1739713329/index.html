@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <!--    <meta name="referrer" content="origin">-->
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>
+        
+            04、RocketMQ源码分析：Broker启动加载消息文件以及恢复数据源码【一万字】
+        
+    </title>
+    <link rel="shortcut icon" href="#"/>
+
+    <link type="text/css" rel="stylesheet" href="/font/LongCang.css">
+    <link type="text/css" rel="stylesheet" href="/font/Monda.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSansSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSerifSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/Playball.css">
+    <link type="text/css" rel="stylesheet" href="/font/PTMono.css">
+    <link type="text/css" rel="stylesheet" href="/font/Roboto.css">
+    <link type="text/css" rel="stylesheet" href="/font/RobotoSlab.css">
+    <link type="text/css" rel="stylesheet" href="/font/Rosario.css">
+    <link type="text/css" rel="stylesheet" href="/font/UbuntuMono.css">
+
+    <link type="text/css" rel="stylesheet" href="/css/base.css">
+    <link type="text/css" rel="stylesheet" href="/css/code.css">
+
+    <script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
+<meta name="generator" content="Hexo 6.2.0"></head>
+<body>
+    <a id="cover"></a>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
+<header>
+    <meta name="referrer" content="no-referrer">
+</header>
+<div id="header" class="header">
+    <div class="vertical">
+        <div class="inner">
+            
+                <h1 class="header-subtitle">04、RocketMQ源码分析：Broker启动加载消息文件以及恢复数据源码【一万字】</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2025-02-16
+                        </span>
+                        
+                            <span id="/article/1739713329/" class="leancloud_visitors" data-flag-title="04、RocketMQ源码分析：Broker启动加载消息文件以及恢复数据源码【一万字】">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1739713329/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">RocketMq</span>
+                        
+                    
+                </div>
+            
+        </div>
+    </div>
+    
+</div>
+<div id="container">
+    
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="04、RocketMQ源码分析：Broker启动加载消息文件以及恢复数据源码【一万字】"><a href="#04、RocketMQ源码分析：Broker启动加载消息文件以及恢复数据源码【一万字】" class="headerlink" title="04、RocketMQ源码分析：Broker启动加载消息文件以及恢复数据源码【一万字】"></a>04、RocketMQ源码分析：Broker启动加载消息文件以及恢复数据源码【一万字】</h1><p>此前我们学习了Broker的启动源码：<a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_43767015/article/details/125053664">RocketMQ源码(3)—Broker启动流程源码解析【一万字】</a><br>，Broker的启动过程中，在DefaultMessageStore实例化之后，将会调用load方法将磁盘中的commitLog、ConsumeQueue、IndexFile文件的数据加载到内存中，还会进行数据恢复操作。</p>
+<p>下面看看Broker启动加载消息文件以及恢复数据源码。</p>
+<h4 id="文章目录"><a href="#文章目录" class="headerlink" title="文章目录"></a>文章目录</h4><ul>
+<li>1 isTempFileExist是否存在临时文件</li>
+<li>2 commitLog#load加载消息日志文件</li>
+<li><ul>
+<li>2.1 load加载文件</li>
+</ul>
+</li>
+<li><ul>
+<li>2.1.1 创建MappedFile并映射文件</li>
+</ul>
+</li>
+<li>2.2 commitlog文件简介</li>
+<li>3 loadConsumeQueue加载消费队列文件</li>
+<li><ul>
+<li>3.1 load加载ConsumeQueue文件</li>
+</ul>
+</li>
+<li>3.2 ConsumeQueue文件简介</li>
+<li>4 创建StoreCheckpoint检查点对象</li>
+<li>5 加载index索引文件</li>
+<li><ul>
+<li>5.1 index索引文件简介</li>
+</ul>
+</li>
+<li>6 恢复CommitLog和ConsumeQueue数据</li>
+<li><ul>
+<li>6.1 recoverConsumeQueue恢复ConsumeQueue</li>
+</ul>
+</li>
+<li><ul>
+<li>6.1.1recover恢复ConsumeQueue</li>
+<li>6.1.2 truncateDirtyFiles截断无效文件</li>
+</ul>
+</li>
+<li>6.2 recoverNormally正常恢复commitLog</li>
+<li><ul>
+<li>6.2.1 truncateDirtyLogicFiles截断无效consumequeue文件</li>
+</ul>
+</li>
+<li>6.3 recoverAbnormally异常恢复commitlog</li>
+<li><ul>
+<li>6.3.1 isMappedFileMatchedRecover文件是否正常</li>
+</ul>
+</li>
+<li>6.4 recoverTopicQueueTable恢复consumeQueueTable</li>
+</ul>
+<p><strong>load方法主要步骤为：</strong></p>
+<p><strong>1、</strong> 调用isTempFileExist方法判断上次broker是否是正常退出，如果是正常退出不会保留abort文件，异常退出则会；<br><strong>2、</strong> 加载CommitLog日志文件CommitLog文件是真正存储消息内容的地方；<br><strong>3、</strong> 加载ConsumeQueue文件ConsumeQueue文件可以看作是CommitLog的消息偏移量索引文件；<br><strong>4、</strong> 加载index索引文件Index文件可以看作是CommitLog的消息时间范围索引文件；<br><strong>5、</strong> 恢复ConsumeQueue文件和CommitLog文件，将正确的的数据恢复至内存中，删除错误数据和文件；<br><strong>6、</strong> 加载RocketMQ延迟消息的服务，包括延时等级、配置文件等等；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * DefaultMessageStore的方法</span></span><br><span class="line"><span class="comment"> * 加载Commit Log、Consume Queue、index file等文件，将数据加载到内存中，并完成数据的恢复</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@throws</span> IOException</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">load</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="type">boolean</span> <span class="variable">result</span> <span class="operator">=</span> <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 1 判断上次broker是否是正常退出，如果是正常退出不会保留abort文件，异常退出则会</span></span><br><span class="line"><span class="comment">         *</span></span><br><span class="line"><span class="comment">         * Broker在启动时会创建&#123;storePathRootDir&#125;/abort文件，并且注册钩子函数：在JVM退出时删除abort文件。</span></span><br><span class="line"><span class="comment">         * 如果下一次启动时存在abort文件，说明Broker是异常退出的，文件数据可能不一直，需要进行数据修复。</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="type">boolean</span> <span class="variable">lastExitOK</span> <span class="operator">=</span> !<span class="built_in">this</span>.isTempFileExist();</span><br><span class="line">        log.info(<span class="string">&quot;last shutdown &#123;&#125;&quot;</span>, lastExitOK ? <span class="string">&quot;normally&quot;</span> : <span class="string">&quot;abnormally&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 2 加载Commit Log日志文件，目录路径取自broker.conf文件中的storePathCommitLog属性</span></span><br><span class="line"><span class="comment">         * Commit Log文件是真正存储消息内容的地方，单个文件默认大小1G。</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="comment">// load Commit Log</span></span><br><span class="line">        result = result &amp;&amp; <span class="built_in">this</span>.commitLog.load();</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 2 加载Consume Queue文件，目录路径为&#123;storePathRootDir&#125;/consumequeue，文件组织方式为topic/queueId/fileName</span></span><br><span class="line"><span class="comment">         * Consume Queue文件可以看作是Commit Log的索引文件，其存储了它所属Topic的消息在Commit Log中的偏移量</span></span><br><span class="line"><span class="comment">         * 消费者拉取消息的时候，可以从Consume Queue中快速的根据偏移量定位消息在Commit Log中的位置。</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="comment">// load Consume Queue</span></span><br><span class="line">        result = result &amp;&amp; <span class="built_in">this</span>.loadConsumeQueue();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (result) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">/*</span></span><br><span class="line"><span class="comment">             * 3 加载checkpoint 检查点文件，文件位置是&#123;storePathRootDir&#125;/checkpoint</span></span><br><span class="line"><span class="comment">             * StoreCheckpoint记录着commitLog、ConsumeQueue、Index文件的最后更新时间点，</span></span><br><span class="line"><span class="comment">             * 当上一次broker是异常结束时，会根据StoreCheckpoint的数据进行恢复，这决定着文件从哪里开始恢复，甚至是删除文件</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            <span class="built_in">this</span>.storeCheckpoint =</span><br><span class="line">                    <span class="keyword">new</span> <span class="title class_">StoreCheckpoint</span>(StorePathConfigHelper.getStoreCheckpoint(<span class="built_in">this</span>.messageStoreConfig.getStorePathRootDir()));</span><br><span class="line">            <span class="comment">/*</span></span><br><span class="line"><span class="comment">             * 4 加载 index 索引文件，目录路径为&#123;storePathRootDir&#125;/index</span></span><br><span class="line"><span class="comment">             * index 索引文件用于通过时间区间来快速查询消息，底层为HashMap结构，实现为hash索引。后面会专门出文介绍</span></span><br><span class="line"><span class="comment">             * 如果不是正常退出，并且最大更新时间戳比checkpoint文件中的时间戳大，则删除该 index 文件</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            <span class="built_in">this</span>.indexService.load(lastExitOK);</span><br><span class="line">            <span class="comment">/*</span></span><br><span class="line"><span class="comment">             * 4 恢复ConsumeQueue文件和CommitLog文件，将正确的的数据恢复至内存中，删除错误数据和文件。</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            <span class="built_in">this</span>.recover(lastExitOK);</span><br><span class="line"></span><br><span class="line">            log.info(<span class="string">&quot;load over, and the max phy offset = &#123;&#125;&quot;</span>, <span class="built_in">this</span>.getMaxPhyOffset());</span><br><span class="line"></span><br><span class="line">            <span class="comment">/*</span></span><br><span class="line"><span class="comment">             * 5 加载RocketMQ延迟消息的服务，包括延时等级、配置文件等等。</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            <span class="keyword">if</span> (<span class="literal">null</span> != scheduleMessageService) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                result = <span class="built_in">this</span>.scheduleMessageService.load();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        log.error(<span class="string">&quot;load exception&quot;</span>, e);</span><br><span class="line">        result = <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!result) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//如果上面的操作抛出异常，则文件服务停止</span></span><br><span class="line">        <span class="built_in">this</span>.allocateMappedFileService.shutdown();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="1-isTempFileExist是否存在临时文件"><a href="#1-isTempFileExist是否存在临时文件" class="headerlink" title="1 isTempFileExist是否存在临时文件"></a>1 isTempFileExist是否存在临时文件</h2><p>首先会判断是否存在临时文件，也就是abort文件，其路径为{storePathRootDir}&#x2F;abort，Broker在启动时会创建{ROCKET_HOME}&#x2F;store&#x2F;abort文件，并且注册钩子函数：在JVM退出时删除abort文件。</p>
+<p>如果下一次启动时不存在abort文件，表示钩子函数被正确执行，broker是正常退出的，不需要修复文件数据；如果存在abort文件，说明broker是异常退出的，因为钩子函数并没有执行成功，此时文件数据可能不一致，需要进行数据修复。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="type">boolean</span> <span class="title function_">isTempFileExist</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//获取临时文件路径，路径为：&#123;storePathRootDir&#125;/abort</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">fileName</span> <span class="operator">=</span> StorePathConfigHelper.getAbortFile(<span class="built_in">this</span>.messageStoreConfig.getStorePathRootDir());</span><br><span class="line">    <span class="comment">//构建file文件对象</span></span><br><span class="line">    <span class="type">File</span> <span class="variable">file</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">File</span>(fileName);</span><br><span class="line">    <span class="comment">//判断文件是否存在</span></span><br><span class="line">    <span class="keyword">return</span> file.exists();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>下面就是在正常启动broker创建的abort文件：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202502162024441.png" alt="*"></p>
+<h2 id="2-commitLog-load加载消息日志文件"><a href="#2-commitLog-load加载消息日志文件" class="headerlink" title="2 commitLog#load加载消息日志文件"></a>2 commitLog#load加载消息日志文件</h2><p>通过内部的CommitLog对象的load方法加载Commit<br>Log日志文件，目录路径取自broker.conf文件中配置的storePathCommitLog属性，默认为$HOME&#x2F;store&#x2F;commitlog&#x2F;。</p>
+<p>CommitLog的load方法实际上是委托内部的mappedFileQueue的load方法进行加载。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * CommitLog的方法</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">load</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//调用mappedFileQueue的load方法</span></span><br><span class="line">    <span class="type">boolean</span> <span class="variable">result</span> <span class="operator">=</span> <span class="built_in">this</span>.mappedFileQueue.load();</span><br><span class="line">    log.info(<span class="string">&quot;load commit log &quot;</span> + (result ? <span class="string">&quot;OK&quot;</span> : <span class="string">&quot;Failed&quot;</span>));</span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-1-load加载文件"><a href="#2-1-load加载文件" class="headerlink" title="2.1 load加载文件"></a>2.1 load加载文件</h3><p>MappedFileQueue#load方法会就是将commitLog目录路径下的commotlog文件进行全部的加载为MappedFile对象。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * MappedFileQueue的方法</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">load</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//获取commitlog文件的存放目录，目录路径取自</span></span><br><span class="line">    <span class="comment">//broker.conf文件中配置的storePathCommitLog属性，默认为$HOME/store/commitlog/</span></span><br><span class="line">    <span class="type">File</span> <span class="variable">dir</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">File</span>(<span class="built_in">this</span>.storePath);</span><br><span class="line">    <span class="comment">//获取内部的文件集合</span></span><br><span class="line">    File[] ls = dir.listFiles();</span><br><span class="line">    <span class="keyword">if</span> (ls != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//如果存在commitlog文件，那么进行加载</span></span><br><span class="line">        <span class="keyword">return</span> doLoad(Arrays.asList(ls));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * MappedFileQueue的方法</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">doLoad</span><span class="params">(List&lt;File&gt; files)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">// 对commitlog文件按照文件名生序排序</span></span><br><span class="line">    files.sort(Comparator.comparing(File::getName));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (File file : files) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//校验文件实际大小是否等于预定的文件大小，如果不想等，则直接返回false，不再加载其他文件</span></span><br><span class="line">        <span class="keyword">if</span> (file.length() != <span class="built_in">this</span>.mappedFileSize) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.warn(file + <span class="string">&quot;\t&quot;</span> + file.length()</span><br><span class="line">                    + <span class="string">&quot; length not matched message store config value, please check it manually&quot;</span>);</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">/*</span></span><br><span class="line"><span class="comment">             * 核心代码</span></span><br><span class="line"><span class="comment">             * 每一个commitlog文件都创建一个对应的MappedFile对象</span></span><br><span class="line"><span class="comment">             *</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            <span class="type">MappedFile</span> <span class="variable">mappedFile</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">MappedFile</span>(file.getPath(), mappedFileSize);</span><br><span class="line">            <span class="comment">//将wrotePosition 、flushedPosition、committedPosition 默认设置为文件大小</span></span><br><span class="line">            <span class="comment">//当前文件所映射到的消息写入page cache的位置</span></span><br><span class="line">            mappedFile.setWrotePosition(<span class="built_in">this</span>.mappedFileSize);</span><br><span class="line">            <span class="comment">//刷盘的最新位置</span></span><br><span class="line">            mappedFile.setFlushedPosition(<span class="built_in">this</span>.mappedFileSize);</span><br><span class="line">            <span class="comment">//已提交的最新位置</span></span><br><span class="line">            mappedFile.setCommittedPosition(<span class="built_in">this</span>.mappedFileSize);</span><br><span class="line">            <span class="comment">//添加到MappedFileQueue内部的mappedFiles集合中</span></span><br><span class="line">            <span class="built_in">this</span>.mappedFiles.add(mappedFile);</span><br><span class="line">            log.info(<span class="string">&quot;load &quot;</span> + file.getPath() + <span class="string">&quot; OK&quot;</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.error(<span class="string">&quot;load file &quot;</span> + file + <span class="string">&quot; error&quot;</span>, e);</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在物理上，commotlog目录下面是一个个的commitlog文件，但是在Java中进行了三层映射，CommitLog-MappedFileQueue-MappedFile。CommitLog中包含MappedFileQueue，以及commitlog相关的其他服务，例如刷盘服务；MappedFileQueue中包含MappedFile集合，以及单个commotlog文件大小等属性，而MappedFile才是真正的一个commotlog文件在Java中的映射，包含文件名、大小、mmap对象mappedByteBuffer等属性。</p>
+<p>实际上MappedFileQueue和MappedFile都是通用类，commitlog、comsumequeue、indexfile文件都会使用到。</p>
+<h4 id="2-1-1-创建MappedFile并映射文件"><a href="#2-1-1-创建MappedFile并映射文件" class="headerlink" title="2.1.1 创建MappedFile并映射文件"></a>2.1.1 创建MappedFile并映射文件</h4><p>MappedFile作为一个RocketMQ的物理文件在Java中的映射类。commitLog consumerQueue、indexFile3种文件磁盘的读写都是通过MappedFile操作的。</p>
+<p>它的构造器中会对当前文件进行mmap内存映射操作。这里我们不会对mmap进行过多讨论，会在介绍RocketMQ高性能的部分会专门介绍。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="title function_">MappedFile</span><span class="params">(<span class="keyword">final</span> String fileName, <span class="keyword">final</span> <span class="type">int</span> fileSize)</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//调用init初始化</span></span><br><span class="line">    init(fileName, fileSize);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">init</span><span class="params">(<span class="keyword">final</span> String fileName, <span class="keyword">final</span> <span class="type">int</span> fileSize)</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//文件名。长度为20位，左边补零，剩余为起始偏移量，比如00000000000000000000代表了第一个文件，起始偏移量为0</span></span><br><span class="line">    <span class="built_in">this</span>.fileName = fileName;</span><br><span class="line">    <span class="comment">//文件大小。默认1G=1073741824</span></span><br><span class="line">    <span class="built_in">this</span>.fileSize = fileSize;</span><br><span class="line">    <span class="comment">//构建file对象</span></span><br><span class="line">    <span class="built_in">this</span>.file = <span class="keyword">new</span> <span class="title class_">File</span>(fileName);</span><br><span class="line">    <span class="comment">//构建文件起始索引，就是取自文件名</span></span><br><span class="line">    <span class="built_in">this</span>.fileFromOffset = Long.parseLong(<span class="built_in">this</span>.file.getName());</span><br><span class="line">    <span class="type">boolean</span> <span class="variable">ok</span> <span class="operator">=</span> <span class="literal">false</span>;</span><br><span class="line">    <span class="comment">//确保文件目录存在</span></span><br><span class="line">    ensureDirOK(<span class="built_in">this</span>.file.getParent());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//对当前commitlog文件构建文件通道fileChannel</span></span><br><span class="line">        <span class="built_in">this</span>.fileChannel = <span class="keyword">new</span> <span class="title class_">RandomAccessFile</span>(<span class="built_in">this</span>.file, <span class="string">&quot;rw&quot;</span>).getChannel();</span><br><span class="line">        <span class="comment">//把commitlog文件完全的映射到虚拟内存，也就是内存映射，即mmap，提升读写性能</span></span><br><span class="line">        <span class="built_in">this</span>.mappedByteBuffer = <span class="built_in">this</span>.fileChannel.map(MapMode.READ_WRITE, <span class="number">0</span>, fileSize);</span><br><span class="line">        <span class="comment">//记录数据</span></span><br><span class="line">        TOTAL_MAPPED_VIRTUAL_MEMORY.addAndGet(fileSize);</span><br><span class="line">        TOTAL_MAPPED_FILES.incrementAndGet();</span><br><span class="line">        ok = <span class="literal">true</span>;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (FileNotFoundException e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        log.error(<span class="string">&quot;Failed to create file &quot;</span> + <span class="built_in">this</span>.fileName, e);</span><br><span class="line">        <span class="keyword">throw</span> e;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        log.error(<span class="string">&quot;Failed to map file &quot;</span> + <span class="built_in">this</span>.fileName, e);</span><br><span class="line">        <span class="keyword">throw</span> e;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//释放fileChannel，注意释放fileChannel不会对之前的mappedByteBuffer映射产生影响</span></span><br><span class="line">        <span class="keyword">if</span> (!ok &amp;&amp; <span class="built_in">this</span>.fileChannel != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="built_in">this</span>.fileChannel.close();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-2-commitlog文件简介"><a href="#2-2-commitlog文件简介" class="headerlink" title="2.2 commitlog文件简介"></a>2.2 commitlog文件简介</h3><p>Commit Log文件是RocketMQ真正存储消息内容的地方，即消息主体以及元数据的存储主体，存储Producer端写入的消息主体内容，消息内容不是定长的。</p>
+<p>官方描述如下：单个文件大小默认1G，文件名长度为20位，左边补零，剩余为起始偏移量，比如00000000000000000000代表了第一个文件，起始偏移量为0，文件大小为1G&#x3D;1073741824；当第一个文件写满了，第二个文件为00000000001073741824，起始偏移量为1073741824，以此类推。消息顺序写入日志文件，效率很高，当文件满了，写入下一个文件。</p>
+<p>我们使用RocketMQ下面的example包下面的快速案例生产1000个消息：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202502162024845.png" alt="*"></p>
+<p>随后可以在配置的commitlog路径下面即可看到两个commitlog文件：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202502162024191.png" alt="*"></p>
+<p>这1000数据的大小明显是不超过1G大小的，为什么会有两个commitlog文件呢？这就是RocketMQ的一个优化，即commitlog文件预创建，如果启用了MappedFile（MappedFile类可以看作是commitlog文件在Java中的抽象）预分配服务，那么在创建MappedFile时会同时创建两个MappedFile，一个同步创建并返回用于本次实际使用，一个后台异步创建用于下次取用。这样的好处是避免等到当前文件真正用完了才创建下一个文件，目的同样是提升性能。</p>
+<h2 id="3-loadConsumeQueue加载消费队列文件"><a href="#3-loadConsumeQueue加载消费队列文件" class="headerlink" title="3 loadConsumeQueue加载消费队列文件"></a>3 loadConsumeQueue加载消费队列文件</h2><p>该方法用于加载消费队列文件，ConsumeQueue文件可以看作是CommitLog的索引文件，其存储了它所属Topic的消息在Commit<br>Log中的偏移量。消费者拉取消息的时候，可以从Consume Queue中快速的根据偏移量定位消息在Commit Log中的位置。</p>
+<p>一个队列id目录对应着一个ConsumeQueue对象，其内部保存着一个mappedFileQueue对象，其表示当前队列id目录下面的ConsumeQueue文件集合，同样一个ConsumeQueue文件被映射为一个MappedFile对象。</p>
+<p>随后ConsumeQueue及其topic和queueId的对应关系被存入DefaultMessageStore的consumeQueueTable属性集合中。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * DefaultMessageStore的方法</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="type">boolean</span> <span class="title function_">loadConsumeQueue</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//获取ConsumeQueue文件所在目录，目录路径为&#123;storePathRootDir&#125;/consumequeue</span></span><br><span class="line">    <span class="type">File</span> <span class="variable">dirLogic</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">File</span>(StorePathConfigHelper.getStorePathConsumeQueue(<span class="built_in">this</span>.messageStoreConfig.getStorePathRootDir()));</span><br><span class="line">    <span class="comment">//获取目录下文件列表，实际上下面页是topic目录列表</span></span><br><span class="line">    File[] fileTopicList = dirLogic.listFiles();</span><br><span class="line">    <span class="keyword">if</span> (fileTopicList != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//遍历topic目录</span></span><br><span class="line">        <span class="keyword">for</span> (File fileTopic : fileTopicList) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//获取topic名字</span></span><br><span class="line">            <span class="type">String</span> <span class="variable">topic</span> <span class="operator">=</span> fileTopic.getName();</span><br><span class="line">            <span class="comment">//获取topic目录下面的队列id目录</span></span><br><span class="line">            File[] fileQueueIdList = fileTopic.listFiles();</span><br><span class="line">            <span class="keyword">if</span> (fileQueueIdList != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="keyword">for</span> (File fileQueueId : fileQueueIdList) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="type">int</span> queueId;</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        <span class="comment">//获取队列id</span></span><br><span class="line">                        queueId = Integer.parseInt(fileQueueId.getName());</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (NumberFormatException e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        <span class="keyword">continue</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="comment">//创建ConsumeQueue对象，一个队列id目录对应着一个ConsumeQueue对象</span></span><br><span class="line">                    <span class="comment">//其内部保存着</span></span><br><span class="line">                    <span class="type">ConsumeQueue</span> <span class="variable">logic</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ConsumeQueue</span>(</span><br><span class="line">                            topic,</span><br><span class="line">                            queueId,</span><br><span class="line">                            StorePathConfigHelper.getStorePathConsumeQueue(<span class="built_in">this</span>.messageStoreConfig.getStorePathRootDir()),</span><br><span class="line">                            <span class="comment">//大小默认30w数据</span></span><br><span class="line">                            <span class="built_in">this</span>.getMessageStoreConfig().getMappedFileSizeConsumeQueue(),</span><br><span class="line">                            <span class="built_in">this</span>);</span><br><span class="line">                    <span class="comment">//将当然ConsumeQueue对象及其对应关系存入consumeQueueTable中</span></span><br><span class="line">                    <span class="built_in">this</span>.putConsumeQueue(topic, queueId, logic);</span><br><span class="line">                    <span class="comment">//加载ConsumeQueue文件</span></span><br><span class="line">                    <span class="keyword">if</span> (!logic.load()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-1-load加载ConsumeQueue文件"><a href="#3-1-load加载ConsumeQueue文件" class="headerlink" title="3.1 load加载ConsumeQueue文件"></a>3.1 load加载ConsumeQueue文件</h3><p>ConsumeQueue对象建立之后，会对自己管理的队列id目录下面的ConsumeQueue文件进行加载。内部就是调用mappedFileQueue的load方法，该方法我们前面讲过了，会对每个ConsumeQueue文件床创建一个MappedFile对象并且进行内存映射mmap操作。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">load</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//调用mappedFileQueue的load方法，会对每个ConsumeQueue文件床创建一个MappedFile对象并且进行内存映射mmap操作。</span></span><br><span class="line">    <span class="type">boolean</span> <span class="variable">result</span> <span class="operator">=</span> <span class="built_in">this</span>.mappedFileQueue.load();</span><br><span class="line">    log.info(<span class="string">&quot;load consume queue &quot;</span> + <span class="built_in">this</span>.topic + <span class="string">&quot;-&quot;</span> + <span class="built_in">this</span>.queueId + <span class="string">&quot; &quot;</span> + (result ? <span class="string">&quot;OK&quot;</span> : <span class="string">&quot;Failed&quot;</span>));</span><br><span class="line">    <span class="keyword">if</span> (isExtReadEnable()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//扩展加载，扩展消费队列用于存储不重要的东西，如消息存储时间、过滤位图等。</span></span><br><span class="line">        result &amp;= <span class="built_in">this</span>.consumeQueueExt.load();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-2-ConsumeQueue文件简介"><a href="#3-2-ConsumeQueue文件简介" class="headerlink" title="3.2 ConsumeQueue文件简介"></a>3.2 ConsumeQueue文件简介</h3><p>官方描述如下：消息消费队列（可以理解为Topic中的队列），引入的目的主要是提高消息消费的性能，由于RocketMQ是基于主题topic的订阅模式，消息消费是针对主题进行的，如果要遍历commitlog文件中根据topic检索消息是非常低效的。</p>
+<p>Consumer即可根据ConsumeQueue来查找待消费的消息。其中，ConsumeQueue（逻辑消费队列）作为消费消息的索引，保存了指定Topic下的队列消息在CommitLog中的起始物理偏移量offset，消息大小size和消息Tag的HashCode值，以及ConsumeOffset（每个消费者组的消费位置）。</p>
+<p>consumequeue文件可以看成是基于topic的commitlog索引文件，故consumequeue文件夹的组织方式如下：topic&#x2F;queue&#x2F;file三层组织结构，具体存储路径为：$HOME&#x2F;store&#x2F;consumequeue&#x2F;{topic}&#x2F;{queueId}&#x2F;{fileName}。</p>
+<p>同样consumequeue文件中的条目采取定长设计，每个条目共20字节，分别为8字节的commitlog物理偏移量、4字节的消息长度、8字节tag<br>hashcode，单个文件由30W个条目组成，可以像数组一样随机访问每一个条目，每个ConsumeQueue文件大小约5.72M。</p>
+<p>ConsumeQueue名字长度为20位，左边补零，剩余为起始偏移量；比如00000000000000000000代表第一个文件，起始偏移量为0，文件大小为600w，当第一个文件满之后创建的第二个文件的名字为00000000000006000000，起始偏移量为6000000，以此类推，消息存储的时候会顺序写入文件，当文件写满了，写入下一个文件。</p>
+<p>我们使用RocketMQ下面的example包下面的快速案例生产1000个消息之后，可以看到consumequeue目录下面产生了预期的Consume<br>Queue文件结构，便于理解：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202502162024759.png" alt="*"></p>
+<h2 id="4-创建StoreCheckpoint检查点对象"><a href="#4-创建StoreCheckpoint检查点对象" class="headerlink" title="4 创建StoreCheckpoint检查点对象"></a>4 创建StoreCheckpoint检查点对象</h2><p>在commitlog和consumequeue文件都加载成功之后，加载checkpoint 检查点文件，创建storeCheckpoint对象，文件位置是{storePathRootDir}&#x2F;checkpoint。</p>
+<p>StoreCheckpoint记录着commitLog、consumeQueue、index文件的最后更新时间点，当上一次broker是异常结束时，会根据StoreCheckpoint的数据进行恢复，这决定着文件从哪里开始恢复，甚至是删除文件。</p>
+<p>StoreCheckpoint记录了三个关键属性：</p>
+<p><strong>1、</strong> physicMsgTimestamp：最新commitlog文件的刷盘时间戳，单位毫秒；<br><strong>2、</strong> logicsMsgTimestamp：最新consumeQueue文件的刷盘时间戳，单位毫秒；<br><strong>3、</strong> indexMsgTimestamp：创建最新indexfile文件的时间戳，单位毫秒；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="title function_">StoreCheckpoint</span><span class="params">(<span class="keyword">final</span> String scpPath)</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="type">File</span> <span class="variable">file</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">File</span>(scpPath);</span><br><span class="line">    <span class="comment">//判断存在当前文件</span></span><br><span class="line">    MappedFile.ensureDirOK(file.getParent());</span><br><span class="line">    <span class="type">boolean</span> <span class="variable">fileExists</span> <span class="operator">=</span> file.exists();</span><br><span class="line">    <span class="comment">//对checkpoint文件同样执行mmap操作</span></span><br><span class="line">    <span class="built_in">this</span>.randomAccessFile = <span class="keyword">new</span> <span class="title class_">RandomAccessFile</span>(file, <span class="string">&quot;rw&quot;</span>);</span><br><span class="line">    <span class="built_in">this</span>.fileChannel = <span class="built_in">this</span>.randomAccessFile.getChannel();</span><br><span class="line">    <span class="comment">//mmap大小为OS_PAGE_SIZE，即OS一页，4k</span></span><br><span class="line">    <span class="built_in">this</span>.mappedByteBuffer = fileChannel.map(MapMode.READ_WRITE, <span class="number">0</span>, MappedFile.OS_PAGE_SIZE);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (fileExists) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        log.info(<span class="string">&quot;store checkpoint file exists, &quot;</span> + scpPath);</span><br><span class="line">        <span class="comment">//获取commitlog文件的时间戳，即最新commitlog文件的刷盘时间戳</span></span><br><span class="line">        <span class="built_in">this</span>.physicMsgTimestamp = <span class="built_in">this</span>.mappedByteBuffer.getLong(<span class="number">0</span>);</span><br><span class="line">        <span class="comment">//获取consumeQueue文件的时间戳，即最新consumeQueue文件的刷盘时间戳</span></span><br><span class="line">        <span class="built_in">this</span>.logicsMsgTimestamp = <span class="built_in">this</span>.mappedByteBuffer.getLong(<span class="number">8</span>);</span><br><span class="line">        <span class="comment">//获取index文件的时间戳，即创建最新indexfile文件的时间戳</span></span><br><span class="line">        <span class="built_in">this</span>.indexMsgTimestamp = <span class="built_in">this</span>.mappedByteBuffer.getLong(<span class="number">16</span>);</span><br><span class="line"></span><br><span class="line">        log.info(<span class="string">&quot;store checkpoint file physicMsgTimestamp &quot;</span> + <span class="built_in">this</span>.physicMsgTimestamp + <span class="string">&quot;, &quot;</span></span><br><span class="line">            + UtilAll.timeMillisToHumanString(<span class="built_in">this</span>.physicMsgTimestamp));</span><br><span class="line">        log.info(<span class="string">&quot;store checkpoint file logicsMsgTimestamp &quot;</span> + <span class="built_in">this</span>.logicsMsgTimestamp + <span class="string">&quot;, &quot;</span></span><br><span class="line">            + UtilAll.timeMillisToHumanString(<span class="built_in">this</span>.logicsMsgTimestamp));</span><br><span class="line">        log.info(<span class="string">&quot;store checkpoint file indexMsgTimestamp &quot;</span> + <span class="built_in">this</span>.indexMsgTimestamp + <span class="string">&quot;, &quot;</span></span><br><span class="line">            + UtilAll.timeMillisToHumanString(<span class="built_in">this</span>.indexMsgTimestamp));</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        log.info(<span class="string">&quot;store checkpoint file not exists, &quot;</span> + scpPath);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="5-加载index索引文件"><a href="#5-加载index索引文件" class="headerlink" title="5 加载index索引文件"></a>5 加载index索引文件</h2><p>加载index 索引文件，目录路径为{storePathRootDir}&#x2F;index。index 索引文件用于通过时间区间来快速查询消息，底层为HashMap结构，实现为hash索引。</p>
+<p>最终一个index文件对应着一个IndexFile实例，并且会加到indexFileList集合中。还会判断如果上次broker不是正常退出，并且并且当前index文件中最后一个消息的落盘时间戳大于StoreCheckpoint中的最后一个index索引文件创建时间，则该索引文件被删除。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * IndexService的方法</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> lastExitOK 上次是否正常推出</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">load</span><span class="params">(<span class="keyword">final</span> <span class="type">boolean</span> lastExitOK)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//获取上级目录路径，&#123;storePathRootDir&#125;/index</span></span><br><span class="line">    <span class="type">File</span> <span class="variable">dir</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">File</span>(<span class="built_in">this</span>.storePath);</span><br><span class="line">    <span class="comment">//获取内部的index索引文件</span></span><br><span class="line">    File[] files = dir.listFiles();</span><br><span class="line">    <span class="keyword">if</span> (files != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">// 按照文件名字中的时间戳排序</span></span><br><span class="line">        Arrays.sort(files);</span><br><span class="line">        <span class="keyword">for</span> (File file : files) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//一个index文件对应着一个IndexFile实例</span></span><br><span class="line">                <span class="type">IndexFile</span> <span class="variable">f</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">IndexFile</span>(file.getPath(), <span class="built_in">this</span>.hashSlotNum, <span class="built_in">this</span>.indexNum, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">                <span class="comment">//加载index文件</span></span><br><span class="line">                f.load();</span><br><span class="line">                <span class="comment">//如果上一次是异常推出，并且当前index文件中最后一个消息的落盘时间戳大于最后一个index索引文件创建时间，则该索引文件被删除</span></span><br><span class="line">                <span class="keyword">if</span> (!lastExitOK) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="keyword">if</span> (f.getEndTimestamp() &gt; <span class="built_in">this</span>.defaultMessageStore.getStoreCheckpoint()</span><br><span class="line">                        .getIndexMsgTimestamp()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        f.destroy(<span class="number">0</span>);</span><br><span class="line">                        <span class="keyword">continue</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                log.info(<span class="string">&quot;load index file OK, &quot;</span> + f.getFileName());</span><br><span class="line">                <span class="comment">//加入到索引文件集合</span></span><br><span class="line">                <span class="built_in">this</span>.indexFileList.add(f);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                log.error(<span class="string">&quot;load file &#123;&#125; error&quot;</span>, file, e);</span><br><span class="line">                <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">            &#125; <span class="keyword">catch</span> (NumberFormatException e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                log.error(<span class="string">&quot;load file &#123;&#125; error&quot;</span>, file, e);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-1-index索引文件简介"><a href="#5-1-index索引文件简介" class="headerlink" title="5.1 index索引文件简介"></a>5.1 index索引文件简介</h3><p>官方介绍：IndexFile（索引文件）提供了一种可以通过key或时间区间来查询消息的方法。Index文件的存储位置是： H O M E &#x2F; s t o r e &#x2F;<br>i n d e x HOME&#x2F;store&#x2F;index HOME&#x2F;store&#x2F;index{fileName}，文件名fileName是以创建时的时间戳命名的，固定的单个IndexFile文件大小约为400M，一个IndexFile可以保存<br>2000W个索引，IndexFile的底层存储设计为在文件系统中实现HashMap结构，故rocketmq的索引文件其底层实现为hash索引。</p>
+<p>如下是Index索引文件样例：</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202502162024513.png" alt="*"></p>
+<h2 id="6-恢复CommitLog和ConsumeQueue数据"><a href="#6-恢复CommitLog和ConsumeQueue数据" class="headerlink" title="6 恢复CommitLog和ConsumeQueue数据"></a>6 恢复CommitLog和ConsumeQueue数据</h2><p>该方法用于恢复CommitLog和ConsumeQueue数据到内存中，：</p>
+<p><strong>1、</strong> 首先恢复所有的ConsumeQueue文件，返回在ConsumeQueue有效区域存储的最大的commitlog偏移量；<br><strong>2、</strong> 随后对于commitlog文件进行恢复，根据上次broker是否正常退出，有正常恢复和异常恢复的选择；<br><strong>3、</strong> 最后再对topicQueueTable进行恢复；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * DefaultMessageStore的方法</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> lastExitOK 上次是否正常退出</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">recover</span><span class="params">(<span class="keyword">final</span> <span class="type">boolean</span> lastExitOK)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//恢复所有的ConsumeQueue文件，返回在ConsumeQueue存储的最大有效commitlog偏移量</span></span><br><span class="line">    <span class="type">long</span> <span class="variable">maxPhyOffsetOfConsumeQueue</span> <span class="operator">=</span> <span class="built_in">this</span>.recoverConsumeQueue();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (lastExitOK) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//正常恢复commitLog</span></span><br><span class="line">        <span class="built_in">this</span>.commitLog.recoverNormally(maxPhyOffsetOfConsumeQueue);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//异常恢复commitLog</span></span><br><span class="line">        <span class="built_in">this</span>.commitLog.recoverAbnormally(maxPhyOffsetOfConsumeQueue);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//最后恢复topicQueueTable</span></span><br><span class="line">    <span class="built_in">this</span>.recoverTopicQueueTable();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-1-recoverConsumeQueue恢复ConsumeQueue"><a href="#6-1-recoverConsumeQueue恢复ConsumeQueue" class="headerlink" title="6.1 recoverConsumeQueue恢复ConsumeQueue"></a>6.1 recoverConsumeQueue恢复ConsumeQueue</h3><p>recoverConsumeQueue方法用于恢复ConsumeQueue文件，并且删除无效的ConsumeQueue文件，最后会返回在ConsumeQueue有效区域存储的最大的commitlog物理偏移量，该值表示消息在commitlog文件中最后写完的指针，即commitlog中的有效消息数据最大文件偏移量。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 恢复所有的ConsumeQueue文件，返回在ConsumeQueue有效区域存储的最大的commitlog偏移量</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="type">long</span> <span class="title function_">recoverConsumeQueue</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="type">long</span> <span class="variable">maxPhysicOffset</span> <span class="operator">=</span> -<span class="number">1</span>;</span><br><span class="line">    <span class="comment">//遍历consumeQueueTable的value集合，即queueId到ConsumeQueue的map映射</span></span><br><span class="line">    <span class="keyword">for</span> (ConcurrentMap&lt;Integer, ConsumeQueue&gt; maps : <span class="built_in">this</span>.consumeQueueTable.values()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//遍历所有的ConsumeQueue</span></span><br><span class="line">        <span class="keyword">for</span> (ConsumeQueue logic : maps.values()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//恢复ConsumeQueue，删除无效ConsumeQueue文件</span></span><br><span class="line">            logic.recover();</span><br><span class="line">            <span class="comment">//如果当前queueId目录下的所有ConsumeQueue文件的最大有效物理偏移量，大于此前记录的最大有效物理偏移量</span></span><br><span class="line">            <span class="comment">//则更新记录的ConsumeQueue文件的最大commitlog有效物理偏移量</span></span><br><span class="line">            <span class="keyword">if</span> (logic.getMaxPhysicOffset() &gt; maxPhysicOffset) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                maxPhysicOffset = logic.getMaxPhysicOffset();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//返回ConsumeQueue文件的最大commitlog有效物理偏移量</span></span><br><span class="line">    <span class="keyword">return</span> maxPhysicOffset;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="6-1-1recover恢复ConsumeQueue"><a href="#6-1-1recover恢复ConsumeQueue" class="headerlink" title="6.1.1recover恢复ConsumeQueue"></a>6.1.1recover恢复ConsumeQueue</h4><p>该方法属于ConsumeQueue，用于恢复每一个ConsumeQueue，我们之前说过，一个队列id目录对应着一个ConsumeQueue对象，因此ConsumeQueue内部保存着多个属于同一queueId的ConsumeQueue文件。</p>
+<p>RocketMQ不会也没必要对所有的ConsumeQueue文件进行恢复校验，如果ConsumeQueue文件数量大于等于3个，那么就取最新的3个ConsumeQueue文件执行恢复，否则对全部ConsumeQueue文件进行恢复。</p>
+<p>所谓的恢复，就是找出当前queueId的ConsumeQueue下的所有ConsumeQueue文件中的最大的有效的commitlog消息日志文件的物理偏移量，以及该索引文件自身的最大有效数据偏移量，随后对文件自身的最大有效数据偏移量processOffset之后的所有文件和数据进行更新或者删除。</p>
+<p>如何判断ConsumeQueue索引文件中的一个索引条目有效，或者说是有效数据呢？只要该条目保存的对应的消息在commitlog文件中的物理偏移量和该条目保存的对应的消息在commitlog文件中的总长度都大于0则表示当前条目有效，否则表示该条目无效，并且不会对后续的条目和文件进行恢复。</p>
+<p>最大的有效的commitlog消息物理偏移量，就是指的最后一个有效条目中保存的commitlog文件中的物理偏移量，而文件自身的最大有效数据偏移量processOffset，就是指的最后一个有效条目在自身文件中的偏移量。注意区分这两个概念！</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ConsumeQueue的方法</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">recover</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//获取所有的ConsumeQueue文件映射的mappedFiles集合</span></span><br><span class="line">    <span class="keyword">final</span> List&lt;MappedFile&gt; mappedFiles = <span class="built_in">this</span>.mappedFileQueue.getMappedFiles();</span><br><span class="line">    <span class="keyword">if</span> (!mappedFiles.isEmpty()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//从倒数第三个文件开始恢复</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">index</span> <span class="operator">=</span> mappedFiles.size() - <span class="number">3</span>;</span><br><span class="line">        <span class="comment">//不足3个文件，则直接从第一个文件开始恢复。</span></span><br><span class="line">        <span class="keyword">if</span> (index &lt; <span class="number">0</span>)</span><br><span class="line">            index = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">//consumequeue映射文件的文件大小</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">mappedFileSizeLogics</span> <span class="operator">=</span> <span class="built_in">this</span>.mappedFileSize;</span><br><span class="line">        <span class="comment">//获取文件对应的映射对象</span></span><br><span class="line">        <span class="type">MappedFile</span> <span class="variable">mappedFile</span> <span class="operator">=</span> mappedFiles.get(index);</span><br><span class="line">        <span class="comment">//文件映射对应的DirectByteBuffer</span></span><br><span class="line">        <span class="type">ByteBuffer</span> <span class="variable">byteBuffer</span> <span class="operator">=</span> mappedFile.sliceByteBuffer();</span><br><span class="line">        <span class="comment">//获取文件映射的初始物理偏移量，其实和文件名相同</span></span><br><span class="line">        <span class="type">long</span> <span class="variable">processOffset</span> <span class="operator">=</span> mappedFile.getFileFromOffset();</span><br><span class="line">        <span class="comment">//consumequeue映射文件的有效offset</span></span><br><span class="line">        <span class="type">long</span> <span class="variable">mappedFileOffset</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="type">long</span> <span class="variable">maxExtAddr</span> <span class="operator">=</span> <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//校验每一个索引条目的有效性，CQ_STORE_UNIT_SIZE是每个条目的大小，默认20</span></span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; mappedFileSizeLogics; i += CQ_STORE_UNIT_SIZE) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//获取该条目对应的消息在commitlog文件中的物理偏移量</span></span><br><span class="line">                <span class="type">long</span> <span class="variable">offset</span> <span class="operator">=</span> byteBuffer.getLong();</span><br><span class="line">                <span class="comment">//获取该条目对应的消息在commitlog文件中的总长度</span></span><br><span class="line">                <span class="type">int</span> <span class="variable">size</span> <span class="operator">=</span> byteBuffer.getInt();</span><br><span class="line">                <span class="comment">//获取该条目对应的消息的tag哈希值</span></span><br><span class="line">                <span class="type">long</span> <span class="variable">tagsCode</span> <span class="operator">=</span> byteBuffer.getLong();</span><br><span class="line">                <span class="comment">//如果offset和size都大于0则表示当前条目有效</span></span><br><span class="line">                <span class="keyword">if</span> (offset &gt;= <span class="number">0</span> &amp;&amp; size &gt; <span class="number">0</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//更新当前ConsumeQueue文件中的有效数据偏移量</span></span><br><span class="line">                    mappedFileOffset = i + CQ_STORE_UNIT_SIZE;</span><br><span class="line">                    <span class="comment">//更新当前queueId目录下的所有ConsumeQueue文件中的最大有效物理偏移量</span></span><br><span class="line">                    <span class="built_in">this</span>.maxPhysicOffset = offset + size;</span><br><span class="line">                    <span class="keyword">if</span> (isExtAddr(tagsCode)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        maxExtAddr = tagsCode;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//否则，表示当前条目无效了，后续的条目不会遍历</span></span><br><span class="line">                    log.info(<span class="string">&quot;recover current consume queue file over,  &quot;</span> + mappedFile.getFileName() + <span class="string">&quot; &quot;</span></span><br><span class="line">                            + offset + <span class="string">&quot; &quot;</span> + size + <span class="string">&quot; &quot;</span> + tagsCode);</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//如果当前ConsumeQueue文件中的有效数据偏移量和文件大小一样，则表示该ConsumeQueue文件的所有条目都是有效的</span></span><br><span class="line">            <span class="keyword">if</span> (mappedFileOffset == mappedFileSizeLogics) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//校验下一个文件</span></span><br><span class="line">                index++;</span><br><span class="line">                <span class="comment">//遍历到了最后一个文件，则结束遍历</span></span><br><span class="line">                <span class="keyword">if</span> (index &gt;= mappedFiles.size()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line"></span><br><span class="line">                    log.info(<span class="string">&quot;recover last consume queue file over, last mapped file &quot;</span></span><br><span class="line">                            + mappedFile.getFileName());</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//获取下一个文件的数据</span></span><br><span class="line">                    mappedFile = mappedFiles.get(index);</span><br><span class="line">                    byteBuffer = mappedFile.sliceByteBuffer();</span><br><span class="line">                    processOffset = mappedFile.getFileFromOffset();</span><br><span class="line">                    mappedFileOffset = <span class="number">0</span>;</span><br><span class="line">                    log.info(<span class="string">&quot;recover next consume queue file, &quot;</span> + mappedFile.getFileName());</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//如果不相等，则表示当前ConsumeQueue有部分无效数据，恢复结束</span></span><br><span class="line">                log.info(<span class="string">&quot;recover current consume queue queue over &quot;</span> + mappedFile.getFileName() + <span class="string">&quot; &quot;</span></span><br><span class="line">                        + (processOffset + mappedFileOffset));</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//该文件映射的已恢复的物理偏移量</span></span><br><span class="line">        processOffset += mappedFileOffset;</span><br><span class="line">        <span class="comment">//设置当前queueId下面的所有的ConsumeQueue文件的最新数据</span></span><br><span class="line">        <span class="comment">//设置刷盘最新位置，提交的最新位置</span></span><br><span class="line">        <span class="built_in">this</span>.mappedFileQueue.setFlushedWhere(processOffset);</span><br><span class="line">        <span class="built_in">this</span>.mappedFileQueue.setCommittedWhere(processOffset);</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 删除文件最大有效数据偏移量processOffset之后的所有数据</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="built_in">this</span>.mappedFileQueue.truncateDirtyFiles(processOffset);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (isExtReadEnable()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="built_in">this</span>.consumeQueueExt.recover();</span><br><span class="line">            log.info(<span class="string">&quot;Truncate consume queue extend file by max &#123;&#125;&quot;</span>, maxExtAddr);</span><br><span class="line">            <span class="built_in">this</span>.consumeQueueExt.truncateByMaxAddress(maxExtAddr);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="6-1-2-truncateDirtyFiles截断无效文件"><a href="#6-1-2-truncateDirtyFiles截断无效文件" class="headerlink" title="6.1.2 truncateDirtyFiles截断无效文件"></a>6.1.2 truncateDirtyFiles截断无效文件</h4><p>除了consumequeue文件之外，在对commitlog文件进行恢复的时候也会调用该方法。</p>
+<p>该方法会校验，如果文件最大数据偏移量大于最大有效数据偏移量：</p>
+<p><strong>1、</strong> 那么将文件起始偏移量大于最大有效数据偏移量的文件进行整个删除；<br><strong>2、</strong> 否则设置该文件的有效数据位置为最大有效数据偏移量；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * MappedFileQueue的方法</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> offset 文件的最大有效数据偏移量</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">truncateDirtyFiles</span><span class="params">(<span class="type">long</span> offset)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//待移除的文件集合</span></span><br><span class="line">    List&lt;MappedFile&gt; willRemoveFiles = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;MappedFile&gt;();</span><br><span class="line">    <span class="comment">//遍历内部所有的MappedFile文件</span></span><br><span class="line">    <span class="keyword">for</span> (MappedFile file : <span class="built_in">this</span>.mappedFiles) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//获取当前文件自身的最大数据偏移量</span></span><br><span class="line">        <span class="type">long</span> <span class="variable">fileTailOffset</span> <span class="operator">=</span> file.getFileFromOffset() + <span class="built_in">this</span>.mappedFileSize;</span><br><span class="line">        <span class="comment">//如果最大数据偏移量大于最大有效数据偏移量</span></span><br><span class="line">        <span class="keyword">if</span> (fileTailOffset &gt; offset) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//如果最大有效数据偏移量大于等于该文件的起始偏移量，那么说明当前文件有一部分数据是有效的，那么设置该文件的有效属性</span></span><br><span class="line">            <span class="keyword">if</span> (offset &gt;= file.getFileFromOffset()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//设置当前文件的刷盘、提交、写入指针为当前最大有效数据偏移量</span></span><br><span class="line">                file.setWrotePosition((<span class="type">int</span>) (offset % <span class="built_in">this</span>.mappedFileSize));</span><br><span class="line">                file.setCommittedPosition((<span class="type">int</span>) (offset % <span class="built_in">this</span>.mappedFileSize));</span><br><span class="line">                file.setFlushedPosition((<span class="type">int</span>) (offset % <span class="built_in">this</span>.mappedFileSize));</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//如果如果最大有效数据偏移量小于该文件的起始偏移量，那么删除该文件</span></span><br><span class="line">                file.destroy(<span class="number">1000</span>);</span><br><span class="line">                <span class="comment">//记录到待删除的文件集合中</span></span><br><span class="line">                willRemoveFiles.add(file);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//将等待移除的文件整体从mappedFiles中移除</span></span><br><span class="line">    <span class="built_in">this</span>.deleteExpiredFile(willRemoveFiles);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * MappedFileQueue的方法</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> files 待移除的文件集合</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">void</span> <span class="title function_">deleteExpiredFile</span><span class="params">(List&lt;MappedFile&gt; files)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!files.isEmpty()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line"></span><br><span class="line">        Iterator&lt;MappedFile&gt; iterator = files.iterator();</span><br><span class="line">        <span class="keyword">while</span> (iterator.hasNext()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="type">MappedFile</span> <span class="variable">cur</span> <span class="operator">=</span> iterator.next();</span><br><span class="line">            <span class="keyword">if</span> (!<span class="built_in">this</span>.mappedFiles.contains(cur)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//从mappedFiles集合中删除当前MappedFile</span></span><br><span class="line">                iterator.remove();</span><br><span class="line">                log.info(<span class="string">&quot;This mappedFile &#123;&#125; is not contained by mappedFiles, so skip it.&quot;</span>, cur.getFileName());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//如果并没有完全移除这些无效文件，那么记录异常信息</span></span><br><span class="line">            <span class="keyword">if</span> (!<span class="built_in">this</span>.mappedFiles.removeAll(files)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                log.error(<span class="string">&quot;deleteExpiredFile remove failed.&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.error(<span class="string">&quot;deleteExpiredFile has exception.&quot;</span>, e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-2-recoverNormally正常恢复commitLog"><a href="#6-2-recoverNormally正常恢复commitLog" class="headerlink" title="6.2 recoverNormally正常恢复commitLog"></a>6.2 recoverNormally正常恢复commitLog</h3><p>该方法用于Broker上次正常关闭的时候恢复commitlog，其逻辑与recoverConsumeQueue恢复ConsumeQueue文件的方法差不多。</p>
+<p>最多获取最后三个commitlog文件进行校验恢复，依次校验每一条消息的有效性，并且更新commitlog文件的最大有效区域的偏移量。在最后同样会调用truncateDirtyFiles方法清除无效的commit文件。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * When the normal exit, data recovery, all memory data have been flush</span></span><br><span class="line"><span class="comment"> * 当正常退出、数据恢复时，所有内存数据都已刷到磁盘</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> maxPhyOffsetOfConsumeQueue consumequeue文件中记录的最大有效commitlog文件偏移量</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">recoverNormally</span><span class="params">(<span class="type">long</span> maxPhyOffsetOfConsumeQueue)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//是否需要校验文件CRC32，默认true</span></span><br><span class="line">    <span class="type">boolean</span> <span class="variable">checkCRCOnRecover</span> <span class="operator">=</span> <span class="built_in">this</span>.defaultMessageStore.getMessageStoreConfig().isCheckCRCOnRecover();</span><br><span class="line">    <span class="comment">//获取commitlog文件集合</span></span><br><span class="line">    <span class="keyword">final</span> List&lt;MappedFile&gt; mappedFiles = <span class="built_in">this</span>.mappedFileQueue.getMappedFiles();</span><br><span class="line">    <span class="comment">//如果存在commitlog文件</span></span><br><span class="line">    <span class="keyword">if</span> (!mappedFiles.isEmpty()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//从倒数第三个文件开始恢复</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">index</span> <span class="operator">=</span> mappedFiles.size() - <span class="number">3</span>;</span><br><span class="line">        <span class="comment">//不足3个文件，则直接从第一个文件开始恢复。</span></span><br><span class="line">        <span class="keyword">if</span> (index &lt; <span class="number">0</span>)</span><br><span class="line">            index = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">//获取文件对应的映射对象</span></span><br><span class="line">        <span class="type">MappedFile</span> <span class="variable">mappedFile</span> <span class="operator">=</span> mappedFiles.get(index);</span><br><span class="line">        <span class="comment">//文件映射对应的DirectByteBuffer</span></span><br><span class="line">        <span class="type">ByteBuffer</span> <span class="variable">byteBuffer</span> <span class="operator">=</span> mappedFile.sliceByteBuffer();</span><br><span class="line">        <span class="comment">//获取文件映射的初始物理偏移量，其实和文件名相同</span></span><br><span class="line">        <span class="type">long</span> <span class="variable">processOffset</span> <span class="operator">=</span> mappedFile.getFileFromOffset();</span><br><span class="line">        <span class="comment">//当前commitlog映射文件的有效offset</span></span><br><span class="line">        <span class="type">long</span> <span class="variable">mappedFileOffset</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//生成DispatchRequest，验证本条消息是否合法</span></span><br><span class="line">            <span class="type">DispatchRequest</span> <span class="variable">dispatchRequest</span> <span class="operator">=</span> <span class="built_in">this</span>.checkMessageAndReturnSize(byteBuffer, checkCRCOnRecover);</span><br><span class="line">            <span class="comment">//获取消息大小</span></span><br><span class="line">            <span class="type">int</span> <span class="variable">size</span> <span class="operator">=</span> dispatchRequest.getMsgSize();</span><br><span class="line">            <span class="comment">//如果消息是正常的</span></span><br><span class="line">            <span class="keyword">if</span> (dispatchRequest.isSuccess() &amp;&amp; size &gt; <span class="number">0</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//更新mappedFileOffset的值加上本条消息长度</span></span><br><span class="line">                mappedFileOffset += size;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//如果消息正常但是size为0，表示到了文件的末尾，则尝试跳到下一个commitlog文件进行检测</span></span><br><span class="line">            <span class="keyword">else</span> <span class="keyword">if</span> (dispatchRequest.isSuccess() &amp;&amp; size == <span class="number">0</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                index++;</span><br><span class="line">                <span class="comment">//如果最后一个文件查找完毕，结束循环</span></span><br><span class="line">                <span class="keyword">if</span> (index &gt;= mappedFiles.size()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">// Current branch can not happen</span></span><br><span class="line">                    log.info(<span class="string">&quot;recover last 3 physics file over, last mapped file &quot;</span> + mappedFile.getFileName());</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//如果最后一个文件没有查找完毕，那么跳转到下一个文件</span></span><br><span class="line">                    mappedFile = mappedFiles.get(index);</span><br><span class="line">                    byteBuffer = mappedFile.sliceByteBuffer();</span><br><span class="line">                    processOffset = mappedFile.getFileFromOffset();</span><br><span class="line">                    mappedFileOffset = <span class="number">0</span>;</span><br><span class="line">                    log.info(<span class="string">&quot;recover next physics file, &quot;</span> + mappedFile.getFileName());</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// Intermediate file read error</span></span><br><span class="line">            <span class="comment">//如果当前消息异常，那么不继续校验</span></span><br><span class="line">            <span class="keyword">else</span> <span class="keyword">if</span> (!dispatchRequest.isSuccess()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                log.info(<span class="string">&quot;recover physics file end, &quot;</span> + mappedFile.getFileName());</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//commitlog文件的最大有效区域的偏移量</span></span><br><span class="line">        processOffset += mappedFileOffset;</span><br><span class="line">        <span class="comment">//设置当前commitlog下面的所有的commitlog文件的最新数据</span></span><br><span class="line">        <span class="comment">//设置刷盘最新位置，提交的最新位置</span></span><br><span class="line">        <span class="built_in">this</span>.mappedFileQueue.setFlushedWhere(processOffset);</span><br><span class="line">        <span class="built_in">this</span>.mappedFileQueue.setCommittedWhere(processOffset);</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 删除文件最大有效数据偏移量processOffset之后的所有数据</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="built_in">this</span>.mappedFileQueue.truncateDirtyFiles(processOffset);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//如果consumequeue文件记录的最大有效commitlog文件偏移量 大于等于 commitlog文件本身记录的最大有效区域的偏移量</span></span><br><span class="line">        <span class="comment">//那么以commitlog文件的有效数据为准，再次清除consumequeue文件中的脏数据</span></span><br><span class="line">        <span class="keyword">if</span> (maxPhyOffsetOfConsumeQueue &gt;= processOffset) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.warn(<span class="string">&quot;maxPhyOffsetOfConsumeQueue(&#123;&#125;) &gt;= processOffset(&#123;&#125;), truncate dirty logic files&quot;</span>, maxPhyOffsetOfConsumeQueue, processOffset);</span><br><span class="line">            <span class="built_in">this</span>.defaultMessageStore.truncateDirtyLogicFiles(processOffset);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//如果不存在commitlog文件</span></span><br><span class="line">        log.warn(<span class="string">&quot;The commitlog files are deleted, and delete the consume queue files&quot;</span>);</span><br><span class="line">        <span class="comment">//那么重置刷盘最新位置，提交的最新位置，并且清除所有的consumequeue索引文件</span></span><br><span class="line">        <span class="built_in">this</span>.mappedFileQueue.setFlushedWhere(<span class="number">0</span>);</span><br><span class="line">        <span class="built_in">this</span>.mappedFileQueue.setCommittedWhere(<span class="number">0</span>);</span><br><span class="line">        <span class="built_in">this</span>.defaultMessageStore.destroyLogics();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="6-2-1-truncateDirtyLogicFiles截断无效consumequeue文件"><a href="#6-2-1-truncateDirtyLogicFiles截断无效consumequeue文件" class="headerlink" title="6.2.1 truncateDirtyLogicFiles截断无效consumequeue文件"></a>6.2.1 truncateDirtyLogicFiles截断无效consumequeue文件</h4><p>在最后，会将此前recoverConsumeQueue方法恢复ConsumeQueue时从consumequeue文件中获取的最大有效的commitlog物理偏移量maxPhyOffsetOfConsumeQueue和当前方法从commitlog文件本身中找到的最大有效偏移量对比。</p>
+<p>如果consumequeue文件记录的最大有效commitlog文件偏移量 大于等于<br>commitlog文件本身记录的最大有效区域的偏移量。那么以commitlog文件的有效数据为准，再次清除consumequeue文件中的脏数据。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * DefaultMessageStore的方法</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> phyOffset  commitlog文件的最大有效区域的偏移量</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">truncateDirtyLogicFiles</span><span class="params">(<span class="type">long</span> phyOffset)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//获取consumeQueueTable</span></span><br><span class="line">    ConcurrentMap&lt;String, ConcurrentMap&lt;Integer, ConsumeQueue&gt;&gt; tables = DefaultMessageStore.<span class="built_in">this</span>.consumeQueueTable;</span><br><span class="line">    <span class="comment">//遍历</span></span><br><span class="line">    <span class="keyword">for</span> (ConcurrentMap&lt;Integer, ConsumeQueue&gt; maps : tables.values()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">for</span> (ConsumeQueue logic : maps.values()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//对每一个consumequeue文件的数据进行校验，可能会删除consumequeue文件，抑或是更新相关属性</span></span><br><span class="line">            logic.truncateDirtyLogicFiles(phyOffset);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-3-recoverAbnormally异常恢复commitlog"><a href="#6-3-recoverAbnormally异常恢复commitlog" class="headerlink" title="6.3 recoverAbnormally异常恢复commitlog"></a>6.3 recoverAbnormally异常恢复commitlog</h3><p>该方法用于Broker上次异常关闭的时候恢复commitlog，其逻辑与commitlog文件的正常恢复的方法recoverNormally有些许区别，但是中的核心逻辑都是一样的。</p>
+<p>对于异常恢复的commitlog，不再是最多取后三个文件恢复，而是倒序遍历所有的commitlog文件执行校验和恢复的操作，直到找到第一个消息正常存储的commitlog文件。为社么这么做呢？因为异常恢复不能确定最后的刷盘点在哪个文件中，只能遍历查找。</p>
+<p><strong>1、</strong><br>首先倒序遍历并通过调用isMappedFileMatchedRecover方法判断当前文件是否是一个正常的commitlog文件包括文件魔数的校验、文件消息存盘时间校验、StoreCheckpoint校验等如果找到一个正确的commitlog文件，则停止遍历；<br><strong>2、</strong><br>然后从第一个正确的commitlog文件开始向后遍历、恢复commitlog如果某个消息是正常的，那么通过defaultMessageStore.doDispatch方法调用CommitLogDispatcher重新构建当前消息的indexfile索引和consumequeue索引；<br><strong>3、</strong> 恢复完毕之后的代码和commitlog文件正常恢复的流程是一样的例如删除文件最大有效数据偏移量processOffset之后的所有commitlog数据，清除consumequeue文件中的脏数据等等；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * CommitLog的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * broker异常退出时的commitlog文件恢复，按最小时间戳恢复</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> maxPhyOffsetOfConsumeQueue consumequeue文件中记录的最大有效commitlog文件偏移量</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Deprecated</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">recoverAbnormally</span><span class="params">(<span class="type">long</span> maxPhyOffsetOfConsumeQueue)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line"></span><br><span class="line">    <span class="type">boolean</span> <span class="variable">checkCRCOnRecover</span> <span class="operator">=</span> <span class="built_in">this</span>.defaultMessageStore.getMessageStoreConfig().isCheckCRCOnRecover();</span><br><span class="line">    <span class="keyword">final</span> List&lt;MappedFile&gt; mappedFiles = <span class="built_in">this</span>.mappedFileQueue.getMappedFiles();</span><br><span class="line">    <span class="keyword">if</span> (!mappedFiles.isEmpty()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">// Looking beginning to recover from which file</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">index</span> <span class="operator">=</span> mappedFiles.size() - <span class="number">1</span>;</span><br><span class="line">        <span class="type">MappedFile</span> <span class="variable">mappedFile</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">        <span class="comment">//倒叙遍历所有的commitlog文件执行检查恢复</span></span><br><span class="line">        <span class="keyword">for</span> (; index &gt;= <span class="number">0</span>; index--) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            mappedFile = mappedFiles.get(index);</span><br><span class="line">            <span class="comment">//首先校验当前commitlog文件是否是一个正确的文件</span></span><br><span class="line">            <span class="keyword">if</span> (<span class="built_in">this</span>.isMappedFileMatchedRecover(mappedFile)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                log.info(<span class="string">&quot;recover from this mapped file &quot;</span> + mappedFile.getFileName());</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 从第一个正确的commitlog文件开始遍历恢复</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">if</span> (index &lt; <span class="number">0</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            index = <span class="number">0</span>;</span><br><span class="line">            mappedFile = mappedFiles.get(index);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="type">ByteBuffer</span> <span class="variable">byteBuffer</span> <span class="operator">=</span> mappedFile.sliceByteBuffer();</span><br><span class="line">        <span class="comment">//获取文件映射的初始物理偏移量，其实和文件名相同</span></span><br><span class="line">        <span class="type">long</span> <span class="variable">processOffset</span> <span class="operator">=</span> mappedFile.getFileFromOffset();</span><br><span class="line">        <span class="comment">//commitlog映射文件的有效offset</span></span><br><span class="line">        <span class="type">long</span> <span class="variable">mappedFileOffset</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//生成DispatchRequest，验证本条消息是否合法</span></span><br><span class="line">            <span class="type">DispatchRequest</span> <span class="variable">dispatchRequest</span> <span class="operator">=</span> <span class="built_in">this</span>.checkMessageAndReturnSize(byteBuffer, checkCRCOnRecover);</span><br><span class="line">            <span class="comment">//获取消息大小</span></span><br><span class="line">            <span class="type">int</span> <span class="variable">size</span> <span class="operator">=</span> dispatchRequest.getMsgSize();</span><br><span class="line">            <span class="comment">//如果消息是正常的</span></span><br><span class="line">            <span class="keyword">if</span> (dispatchRequest.isSuccess()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">// Normal data</span></span><br><span class="line">                <span class="keyword">if</span> (size &gt; <span class="number">0</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//更新mappedFileOffset的值加上本条消息长度</span></span><br><span class="line">                    mappedFileOffset += size;</span><br><span class="line">                    <span class="comment">//如果消息允许重复复制，默认为 false</span></span><br><span class="line">                    <span class="keyword">if</span> (<span class="built_in">this</span>.defaultMessageStore.getMessageStoreConfig().isDuplicationEnable()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        <span class="comment">//如果消息物理偏移量小于CommitLog的提交指针</span></span><br><span class="line">                        <span class="comment">//则调用CommitLogDispatcher重新构建当前消息的indexfile索引和consumequeue索引</span></span><br><span class="line">                        <span class="keyword">if</span> (dispatchRequest.getCommitLogOffset() &lt; <span class="built_in">this</span>.defaultMessageStore.getConfirmOffset()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                            <span class="built_in">this</span>.defaultMessageStore.doDispatch(dispatchRequest);</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        <span class="comment">//调用CommitLogDispatcher重新构建当前消息的indexfile索引和consumequeue索引</span></span><br><span class="line">                        <span class="built_in">this</span>.defaultMessageStore.doDispatch(dispatchRequest);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">// Come the end of the file, switch to the next file</span></span><br><span class="line">                <span class="comment">// Since the return 0 representatives met last hole, this can</span></span><br><span class="line">                <span class="comment">// not be included in truncate offset</span></span><br><span class="line">                <span class="comment">//如果消息正常但是size为0，表示到了文件的末尾，则尝试跳到下一个commitlog文件进行检测</span></span><br><span class="line">                <span class="keyword">else</span> <span class="keyword">if</span> (size == <span class="number">0</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    index++;</span><br><span class="line">                    <span class="comment">//如果最后一个文件查找完毕，结束循环</span></span><br><span class="line">                    <span class="keyword">if</span> (index &gt;= mappedFiles.size()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        <span class="comment">// The current branch under normal circumstances should</span></span><br><span class="line">                        <span class="comment">// not happen</span></span><br><span class="line">                        log.info(<span class="string">&quot;recover physics file over, last mapped file &quot;</span> + mappedFile.getFileName());</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        <span class="comment">//如果最后一个文件没有查找完毕，那么跳转到下一个文件</span></span><br><span class="line">                        mappedFile = mappedFiles.get(index);</span><br><span class="line">                        byteBuffer = mappedFile.sliceByteBuffer();</span><br><span class="line">                        processOffset = mappedFile.getFileFromOffset();</span><br><span class="line">                        mappedFileOffset = <span class="number">0</span>;</span><br><span class="line">                        log.info(<span class="string">&quot;recover next physics file, &quot;</span> + mappedFile.getFileName());</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//如果当前消息异常，那么不继续校验</span></span><br><span class="line">                log.info(<span class="string">&quot;recover physics file end, &quot;</span> + mappedFile.getFileName() + <span class="string">&quot; pos=&quot;</span> + byteBuffer.position());</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//commitlog文件的最大有效区域的偏移量</span></span><br><span class="line">        processOffset += mappedFileOffset;</span><br><span class="line">        <span class="comment">//设置当前commitlog下面的所有的commitlog文件的最新数据</span></span><br><span class="line">        <span class="comment">//设置刷盘最新位置，提交的最新位置</span></span><br><span class="line">        <span class="built_in">this</span>.mappedFileQueue.setFlushedWhere(processOffset);</span><br><span class="line">        <span class="built_in">this</span>.mappedFileQueue.setCommittedWhere(processOffset);</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 删除文件最大有效数据偏移量processOffset之后的所有数据</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="built_in">this</span>.mappedFileQueue.truncateDirtyFiles(processOffset);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Clear ConsumeQueue redundant data</span></span><br><span class="line">        <span class="comment">//如果consumequeue文件记录的最大有效commitlog文件偏移量 大于等于 commitlog文件本身记录的最大有效区域的偏移量</span></span><br><span class="line">        <span class="comment">//那么以commitlog文件的有效数据为准，再次清除consumequeue文件中的脏数据</span></span><br><span class="line">        <span class="keyword">if</span> (maxPhyOffsetOfConsumeQueue &gt;= processOffset) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.warn(<span class="string">&quot;maxPhyOffsetOfConsumeQueue(&#123;&#125;) &gt;= processOffset(&#123;&#125;), truncate dirty logic files&quot;</span>, maxPhyOffsetOfConsumeQueue, processOffset);</span><br><span class="line">            <span class="built_in">this</span>.defaultMessageStore.truncateDirtyLogicFiles(processOffset);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// Commitlog case files are deleted</span></span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        log.warn(<span class="string">&quot;The commitlog files are deleted, and delete the consume queue files&quot;</span>);</span><br><span class="line">        <span class="comment">//如果不存在commitlog文件</span></span><br><span class="line">        <span class="comment">//那么重置刷盘最新位置，提交的最新位置，并且清除所有的consumequeue索引文件</span></span><br><span class="line">        <span class="built_in">this</span>.mappedFileQueue.setFlushedWhere(<span class="number">0</span>);</span><br><span class="line">        <span class="built_in">this</span>.mappedFileQueue.setCommittedWhere(<span class="number">0</span>);</span><br><span class="line">        <span class="built_in">this</span>.defaultMessageStore.destroyLogics();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="6-3-1-isMappedFileMatchedRecover文件是否正常"><a href="#6-3-1-isMappedFileMatchedRecover文件是否正常" class="headerlink" title="6.3.1 isMappedFileMatchedRecover文件是否正常"></a>6.3.1 isMappedFileMatchedRecover文件是否正常</h4><p>该方法判断当前文件是否是一个正常的commitlog文件。包括commitlog文件魔数的校验、文件消息存盘时间不为0的校验、存储时间小于等于检测点StoreCheckpoint的校验等。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * CommitLog的方法</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> mappedFile 需要判断的commitog文件</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="type">boolean</span> <span class="title function_">isMappedFileMatchedRecover</span><span class="params">(<span class="keyword">final</span> MappedFile mappedFile)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="type">ByteBuffer</span> <span class="variable">byteBuffer</span> <span class="operator">=</span> mappedFile.sliceByteBuffer();</span><br><span class="line">    <span class="comment">//获取文件开头的魔数</span></span><br><span class="line">    <span class="type">int</span> <span class="variable">magicCode</span> <span class="operator">=</span> byteBuffer.getInt(MessageDecoder.MESSAGE_MAGIC_CODE_POSTION);</span><br><span class="line">    <span class="comment">//如果文件的魔数与commitlog文件的正确的魔数不一致，则直接返回false，表示不是正确的commitlog文件</span></span><br><span class="line">    <span class="keyword">if</span> (magicCode != MESSAGE_MAGIC_CODE) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="type">int</span> <span class="variable">sysFlag</span> <span class="operator">=</span> byteBuffer.getInt(MessageDecoder.SYSFLAG_POSITION);</span><br><span class="line">    <span class="type">int</span> <span class="variable">bornhostLength</span> <span class="operator">=</span> (sysFlag &amp; MessageSysFlag.BORNHOST_V6_FLAG) == <span class="number">0</span> ? <span class="number">8</span> : <span class="number">20</span>;</span><br><span class="line">    <span class="type">int</span> <span class="variable">msgStoreTimePos</span> <span class="operator">=</span> <span class="number">4</span> + <span class="number">4</span> + <span class="number">4</span> + <span class="number">4</span> + <span class="number">4</span> + <span class="number">8</span> + <span class="number">8</span> + <span class="number">4</span> + <span class="number">8</span> + bornhostLength;</span><br><span class="line">    <span class="type">long</span> <span class="variable">storeTimestamp</span> <span class="operator">=</span> byteBuffer.getLong(msgStoreTimePos);</span><br><span class="line">    <span class="comment">//如果消息存盘时间为0，则直接返回false，表示未存储任何消息</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="number">0</span> == storeTimestamp) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//如果messageIndexEnable为true，并且使用安全的消息索引功能，即可靠模式，那么Index文件进行校验</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">this</span>.defaultMessageStore.getMessageStoreConfig().isMessageIndexEnable()</span><br><span class="line">            &amp;&amp; <span class="built_in">this</span>.defaultMessageStore.getMessageStoreConfig().isMessageIndexSafe()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//如果StoreCheckpoint的最小刷盘时间戳大于等于当前文件的存储时间，那么返回true，表示当前文件至少有部分是可靠的</span></span><br><span class="line">        <span class="keyword">if</span> (storeTimestamp &lt;= <span class="built_in">this</span>.defaultMessageStore.getStoreCheckpoint().getMinTimestampIndex()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.info(<span class="string">&quot;find check timestamp, &#123;&#125; &#123;&#125;&quot;</span>,</span><br><span class="line">                    storeTimestamp,</span><br><span class="line">                    UtilAll.timeMillisToHumanString(storeTimestamp));</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//如果文件最小的最新消息刷盘时间戳大于等于当前文件的存储时间，那么返回true，表示当前文件至少有部分是可靠的</span></span><br><span class="line">        <span class="keyword">if</span> (storeTimestamp &lt;= <span class="built_in">this</span>.defaultMessageStore.getStoreCheckpoint().getMinTimestamp()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.info(<span class="string">&quot;find check timestamp, &#123;&#125; &#123;&#125;&quot;</span>,</span><br><span class="line">                    storeTimestamp,</span><br><span class="line">                    UtilAll.timeMillisToHumanString(storeTimestamp));</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-4-recoverTopicQueueTable恢复consumeQueueTable"><a href="#6-4-recoverTopicQueueTable恢复consumeQueueTable" class="headerlink" title="6.4 recoverTopicQueueTable恢复consumeQueueTable"></a>6.4 recoverTopicQueueTable恢复consumeQueueTable</h3><p>在对consumequeue和commitlog进行恢复之后，之后会对consumeQueueTable进行恢复。topicQueueTable存储的是“topic-queueid”到当前queueId下面最大的相对偏移量的map。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * DefaultMessageStore的方法</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">recoverTopicQueueTable</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    HashMap&lt;String<span class="comment">/* topic-queueid */</span>, Long<span class="comment">/* offset */</span>&gt; table = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;String, Long&gt;(<span class="number">1024</span>);</span><br><span class="line">    <span class="comment">//获取commitlog的最小偏移量</span></span><br><span class="line">    <span class="type">long</span> <span class="variable">minPhyOffset</span> <span class="operator">=</span> <span class="built_in">this</span>.commitLog.getMinOffset();</span><br><span class="line">    <span class="comment">//遍历consumeQueueTable，即consumequeue文件的集合</span></span><br><span class="line">    <span class="keyword">for</span> (ConcurrentMap&lt;Integer, ConsumeQueue&gt; maps : <span class="built_in">this</span>.consumeQueueTable.values()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">for</span> (ConsumeQueue logic : maps.values()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="type">String</span> <span class="variable">key</span> <span class="operator">=</span> logic.getTopic() + <span class="string">&quot;-&quot;</span> + logic.getQueueId();</span><br><span class="line">            <span class="comment">//将“topicName-queueId”作为key，将当前queueId下面最大的相对偏移量作为value存入table</span></span><br><span class="line">            table.put(key, logic.getMaxOffsetInQueue());</span><br><span class="line">            logic.correctMinOffset(minPhyOffset);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//设置为topicQueueTable</span></span><br><span class="line">    <span class="built_in">this</span>.commitLog.setTopicQueueTable(table);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1739713329/" target="_blank">04、RocketMQ源码分析：Broker启动加载消息文件以及恢复数据源码【一万字】</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
+                        
+                            <a href="/category/Web/">Web</a>
+                        
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
+                        
+                            <a href="/tag/RocketMq/">RocketMq</a>
+                        
+                    </div>
+                
+                <div class="article-prev-next">
+                    
+                        <a href="/article/1739713330/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1739713330/" title="发布于 2025-02-16 09:42">05、RocketMQ源码分析：Broker与NameServer的心跳服务源码</a>
+                        <br>
+                    
+                    
+                        <a href="/article/1739713332/" class="next-prefix">» </a> 下一篇：    <a href="/article/1739713332/" title="发布于 2025-02-16 09:42">07、RocketMQ源码分析：Producer发送消息的总体流程【一万字】</a>
+                    
+                </div>
+            </div>
+            
+    <div class="article-comments">
+        
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
+    
+</div>
+    <div id="footer"></div>
+    <div id="sidebar">
+    <div class="menu-wrap" style="display:none;">
+        
+            <div class="menu-notice">
+                <span class="iconfont icon-notice"></span>
+                <div class="notice">
+                    <span>简单地活着，肆意而又精彩！</span>
+                </div>
+            </div>
+        
+        <nav class="menu">
+            <div class="menu-introduce"> 
+                <div class="introduce-avatar">
+                    <img src="/image/sidebar/avatar.jpg">
+                </div> 
+                <div class="introduce-info"> 
+                    <div class="introduce-user"><span>Live For Code</span></div>
+                </div> 
+            </div> 
+            <div class="menu-list">
+                <ul>
+                    
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                    
+                        <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
+                    
+                        <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
+                    
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                    
+                        <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
+                    
+                        <li class=""><a href="/about" class="" target="_self"><span class="iconfont icon-about-fill"></span>关于</a></li>
+                    
+                        <li class=""><a href="/atom.xml" class="" target="_blank"><span class="iconfont icon-rss"></span>订阅</a></li>
+                    
+                        <li class=""><a href="javascript:;" class="search" target="_self"><span class="iconfont icon-search-menu"></span>搜索</a></li>
+                    
+                        <li class=""><a href="/comment" class="" target="_self"><span class="iconfont icon-comments-fill"></span>留言板</a></li>
+                    
+                        <li class=""><a href="/friend" class="" target="_self"><span class="iconfont icon-link"></span>友情链接</a></li>
+                    
+                </ul> 
+            </div> 
+            <div class="menu-link">
+                <div class="box">
+                    <div class="image-box"></div>
+                </div>
+                
+                    <a name="知乎" href="https://www.zhihu.com/people/wo-xin-de-love" class="" target="_blank" data=""><span class="iconfont icon-zhihu"></span></a>
+                
+                    <a name="微博" href="https://weibo.com/u/3939432776" class="" target="_blank" data=""><span class="iconfont icon-weibo"></span></a>
+                
+                    <a name="QQ" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"><span class="iconfont icon-qq"></span></a>
+                
+                    <a name="微信" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"><span class="iconfont icon-wechat"></span></a>
+                
+                    <a name="GitHub" href="https://github.com/first19326" class="" target="_blank" data=""><span class="iconfont icon-github"></span></a>
+                
+            </div> 
+        </nav>
+        <button class="menu-button-close"></button>
+        <div class="morph-shape" id="morph-shape" data-morph-open="M-7.312,0H15c0,0,66,113.339,66,399.5C81,664.006,15,800,15,800H-7.312V0z;M-7.312,0H100c0,0,0,113.839,0,400c0,264.506,0,400,0,400H-7.312V0z">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 800" preserveAspectRatio="none">
+                <path d="M-7.312,0H0c0,0,0,113.839,0,400c0,264.506,0,400,0,400h-7.312V0z"/>
+            </svg>
+        </div>
+    </div>
+    <button class="menu-button-open">MENU</button>
+    <div class="menu-cover"></div>
+</div>
+    <link type="text/css" rel="stylesheet" href="/css/search.css">
+<script type="text/javascript" src="/js/iscroll.js"></script>
+<script type="text/javascript" src="/js/instantsearch.min.js"></script>
+<div class="search-window">
+    <div class="search-content">
+        <div class="search-content-icon">
+            <i class="iconfont icon-search"></i>
+        </div>
+        <div id="search-input" class="search-input"></div>
+    </div>
+
+    <div class="search-scroll">
+        <div class="search-result">
+            <div id="search-stats" class="search-stats"></div>
+            <div id="search-hits"></div>
+            <div id="search-pagination" class="search-pagination"></div>
+        </div>
+    </div>
+
+    <span class="search-close-icon">
+        <i class="iconfont icon-close"></i>
+    </span>
+</div>
+    <div id="tools">
+    <div class="progressbar-top"></div>
+
+    
+        <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
+        <script type="text/javascript" src="/js/APlayer.min.js"></script>
+        <script type="text/javascript" src="/js/Meting.min.js"></script>
+        <meting-js id="3778678" lrcshow="false" server="netease" type="playlist" fixed="true" autoplay="false" loop="all" order="random" preload="auto" volume="0.67" mutex="true"></meting-js>
+    
+    
+    <div class="wrap-right">
+        <div class="setting">
+            <div class="iconbox favorites" switch="false">
+                <span class="iconfont icon-favorites"></span>
+                <span class="icontext">关注</span>
+            </div>
+            <div class="iconbox mode">
+                <div class="light">
+                    <span class="iconfont icon-daymode"></span>
+                    <span class="icontext">浅色模式</span>
+                </div>
+                <div class="dark">
+                    <span class="iconfont icon-nightmode-fill"></span>
+                    <span class="icontext">深色模式</span>
+                </div>
+            </div>
+            <a href="javascript:;" target="_self" class="search">
+                <div class="iconbox">
+                    <span class="iconfont icon-search-menu"></span>
+                    <span class="icontext">搜索</span>
+                </div>
+            </a>
+            <div class="iconbox bottom">
+                <div style="display: inline-block; transform: rotate(180deg);">
+                    <span class="iconfont icon-top"></span>
+                </div>
+                <span class="icontext">跳至底部</span>
+            </div>
+        </div>
+        <div class="iconbox set">
+            <div style="display: inline-block;">
+                <span class="iconfont icon-setting"></span>
+            </div>
+            <span class="icontext">设置</span>
+        </div>
+        <div class="iconbox top">
+            <span class="iconfont icon-top"></span>
+            <span class="icontext">返回顶部</span>
+        </div>
+    </div>
+    <div class="loading"></div>
+</div>
+    <script>
+    window.config = {
+        GitHubUserName     : "first19326",
+        GitHubRepositories : "Hexo-LiveForCode",
+
+        User             : "Live For Code",
+        UserAvatar       : "/image/sidebar/avatar.jpg",
+        WebsiteStartDate : "2020-01-01",
+
+        WebsiteTitleBlur         : "(◍´꒳`◍) Hi, Live For Code",
+        WebsiteTitleBlurTimeOut  : 500,
+        WebsiteTitleFocus        : "(*´∇｀*) 欢迎回来!",
+        WebsiteTitleFocusTimeOut : 1000,
+        WebsiteFavicon           : "/image/website/logo.png",
+
+        ProgressBar : {
+            id       : "topProgressBar",
+            color    : "#77B6FF",
+            height   : "2px",
+            duration : 0.2
+        },
+
+        Loading: {
+            rebound : {
+                tension  : 16,
+                friction : 5
+            },
+            spinner : {
+                id     : "spinner",
+                radius : 90,
+                sides  : 3,
+                depth  : 4,
+                colors : {
+                    background : "#F0F0F0",
+                    stroke     : "#272633",
+                    base       : "",
+                    child      : "#272633"
+                },
+                alwaysForward : true,
+                restAt        : 0.5,
+                renderBase    : false
+            }
+        },
+
+        HomeHeaderAnimationRendered : true,
+        HomeHeaderAnimation         : {
+            radius      : 15,
+            density     : 0.2,
+            color       : "rgba(255, 255, 255, .2)",
+            clearOffset : 0.3
+        },
+
+        BackAnimationRendered          : true,
+        IEBrowserBackAnimationRendered : false,
+        BackAnimation                  : {
+            colorSaturation  : "60%",
+            colorBrightness  : "50%",
+            colorAlpha       : 0.5,
+            colorCycleSpeed  : 5,
+            verticalPosition : "random",
+            horizontalSpeed  : 200,
+            ribbonCount      : 3,
+            strokeSize       : 0,
+            parallaxAmount   : -0.2,
+            animateSections  : true
+        },
+
+        HomeHeaderImage : [
+            
+                "/image/header/home.jpg",
+            
+                "/image/header/home.jpeg",
+            
+                "/image/header/2023-04-17-20-51-03.jpg",
+            
+                "/image/header/2023-04-17-20-54-07.jpg",
+            
+                "/image/header/2023-04-17-20-54-22.jpg",
+            
+                "/image/header/2023-04-17-20-55-25.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+        HomeBannerText  : "",
+
+        ArticleHeaderImage : [
+            
+                "/image/header/article.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+
+        OtherBannerText : "",
+
+        Error : {
+            icon    : "icon-swimming",
+            title   : "PAGE NOT FOUND",
+            content : [
+                
+                    "很抱歉，您访问的页面不存在！",
+                
+                    "可能是输入地址有误或该地址已变更。",
+                
+            ],
+            buttons : [
+                
+                    {
+                        icon  : "icon-home",
+                        text  : "返回首页",
+                        href  : "https://fadeway32.gitee.io/",
+                        class : ""
+                    },
+                
+            ]
+        },
+
+        MenuNotice : {
+            enable : true,
+            notice : "简单地活着，肆意而又精彩！",
+            speed  : 20
+        },
+        MenuList : [
+            
+                {
+                    name   : "首页",
+                    icon   : "icon-home-fill",
+                    href   : "/",
+                    type   : "index",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "分类",
+                    icon   : "icon-folder-fill",
+                    href   : "/category",
+                    type   : "category",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "标签",
+                    icon   : "icon-discount-fill",
+                    href   : "/tag",
+                    type   : "tag",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "归档",
+                    icon   : "icon-calendar-fill",
+                    href   : "/archive",
+                    type   : "archive",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "赞赏",
+                    icon   : "icon-heart-fill",
+                    href   : "/donate",
+                    type   : "donate",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "关于",
+                    icon   : "icon-about-fill",
+                    href   : "/about",
+                    type   : "about",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "订阅",
+                    icon   : "icon-rss",
+                    href   : "/atom.xml",
+                    type   : "",
+                    class  : "",
+                    target : "_blank"
+                },
+            
+                {
+                    name   : "搜索",
+                    icon   : "icon-search-menu",
+                    href   : "javascript:;",
+                    type   : "",
+                    class  : "search",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "留言板",
+                    icon   : "icon-comments-fill",
+                    href   : "/comment",
+                    type   : "comment",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "友情链接",
+                    icon   : "icon-link",
+                    href   : "/friend",
+                    type   : "friend",
+                    class  : "",
+                    target : "_self"
+                },
+            
+        ],
+        MenuLink : [
+            
+                
+                    {
+                        name   : "知乎",
+                        icon   : "icon-zhihu",
+                        href   : "https://www.zhihu.com/people/wo-xin-de-love",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "微博",
+                        icon   : "icon-weibo",
+                        href   : "https://weibo.com/u/3939432776",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "QQ",
+                        icon   : "icon-qq",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"
+                    },
+                
+                    {
+                        name   : "微信",
+                        icon   : "icon-wechat",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"
+                    },
+                
+                    {
+                        name   : "GitHub",
+                        icon   : "icon-github",
+                        href   : "https://github.com/first19326",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+            
+        ],
+
+        FooterStyle : 2,
+        BottomText  : "<div><span class='face'>ღゝ◡╹)ノ♡</span></div><div>【人生若只如初见<span><i class='iconfont icon-like-fill'></i></span>何事秋风悲画扇】</div><div>&copy; 2020-2022 WorstOne. All Rights Reserved.</div>",
+
+        ConsoleList : [
+            
+                
+                    [
+                        
+                            
+                                "Based on cnblogs theme SimpleMemory.",
+                            
+                                "",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "SimpleMemory Author:",
+                            
+                                "BNDong",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "Theme:",
+                            
+                                "LiveForCode",
+                            
+                        
+                    ],
+                
+            
+        ],
+
+        FontIconExtend : "",
+
+        Donate : {
+            paypal  : "",
+            bitcoin : "",
+            alipay  : "/image/donate/alipay.png",
+            wechat  : "/image/donate/wechat.png"
+        },
+
+        Search : {
+            applicationID : "758UIQ1V0H",
+            apiKey        : "2e038c318ac6813e4b4baa91f6ccfa63",
+            indexName     : "hexo2",
+            hits          : {
+                page : 30
+            },
+            labels        : {
+                placeholder : "搜索",
+                empty       : "未发现与 「${query}」 相关的内容",
+                stats       : "${hits} 条相关条目，使用了 ${time} 毫秒",
+            }
+        }, 
+
+        Valine : {
+            switch         : true,
+            el             : ".comments-content",
+            appId          : "srhKtvWPQTWYKh3qX8G8M7v0-gzGzoHsz",
+            appKey         : "8uVSP1q6UlALVC5igYfIfv2h",
+            serverURLs     : "",
+            placeholder    : "你是我一生只会遇见一次的惊喜...",
+            avatar         : "mm",
+            meta           : "nick,mail,link",
+            requiredFields : "nick,mail",
+            pageSize       : 5,
+            lang           : "zh-cn",
+            visitor        : true,
+            enableQQ       : true
+        },
+
+        Tocbot : {
+            switch                : true,
+            tocSelector           : ".toc",
+            contentSelector       : ".article-body",
+            headingSelector       : "h1, h2, h3, h4, h5",
+            headingsOffset        : 0,
+            scrollSmooth          : true,
+            scrollSmoothOffset    : -5,
+            positionFixedSelector : ".toc",
+            positionFixedClass    : "toc-fixed",
+            fixedSidebarOffset    : "",
+        },
+
+        Require : {
+            baseUrl     : "/js/",
+            waitSeconds : 100
+        },
+
+        Music : {
+            type : "Meting"
+        },
+        APlayer : {
+            container : ".aplayer",
+            fixed     : true,
+            autoplay  : true,
+            loop      : "all",
+            order     : "random",
+            preload   : "auto",
+            volume    : 0.67,
+            mutex     : true,
+            lrcType   : 2,
+            audio     : [
+                
+                    {
+                        name   : "Endless Tears",
+                        artist : "CLIFF EDGE",
+                        cover  : "/music/cover/Endless Tears.jpg",
+                        url    : "/music/song/Endless Tears.mp3",
+                        lrc    : "/music/lrc/Endless Tears.lrc"
+                    },
+                
+            ]
+        },
+        Meting : {
+            id       : "3778678", 
+            lrcshow  : false, 
+            server   : "netease", 
+            type     : "playlist", 
+            fixed    : true, 
+            autoplay : false, 
+            loop     : "all", 
+            order    : "random", 
+            preload  : "auto", 
+            volume   : 0.67, 
+            mutex    : true
+        },
+
+        Mouse : {
+            enable  : true,
+            options : {
+                size  : 6,
+                sizeF : 24
+            }
+        },
+
+        LazyLoad : {
+            default : "/image/website/lazyload.svg"
+        },
+  
+        Style : {
+            aplayer          : "/css/APlayer.css",
+            archive          : "/css/archive.css",
+            base             : "/css/base.css",
+            clipboard        : "/css/clipboard.css",
+            code             : "/css/code.css",
+            donate           : "/css/donate.css",
+            fancybox         : "/css/jquery.fancybox.css",
+            footer           : "/css/footer.css",
+            iconfont         : "/iconfont/iconfont.css",
+            index            : "/css/index.css",
+            menuBubble       : "/css/menu-bubble.css",
+            mouse            : "/css/mouse.css",
+            page             : "/css/page.css",
+            post             : "/css/post.css",
+            search           : "/css/search.css",
+            tocbot           : "/css/tocbot.css",
+            valine           : "/css/valine.css"
+        },
+
+        Script: {
+            aplayer          : "/js/APlayer.min.js",
+            config           : "/js/require.config.js",
+            index            : "/js/index.js",
+            instantSearch    : "/js/instantsearch.min.js",
+            iscroll          : "/js/iscroll.js",
+            jQuery           : "/js/jquery-3.4.1.min.js",
+            loading          : "/js/loading.js",
+            meting           : "/js/Meting.min.js",
+            require          : "/js/require.min.js"
+        },
+
+        Font: {
+            LongCang    : "/font/LongCang.css",
+            Monda       : "/font/Monda.css",
+            NotoSansSC  : "/font/NotoSansSC.css",
+            NotoSerifSC : "/font/NotoSerifSC.css",
+            Playball    : "/font/Playball.css",
+            PTMono      : "/font/PTMono.css",
+            Roboto      : "/font/Roboto.css",
+            RobotoSlab  : "/font/RobotoSlab.css",
+            Rosario     : "/font/Rosario.css",
+            UbuntuMono  : "/font/UbuntuMono.css"
+        },
+
+        Suffix : {
+            about : "你知道的越多,你不知道的越多"
+        },
+            
+        Theme : {
+            url  : "https://fadeway32.gitee.io/",
+            name : "fadeway32"
+        }  
+    };
+</script>
+    <script type="text/javascript" src="/js/index.js"></script>
+</body>
+</html>

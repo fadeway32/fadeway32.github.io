@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <!--    <meta name="referrer" content="origin">-->
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>
+        
+            10、RocketMQ源码分析：BrokerasyncSendMessage处理消息以及自动创建Topic
+        
+    </title>
+    <link rel="shortcut icon" href="#"/>
+
+    <link type="text/css" rel="stylesheet" href="/font/LongCang.css">
+    <link type="text/css" rel="stylesheet" href="/font/Monda.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSansSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSerifSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/Playball.css">
+    <link type="text/css" rel="stylesheet" href="/font/PTMono.css">
+    <link type="text/css" rel="stylesheet" href="/font/Roboto.css">
+    <link type="text/css" rel="stylesheet" href="/font/RobotoSlab.css">
+    <link type="text/css" rel="stylesheet" href="/font/Rosario.css">
+    <link type="text/css" rel="stylesheet" href="/font/UbuntuMono.css">
+
+    <link type="text/css" rel="stylesheet" href="/css/base.css">
+    <link type="text/css" rel="stylesheet" href="/css/code.css">
+
+    <script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
+<meta name="generator" content="Hexo 6.2.0"></head>
+<body>
+    <a id="cover"></a>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
+<header>
+    <meta name="referrer" content="no-referrer">
+</header>
+<div id="header" class="header">
+    <div class="vertical">
+        <div class="inner">
+            
+                <h1 class="header-subtitle">10、RocketMQ源码分析：BrokerasyncSendMessage处理消息以及自动创建Topic</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2025-02-16
+                        </span>
+                        
+                            <span id="/article/1739713335/" class="leancloud_visitors" data-flag-title="10、RocketMQ源码分析：BrokerasyncSendMessage处理消息以及自动创建Topic">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1739713335/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">RocketMq</span>
+                        
+                    
+                </div>
+            
+        </div>
+    </div>
+    
+</div>
+<div id="container">
+    
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="10、RocketMQ源码分析：BrokerasyncSendMessage处理消息以及自动创建Topic"><a href="#10、RocketMQ源码分析：BrokerasyncSendMessage处理消息以及自动创建Topic" class="headerlink" title="10、RocketMQ源码分析：BrokerasyncSendMessage处理消息以及自动创建Topic"></a>10、RocketMQ源码分析：BrokerasyncSendMessage处理消息以及自动创建Topic</h1><p>此前我们学习RocketMQ的Broker接收Producer消息的入口源码：<a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_43767015/article/details/127061828">RocketMQ源码(9)—Broker接收消息入口源码</a><br>，在文章的最后我们到了asyncSendMessage方法。</p>
+<p>asyncSendMessage方法用来处理来自producer发送的消息，内部内容非常多，**本次我们学习asyncSendMessage方法的整体流程，以及自动创建topic的源码<br>**。</p>
+<h4 id="文章目录"><a href="#文章目录" class="headerlink" title="文章目录"></a>文章目录</h4><ul>
+<li>1 asyncSendMessage异步处理单条消息</li>
+<li>2 preSend准备响应命令对象</li>
+<li><ul>
+<li>2.1 msgCheck检查并自动创建topic</li>
+</ul>
+</li>
+<li><ul>
+<li>2.1.1 createTopicInSendMessageMethod创建普通topic</li>
+<li>2.1.2 createTopicInSendMessageBackMethod创建重试topc</li>
+<li>2.1.3 autoCreateTopicEnable自动创建topic的问题</li>
+</ul>
+</li>
+<li>3 handlePutMessageResultFuture处理消息存放结果</li>
+<li><ul>
+<li>3.1 handlePutMessageResult处理存放消息的结果</li>
+</ul>
+</li>
+<li>4 总结</li>
+</ul>
+<h2 id="1-asyncSendMessage异步处理单条消息"><a href="#1-asyncSendMessage异步处理单条消息" class="headerlink" title="1 asyncSendMessage异步处理单条消息"></a>1 asyncSendMessage异步处理单条消息</h2><p>该方法是broker处理单条消息的通用入口方法，该方法非常重要，大概步骤为：</p>
+<p><strong>1、</strong> 调用preSend方法创建响应的命令对象，包括自动创建topic的逻辑，随后创建响应头对象；<br><strong>2、</strong> 随后创建MessageExtBrokerInner对象，从请求中获取消息的属性并设置到对象属性中，例如消息体，topic等等；<br><strong>3、</strong> 判断如果是重试或者死信消息，则调用handleRetryAndDLQ方法处理重试和死信队列消息，如果已重试次数大于最大重试次数，那么替换topic为死信队列topic，消息会被发送至死信队列；<br><strong>4、</strong> 判断如果是事务准备消息，并且不会拒绝处理事务消息，则调用asyncPrepareMessage方法以异步的方式处理、存储事务准备消息；<br><strong>5、</strong> 否则表示普通消息，调用asyncPutMessage方法处理、存储普通消息asyncPutMessage以异步方式将消息存储到存储器中，处理器可以处理下一个请求而不是等待结果，当结果完成时，以异步方式通知客户端；<br><strong>6、</strong> 最后调用handlePutMessageResultFuture方法处理消息存储的处理结果；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * SendMessageProcessor的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 处理单条消息</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> CompletableFuture&lt;RemotingCommand&gt; <span class="title function_">asyncSendMessage</span><span class="params">(ChannelHandlerContext ctx, RemotingCommand request,</span></span><br><span class="line"><span class="params">                                                            SendMessageContext mqtraceContext,</span></span><br><span class="line"><span class="params">                                                            SendMessageRequestHeader requestHeader)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 1 创建响应的命令对象，包括自动创建topic的逻辑</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">final</span> <span class="type">RemotingCommand</span> <span class="variable">response</span> <span class="operator">=</span> preSend(ctx, request, requestHeader);</span><br><span class="line">    <span class="comment">//获取响应头</span></span><br><span class="line">    <span class="keyword">final</span> <span class="type">SendMessageResponseHeader</span> <span class="variable">responseHeader</span> <span class="operator">=</span> (SendMessageResponseHeader) response.readCustomHeader();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (response.getCode() != -<span class="number">1</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">return</span> CompletableFuture.completedFuture(response);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//获取消息体</span></span><br><span class="line">    <span class="keyword">final</span> <span class="type">byte</span>[] body = request.getBody();</span><br><span class="line">    <span class="comment">//获取队列id</span></span><br><span class="line">    <span class="type">int</span> <span class="variable">queueIdInt</span> <span class="operator">=</span> requestHeader.getQueueId();</span><br><span class="line">    <span class="comment">//从broker的topicConfigTable缓存中根据topicName获取TopicConfig</span></span><br><span class="line">    <span class="type">TopicConfig</span> <span class="variable">topicConfig</span> <span class="operator">=</span> <span class="built_in">this</span>.brokerController.getTopicConfigManager().selectTopicConfig(requestHeader.getTopic());</span><br><span class="line">    <span class="comment">//如果队列id小于0，则随机选择一个写队列索引作为id</span></span><br><span class="line">    <span class="keyword">if</span> (queueIdInt &lt; <span class="number">0</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        queueIdInt = randomQueueId(topicConfig.getWriteQueueNums());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//构建消息对象，保存着要存入commitLog的数据</span></span><br><span class="line">    <span class="type">MessageExtBrokerInner</span> <span class="variable">msgInner</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">MessageExtBrokerInner</span>();</span><br><span class="line">    <span class="comment">//设置topic</span></span><br><span class="line">    msgInner.setTopic(requestHeader.getTopic());</span><br><span class="line">    <span class="comment">//设置队列id</span></span><br><span class="line">    msgInner.setQueueId(queueIdInt);</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 2 处理重试和死信队列消息，将会对死信消息替换为死信topic</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">if</span> (!handleRetryAndDLQ(requestHeader, response, request, msgInner, topicConfig)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">return</span> CompletableFuture.completedFuture(response);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 设置一系列属性</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    msgInner.setBody(body);</span><br><span class="line">    msgInner.setFlag(requestHeader.getFlag());</span><br><span class="line">    Map&lt;String, String&gt; origProps = MessageDecoder.string2messageProperties(requestHeader.getProperties());</span><br><span class="line">    <span class="comment">//设置到properties属性中</span></span><br><span class="line">    MessageAccessor.setProperties(msgInner, origProps);</span><br><span class="line">    msgInner.setBornTimestamp(requestHeader.getBornTimestamp());</span><br><span class="line">    msgInner.setBornHost(ctx.channel().remoteAddress());</span><br><span class="line">    msgInner.setStoreHost(<span class="built_in">this</span>.getStoreHost());</span><br><span class="line">    msgInner.setReconsumeTimes(requestHeader.getReconsumeTimes() == <span class="literal">null</span> ? <span class="number">0</span> : requestHeader.getReconsumeTimes());</span><br><span class="line">    <span class="type">String</span> <span class="variable">clusterName</span> <span class="operator">=</span> <span class="built_in">this</span>.brokerController.getBrokerConfig().getBrokerClusterName();</span><br><span class="line">    MessageAccessor.putProperty(msgInner, MessageConst.PROPERTY_CLUSTER, clusterName);</span><br><span class="line">    <span class="comment">//WAIT属性表示 消息发送时是否等消息存储完成后再返回</span></span><br><span class="line">    <span class="keyword">if</span> (origProps.containsKey(MessageConst.PROPERTY_WAIT_STORE_MSG_OK)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">// There is no need to store &quot;WAIT=true&quot;, remove it from propertiesString to save 9 bytes for each message.</span></span><br><span class="line">        <span class="comment">// It works for most case. In some cases msgInner.setPropertiesString invoked later and replace it.</span></span><br><span class="line">        <span class="comment">//不需要存储&quot;WAIT=true&quot;属性，从propertiesString中移除它，为每个消息节省9个字节。</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">waitStoreMsgOKValue</span> <span class="operator">=</span> origProps.remove(MessageConst.PROPERTY_WAIT_STORE_MSG_OK);</span><br><span class="line">        <span class="comment">//将没有WAIT属性的origProps存入msgInner的propertiesString属性</span></span><br><span class="line">        msgInner.setPropertiesString(MessageDecoder.messageProperties2String(msgInner.getProperties()));</span><br><span class="line">        <span class="comment">// Reput to properties, since msgInner.isWaitStoreMsgOK() will be invoked later</span></span><br><span class="line">        <span class="comment">//将WAIT属性重新存入origProps集合中，因为msgInner.isWaitStoreMsgOK()稍后将被调用</span></span><br><span class="line">        origProps.put(MessageConst.PROPERTY_WAIT_STORE_MSG_OK, waitStoreMsgOKValue);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//将没有WAIT属性的origProps存入msgInner的propertiesString属性</span></span><br><span class="line">        msgInner.setPropertiesString(MessageDecoder.messageProperties2String(msgInner.getProperties()));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    CompletableFuture&lt;PutMessageResult&gt; putMessageResult = <span class="literal">null</span>;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 处理事务消息逻辑</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="comment">//TRAN_MSG属性值为true，表示为事务消息</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">transFlag</span> <span class="operator">=</span> origProps.get(MessageConst.PROPERTY_TRANSACTION_PREPARED);</span><br><span class="line">    <span class="comment">//处理事务消息</span></span><br><span class="line">    <span class="keyword">if</span> (transFlag != <span class="literal">null</span> &amp;&amp; Boolean.parseBoolean(transFlag)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//判断是否需要拒绝事务消息，如果需要拒绝，则返回NO_PERMISSION异常</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="built_in">this</span>.brokerController.getBrokerConfig().isRejectTransactionMessage()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            response.setCode(ResponseCode.NO_PERMISSION);</span><br><span class="line">            response.setRemark(</span><br><span class="line">                    <span class="string">&quot;the broker[&quot;</span> + <span class="built_in">this</span>.brokerController.getBrokerConfig().getBrokerIP1()</span><br><span class="line">                            + <span class="string">&quot;] sending transaction message is forbidden&quot;</span>);</span><br><span class="line">            <span class="keyword">return</span> CompletableFuture.completedFuture(response);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//调用asyncPrepareMessage方法以异步的方式处理、存储事务准备消息，底层仍是asyncPutMessage方法</span></span><br><span class="line">        putMessageResult = <span class="built_in">this</span>.brokerController.getTransactionalMessageService().asyncPrepareMessage(msgInner);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//不是事务消息，那么调用asyncPutMessage方法处理，存储消息</span></span><br><span class="line">        <span class="comment">//以异步方式将消息存储到存储器中，处理器可以处理下一个请求而不是等待结果，当结果完成时，以异步方式通知客户端</span></span><br><span class="line">        putMessageResult = <span class="built_in">this</span>.brokerController.getMessageStore().asyncPutMessage(msgInner);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//处理消息存放的结果</span></span><br><span class="line">    <span class="keyword">return</span> handlePutMessageResultFuture(putMessageResult, response, request, msgInner, responseHeader, mqtraceContext, ctx, queueIdInt);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-preSend准备响应命令对象"><a href="#2-preSend准备响应命令对象" class="headerlink" title="2 preSend准备响应命令对象"></a>2 preSend准备响应命令对象</h2><p><strong>该方法用于创建响应的命令对象，其中还包括topic的校验，以及自动创建topic的逻辑。</strong></p>
+<p>该方法中将会创建一个RemotingCommand对象，并且设置唯一id为请求的id。除此之外还会校验如果当前时间小于该broker的起始服务时间，那么broker会返回一个SYSTEM_ERROR，表示现在broker还不能提供服务。</p>
+<p>在最后，会调用msgCheck方法进行一系列的校验，包括自动创建topic的逻辑。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * SendMessageProcessor的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 准备响应数据</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> RemotingCommand <span class="title function_">preSend</span><span class="params">(ChannelHandlerContext ctx, RemotingCommand request,</span></span><br><span class="line"><span class="params">                                SendMessageRequestHeader requestHeader)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//创建响应命令对象</span></span><br><span class="line">    <span class="keyword">final</span> <span class="type">RemotingCommand</span> <span class="variable">response</span> <span class="operator">=</span> RemotingCommand.createResponseCommand(SendMessageResponseHeader.class);</span><br><span class="line">    <span class="comment">//设置唯一id为请求id</span></span><br><span class="line">    response.setOpaque(request.getOpaque());</span><br><span class="line">    <span class="comment">//添加扩展字段属性&quot;MSG_REGION&quot;、&quot;TRACE_ON&quot;</span></span><br><span class="line">    response.addExtField(MessageConst.PROPERTY_MSG_REGION, <span class="built_in">this</span>.brokerController.getBrokerConfig().getRegionId());</span><br><span class="line">    response.addExtField(MessageConst.PROPERTY_TRACE_SWITCH, String.valueOf(<span class="built_in">this</span>.brokerController.getBrokerConfig().isTraceOn()));</span><br><span class="line"></span><br><span class="line">    log.debug(<span class="string">&quot;Receive SendMessage request command &#123;&#125;&quot;</span>, request);</span><br><span class="line">    <span class="comment">//获取配置的broker的处理请求的起始服务时间，默认为0</span></span><br><span class="line">    <span class="keyword">final</span> <span class="type">long</span> <span class="variable">startTimestamp</span> <span class="operator">=</span> <span class="built_in">this</span>.brokerController.getBrokerConfig().getStartAcceptSendRequestTimeStamp();</span><br><span class="line">    <span class="comment">//如果当前时间小于起始时间，那么broker会返回一个SYSTEM_ERROR，表示现在broker还不能提供服务</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">this</span>.brokerController.getMessageStore().now() &lt; startTimestamp) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        response.setCode(ResponseCode.SYSTEM_ERROR);</span><br><span class="line">        response.setRemark(String.format(<span class="string">&quot;broker unable to service, until %s&quot;</span>, UtilAll.timeMillisToHumanString2(startTimestamp)));</span><br><span class="line">        <span class="keyword">return</span> response;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//设置code为-1</span></span><br><span class="line">    response.setCode(-<span class="number">1</span>);</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 消息校验，包括自动创建topic的逻辑</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="built_in">super</span>.msgCheck(ctx, requestHeader, response);</span><br><span class="line">    <span class="keyword">if</span> (response.getCode() != -<span class="number">1</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">return</span> response;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> response;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-1-msgCheck检查并自动创建topic"><a href="#2-1-msgCheck检查并自动创建topic" class="headerlink" title="2.1 msgCheck检查并自动创建topic"></a>2.1 msgCheck检查并自动创建topic</h3><p>该方法进行一系列的消息校验，并且会尝试自动创建topic。大概步骤为：</p>
+<p><strong>1、</strong> 校验如果当前broker没有写的权限，那么broker会返回一个NO_PERMISSION异常，sendingmessageisforbidden，禁止向该broker发送消息；<br><strong>2、</strong> 校验topic不能为空，必须属于合法字符regex:^[%|a-zA-Z0-9_-]+$，且长度不超过127个字符；<br><strong>3、</strong> 校验如果当前topic是不为允许使用的系统topic，那么抛出异常，默认不能为SCHEDULE_TOPIC_XXXX；<br><strong>4、</strong> 随后从broker的topicConfigTable缓存中根据topicName获取TopicConfig；</p>
+<p><strong>1、</strong><br>如果不存在该topic信息，比如第一次发送消息，那么首先调用createTopicInSendMessageMethod方法尝试创建普通topic，如果失败了，则判断是否是重试topic，即topic名是否以%RETRY%开头，如果是的话则尝试创建重试topic，如果还是创建失败，则返回TOPIC_NOT_EXIST异常信息；<br><strong>5、</strong> 如果找到或者创建了topic，则校验queutId不能大于等于该broker的读或写的最大queueId；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * AbstractSendMessageProcessor的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 消息校验，包括自动创建topic的逻辑</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">protected</span> RemotingCommand <span class="title function_">msgCheck</span><span class="params">(<span class="keyword">final</span> ChannelHandlerContext ctx,</span></span><br><span class="line"><span class="params">                                   <span class="keyword">final</span> SendMessageRequestHeader requestHeader, <span class="keyword">final</span> RemotingCommand response)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//如果当前broker没有写的权限，那么broker会返回一个NO_PERMISSION异常，sending message is forbidden，禁止向该broker发送消息</span></span><br><span class="line">    <span class="keyword">if</span> (!PermName.isWriteable(<span class="built_in">this</span>.brokerController.getBrokerConfig().getBrokerPermission())</span><br><span class="line">            &amp;&amp; <span class="built_in">this</span>.brokerController.getTopicConfigManager().isOrderTopic(requestHeader.getTopic())) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        response.setCode(ResponseCode.NO_PERMISSION);</span><br><span class="line">        response.setRemark(<span class="string">&quot;the broker[&quot;</span> + <span class="built_in">this</span>.brokerController.getBrokerConfig().getBrokerIP1()</span><br><span class="line">                + <span class="string">&quot;] sending message is forbidden&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> response;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//校验topic不能为空，必须属于合法字符regex: ^[%|a-zA-Z0-9_-]+$，且长度不超过127个字符</span></span><br><span class="line">    <span class="keyword">if</span> (!TopicValidator.validateTopic(requestHeader.getTopic(), response)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">return</span> response;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//校验如果当前topic是不为允许使用的系统topic，那么抛出异常，默认不能为SCHEDULE_TOPIC_XXXX</span></span><br><span class="line">    <span class="keyword">if</span> (TopicValidator.isNotAllowedSendTopic(requestHeader.getTopic(), response)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">return</span> response;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//从broker的topicConfigTable缓存中根据topicName获取TopicConfig</span></span><br><span class="line">    <span class="type">TopicConfig</span> <span class="variable">topicConfig</span> <span class="operator">=</span></span><br><span class="line">            <span class="built_in">this</span>.brokerController.getTopicConfigManager().selectTopicConfig(requestHeader.getTopic());</span><br><span class="line">    <span class="comment">//如果不存在该topic信息</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="literal">null</span> == topicConfig) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="type">int</span> <span class="variable">topicSysFlag</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">if</span> (requestHeader.isUnitMode()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="keyword">if</span> (requestHeader.getTopic().startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                topicSysFlag = TopicSysFlag.buildSysFlag(<span class="literal">false</span>, <span class="literal">true</span>);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                topicSysFlag = TopicSysFlag.buildSysFlag(<span class="literal">true</span>, <span class="literal">false</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        log.warn(<span class="string">&quot;the topic &#123;&#125; not exist, producer: &#123;&#125;&quot;</span>, requestHeader.getTopic(), ctx.channel().remoteAddress());</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 尝试创建普通topic</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        topicConfig = <span class="built_in">this</span>.brokerController.getTopicConfigManager().createTopicInSendMessageMethod(</span><br><span class="line">                requestHeader.getTopic(),</span><br><span class="line">                requestHeader.getDefaultTopic(),</span><br><span class="line">                RemotingHelper.parseChannelRemoteAddr(ctx.channel()),</span><br><span class="line">                requestHeader.getDefaultTopicQueueNums(), topicSysFlag);</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 尝试创建重试topic</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="literal">null</span> == topicConfig) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="keyword">if</span> (requestHeader.getTopic().startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                topicConfig =</span><br><span class="line">                        <span class="built_in">this</span>.brokerController.getTopicConfigManager().createTopicInSendMessageBackMethod(</span><br><span class="line">                                requestHeader.getTopic(), <span class="number">1</span>, PermName.PERM_WRITE | PermName.PERM_READ,</span><br><span class="line">                                topicSysFlag);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (<span class="literal">null</span> == topicConfig) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            response.setCode(ResponseCode.TOPIC_NOT_EXIST);</span><br><span class="line">            response.setRemark(<span class="string">&quot;topic[&quot;</span> + requestHeader.getTopic() + <span class="string">&quot;] not exist, apply first please!&quot;</span></span><br><span class="line">                    + FAQUrl.suggestTodo(FAQUrl.APPLY_TOPIC_URL));</span><br><span class="line">            <span class="keyword">return</span> response;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//校验queutId 不能大于等于该broker的读或写的最大数量</span></span><br><span class="line">    <span class="type">int</span> <span class="variable">queueIdInt</span> <span class="operator">=</span> requestHeader.getQueueId();</span><br><span class="line">    <span class="type">int</span> <span class="variable">idValid</span> <span class="operator">=</span> Math.max(topicConfig.getWriteQueueNums(), topicConfig.getReadQueueNums());</span><br><span class="line">    <span class="keyword">if</span> (queueIdInt &gt;= idValid) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="type">String</span> <span class="variable">errorInfo</span> <span class="operator">=</span> String.format(<span class="string">&quot;request queueId[%d] is illegal, %s Producer: %s&quot;</span>,</span><br><span class="line">                queueIdInt,</span><br><span class="line">                topicConfig.toString(),</span><br><span class="line">                RemotingHelper.parseChannelRemoteAddr(ctx.channel()));</span><br><span class="line"></span><br><span class="line">        log.warn(errorInfo);</span><br><span class="line">        response.setCode(ResponseCode.SYSTEM_ERROR);</span><br><span class="line">        response.setRemark(errorInfo);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> response;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> response;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-1-1-createTopicInSendMessageMethod创建普通topic"><a href="#2-1-1-createTopicInSendMessageMethod创建普通topic" class="headerlink" title="2.1.1 createTopicInSendMessageMethod创建普通topic"></a>2.1.1 createTopicInSendMessageMethod创建普通topic</h4><p>该方法尝试创建一个新的topic，大概步骤为：</p>
+<p><strong>1、</strong> 首先需要获取锁防止并发创建相同的topic，获得锁之再次尝试从topicConfigTable获取topic信息，如果获取到了，那么直接返回如果还是没有，那么创建topic；<br><strong>2、</strong> 获取默认topic的信息，用于作为模板创建新topic，默认的默认topic实际上就是TBW102，其有8个读写队列，权限为读写并且可继承，即7；<br><strong>3、</strong> 如果默认topic就是TBW102，并且如果broker配置不支持自动创建topic，即autoCreateTopicEnable为false，那么设置权限为可读写，不可继承，即6；<br><strong>4、</strong> 如果默认topic配置的权限包括可继承，那么从默认topic继承属性创建新topic；</p>
+<p><strong>1、</strong> 新建一个TopicConfig对象，选择默认队列数量与默认topic写队列数中最小的值作为新topic的读写队列数量，默认为4设置权限，去除可继承权限等操作；<br><strong>5、</strong><br>如果topic不为null，说明创建了新topic将新的topic信息存入topicConfigTable缓存中，生成下一个数据版本，标识位置为true，随后调用persist方法将topic配置持久化到配置文件{user.home}&#x2F;store&#x2F;config&#x2F;topics.json中；<br><strong>6、</strong> 最后解锁，然后判断如果创建了新topic，那么马上调用registerBrokerAll方法向nameServer注册当前broker的新配置路由信息；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br></pre></td><td class="code"><pre><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * TopicConfigManager的方法</span></span><br><span class="line"><span class="comment">   * &lt;p&gt;</span></span><br><span class="line"><span class="comment">   * 创建普通topic，并持久化至配置文件 &#123;user.home&#125;/store/config/topics.json中</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@param</span> topic                       待创建topic</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@param</span> defaultTopic                默认topic，用于作为模板创建新topic</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@param</span> remoteAddress               远程地址</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@param</span> clientDefaultTopicQueueNums 自动创建服务器不存在的topic时，默认创建的队列数，默认为4</span></span><br><span class="line"><span class="comment">*                                    可通过生产者DefaultMQProducer的defaultTopicQueueNums属性进行配置</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@param</span> topicSysFlag                topic标识</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@return</span> topic配置</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="keyword">public</span> TopicConfig <span class="title function_">createTopicInSendMessageMethod</span><span class="params">(<span class="keyword">final</span> String topic, <span class="keyword">final</span> String defaultTopic,</span></span><br><span class="line"><span class="params">                                                    <span class="keyword">final</span> String remoteAddress, <span class="keyword">final</span> <span class="type">int</span> clientDefaultTopicQueueNums, <span class="keyword">final</span> <span class="type">int</span> topicSysFlag)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">      <span class="type">TopicConfig</span> <span class="variable">topicConfig</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">      <span class="type">boolean</span> <span class="variable">createNew</span> <span class="operator">=</span> <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">          <span class="comment">//需要加锁防止并发创建相同的topic</span></span><br><span class="line">          <span class="keyword">if</span> (<span class="built_in">this</span>.topicConfigTableLock.tryLock(LOCK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">              <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                  <span class="comment">//再次尝试从topicConfigTable获取topic信息，如果获取到了，那么直接返回</span></span><br><span class="line">                  topicConfig = <span class="built_in">this</span>.topicConfigTable.get(topic);</span><br><span class="line">                  <span class="keyword">if</span> (topicConfig != <span class="literal">null</span>)</span><br><span class="line">                      <span class="keyword">return</span> topicConfig;</span><br><span class="line">                  <span class="comment">//获取默认topic的信息，用于作为模板创建新topic，默认的默认topic实际上就是TBW102，其有8个读写队列，权限为读写并且可继承，即7</span></span><br><span class="line">                  <span class="type">TopicConfig</span> <span class="variable">defaultTopicConfig</span> <span class="operator">=</span> <span class="built_in">this</span>.topicConfigTable.get(defaultTopic);</span><br><span class="line">                  <span class="keyword">if</span> (defaultTopicConfig != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                   <span class="comment">//如果默认topic就是TBW102</span></span><br><span class="line">                      <span class="keyword">if</span> (defaultTopic.equals(TopicValidator.AUTO_CREATE_TOPIC_KEY_TOPIC)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                       <span class="comment">//如果broker配置不支持自动创建topic，那么设置权限为可读写，不可继承，即6</span></span><br><span class="line">                          <span class="keyword">if</span> (!<span class="built_in">this</span>.brokerController.getBrokerConfig().isAutoCreateTopicEnable()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                              defaultTopicConfig.setPerm(PermName.PERM_READ | PermName.PERM_WRITE);</span><br><span class="line">                          &#125;</span><br><span class="line">                      &#125;</span><br><span class="line">                      <span class="comment">//如果默认topic配置的权限包括可继承，那么从默认topic继承属性</span></span><br><span class="line">                      <span class="keyword">if</span> (PermName.isInherited(defaultTopicConfig.getPerm())) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                       <span class="comment">//创建topic配置</span></span><br><span class="line">                          topicConfig = <span class="keyword">new</span> <span class="title class_">TopicConfig</span>(topic);</span><br><span class="line">                          <span class="comment">//选择默认队列数量与默认topic写队列数中最小的值作为新topic的读写队列数量，默认为4</span></span><br><span class="line">                          <span class="type">int</span> <span class="variable">queueNums</span> <span class="operator">=</span> Math.min(clientDefaultTopicQueueNums, defaultTopicConfig.getWriteQueueNums());</span><br><span class="line"></span><br><span class="line">                          <span class="keyword">if</span> (queueNums &lt; <span class="number">0</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                              queueNums = <span class="number">0</span>;</span><br><span class="line">                          &#125;</span><br><span class="line"></span><br><span class="line">                          topicConfig.setReadQueueNums(queueNums);</span><br><span class="line">                          topicConfig.setWriteQueueNums(queueNums);</span><br><span class="line">                          <span class="comment">//权限</span></span><br><span class="line">                          <span class="type">int</span> <span class="variable">perm</span> <span class="operator">=</span> defaultTopicConfig.getPerm();</span><br><span class="line">                          <span class="comment">//去掉可继承权限</span></span><br><span class="line">                          perm &amp;= ~PermName.PERM_INHERIT;</span><br><span class="line">                          topicConfig.setPerm(perm);</span><br><span class="line">                          topicConfig.setTopicSysFlag(topicSysFlag);</span><br><span class="line">                          topicConfig.setTopicFilterType(defaultTopicConfig.getTopicFilterType());</span><br><span class="line">                      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                          log.warn(<span class="string">&quot;Create new topic failed, because the default topic[&#123;&#125;] has no perm [&#123;&#125;] producer:[&#123;&#125;]&quot;</span>,</span><br><span class="line">                                  defaultTopic, defaultTopicConfig.getPerm(), remoteAddress);</span><br><span class="line">                      &#125;</span><br><span class="line">                  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                      log.warn(<span class="string">&quot;Create new topic failed, because the default topic[&#123;&#125;] not exist. producer:[&#123;&#125;]&quot;</span>,</span><br><span class="line">                              defaultTopic, remoteAddress);</span><br><span class="line">                  &#125;</span><br><span class="line">                  <span class="comment">//如果topic不为null，说明创建了新topic</span></span><br><span class="line">                  <span class="keyword">if</span> (topicConfig != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                      log.info(<span class="string">&quot;Create new topic by default topic:[&#123;&#125;] config:[&#123;&#125;] producer:[&#123;&#125;]&quot;</span>,</span><br><span class="line">                              defaultTopic, topicConfig, remoteAddress);</span><br><span class="line">                      <span class="comment">//将新的topic信息存入topicConfigTable缓存中</span></span><br><span class="line">                      <span class="built_in">this</span>.topicConfigTable.put(topic, topicConfig);</span><br><span class="line">                      <span class="comment">//生成下一个数据版本</span></span><br><span class="line">                      <span class="built_in">this</span>.dataVersion.nextVersion();</span><br><span class="line">                      <span class="comment">//标识位置为true</span></span><br><span class="line">                      createNew = <span class="literal">true</span>;</span><br><span class="line">                      <span class="comment">/*</span></span><br><span class="line"><span class="comment">                       * 将topic配置持久化到配置文件 &#123;user.home&#125;/store/config/topics.json中</span></span><br><span class="line"><span class="comment">                       */</span></span><br><span class="line">                      <span class="built_in">this</span>.persist();</span><br><span class="line">                  &#125;</span><br><span class="line">              &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">               <span class="comment">//解锁</span></span><br><span class="line">                  <span class="built_in">this</span>.topicConfigTableLock.unlock();</span><br><span class="line">              &#125;</span><br><span class="line">          &#125;</span><br><span class="line">      &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">          log.error(<span class="string">&quot;createTopicInSendMessageMethod exception&quot;</span>, e);</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="comment">//如果创建了新topic，那么马上向nameServer注册当前broker的新配置路由信息</span></span><br><span class="line">      <span class="keyword">if</span> (createNew) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">          <span class="built_in">this</span>.brokerController.registerBrokerAll(<span class="literal">false</span>, <span class="literal">true</span>, <span class="literal">true</span>);</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">return</span> topicConfig;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-1-2-createTopicInSendMessageBackMethod创建重试topc"><a href="#2-1-2-createTopicInSendMessageBackMethod创建重试topc" class="headerlink" title="2.1.2 createTopicInSendMessageBackMethod创建重试topc"></a>2.1.2 createTopicInSendMessageBackMethod创建重试topc</h4><p>该方法用于自动创建重试topic，其源码和创建普通topic差不多，区别就是重试topic不需要模板topic，默认读写队列数都是1，权限为读写。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * TopicConfigManager的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 创建重试topic，并持久化至配置文件 &#123;user.home&#125;/store/config/topics.json中</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> topic                       待创建topic</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> perm                        权限</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> clientDefaultTopicQueueNums 自动创建服务器不存在的topic时，默认创建的队列数，默认为4</span></span><br><span class="line"><span class="comment"> *                                    可通过生产者DefaultMQProducer的defaultTopicQueueNums属性进行配置</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> topicSysFlag                topic标识</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> topic配置</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> TopicConfig <span class="title function_">createTopicInSendMessageBackMethod</span><span class="params">(</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> String topic,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> <span class="type">int</span> clientDefaultTopicQueueNums,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> <span class="type">int</span> perm,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> <span class="type">int</span> topicSysFlag)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//尝试获取topic</span></span><br><span class="line">    <span class="type">TopicConfig</span> <span class="variable">topicConfig</span> <span class="operator">=</span> <span class="built_in">this</span>.topicConfigTable.get(topic);</span><br><span class="line">    <span class="comment">//如果存在则直接返回</span></span><br><span class="line">    <span class="keyword">if</span> (topicConfig != <span class="literal">null</span>)</span><br><span class="line">        <span class="keyword">return</span> topicConfig;</span><br><span class="line"></span><br><span class="line">    <span class="type">boolean</span> <span class="variable">createNew</span> <span class="operator">=</span> <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//需要加锁防止并发创建相同的topic</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="built_in">this</span>.topicConfigTableLock.tryLock(LOCK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//再次尝试从topicConfigTable获取topic信息，如果获取到了，那么直接返回</span></span><br><span class="line">                topicConfig = <span class="built_in">this</span>.topicConfigTable.get(topic);</span><br><span class="line">                <span class="keyword">if</span> (topicConfig != <span class="literal">null</span>)</span><br><span class="line">                    <span class="keyword">return</span> topicConfig;</span><br><span class="line">                <span class="comment">//创建topic</span></span><br><span class="line">                topicConfig = <span class="keyword">new</span> <span class="title class_">TopicConfig</span>(topic);</span><br><span class="line">                <span class="comment">//重试topic的默认读写队列数量为1</span></span><br><span class="line">                topicConfig.setReadQueueNums(clientDefaultTopicQueueNums);</span><br><span class="line">                topicConfig.setWriteQueueNums(clientDefaultTopicQueueNums);</span><br><span class="line">                <span class="comment">//重试topic的默认权限为读写</span></span><br><span class="line">                topicConfig.setPerm(perm);</span><br><span class="line">                topicConfig.setTopicSysFlag(topicSysFlag);</span><br><span class="line"></span><br><span class="line">                log.info(<span class="string">&quot;create new topic &#123;&#125;&quot;</span>, topicConfig);</span><br><span class="line">                <span class="built_in">this</span>.topicConfigTable.put(topic, topicConfig);</span><br><span class="line">                createNew = <span class="literal">true</span>;</span><br><span class="line">                <span class="comment">//获取下一个版本</span></span><br><span class="line">                <span class="built_in">this</span>.dataVersion.nextVersion();</span><br><span class="line">                <span class="comment">//持久化broker信息</span></span><br><span class="line">                <span class="built_in">this</span>.persist();</span><br><span class="line">            &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//解锁</span></span><br><span class="line">                <span class="built_in">this</span>.topicConfigTableLock.unlock();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        log.error(<span class="string">&quot;createTopicInSendMessageBackMethod exception&quot;</span>, e);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (createNew) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//注册broker信息</span></span><br><span class="line">        <span class="built_in">this</span>.brokerController.registerBrokerAll(<span class="literal">false</span>, <span class="literal">true</span>, <span class="literal">true</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> topicConfig;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-1-3-autoCreateTopicEnable自动创建topic的问题"><a href="#2-1-3-autoCreateTopicEnable自动创建topic的问题" class="headerlink" title="2.1.3 autoCreateTopicEnable自动创建topic的问题"></a>2.1.3 autoCreateTopicEnable自动创建topic的问题</h4><p>之前将Producer发送消息源码的时候，我们的客户端，在发送消息的之前，会先选择一个topic所在的broker地址，如果topic不存在，那么选择默认topic的路由信息中的一个broker进行发送。</p>
+<p>当发送到broker之后，会发现没有指定的topic并且如果broker的autoCreateTopicEnable为true，那么将会走刚才的createTopicInSendMessageMethod源码，自动创建topic的方法的最后会马上调用registerBrokerAll方法向nameServer注册当前broker的新配置路由信息。</p>
+<p>生产者客户端会定时每30s从nameServer更新路由数据，如果此时有其他的producer的存在，并且刚好从nameServer获取到了这个新的topic的路由信息，假设其他producer也需要向该topic发送信息，由于发现topic路由信息已存在，并且只存在于刚才那一个broker中，此时这些producer都会将该topic的消息发送到这一个broker中来。</p>
+<p>这样，接下来所有的Producer都只会向这一个Broker发送消息，其他Broker也就不会再有机会创建新Topic。我们本想要该Topic在每个broker上都被自动创建，但结果仅仅是在一个broker上有该topic的信息，这样就背离了RocketMQ集群的初衷，不能实现压力的分摊。</p>
+<p>因此，RocketMQ官方建议生产环境下将broker的autoCreateTopicEnable设置为false，即关闭自动创建topic，全部改为手动在每个broker上创建，这样安全又保险。</p>
+<h2 id="3-handlePutMessageResultFuture处理消息存放结果"><a href="#3-handlePutMessageResultFuture处理消息存放结果" class="headerlink" title="3 handlePutMessageResultFuture处理消息存放结果"></a>3 handlePutMessageResultFuture处理消息存放结果</h2><p>当存放消息完毕时，执行后续的操作，即执行handlePutMessageResult方法。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * SendMessageProcessor的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 处理消息存放结果</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> putMessageResult   存放结果</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> response           响应对象</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> request            请求对象</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> msgInner           内部消息对象</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> responseHeader     响应头</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> sendMessageContext 发送消息上下文</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> ctx                连接上下文</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> queueIdInt         queueId</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> CompletableFuture&lt;RemotingCommand&gt; <span class="title function_">handlePutMessageResultFuture</span><span class="params">(CompletableFuture&lt;PutMessageResult&gt; putMessageResult,</span></span><br><span class="line"><span class="params">                                                                        RemotingCommand response,</span></span><br><span class="line"><span class="params">                                                                        RemotingCommand request,</span></span><br><span class="line"><span class="params">                                                                        MessageExt msgInner,</span></span><br><span class="line"><span class="params">                                                                        SendMessageResponseHeader responseHeader,</span></span><br><span class="line"><span class="params">                                                                        SendMessageContext sendMessageContext,</span></span><br><span class="line"><span class="params">                                                                        ChannelHandlerContext ctx,</span></span><br><span class="line"><span class="params">                                                                        <span class="type">int</span> queueIdInt)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//阻塞，当从存放消息完毕时，执行后续的操作，即执行handlePutMessageResult方法</span></span><br><span class="line">    <span class="keyword">return</span> putMessageResult.thenApply((r) -&gt;</span><br><span class="line">            handlePutMessageResult(r, response, request, msgInner, responseHeader, sendMessageContext, ctx, queueIdInt)</span><br><span class="line">    );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-1-handlePutMessageResult处理存放消息的结果"><a href="#3-1-handlePutMessageResult处理存放消息的结果" class="headerlink" title="3.1 handlePutMessageResult处理存放消息的结果"></a>3.1 handlePutMessageResult处理存放消息的结果</h3><p>该方法处理存放消息的结果，并且将响应写回给客户端。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * SendMessageProcessor的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 处理存放消息的结果</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> putMessageResult   存放结果</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> response           响应对象</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> request            请求对象</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> msg                内部消息对象</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> responseHeader     响应头</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> sendMessageContext 发送消息上下文</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> ctx                连接上下文</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> queueIdInt         queueId</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> RemotingCommand <span class="title function_">handlePutMessageResult</span><span class="params">(PutMessageResult putMessageResult, RemotingCommand response,</span></span><br><span class="line"><span class="params">                                               RemotingCommand request, MessageExt msg,</span></span><br><span class="line"><span class="params">                                               SendMessageResponseHeader responseHeader, SendMessageContext sendMessageContext, ChannelHandlerContext ctx,</span></span><br><span class="line"><span class="params">                                               <span class="type">int</span> queueIdInt)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//结果为null，那么直接返回系统异常</span></span><br><span class="line">    <span class="keyword">if</span> (putMessageResult == <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        response.setCode(ResponseCode.SYSTEM_ERROR);</span><br><span class="line">        response.setRemark(<span class="string">&quot;store putMessage return null&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> response;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="type">boolean</span> <span class="variable">sendOK</span> <span class="operator">=</span> <span class="literal">false</span>;</span><br><span class="line">    <span class="comment">//解析存放消息状态码，转换为对应的响应码</span></span><br><span class="line">    <span class="keyword">switch</span> (putMessageResult.getPutMessageStatus()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">// Success</span></span><br><span class="line">        <span class="keyword">case</span> PUT_OK:</span><br><span class="line">            sendOK = <span class="literal">true</span>;</span><br><span class="line">            response.setCode(ResponseCode.SUCCESS);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> FLUSH_DISK_TIMEOUT:</span><br><span class="line">            response.setCode(ResponseCode.FLUSH_DISK_TIMEOUT);</span><br><span class="line">            sendOK = <span class="literal">true</span>;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> FLUSH_SLAVE_TIMEOUT:</span><br><span class="line">            response.setCode(ResponseCode.FLUSH_SLAVE_TIMEOUT);</span><br><span class="line">            sendOK = <span class="literal">true</span>;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> SLAVE_NOT_AVAILABLE:</span><br><span class="line">            response.setCode(ResponseCode.SLAVE_NOT_AVAILABLE);</span><br><span class="line">            sendOK = <span class="literal">true</span>;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Failed</span></span><br><span class="line">        <span class="keyword">case</span> CREATE_MAPEDFILE_FAILED:</span><br><span class="line">            response.setCode(ResponseCode.SYSTEM_ERROR);</span><br><span class="line">            response.setRemark(<span class="string">&quot;create mapped file failed, server is busy or broken.&quot;</span>);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> MESSAGE_ILLEGAL:</span><br><span class="line">        <span class="keyword">case</span> PROPERTIES_SIZE_EXCEEDED:</span><br><span class="line">            response.setCode(ResponseCode.MESSAGE_ILLEGAL);</span><br><span class="line">            response.setRemark(</span><br><span class="line">                    <span class="string">&quot;the message is illegal, maybe msg body or properties length not matched. msg body length limit 128k, msg properties length limit 32k.&quot;</span>);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> SERVICE_NOT_AVAILABLE:</span><br><span class="line">            response.setCode(ResponseCode.SERVICE_NOT_AVAILABLE);</span><br><span class="line">            response.setRemark(</span><br><span class="line">                    <span class="string">&quot;service not available now. It may be caused by one of the following reasons: &quot;</span> +</span><br><span class="line">                            <span class="string">&quot;the broker&#x27;s disk is full [&quot;</span> + diskUtil() + <span class="string">&quot;], messages are put to the slave, message store has been shut down, etc.&quot;</span>);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> OS_PAGECACHE_BUSY:</span><br><span class="line">            response.setCode(ResponseCode.SYSTEM_ERROR);</span><br><span class="line">            response.setRemark(<span class="string">&quot;[PC_SYNCHRONIZED]broker busy, start flow control for a while&quot;</span>);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> LMQ_CONSUME_QUEUE_NUM_EXCEEDED:</span><br><span class="line">            response.setCode(ResponseCode.SYSTEM_ERROR);</span><br><span class="line">            response.setRemark(<span class="string">&quot;[LMQ_CONSUME_QUEUE_NUM_EXCEEDED]broker config enableLmq and enableMultiDispatch, lmq consumeQueue num exceed maxLmqConsumeQueueNum config num, default limit 2w.&quot;</span>);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> UNKNOWN_ERROR:</span><br><span class="line">            response.setCode(ResponseCode.SYSTEM_ERROR);</span><br><span class="line">            response.setRemark(<span class="string">&quot;UNKNOWN_ERROR&quot;</span>);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            response.setCode(ResponseCode.SYSTEM_ERROR);</span><br><span class="line">            response.setRemark(<span class="string">&quot;UNKNOWN_ERROR DEFAULT&quot;</span>);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="type">String</span> <span class="variable">owner</span> <span class="operator">=</span> request.getExtFields().get(BrokerStatsManager.COMMERCIAL_OWNER);</span><br><span class="line">    <span class="comment">//如果发送成功</span></span><br><span class="line">    <span class="keyword">if</span> (sendOK) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//如果topic是SCHEDULE_TOPIC_XXXX，即延迟消息的topic</span></span><br><span class="line">        <span class="keyword">if</span> (TopicValidator.RMQ_SYS_SCHEDULE_TOPIC.equals(msg.getTopic())) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//增加统计计数</span></span><br><span class="line">            <span class="built_in">this</span>.brokerController.getBrokerStatsManager().incQueuePutNums(msg.getTopic(), msg.getQueueId(), putMessageResult.getAppendMessageResult().getMsgNum(), <span class="number">1</span>);</span><br><span class="line">            <span class="built_in">this</span>.brokerController.getBrokerStatsManager().incQueuePutSize(msg.getTopic(), msg.getQueueId(), putMessageResult.getAppendMessageResult().getWroteBytes());</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//增加统计计数</span></span><br><span class="line">        <span class="built_in">this</span>.brokerController.getBrokerStatsManager().incTopicPutNums(msg.getTopic(), putMessageResult.getAppendMessageResult().getMsgNum(), <span class="number">1</span>);</span><br><span class="line">        <span class="built_in">this</span>.brokerController.getBrokerStatsManager().incTopicPutSize(msg.getTopic(),</span><br><span class="line">                putMessageResult.getAppendMessageResult().getWroteBytes());</span><br><span class="line">        <span class="built_in">this</span>.brokerController.getBrokerStatsManager().incBrokerPutNums(putMessageResult.getAppendMessageResult().getMsgNum());</span><br><span class="line"></span><br><span class="line">        response.setRemark(<span class="literal">null</span>);</span><br><span class="line">        <span class="comment">//设置响应头中的migId，实际上就是broker生成的offsetMsgId属性</span></span><br><span class="line">        responseHeader.setMsgId(putMessageResult.getAppendMessageResult().getMsgId());</span><br><span class="line">        <span class="comment">//消息队列Id</span></span><br><span class="line">        responseHeader.setQueueId(queueIdInt);</span><br><span class="line">        <span class="comment">//消息逻辑偏移量</span></span><br><span class="line">        responseHeader.setQueueOffset(putMessageResult.getAppendMessageResult().getLogicsOffset());</span><br><span class="line">        <span class="comment">//如果不是单向请求，那么将响应写会客户端</span></span><br><span class="line">        doResponse(ctx, request, response);</span><br><span class="line">        <span class="comment">//如果有发送消息的钩子，那么执行</span></span><br><span class="line">        <span class="keyword">if</span> (hasSendMessageHook()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            sendMessageContext.setMsgId(responseHeader.getMsgId());</span><br><span class="line">            sendMessageContext.setQueueId(responseHeader.getQueueId());</span><br><span class="line">            sendMessageContext.setQueueOffset(responseHeader.getQueueOffset());</span><br><span class="line"></span><br><span class="line">            <span class="type">int</span> <span class="variable">commercialBaseCount</span> <span class="operator">=</span> brokerController.getBrokerConfig().getCommercialBaseCount();</span><br><span class="line">            <span class="type">int</span> <span class="variable">wroteSize</span> <span class="operator">=</span> putMessageResult.getAppendMessageResult().getWroteBytes();</span><br><span class="line">            <span class="type">int</span> <span class="variable">incValue</span> <span class="operator">=</span> (<span class="type">int</span>) Math.ceil(wroteSize / BrokerStatsManager.SIZE_PER_COUNT) * commercialBaseCount;</span><br><span class="line"></span><br><span class="line">            sendMessageContext.setCommercialSendStats(BrokerStatsManager.StatsType.SEND_SUCCESS);</span><br><span class="line">            sendMessageContext.setCommercialSendTimes(incValue);</span><br><span class="line">            sendMessageContext.setCommercialSendSize(wroteSize);</span><br><span class="line">            sendMessageContext.setCommercialOwner(owner);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//如果有发送消息的钩子，那么执行</span></span><br><span class="line">        <span class="keyword">if</span> (hasSendMessageHook()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="type">int</span> <span class="variable">wroteSize</span> <span class="operator">=</span> request.getBody().length;</span><br><span class="line">            <span class="type">int</span> <span class="variable">incValue</span> <span class="operator">=</span> (<span class="type">int</span>) Math.ceil(wroteSize / BrokerStatsManager.SIZE_PER_COUNT);</span><br><span class="line"></span><br><span class="line">            sendMessageContext.setCommercialSendStats(BrokerStatsManager.StatsType.SEND_FAILURE);</span><br><span class="line">            sendMessageContext.setCommercialSendTimes(incValue);</span><br><span class="line">            sendMessageContext.setCommercialSendSize(wroteSize);</span><br><span class="line">            sendMessageContext.setCommercialOwner(owner);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> response;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="4-总结"><a href="#4-总结" class="headerlink" title="4 总结"></a>4 总结</h2><p>本次我们学习了asyncSendMessage方法的整体流程，以及自动创建topic的源码，并且我们学习到了autoCreateTopicEnable属性为true，即自动创建topic的一些问题。下一章，我们将学习asyncPutMessage方法，该方法真正的用来存储消息。</p>
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1739713335/" target="_blank">10、RocketMQ源码分析：BrokerasyncSendMessage处理消息以及自动创建Topic</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
+                        
+                            <a href="/category/Web/">Web</a>
+                        
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
+                        
+                            <a href="/tag/RocketMq/">RocketMq</a>
+                        
+                    </div>
+                
+                <div class="article-prev-next">
+                    
+                        <a href="/article/1739713333/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1739713333/" title="发布于 2025-02-16 09:42">08、RocketMQ源码分析：Producer发送单向、同步、异步消息源码【一万字】</a>
+                        <br>
+                    
+                    
+                        <a href="/article/1739713336/" class="next-prefix">» </a> 下一篇：    <a href="/article/1739713336/" title="发布于 2025-02-16 09:42">11、RocketMQ源码分析：BrokerasyncPutMessage处理消息以及存储的高性能设计【一万字】</a>
+                    
+                </div>
+            </div>
+            
+    <div class="article-comments">
+        
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
+    
+</div>
+    <div id="footer"></div>
+    <div id="sidebar">
+    <div class="menu-wrap" style="display:none;">
+        
+            <div class="menu-notice">
+                <span class="iconfont icon-notice"></span>
+                <div class="notice">
+                    <span>简单地活着，肆意而又精彩！</span>
+                </div>
+            </div>
+        
+        <nav class="menu">
+            <div class="menu-introduce"> 
+                <div class="introduce-avatar">
+                    <img src="/image/sidebar/avatar.jpg">
+                </div> 
+                <div class="introduce-info"> 
+                    <div class="introduce-user"><span>Live For Code</span></div>
+                </div> 
+            </div> 
+            <div class="menu-list">
+                <ul>
+                    
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                    
+                        <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
+                    
+                        <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
+                    
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                    
+                        <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
+                    
+                        <li class=""><a href="/about" class="" target="_self"><span class="iconfont icon-about-fill"></span>关于</a></li>
+                    
+                        <li class=""><a href="/atom.xml" class="" target="_blank"><span class="iconfont icon-rss"></span>订阅</a></li>
+                    
+                        <li class=""><a href="javascript:;" class="search" target="_self"><span class="iconfont icon-search-menu"></span>搜索</a></li>
+                    
+                        <li class=""><a href="/comment" class="" target="_self"><span class="iconfont icon-comments-fill"></span>留言板</a></li>
+                    
+                        <li class=""><a href="/friend" class="" target="_self"><span class="iconfont icon-link"></span>友情链接</a></li>
+                    
+                </ul> 
+            </div> 
+            <div class="menu-link">
+                <div class="box">
+                    <div class="image-box"></div>
+                </div>
+                
+                    <a name="知乎" href="https://www.zhihu.com/people/wo-xin-de-love" class="" target="_blank" data=""><span class="iconfont icon-zhihu"></span></a>
+                
+                    <a name="微博" href="https://weibo.com/u/3939432776" class="" target="_blank" data=""><span class="iconfont icon-weibo"></span></a>
+                
+                    <a name="QQ" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"><span class="iconfont icon-qq"></span></a>
+                
+                    <a name="微信" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"><span class="iconfont icon-wechat"></span></a>
+                
+                    <a name="GitHub" href="https://github.com/first19326" class="" target="_blank" data=""><span class="iconfont icon-github"></span></a>
+                
+            </div> 
+        </nav>
+        <button class="menu-button-close"></button>
+        <div class="morph-shape" id="morph-shape" data-morph-open="M-7.312,0H15c0,0,66,113.339,66,399.5C81,664.006,15,800,15,800H-7.312V0z;M-7.312,0H100c0,0,0,113.839,0,400c0,264.506,0,400,0,400H-7.312V0z">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 800" preserveAspectRatio="none">
+                <path d="M-7.312,0H0c0,0,0,113.839,0,400c0,264.506,0,400,0,400h-7.312V0z"/>
+            </svg>
+        </div>
+    </div>
+    <button class="menu-button-open">MENU</button>
+    <div class="menu-cover"></div>
+</div>
+    <link type="text/css" rel="stylesheet" href="/css/search.css">
+<script type="text/javascript" src="/js/iscroll.js"></script>
+<script type="text/javascript" src="/js/instantsearch.min.js"></script>
+<div class="search-window">
+    <div class="search-content">
+        <div class="search-content-icon">
+            <i class="iconfont icon-search"></i>
+        </div>
+        <div id="search-input" class="search-input"></div>
+    </div>
+
+    <div class="search-scroll">
+        <div class="search-result">
+            <div id="search-stats" class="search-stats"></div>
+            <div id="search-hits"></div>
+            <div id="search-pagination" class="search-pagination"></div>
+        </div>
+    </div>
+
+    <span class="search-close-icon">
+        <i class="iconfont icon-close"></i>
+    </span>
+</div>
+    <div id="tools">
+    <div class="progressbar-top"></div>
+
+    
+        <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
+        <script type="text/javascript" src="/js/APlayer.min.js"></script>
+        <script type="text/javascript" src="/js/Meting.min.js"></script>
+        <meting-js id="3778678" lrcshow="false" server="netease" type="playlist" fixed="true" autoplay="false" loop="all" order="random" preload="auto" volume="0.67" mutex="true"></meting-js>
+    
+    
+    <div class="wrap-right">
+        <div class="setting">
+            <div class="iconbox favorites" switch="false">
+                <span class="iconfont icon-favorites"></span>
+                <span class="icontext">关注</span>
+            </div>
+            <div class="iconbox mode">
+                <div class="light">
+                    <span class="iconfont icon-daymode"></span>
+                    <span class="icontext">浅色模式</span>
+                </div>
+                <div class="dark">
+                    <span class="iconfont icon-nightmode-fill"></span>
+                    <span class="icontext">深色模式</span>
+                </div>
+            </div>
+            <a href="javascript:;" target="_self" class="search">
+                <div class="iconbox">
+                    <span class="iconfont icon-search-menu"></span>
+                    <span class="icontext">搜索</span>
+                </div>
+            </a>
+            <div class="iconbox bottom">
+                <div style="display: inline-block; transform: rotate(180deg);">
+                    <span class="iconfont icon-top"></span>
+                </div>
+                <span class="icontext">跳至底部</span>
+            </div>
+        </div>
+        <div class="iconbox set">
+            <div style="display: inline-block;">
+                <span class="iconfont icon-setting"></span>
+            </div>
+            <span class="icontext">设置</span>
+        </div>
+        <div class="iconbox top">
+            <span class="iconfont icon-top"></span>
+            <span class="icontext">返回顶部</span>
+        </div>
+    </div>
+    <div class="loading"></div>
+</div>
+    <script>
+    window.config = {
+        GitHubUserName     : "first19326",
+        GitHubRepositories : "Hexo-LiveForCode",
+
+        User             : "Live For Code",
+        UserAvatar       : "/image/sidebar/avatar.jpg",
+        WebsiteStartDate : "2020-01-01",
+
+        WebsiteTitleBlur         : "(◍´꒳`◍) Hi, Live For Code",
+        WebsiteTitleBlurTimeOut  : 500,
+        WebsiteTitleFocus        : "(*´∇｀*) 欢迎回来!",
+        WebsiteTitleFocusTimeOut : 1000,
+        WebsiteFavicon           : "/image/website/logo.png",
+
+        ProgressBar : {
+            id       : "topProgressBar",
+            color    : "#77B6FF",
+            height   : "2px",
+            duration : 0.2
+        },
+
+        Loading: {
+            rebound : {
+                tension  : 16,
+                friction : 5
+            },
+            spinner : {
+                id     : "spinner",
+                radius : 90,
+                sides  : 3,
+                depth  : 4,
+                colors : {
+                    background : "#F0F0F0",
+                    stroke     : "#272633",
+                    base       : "",
+                    child      : "#272633"
+                },
+                alwaysForward : true,
+                restAt        : 0.5,
+                renderBase    : false
+            }
+        },
+
+        HomeHeaderAnimationRendered : true,
+        HomeHeaderAnimation         : {
+            radius      : 15,
+            density     : 0.2,
+            color       : "rgba(255, 255, 255, .2)",
+            clearOffset : 0.3
+        },
+
+        BackAnimationRendered          : true,
+        IEBrowserBackAnimationRendered : false,
+        BackAnimation                  : {
+            colorSaturation  : "60%",
+            colorBrightness  : "50%",
+            colorAlpha       : 0.5,
+            colorCycleSpeed  : 5,
+            verticalPosition : "random",
+            horizontalSpeed  : 200,
+            ribbonCount      : 3,
+            strokeSize       : 0,
+            parallaxAmount   : -0.2,
+            animateSections  : true
+        },
+
+        HomeHeaderImage : [
+            
+                "/image/header/home.jpg",
+            
+                "/image/header/home.jpeg",
+            
+                "/image/header/2023-04-17-20-51-03.jpg",
+            
+                "/image/header/2023-04-17-20-54-07.jpg",
+            
+                "/image/header/2023-04-17-20-54-22.jpg",
+            
+                "/image/header/2023-04-17-20-55-25.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+        HomeBannerText  : "",
+
+        ArticleHeaderImage : [
+            
+                "/image/header/article.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+
+        OtherBannerText : "",
+
+        Error : {
+            icon    : "icon-swimming",
+            title   : "PAGE NOT FOUND",
+            content : [
+                
+                    "很抱歉，您访问的页面不存在！",
+                
+                    "可能是输入地址有误或该地址已变更。",
+                
+            ],
+            buttons : [
+                
+                    {
+                        icon  : "icon-home",
+                        text  : "返回首页",
+                        href  : "https://fadeway32.gitee.io/",
+                        class : ""
+                    },
+                
+            ]
+        },
+
+        MenuNotice : {
+            enable : true,
+            notice : "简单地活着，肆意而又精彩！",
+            speed  : 20
+        },
+        MenuList : [
+            
+                {
+                    name   : "首页",
+                    icon   : "icon-home-fill",
+                    href   : "/",
+                    type   : "index",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "分类",
+                    icon   : "icon-folder-fill",
+                    href   : "/category",
+                    type   : "category",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "标签",
+                    icon   : "icon-discount-fill",
+                    href   : "/tag",
+                    type   : "tag",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "归档",
+                    icon   : "icon-calendar-fill",
+                    href   : "/archive",
+                    type   : "archive",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "赞赏",
+                    icon   : "icon-heart-fill",
+                    href   : "/donate",
+                    type   : "donate",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "关于",
+                    icon   : "icon-about-fill",
+                    href   : "/about",
+                    type   : "about",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "订阅",
+                    icon   : "icon-rss",
+                    href   : "/atom.xml",
+                    type   : "",
+                    class  : "",
+                    target : "_blank"
+                },
+            
+                {
+                    name   : "搜索",
+                    icon   : "icon-search-menu",
+                    href   : "javascript:;",
+                    type   : "",
+                    class  : "search",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "留言板",
+                    icon   : "icon-comments-fill",
+                    href   : "/comment",
+                    type   : "comment",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "友情链接",
+                    icon   : "icon-link",
+                    href   : "/friend",
+                    type   : "friend",
+                    class  : "",
+                    target : "_self"
+                },
+            
+        ],
+        MenuLink : [
+            
+                
+                    {
+                        name   : "知乎",
+                        icon   : "icon-zhihu",
+                        href   : "https://www.zhihu.com/people/wo-xin-de-love",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "微博",
+                        icon   : "icon-weibo",
+                        href   : "https://weibo.com/u/3939432776",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "QQ",
+                        icon   : "icon-qq",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"
+                    },
+                
+                    {
+                        name   : "微信",
+                        icon   : "icon-wechat",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"
+                    },
+                
+                    {
+                        name   : "GitHub",
+                        icon   : "icon-github",
+                        href   : "https://github.com/first19326",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+            
+        ],
+
+        FooterStyle : 2,
+        BottomText  : "<div><span class='face'>ღゝ◡╹)ノ♡</span></div><div>【人生若只如初见<span><i class='iconfont icon-like-fill'></i></span>何事秋风悲画扇】</div><div>&copy; 2020-2022 WorstOne. All Rights Reserved.</div>",
+
+        ConsoleList : [
+            
+                
+                    [
+                        
+                            
+                                "Based on cnblogs theme SimpleMemory.",
+                            
+                                "",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "SimpleMemory Author:",
+                            
+                                "BNDong",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "Theme:",
+                            
+                                "LiveForCode",
+                            
+                        
+                    ],
+                
+            
+        ],
+
+        FontIconExtend : "",
+
+        Donate : {
+            paypal  : "",
+            bitcoin : "",
+            alipay  : "/image/donate/alipay.png",
+            wechat  : "/image/donate/wechat.png"
+        },
+
+        Search : {
+            applicationID : "758UIQ1V0H",
+            apiKey        : "2e038c318ac6813e4b4baa91f6ccfa63",
+            indexName     : "hexo2",
+            hits          : {
+                page : 30
+            },
+            labels        : {
+                placeholder : "搜索",
+                empty       : "未发现与 「${query}」 相关的内容",
+                stats       : "${hits} 条相关条目，使用了 ${time} 毫秒",
+            }
+        }, 
+
+        Valine : {
+            switch         : true,
+            el             : ".comments-content",
+            appId          : "srhKtvWPQTWYKh3qX8G8M7v0-gzGzoHsz",
+            appKey         : "8uVSP1q6UlALVC5igYfIfv2h",
+            serverURLs     : "",
+            placeholder    : "你是我一生只会遇见一次的惊喜...",
+            avatar         : "mm",
+            meta           : "nick,mail,link",
+            requiredFields : "nick,mail",
+            pageSize       : 5,
+            lang           : "zh-cn",
+            visitor        : true,
+            enableQQ       : true
+        },
+
+        Tocbot : {
+            switch                : true,
+            tocSelector           : ".toc",
+            contentSelector       : ".article-body",
+            headingSelector       : "h1, h2, h3, h4, h5",
+            headingsOffset        : 0,
+            scrollSmooth          : true,
+            scrollSmoothOffset    : -5,
+            positionFixedSelector : ".toc",
+            positionFixedClass    : "toc-fixed",
+            fixedSidebarOffset    : "",
+        },
+
+        Require : {
+            baseUrl     : "/js/",
+            waitSeconds : 100
+        },
+
+        Music : {
+            type : "Meting"
+        },
+        APlayer : {
+            container : ".aplayer",
+            fixed     : true,
+            autoplay  : true,
+            loop      : "all",
+            order     : "random",
+            preload   : "auto",
+            volume    : 0.67,
+            mutex     : true,
+            lrcType   : 2,
+            audio     : [
+                
+                    {
+                        name   : "Endless Tears",
+                        artist : "CLIFF EDGE",
+                        cover  : "/music/cover/Endless Tears.jpg",
+                        url    : "/music/song/Endless Tears.mp3",
+                        lrc    : "/music/lrc/Endless Tears.lrc"
+                    },
+                
+            ]
+        },
+        Meting : {
+            id       : "3778678", 
+            lrcshow  : false, 
+            server   : "netease", 
+            type     : "playlist", 
+            fixed    : true, 
+            autoplay : false, 
+            loop     : "all", 
+            order    : "random", 
+            preload  : "auto", 
+            volume   : 0.67, 
+            mutex    : true
+        },
+
+        Mouse : {
+            enable  : true,
+            options : {
+                size  : 6,
+                sizeF : 24
+            }
+        },
+
+        LazyLoad : {
+            default : "/image/website/lazyload.svg"
+        },
+  
+        Style : {
+            aplayer          : "/css/APlayer.css",
+            archive          : "/css/archive.css",
+            base             : "/css/base.css",
+            clipboard        : "/css/clipboard.css",
+            code             : "/css/code.css",
+            donate           : "/css/donate.css",
+            fancybox         : "/css/jquery.fancybox.css",
+            footer           : "/css/footer.css",
+            iconfont         : "/iconfont/iconfont.css",
+            index            : "/css/index.css",
+            menuBubble       : "/css/menu-bubble.css",
+            mouse            : "/css/mouse.css",
+            page             : "/css/page.css",
+            post             : "/css/post.css",
+            search           : "/css/search.css",
+            tocbot           : "/css/tocbot.css",
+            valine           : "/css/valine.css"
+        },
+
+        Script: {
+            aplayer          : "/js/APlayer.min.js",
+            config           : "/js/require.config.js",
+            index            : "/js/index.js",
+            instantSearch    : "/js/instantsearch.min.js",
+            iscroll          : "/js/iscroll.js",
+            jQuery           : "/js/jquery-3.4.1.min.js",
+            loading          : "/js/loading.js",
+            meting           : "/js/Meting.min.js",
+            require          : "/js/require.min.js"
+        },
+
+        Font: {
+            LongCang    : "/font/LongCang.css",
+            Monda       : "/font/Monda.css",
+            NotoSansSC  : "/font/NotoSansSC.css",
+            NotoSerifSC : "/font/NotoSerifSC.css",
+            Playball    : "/font/Playball.css",
+            PTMono      : "/font/PTMono.css",
+            Roboto      : "/font/Roboto.css",
+            RobotoSlab  : "/font/RobotoSlab.css",
+            Rosario     : "/font/Rosario.css",
+            UbuntuMono  : "/font/UbuntuMono.css"
+        },
+
+        Suffix : {
+            about : "你知道的越多,你不知道的越多"
+        },
+            
+        Theme : {
+            url  : "https://fadeway32.gitee.io/",
+            name : "fadeway32"
+        }  
+    };
+</script>
+    <script type="text/javascript" src="/js/index.js"></script>
+</body>
+</html>

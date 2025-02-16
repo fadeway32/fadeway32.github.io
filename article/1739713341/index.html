@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <!--    <meta name="referrer" content="origin">-->
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>
+        
+            16、RocketMQ源码分析：消费者负载均衡服务RebalanceService入口源码
+        
+    </title>
+    <link rel="shortcut icon" href="#"/>
+
+    <link type="text/css" rel="stylesheet" href="/font/LongCang.css">
+    <link type="text/css" rel="stylesheet" href="/font/Monda.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSansSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSerifSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/Playball.css">
+    <link type="text/css" rel="stylesheet" href="/font/PTMono.css">
+    <link type="text/css" rel="stylesheet" href="/font/Roboto.css">
+    <link type="text/css" rel="stylesheet" href="/font/RobotoSlab.css">
+    <link type="text/css" rel="stylesheet" href="/font/Rosario.css">
+    <link type="text/css" rel="stylesheet" href="/font/UbuntuMono.css">
+
+    <link type="text/css" rel="stylesheet" href="/css/base.css">
+    <link type="text/css" rel="stylesheet" href="/css/code.css">
+
+    <script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
+<meta name="generator" content="Hexo 6.2.0"></head>
+<body>
+    <a id="cover"></a>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
+<header>
+    <meta name="referrer" content="no-referrer">
+</header>
+<div id="header" class="header">
+    <div class="vertical">
+        <div class="inner">
+            
+                <h1 class="header-subtitle">16、RocketMQ源码分析：消费者负载均衡服务RebalanceService入口源码</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2025-02-16
+                        </span>
+                        
+                            <span id="/article/1739713341/" class="leancloud_visitors" data-flag-title="16、RocketMQ源码分析：消费者负载均衡服务RebalanceService入口源码">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1739713341/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">RocketMq</span>
+                        
+                    
+                </div>
+            
+        </div>
+    </div>
+    
+</div>
+<div id="container">
+    
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="16、RocketMQ源码分析：消费者负载均衡服务RebalanceService入口源码"><a href="#16、RocketMQ源码分析：消费者负载均衡服务RebalanceService入口源码" class="headerlink" title="16、RocketMQ源码分析：消费者负载均衡服务RebalanceService入口源码"></a>16、RocketMQ源码分析：消费者负载均衡服务RebalanceService入口源码</h1><p>上一篇文章我们学习了<a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_43767015/article/details/127746676">RocketMQ源码(15)—消费者DefaultMQPushConsumer启动主要流程源码</a>。</p>
+<ul>
+<li>*RocketMQ一个消费者组中可以有多个消费者，在集群模式下他们共同消费topic下的所有消息，RocketMQ规定一个消息队列仅能被一个消费者消费，但一个消费者可以同时消费多个消息队列。这就涉及到如何将多个消息队列分配给等多个消费者的问题。<br>**</li>
+</ul>
+<p>**RocketMQ中使用负载均衡服务RebalanceService来专门处理多个消息队列和消费者的对应关系，并且提供了多个不同的消费者负载均衡策略，即如何分配消息队列给这些消费者。<br>**</p>
+<p><strong>另外，当消费者正常退出，异常关闭通道，或者新加入的时候，同样需要负载均衡服务RebalanceService来进行消息队列分配的重平衡。</strong></p>
+<p>**更重要的是，一个消费者启动之后，其消费消息的触发并不是pullMessageService消息拉取服务，而真正的源头正是负载均衡服务RebalanceService。因此我们有必要先学习RebalanceService的原理和源码。<br>**</p>
+<h4 id="文章目录"><a href="#文章目录" class="headerlink" title="文章目录"></a>文章目录</h4><ul>
+<li>1 负载均衡or重平衡的触发</li>
+<li><ul>
+<li>1.1 RebalanceService自动重平衡</li>
+</ul>
+</li>
+<li>1.2 Consumer启动重平衡</li>
+<li>1.3 Broker请求重平衡</li>
+<li><ul>
+<li>1.3.1 Broker处理心跳请求</li>
+<li><ul>
+<li>1.3.1.1 registerConsumer注册消费者</li>
+<li><ul>
+<li>1.3.1.1.1 updateChannel更新连接</li>
+<li>1.3.1.1.2 updateSubscription更新订阅信息</li>
+<li>1.3.1.1.3 consumerIdsChangeListener.handle监听器通知</li>
+</ul>
+</li>
+<li>1.3.1.2 notifyConsumerIdsChanged通知消费者变更</li>
+</ul>
+</li>
+<li>1.3.2 客户端处理重平衡请求</li>
+<li><ul>
+<li>1.3.2.1 notifyConsumerIdsChanged客户端重平衡</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>2 小结</li>
+</ul>
+<h2 id="1-负载均衡or重平衡的触发"><a href="#1-负载均衡or重平衡的触发" class="headerlink" title="1 负载均衡or重平衡的触发"></a>1 负载均衡or重平衡的触发</h2><p><strong>有三种情况会触发Consumer进行负载均衡或者说重平衡：</strong></p>
+<p><strong>1、</strong> RebalanceService服务是一个线程任务，由MQClientInstance启动，其<strong>每隔20s自动进行一次自动负载均衡</strong>；<br><strong>2、</strong> <strong>Broker触发的重平衡</strong>：；</p>
+<p><strong>1、</strong> Broker收到心跳请求之后如果发现消息中<strong>有新的consumer连接或者consumer订阅了新的topic或者移除了topic的订阅</strong><br>，则Broker发送Code为NOTIFY_CONSUMER_IDS_CHANGED的请求给该group下面的所有Consumer，要求进行一次负载均衡；<br><strong>2、</strong> 如果<strong>某个客户端连接出现连接异常事件EXCEPTION、连接断开事件CLOSE、或者连接闲置事件IDLE</strong><br>，则Broker同样会发送重平衡请求给消费者组下面的所有消费者；<br><strong>3、</strong> <strong>新的Consumer服务启动</strong>的时候，主动调用rebalanceImmediately唤醒负载均衡服务rebalanceService，进行重平衡；</p>
+<h3 id="1-1-RebalanceService自动重平衡"><a href="#1-1-RebalanceService自动重平衡" class="headerlink" title="1.1 RebalanceService自动重平衡"></a>1.1 RebalanceService自动重平衡</h3><p>**RebalanceService#run方法，也就是负载均衡服务运行的任务，最多每隔20s执行一次重平衡。主要逻辑是在mqClientFactory#doRebalance方法中实现的。<br>**</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * RebalanceServicede 方法</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    log.info(<span class="built_in">this</span>.getServiceName() + <span class="string">&quot; service started&quot;</span>);</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 运行时逻辑</span></span><br><span class="line"><span class="comment">     * 如果服务没有停止，则在死循环中执行负载均衡</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">while</span> (!<span class="built_in">this</span>.isStopped()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//等待运行，默认最多等待20s，可以被唤醒</span></span><br><span class="line">        <span class="built_in">this</span>.waitForRunning(waitInterval);</span><br><span class="line">        <span class="comment">//执行重平衡操作</span></span><br><span class="line">        <span class="built_in">this</span>.mqClientFactory.doRebalance();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    log.info(<span class="built_in">this</span>.getServiceName() + <span class="string">&quot; service end&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-2-Consumer启动重平衡"><a href="#1-2-Consumer启动重平衡" class="headerlink" title="1.2 Consumer启动重平衡"></a>1.2 Consumer启动重平衡</h3><p><strong>新的Consumer服务启动的时候，主动调用rebalanceImmediately唤醒负载均衡服务rebalanceService，进行重平衡。</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * MQClientInstance的方法</span></span><br><span class="line"><span class="comment"> * 立即重平衡</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">rebalanceImmediately</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//唤醒重平衡服务，立即重平衡</span></span><br><span class="line">    <span class="built_in">this</span>.rebalanceService.wakeup();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-3-Broker请求重平衡"><a href="#1-3-Broker请求重平衡" class="headerlink" title="1.3 Broker请求重平衡"></a>1.3 Broker请求重平衡</h3><p>broker触发的重平衡有两种情况：</p>
+<p><strong>1、</strong><br>Broker收到心跳请求之后如果发现消息中有新的consumer连接，或者consumer订阅了新的topic，或者移除了topic的订阅，则Broker发送Code为NOTIFY_CONSUMER_IDS_CHANGED的请求给该group下面的所有Consumer，要求进行一次负载均衡；</p>
+<ol start="2">
+<li>如果某个客户端连接出现连接异常事件EXCEPTION、连接断开事件CLOSE、或者连接闲置事件IDLE，则Broker同样会发送重平衡请求给消费者组下面的所有消费者。处理入口方法为ClientHousekeepingService#<br>doChannelCloseEvent方法。</li>
+</ol>
+<ul>
+<li>*新的Consumer和Producer启动的时候，就会发送心跳信息给Broker，MQClientInstance内部的服务也会定时30s发送心跳信息给Broker。关于发送心跳请求sendHeartbeatToAllBrokerWithLock方法的源码，我们在Producer启动的部分就讲过了，我们现在来看看Broker处理心跳请求的源码。<br>**</li>
+</ul>
+<p><strong>心跳请求的Code为HEART_BEAT，该请求最终被Broker的ClientManageProcessor处理器处理。</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ClientManageProcessor的方法</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> RemotingCommand <span class="title function_">processRequest</span><span class="params">(ChannelHandlerContext ctx, RemotingCommand request)</span></span><br><span class="line">        <span class="keyword">throws</span> RemotingCommandException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="keyword">switch</span> (request.getCode()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//客户端心跳请求</span></span><br><span class="line">        <span class="keyword">case</span> RequestCode.HEART_BEAT:</span><br><span class="line">            <span class="comment">//客户端心跳请求</span></span><br><span class="line">            <span class="keyword">return</span> <span class="built_in">this</span>.heartBeat(ctx, request);</span><br><span class="line">        <span class="keyword">case</span> RequestCode.UNREGISTER_CLIENT:</span><br><span class="line">            <span class="keyword">return</span> <span class="built_in">this</span>.unregisterClient(ctx, request);</span><br><span class="line">        <span class="keyword">case</span> RequestCode.CHECK_CLIENT_CONFIG:</span><br><span class="line">            <span class="keyword">return</span> <span class="built_in">this</span>.checkClientConfig(ctx, request);</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="1-3-1-Broker处理心跳请求"><a href="#1-3-1-Broker处理心跳请求" class="headerlink" title="1.3.1 Broker处理心跳请求"></a>1.3.1 Broker处理心跳请求</h4><p>Broker的ClientManageProcessor#heartBeat该方法用于Broker处理来自客户端（包括consumer和producer）的心跳请求。主要流程就是：</p>
+<p><strong>1、</strong> 解码消息中的信息成为HeartbeatData对象，该对象的结构我们在在Producer启动的部分就讲过了；<br><strong>2、</strong><br>循环遍历处理consumerDataSet集合，对ConsumerData信息进行注册或者更改，如果consumer信息发生了改变，Broker会发送NOTIFY_CONSUMER_IDS_CHANGED请求给同组的所有consumer客户端，要求进行重平衡操作；<br><strong>3、</strong> 循环遍历处理consumerDataSet集合，对ProducerData信息进行注册或者更改；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ClientManageProcessor的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 处理客户端心跳请求</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> RemotingCommand <span class="title function_">heartBeat</span><span class="params">(ChannelHandlerContext ctx, RemotingCommand request)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//构建响应命令对象</span></span><br><span class="line">    <span class="type">RemotingCommand</span> <span class="variable">response</span> <span class="operator">=</span> RemotingCommand.createResponseCommand(<span class="literal">null</span>);</span><br><span class="line">    <span class="comment">//解码</span></span><br><span class="line">    <span class="type">HeartbeatData</span> <span class="variable">heartbeatData</span> <span class="operator">=</span> HeartbeatData.decode(request.getBody(), HeartbeatData.class);</span><br><span class="line">    <span class="comment">//构建客户端连接信息对象</span></span><br><span class="line">    <span class="type">ClientChannelInfo</span> <span class="variable">clientChannelInfo</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ClientChannelInfo</span>(</span><br><span class="line">            ctx.channel(),</span><br><span class="line">            heartbeatData.getClientID(),</span><br><span class="line">            request.getLanguage(),</span><br><span class="line">            request.getVersion()</span><br><span class="line">    );</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 1 循环遍历处理consumerDataSet，即处理consumer的心跳信息</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">for</span> (ConsumerData data : heartbeatData.getConsumerDataSet()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//查找broker缓存的当前消费者组的订阅组配置</span></span><br><span class="line">        <span class="type">SubscriptionGroupConfig</span> <span class="variable">subscriptionGroupConfig</span> <span class="operator">=</span></span><br><span class="line">                <span class="built_in">this</span>.brokerController.getSubscriptionGroupManager().findSubscriptionGroupConfig(</span><br><span class="line">                        data.getGroupName());</span><br><span class="line">        <span class="type">boolean</span> <span class="variable">isNotifyConsumerIdsChangedEnable</span> <span class="operator">=</span> <span class="literal">true</span>;</span><br><span class="line">        <span class="comment">//如果已存在订阅组</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="literal">null</span> != subscriptionGroupConfig) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//当consumer发生改变的时候是否支持通知同组的所有consumer，默认true，即支持</span></span><br><span class="line">            isNotifyConsumerIdsChangedEnable = subscriptionGroupConfig.isNotifyConsumerIdsChangedEnable();</span><br><span class="line">            <span class="type">int</span> <span class="variable">topicSysFlag</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">            <span class="keyword">if</span> (data.isUnitMode()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                topicSysFlag = TopicSysFlag.buildSysFlag(<span class="literal">false</span>, <span class="literal">true</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//尝试创建重试topic</span></span><br><span class="line">            <span class="type">String</span> <span class="variable">newTopic</span> <span class="operator">=</span> MixAll.getRetryTopic(data.getGroupName());</span><br><span class="line">            <span class="built_in">this</span>.brokerController.getTopicConfigManager().createTopicInSendMessageBackMethod(</span><br><span class="line">                    newTopic,</span><br><span class="line">                    subscriptionGroupConfig.getRetryQueueNums(),</span><br><span class="line">                    PermName.PERM_WRITE | PermName.PERM_READ, topicSysFlag);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 注册consumer，返回consumer信息是否已发生改变</span></span><br><span class="line"><span class="comment">         * 如果发生了改变，Broker会发送NOTIFY_CONSUMER_IDS_CHANGED请求给同组的所有consumer客户端，要求进行重平衡操作</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="type">boolean</span> <span class="variable">changed</span> <span class="operator">=</span> <span class="built_in">this</span>.brokerController.getConsumerManager().registerConsumer(</span><br><span class="line">                data.getGroupName(),</span><br><span class="line">                clientChannelInfo,</span><br><span class="line">                data.getConsumeType(),</span><br><span class="line">                data.getMessageModel(),</span><br><span class="line">                data.getConsumeFromWhere(),</span><br><span class="line">                data.getSubscriptionDataSet(),</span><br><span class="line">                isNotifyConsumerIdsChangedEnable</span><br><span class="line">        );</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (changed) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//如果consumer信息发生了改变，打印日志</span></span><br><span class="line">            log.info(<span class="string">&quot;registerConsumer info changed &#123;&#125; &#123;&#125;&quot;</span>,</span><br><span class="line">                    data.toString(),</span><br><span class="line">                    RemotingHelper.parseChannelRemoteAddr(ctx.channel())</span><br><span class="line">            );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 2 循环遍历处理producerDataSet，即处理producer的心跳信息</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">for</span> (ProducerData data : heartbeatData.getProducerDataSet()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 注册producer</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="built_in">this</span>.brokerController.getProducerManager().registerProducer(data.getGroupName(),</span><br><span class="line">                clientChannelInfo);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//返回响应</span></span><br><span class="line">    response.setCode(ResponseCode.SUCCESS);</span><br><span class="line">    response.setRemark(<span class="literal">null</span>);</span><br><span class="line">    <span class="keyword">return</span> response;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="1-3-1-1-registerConsumer注册消费者"><a href="#1-3-1-1-registerConsumer注册消费者" class="headerlink" title="1.3.1.1 registerConsumer注册消费者"></a>1.3.1.1 registerConsumer注册消费者</h5><p>注册consumer，返回consumer信息是否已发生改变，如果发生了改变，Broker会发送NOTIFY_CONSUMER_IDS_CHANGED请求给同组的所有consumer客户端，要求进行重平衡操作。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ConsumerManager的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 注册consumer，返回consumer信息是否已发生改变</span></span><br><span class="line"><span class="comment"> * 如果发生了改变，Broker会发送NOTIFY_CONSUMER_IDS_CHANGED请求给同组的所有consumer客户端，要求进行重平衡操作</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> group                            消费者组</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> clientChannelInfo                客户端连接信息</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> consumeType                      消费类型，PULL or PUSH</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> messageModel                     消息模式，集群 or 广播</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> consumeFromWhere                 启动消费位置</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> subList                          订阅信息数据</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> isNotifyConsumerIdsChangedEnable 一个consumer改变时是否通知该consumergroup中的所有consumer进行重平衡</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> 是否重平衡</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">registerConsumer</span><span class="params">(<span class="keyword">final</span> String group, <span class="keyword">final</span> ClientChannelInfo clientChannelInfo,</span></span><br><span class="line"><span class="params">                                ConsumeType consumeType, MessageModel messageModel, ConsumeFromWhere consumeFromWhere,</span></span><br><span class="line"><span class="params">                                <span class="keyword">final</span> Set&lt;SubscriptionData&gt; subList, <span class="type">boolean</span> isNotifyConsumerIdsChangedEnable)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//获取当前group对应的ConsumerGroupInfo</span></span><br><span class="line">    <span class="type">ConsumerGroupInfo</span> <span class="variable">consumerGroupInfo</span> <span class="operator">=</span> <span class="built_in">this</span>.consumerTable.get(group);</span><br><span class="line">    <span class="comment">//如果为null，那么新建一个ConsumerGroupInfo并存入consumerTable</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="literal">null</span> == consumerGroupInfo) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="type">ConsumerGroupInfo</span> <span class="variable">tmp</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ConsumerGroupInfo</span>(group, consumeType, messageModel, consumeFromWhere);</span><br><span class="line">        <span class="type">ConsumerGroupInfo</span> <span class="variable">prev</span> <span class="operator">=</span> <span class="built_in">this</span>.consumerTable.putIfAbsent(group, tmp);</span><br><span class="line">        consumerGroupInfo = prev != <span class="literal">null</span> ? prev : tmp;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 1 更新连接</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="type">boolean</span> <span class="variable">r1</span> <span class="operator">=</span></span><br><span class="line">            consumerGroupInfo.updateChannel(clientChannelInfo, consumeType, messageModel,</span><br><span class="line">                    consumeFromWhere);</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 2 更新订阅信息</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="type">boolean</span> <span class="variable">r2</span> <span class="operator">=</span> consumerGroupInfo.updateSubscription(subList);</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 2 如果连接或者订阅信息有更新，并且允许通知，那么通知该consumergroup中的所有consumer进行重平衡</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">if</span> (r1 || r2) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">if</span> (isNotifyConsumerIdsChangedEnable) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//CHANGE事件</span></span><br><span class="line">            <span class="built_in">this</span>.consumerIdsChangeListener.handle(ConsumerGroupEvent.CHANGE, group, consumerGroupInfo.getAllChannel());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//注册订阅信息到ConsumerFilterManager</span></span><br><span class="line">    <span class="built_in">this</span>.consumerIdsChangeListener.handle(ConsumerGroupEvent.REGISTER, group, subList);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> r1 || r2;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h6 id="1-3-1-1-1-updateChannel更新连接"><a href="#1-3-1-1-1-updateChannel更新连接" class="headerlink" title="1.3.1.1.1 updateChannel更新连接"></a>1.3.1.1.1 updateChannel更新连接</h6><p>更新此ConsumerGroup组对应的ConsumerGroupInfo的一些属性，并且还会判断当前连接是否是新连接，如果Broker此前没有该连接的信息，那么表示有新的consumer连接到此broker，那么需要通知当前ConsumerGroup的所有consumer进行重平衡。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ConsumerGroupInfo的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 更新连接</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> infoNew          新连接信息</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> consumeType      消费类型，PULL or PUSH</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> messageModel     消息模式，集群 or 广播</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> consumeFromWhere 启动消费位置</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> 是否通知</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">updateChannel</span><span class="params">(<span class="keyword">final</span> ClientChannelInfo infoNew, ConsumeType consumeType,</span></span><br><span class="line"><span class="params">                             MessageModel messageModel, ConsumeFromWhere consumeFromWhere)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="type">boolean</span> <span class="variable">updated</span> <span class="operator">=</span> <span class="literal">false</span>;</span><br><span class="line">    <span class="comment">//更新信息</span></span><br><span class="line">    <span class="built_in">this</span>.consumeType = consumeType;</span><br><span class="line">    <span class="built_in">this</span>.messageModel = messageModel;</span><br><span class="line">    <span class="built_in">this</span>.consumeFromWhere = consumeFromWhere;</span><br><span class="line">    <span class="comment">//根据当前连接获取channelInfoTable缓存中的连接信息</span></span><br><span class="line">    <span class="type">ClientChannelInfo</span> <span class="variable">infoOld</span> <span class="operator">=</span> <span class="built_in">this</span>.channelInfoTable.get(infoNew.getChannel());</span><br><span class="line">    <span class="comment">//如果缓存中的连接信息为null，说明当前连接是一个新连接</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="literal">null</span> == infoOld) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//存入缓存</span></span><br><span class="line">        <span class="type">ClientChannelInfo</span> <span class="variable">prev</span> <span class="operator">=</span> <span class="built_in">this</span>.channelInfoTable.put(infoNew.getChannel(), infoNew);</span><br><span class="line">        <span class="comment">//长期按没有该连接信息，那么表示有新的consumer连接到此broekr，那么需要通知</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="literal">null</span> == prev) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.info(<span class="string">&quot;new consumer connected, group: &#123;&#125; &#123;&#125; &#123;&#125; channel: &#123;&#125;&quot;</span>, <span class="built_in">this</span>.groupName, consumeType,</span><br><span class="line">                    messageModel, infoNew.toString());</span><br><span class="line">            updated = <span class="literal">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        infoOld = infoNew;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//异常情况</span></span><br><span class="line">        <span class="keyword">if</span> (!infoOld.getClientId().equals(infoNew.getClientId())) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.error(<span class="string">&quot;[BUG] consumer channel exist in broker, but clientId not equal. GROUP: &#123;&#125; OLD: &#123;&#125; NEW: &#123;&#125; &quot;</span>,</span><br><span class="line">                    <span class="built_in">this</span>.groupName,</span><br><span class="line">                    infoOld.toString(),</span><br><span class="line">                    infoNew.toString());</span><br><span class="line">            <span class="built_in">this</span>.channelInfoTable.put(infoNew.getChannel(), infoNew);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//更新更新时间</span></span><br><span class="line">    <span class="built_in">this</span>.lastUpdateTimestamp = System.currentTimeMillis();</span><br><span class="line">    infoOld.setLastUpdateTimestamp(<span class="built_in">this</span>.lastUpdateTimestamp);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> updated;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h6 id="1-3-1-1-2-updateSubscription更新订阅信息"><a href="#1-3-1-1-2-updateSubscription更新订阅信息" class="headerlink" title="1.3.1.1.2 updateSubscription更新订阅信息"></a>1.3.1.1.2 updateSubscription更新订阅信息</h6><p>更新此ConsumerGroup组对应的订阅信息集合，如果存在新增订阅的topic，或者移除了对于某个topic的订阅，那么需要通知当前ConsumerGroup的所有consumer进行重平衡。</p>
+<p>该方法的大概步骤为：</p>
+<p><strong>1、</strong> 该方法首先遍历当前请求传递的订阅信息集合，然后对于每个订阅的topic从subscriptionTable缓存中尝试获取，如果获取不到则表示新增了topic订阅信息，那么将新增的信息存入subscriptionTable；<br><strong>2、</strong><br>然后遍历subscriptionTable集合，判断每一个topic是否存在于当前请求传递的订阅信息集合中，如果不存在，表示consumer移除了对于该topic的订阅，那么当前topic的订阅信息会从subscriptionTable集合中被移除；</p>
+<p>**这里的源码实际上很重要，他向我们传达出了什么信息呢？那就是RocketMQ需要保证组内的所有消费者订阅的topic都必须一致，否则就会出现订阅的topic被覆盖的情况。<br>**</p>
+<p>**根据刚才的源码分析，假设一个消费者组groupX里面有两个消费者，A消费者先启动并且订阅topicA，A消费者向broker发送心跳，那么subscriptionTable中消费者组groupX里面仅有topicA的订阅信息。<br>**</p>
+<p>**随后B消费者启动并且订阅topicB，B消费者也向broker发送心跳，那么根据该方法的源码，subscriptionTable中消费者组groupX里面的topicA的订阅信息将会被移除，而topicB的订阅信息会被存入进来。<br>**</p>
+<p><strong>这样就导致了topic订阅信息的相互覆盖，导致其中一个消费者能够消费消息，而另一个消费者不会消费。</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ConsumerGroupInfo的方法</span></span><br><span class="line"><span class="comment"> * 更新订阅信息</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> subList 订阅信息集合</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">updateSubscription</span><span class="params">(<span class="keyword">final</span> Set&lt;SubscriptionData&gt; subList)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="type">boolean</span> <span class="variable">updated</span> <span class="operator">=</span> <span class="literal">false</span>;</span><br><span class="line">    <span class="comment">//遍历订阅信息集合</span></span><br><span class="line">    <span class="keyword">for</span> (SubscriptionData sub : subList) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//根据订阅的topic在ConsumerGroup的subscriptionTable缓存中此前的订阅信息</span></span><br><span class="line">        <span class="type">SubscriptionData</span> <span class="variable">old</span> <span class="operator">=</span> <span class="built_in">this</span>.subscriptionTable.get(sub.getTopic());</span><br><span class="line">        <span class="comment">//如果此前没有关于该topic的订阅信息，那么表示此topic为新增订阅</span></span><br><span class="line">        <span class="keyword">if</span> (old == <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//存入subscriptionTable</span></span><br><span class="line">            <span class="type">SubscriptionData</span> <span class="variable">prev</span> <span class="operator">=</span> <span class="built_in">this</span>.subscriptionTable.putIfAbsent(sub.getTopic(), sub);</span><br><span class="line">            <span class="comment">//此前没有关于该topic的订阅信息，那么表示此topic为新增订阅，那么需要通知</span></span><br><span class="line">            <span class="keyword">if</span> (<span class="literal">null</span> == prev) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                updated = <span class="literal">true</span>;</span><br><span class="line">                log.info(<span class="string">&quot;subscription changed, add new topic, group: &#123;&#125; &#123;&#125;&quot;</span>,</span><br><span class="line">                        <span class="built_in">this</span>.groupName,</span><br><span class="line">                        sub.toString());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (sub.getSubVersion() &gt; old.getSubVersion()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//更新数据</span></span><br><span class="line">            <span class="keyword">if</span> (<span class="built_in">this</span>.consumeType == ConsumeType.CONSUME_PASSIVELY) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                log.info(<span class="string">&quot;subscription changed, group: &#123;&#125; OLD: &#123;&#125; NEW: &#123;&#125;&quot;</span>,</span><br><span class="line">                        <span class="built_in">this</span>.groupName,</span><br><span class="line">                        old.toString(),</span><br><span class="line">                        sub.toString()</span><br><span class="line">                );</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="built_in">this</span>.subscriptionTable.put(sub.getTopic(), sub);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 遍历ConsumerGroup的subscriptionTable缓存</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    Iterator&lt;Entry&lt;String, SubscriptionData&gt;&gt; it = <span class="built_in">this</span>.subscriptionTable.entrySet().iterator();</span><br><span class="line">    <span class="keyword">while</span> (it.hasNext()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        Entry&lt;String, SubscriptionData&gt; next = it.next();</span><br><span class="line">        <span class="comment">//获取此前订阅的topic</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">oldTopic</span> <span class="operator">=</span> next.getKey();</span><br><span class="line"></span><br><span class="line">        <span class="type">boolean</span> <span class="variable">exist</span> <span class="operator">=</span> <span class="literal">false</span>;</span><br><span class="line">        <span class="comment">//判断当前的subList是否存在该topic的订阅信息</span></span><br><span class="line">        <span class="keyword">for</span> (SubscriptionData sub : subList) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//如果存在，则退出循环</span></span><br><span class="line">            <span class="keyword">if</span> (sub.getTopic().equals(oldTopic)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                exist = <span class="literal">true</span>;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//当前的subList不存在该topic的订阅信息，说明consumer移除了对于该topic的订阅</span></span><br><span class="line">        <span class="keyword">if</span> (!exist) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.warn(<span class="string">&quot;subscription changed, group: &#123;&#125; remove topic &#123;&#125; &#123;&#125;&quot;</span>,</span><br><span class="line">                    <span class="built_in">this</span>.groupName,</span><br><span class="line">                    oldTopic,</span><br><span class="line">                    next.getValue().toString()</span><br><span class="line">            );</span><br><span class="line">            <span class="comment">//移除数据</span></span><br><span class="line">            it.remove();</span><br><span class="line">            <span class="comment">//那么需要通知</span></span><br><span class="line">            updated = <span class="literal">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">this</span>.lastUpdateTimestamp = System.currentTimeMillis();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> updated;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h6 id="1-3-1-1-3-consumerIdsChangeListener-handle监听器通知"><a href="#1-3-1-1-3-consumerIdsChangeListener-handle监听器通知" class="headerlink" title="1.3.1.1.3 consumerIdsChangeListener.handle监听器通知"></a>1.3.1.1.3 consumerIdsChangeListener.handle监听器通知</h6><p>该方法通知监听器处理对应的事件，需要进行通知的事件为ConsumerGroupEvent.CHANGE。</p>
+<p>可以看到该方法中对于ConsumerGroupEvent.CHANGE事件的处理为：如果允许通知，则遍历该ConsumerGroup的连接集合，然后对每个连接调用notifyConsumerIdsChanged方法通知对应的客户端消费者执行负载均衡。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * DefaultConsumerIdsChangeListener的方法</span></span><br><span class="line"><span class="comment"> * </span></span><br><span class="line"><span class="comment"> * 处理监听到的事件</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> event 事件</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> group 消费者组</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> args 参数</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">handle</span><span class="params">(ConsumerGroupEvent event, String group, Object... args)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="keyword">if</span> (event == <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">switch</span> (event) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//改变事件，需要通知该消费者组的每一个消费者</span></span><br><span class="line">        <span class="keyword">case</span> CHANGE:</span><br><span class="line">            <span class="keyword">if</span> (args == <span class="literal">null</span> || args.length &lt; <span class="number">1</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//获取参数</span></span><br><span class="line">            List&lt;Channel&gt; channels = (List&lt;Channel&gt;) args[<span class="number">0</span>];</span><br><span class="line">            <span class="comment">//如果允许通知</span></span><br><span class="line">            <span class="keyword">if</span> (channels != <span class="literal">null</span> &amp;&amp; brokerController.getBrokerConfig().isNotifyConsumerIdsChangedEnable()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//遍历连接集合</span></span><br><span class="line">                <span class="keyword">for</span> (Channel chl : channels) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//通知该消费者客户端执行负载均衡</span></span><br><span class="line">                    <span class="built_in">this</span>.brokerController.getBroker2Client().notifyConsumerIdsChanged(chl, group);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> UNREGISTER:</span><br><span class="line">            <span class="built_in">this</span>.brokerController.getConsumerFilterManager().unRegister(group);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> REGISTER:</span><br><span class="line">            <span class="keyword">if</span> (args == <span class="literal">null</span> || args.length &lt; <span class="number">1</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            Collection&lt;SubscriptionData&gt; subscriptionDataList = (Collection&lt;SubscriptionData&gt;) args[<span class="number">0</span>];</span><br><span class="line">            <span class="built_in">this</span>.brokerController.getConsumerFilterManager().register(group, subscriptionDataList);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(<span class="string">&quot;Unknown event &quot;</span> + event);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="1-3-1-2-notifyConsumerIdsChanged通知消费者变更"><a href="#1-3-1-2-notifyConsumerIdsChanged通知消费者变更" class="headerlink" title="1.3.1.2 notifyConsumerIdsChanged通知消费者变更"></a>1.3.1.2 notifyConsumerIdsChanged通知消费者变更</h5><p>**该方法由broker向客户端发送一个单向请求，Code为NOTIFY_CONSUMER_IDS_CHANGED，这就是Broker通知客户端的重平衡请求，当客户端收到该请求之后，将会进行重平衡操作。<br>**</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Broker2Client的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 通知消费者变更</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> channel       连接</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> consumerGroup 消费者组</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">notifyConsumerIdsChanged</span><span class="params">(</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> Channel channel,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> String consumerGroup)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="keyword">if</span> (<span class="literal">null</span> == consumerGroup) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        log.error(<span class="string">&quot;notifyConsumerIdsChanged consumerGroup is null&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//构建请求头</span></span><br><span class="line">    <span class="type">NotifyConsumerIdsChangedRequestHeader</span> <span class="variable">requestHeader</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">NotifyConsumerIdsChangedRequestHeader</span>();</span><br><span class="line">    requestHeader.setConsumerGroup(consumerGroup);</span><br><span class="line">    <span class="comment">//构建远程命令对象，请求code为NOTIFY_CONSUMER_IDS_CHANGED</span></span><br><span class="line">    <span class="type">RemotingCommand</span> <span class="variable">request</span> <span class="operator">=</span></span><br><span class="line">            RemotingCommand.createRequestCommand(RequestCode.NOTIFY_CONSUMER_IDS_CHANGED, requestHeader);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//发送单向请求，无需等待客户端回应</span></span><br><span class="line">        <span class="built_in">this</span>.brokerController.getRemotingServer().invokeOneway(channel, request, <span class="number">10</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        log.error(<span class="string">&quot;notifyConsumerIdsChanged exception. group=&#123;&#125;, error=&#123;&#125;&quot;</span>, consumerGroup, e.toString());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="1-3-2-客户端处理重平衡请求"><a href="#1-3-2-客户端处理重平衡请求" class="headerlink" title="1.3.2 客户端处理重平衡请求"></a>1.3.2 客户端处理重平衡请求</h4><p>来自broker的请求在客户端是通过ClientRemotingProcessor#processRequest处理的。</p>
+<p>NOTIFY_CONSUMER_IDS_CHANGED请求通过客户端的ClientRemotingProcessor#notifyConsumerIdsChanged方法处理。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ClientRemotingProcessor的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 处理来自远程服务端的请求</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> RemotingCommand <span class="title function_">processRequest</span><span class="params">(ChannelHandlerContext ctx,</span></span><br><span class="line"><span class="params">                                      RemotingCommand request)</span> <span class="keyword">throws</span> RemotingCommandException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="keyword">switch</span> (request.getCode()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">case</span> RequestCode.CHECK_TRANSACTION_STATE:</span><br><span class="line">            <span class="keyword">return</span> <span class="built_in">this</span>.checkTransactionState(ctx, request);</span><br><span class="line">        <span class="keyword">case</span> RequestCode.NOTIFY_CONSUMER_IDS_CHANGED:</span><br><span class="line">            <span class="comment">//处理NOTIFY_CONSUMER_IDS_CHANGED请求</span></span><br><span class="line">            <span class="keyword">return</span> <span class="built_in">this</span>.notifyConsumerIdsChanged(ctx, request);</span><br><span class="line">        <span class="keyword">case</span> RequestCode.RESET_CONSUMER_CLIENT_OFFSET:</span><br><span class="line">            <span class="keyword">return</span> <span class="built_in">this</span>.resetOffset(ctx, request);</span><br><span class="line">        <span class="keyword">case</span> RequestCode.GET_CONSUMER_STATUS_FROM_CLIENT:</span><br><span class="line">            <span class="keyword">return</span> <span class="built_in">this</span>.getConsumeStatus(ctx, request);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">case</span> RequestCode.GET_CONSUMER_RUNNING_INFO:</span><br><span class="line">            <span class="keyword">return</span> <span class="built_in">this</span>.getConsumerRunningInfo(ctx, request);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">case</span> RequestCode.CONSUME_MESSAGE_DIRECTLY:</span><br><span class="line">            <span class="keyword">return</span> <span class="built_in">this</span>.consumeMessageDirectly(ctx, request);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">case</span> RequestCode.PUSH_REPLY_MESSAGE_TO_CLIENT:</span><br><span class="line">            <span class="keyword">return</span> <span class="built_in">this</span>.receiveReplyMessage(ctx, request);</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="1-3-2-1-notifyConsumerIdsChanged客户端重平衡"><a href="#1-3-2-1-notifyConsumerIdsChanged客户端重平衡" class="headerlink" title="1.3.2.1 notifyConsumerIdsChanged客户端重平衡"></a>1.3.2.1 notifyConsumerIdsChanged客户端重平衡</h5><p>客户端接口到broker的重平衡请求之后，调用该方法才理。逻辑很简单，内部仅仅是调用我们之前讲的rebalanceImmediately<br>方法唤醒负载均衡服务rebalanceService，进行重平衡。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> RemotingCommand <span class="title function_">notifyConsumerIdsChanged</span><span class="params">(ChannelHandlerContext ctx,</span></span><br><span class="line"><span class="params">                                                RemotingCommand request)</span> <span class="keyword">throws</span> RemotingCommandException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//解析请求头</span></span><br><span class="line">        <span class="keyword">final</span> <span class="type">NotifyConsumerIdsChangedRequestHeader</span> <span class="variable">requestHeader</span> <span class="operator">=</span></span><br><span class="line">                (NotifyConsumerIdsChangedRequestHeader) request.decodeCommandCustomHeader(NotifyConsumerIdsChangedRequestHeader.class);</span><br><span class="line">        <span class="comment">//打印日志</span></span><br><span class="line">        log.info(<span class="string">&quot;receive broker&#x27;s notification[&#123;&#125;], the consumer group: &#123;&#125; changed, rebalance immediately&quot;</span>,</span><br><span class="line">                RemotingHelper.parseChannelRemoteAddr(ctx.channel()),</span><br><span class="line">                requestHeader.getConsumerGroup());</span><br><span class="line">        <span class="comment">//熟悉的方法，立即进行重平衡</span></span><br><span class="line">        <span class="built_in">this</span>.mqClientFactory.rebalanceImmediately();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        log.error(<span class="string">&quot;notifyConsumerIdsChanged exception&quot;</span>, RemotingHelper.exceptionSimpleDesc(e));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-小结"><a href="#2-小结" class="headerlink" title="2 小结"></a>2 小结</h2><p><strong>本文介绍了RocketMQ消费者负载均衡服务RebalanceService入口源码，下一篇文章我们将会介绍具体的负载的过程源码。</strong></p>
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1739713341/" target="_blank">16、RocketMQ源码分析：消费者负载均衡服务RebalanceService入口源码</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
+                        
+                            <a href="/category/Web/">Web</a>
+                        
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
+                        
+                            <a href="/tag/RocketMq/">RocketMq</a>
+                        
+                    </div>
+                
+                <div class="article-prev-next">
+                    
+                        <a href="/article/1739713339/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1739713339/" title="发布于 2025-02-16 09:42">14、RocketMQ源码分析：BrokerCommitLogDispatcher异步构建ConsumeQueue和IndexFile源码解析</a>
+                        <br>
+                    
+                    
+                        <a href="/article/1739713343/" class="next-prefix">» </a> 下一篇：    <a href="/article/1739713343/" title="发布于 2025-02-16 09:42">18、RocketMQ源码分析：DefaultMQPushConsumer消费者发起拉取消息请求源码</a>
+                    
+                </div>
+            </div>
+            
+    <div class="article-comments">
+        
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
+    
+</div>
+    <div id="footer"></div>
+    <div id="sidebar">
+    <div class="menu-wrap" style="display:none;">
+        
+            <div class="menu-notice">
+                <span class="iconfont icon-notice"></span>
+                <div class="notice">
+                    <span>简单地活着，肆意而又精彩！</span>
+                </div>
+            </div>
+        
+        <nav class="menu">
+            <div class="menu-introduce"> 
+                <div class="introduce-avatar">
+                    <img src="/image/sidebar/avatar.jpg">
+                </div> 
+                <div class="introduce-info"> 
+                    <div class="introduce-user"><span>Live For Code</span></div>
+                </div> 
+            </div> 
+            <div class="menu-list">
+                <ul>
+                    
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                    
+                        <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
+                    
+                        <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
+                    
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                    
+                        <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
+                    
+                        <li class=""><a href="/about" class="" target="_self"><span class="iconfont icon-about-fill"></span>关于</a></li>
+                    
+                        <li class=""><a href="/atom.xml" class="" target="_blank"><span class="iconfont icon-rss"></span>订阅</a></li>
+                    
+                        <li class=""><a href="javascript:;" class="search" target="_self"><span class="iconfont icon-search-menu"></span>搜索</a></li>
+                    
+                        <li class=""><a href="/comment" class="" target="_self"><span class="iconfont icon-comments-fill"></span>留言板</a></li>
+                    
+                        <li class=""><a href="/friend" class="" target="_self"><span class="iconfont icon-link"></span>友情链接</a></li>
+                    
+                </ul> 
+            </div> 
+            <div class="menu-link">
+                <div class="box">
+                    <div class="image-box"></div>
+                </div>
+                
+                    <a name="知乎" href="https://www.zhihu.com/people/wo-xin-de-love" class="" target="_blank" data=""><span class="iconfont icon-zhihu"></span></a>
+                
+                    <a name="微博" href="https://weibo.com/u/3939432776" class="" target="_blank" data=""><span class="iconfont icon-weibo"></span></a>
+                
+                    <a name="QQ" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"><span class="iconfont icon-qq"></span></a>
+                
+                    <a name="微信" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"><span class="iconfont icon-wechat"></span></a>
+                
+                    <a name="GitHub" href="https://github.com/first19326" class="" target="_blank" data=""><span class="iconfont icon-github"></span></a>
+                
+            </div> 
+        </nav>
+        <button class="menu-button-close"></button>
+        <div class="morph-shape" id="morph-shape" data-morph-open="M-7.312,0H15c0,0,66,113.339,66,399.5C81,664.006,15,800,15,800H-7.312V0z;M-7.312,0H100c0,0,0,113.839,0,400c0,264.506,0,400,0,400H-7.312V0z">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 800" preserveAspectRatio="none">
+                <path d="M-7.312,0H0c0,0,0,113.839,0,400c0,264.506,0,400,0,400h-7.312V0z"/>
+            </svg>
+        </div>
+    </div>
+    <button class="menu-button-open">MENU</button>
+    <div class="menu-cover"></div>
+</div>
+    <link type="text/css" rel="stylesheet" href="/css/search.css">
+<script type="text/javascript" src="/js/iscroll.js"></script>
+<script type="text/javascript" src="/js/instantsearch.min.js"></script>
+<div class="search-window">
+    <div class="search-content">
+        <div class="search-content-icon">
+            <i class="iconfont icon-search"></i>
+        </div>
+        <div id="search-input" class="search-input"></div>
+    </div>
+
+    <div class="search-scroll">
+        <div class="search-result">
+            <div id="search-stats" class="search-stats"></div>
+            <div id="search-hits"></div>
+            <div id="search-pagination" class="search-pagination"></div>
+        </div>
+    </div>
+
+    <span class="search-close-icon">
+        <i class="iconfont icon-close"></i>
+    </span>
+</div>
+    <div id="tools">
+    <div class="progressbar-top"></div>
+
+    
+        <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
+        <script type="text/javascript" src="/js/APlayer.min.js"></script>
+        <script type="text/javascript" src="/js/Meting.min.js"></script>
+        <meting-js id="3778678" lrcshow="false" server="netease" type="playlist" fixed="true" autoplay="false" loop="all" order="random" preload="auto" volume="0.67" mutex="true"></meting-js>
+    
+    
+    <div class="wrap-right">
+        <div class="setting">
+            <div class="iconbox favorites" switch="false">
+                <span class="iconfont icon-favorites"></span>
+                <span class="icontext">关注</span>
+            </div>
+            <div class="iconbox mode">
+                <div class="light">
+                    <span class="iconfont icon-daymode"></span>
+                    <span class="icontext">浅色模式</span>
+                </div>
+                <div class="dark">
+                    <span class="iconfont icon-nightmode-fill"></span>
+                    <span class="icontext">深色模式</span>
+                </div>
+            </div>
+            <a href="javascript:;" target="_self" class="search">
+                <div class="iconbox">
+                    <span class="iconfont icon-search-menu"></span>
+                    <span class="icontext">搜索</span>
+                </div>
+            </a>
+            <div class="iconbox bottom">
+                <div style="display: inline-block; transform: rotate(180deg);">
+                    <span class="iconfont icon-top"></span>
+                </div>
+                <span class="icontext">跳至底部</span>
+            </div>
+        </div>
+        <div class="iconbox set">
+            <div style="display: inline-block;">
+                <span class="iconfont icon-setting"></span>
+            </div>
+            <span class="icontext">设置</span>
+        </div>
+        <div class="iconbox top">
+            <span class="iconfont icon-top"></span>
+            <span class="icontext">返回顶部</span>
+        </div>
+    </div>
+    <div class="loading"></div>
+</div>
+    <script>
+    window.config = {
+        GitHubUserName     : "first19326",
+        GitHubRepositories : "Hexo-LiveForCode",
+
+        User             : "Live For Code",
+        UserAvatar       : "/image/sidebar/avatar.jpg",
+        WebsiteStartDate : "2020-01-01",
+
+        WebsiteTitleBlur         : "(◍´꒳`◍) Hi, Live For Code",
+        WebsiteTitleBlurTimeOut  : 500,
+        WebsiteTitleFocus        : "(*´∇｀*) 欢迎回来!",
+        WebsiteTitleFocusTimeOut : 1000,
+        WebsiteFavicon           : "/image/website/logo.png",
+
+        ProgressBar : {
+            id       : "topProgressBar",
+            color    : "#77B6FF",
+            height   : "2px",
+            duration : 0.2
+        },
+
+        Loading: {
+            rebound : {
+                tension  : 16,
+                friction : 5
+            },
+            spinner : {
+                id     : "spinner",
+                radius : 90,
+                sides  : 3,
+                depth  : 4,
+                colors : {
+                    background : "#F0F0F0",
+                    stroke     : "#272633",
+                    base       : "",
+                    child      : "#272633"
+                },
+                alwaysForward : true,
+                restAt        : 0.5,
+                renderBase    : false
+            }
+        },
+
+        HomeHeaderAnimationRendered : true,
+        HomeHeaderAnimation         : {
+            radius      : 15,
+            density     : 0.2,
+            color       : "rgba(255, 255, 255, .2)",
+            clearOffset : 0.3
+        },
+
+        BackAnimationRendered          : true,
+        IEBrowserBackAnimationRendered : false,
+        BackAnimation                  : {
+            colorSaturation  : "60%",
+            colorBrightness  : "50%",
+            colorAlpha       : 0.5,
+            colorCycleSpeed  : 5,
+            verticalPosition : "random",
+            horizontalSpeed  : 200,
+            ribbonCount      : 3,
+            strokeSize       : 0,
+            parallaxAmount   : -0.2,
+            animateSections  : true
+        },
+
+        HomeHeaderImage : [
+            
+                "/image/header/home.jpg",
+            
+                "/image/header/home.jpeg",
+            
+                "/image/header/2023-04-17-20-51-03.jpg",
+            
+                "/image/header/2023-04-17-20-54-07.jpg",
+            
+                "/image/header/2023-04-17-20-54-22.jpg",
+            
+                "/image/header/2023-04-17-20-55-25.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+        HomeBannerText  : "",
+
+        ArticleHeaderImage : [
+            
+                "/image/header/article.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+
+        OtherBannerText : "",
+
+        Error : {
+            icon    : "icon-swimming",
+            title   : "PAGE NOT FOUND",
+            content : [
+                
+                    "很抱歉，您访问的页面不存在！",
+                
+                    "可能是输入地址有误或该地址已变更。",
+                
+            ],
+            buttons : [
+                
+                    {
+                        icon  : "icon-home",
+                        text  : "返回首页",
+                        href  : "https://fadeway32.gitee.io/",
+                        class : ""
+                    },
+                
+            ]
+        },
+
+        MenuNotice : {
+            enable : true,
+            notice : "简单地活着，肆意而又精彩！",
+            speed  : 20
+        },
+        MenuList : [
+            
+                {
+                    name   : "首页",
+                    icon   : "icon-home-fill",
+                    href   : "/",
+                    type   : "index",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "分类",
+                    icon   : "icon-folder-fill",
+                    href   : "/category",
+                    type   : "category",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "标签",
+                    icon   : "icon-discount-fill",
+                    href   : "/tag",
+                    type   : "tag",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "归档",
+                    icon   : "icon-calendar-fill",
+                    href   : "/archive",
+                    type   : "archive",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "赞赏",
+                    icon   : "icon-heart-fill",
+                    href   : "/donate",
+                    type   : "donate",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "关于",
+                    icon   : "icon-about-fill",
+                    href   : "/about",
+                    type   : "about",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "订阅",
+                    icon   : "icon-rss",
+                    href   : "/atom.xml",
+                    type   : "",
+                    class  : "",
+                    target : "_blank"
+                },
+            
+                {
+                    name   : "搜索",
+                    icon   : "icon-search-menu",
+                    href   : "javascript:;",
+                    type   : "",
+                    class  : "search",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "留言板",
+                    icon   : "icon-comments-fill",
+                    href   : "/comment",
+                    type   : "comment",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "友情链接",
+                    icon   : "icon-link",
+                    href   : "/friend",
+                    type   : "friend",
+                    class  : "",
+                    target : "_self"
+                },
+            
+        ],
+        MenuLink : [
+            
+                
+                    {
+                        name   : "知乎",
+                        icon   : "icon-zhihu",
+                        href   : "https://www.zhihu.com/people/wo-xin-de-love",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "微博",
+                        icon   : "icon-weibo",
+                        href   : "https://weibo.com/u/3939432776",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "QQ",
+                        icon   : "icon-qq",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"
+                    },
+                
+                    {
+                        name   : "微信",
+                        icon   : "icon-wechat",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"
+                    },
+                
+                    {
+                        name   : "GitHub",
+                        icon   : "icon-github",
+                        href   : "https://github.com/first19326",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+            
+        ],
+
+        FooterStyle : 2,
+        BottomText  : "<div><span class='face'>ღゝ◡╹)ノ♡</span></div><div>【人生若只如初见<span><i class='iconfont icon-like-fill'></i></span>何事秋风悲画扇】</div><div>&copy; 2020-2022 WorstOne. All Rights Reserved.</div>",
+
+        ConsoleList : [
+            
+                
+                    [
+                        
+                            
+                                "Based on cnblogs theme SimpleMemory.",
+                            
+                                "",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "SimpleMemory Author:",
+                            
+                                "BNDong",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "Theme:",
+                            
+                                "LiveForCode",
+                            
+                        
+                    ],
+                
+            
+        ],
+
+        FontIconExtend : "",
+
+        Donate : {
+            paypal  : "",
+            bitcoin : "",
+            alipay  : "/image/donate/alipay.png",
+            wechat  : "/image/donate/wechat.png"
+        },
+
+        Search : {
+            applicationID : "758UIQ1V0H",
+            apiKey        : "2e038c318ac6813e4b4baa91f6ccfa63",
+            indexName     : "hexo2",
+            hits          : {
+                page : 30
+            },
+            labels        : {
+                placeholder : "搜索",
+                empty       : "未发现与 「${query}」 相关的内容",
+                stats       : "${hits} 条相关条目，使用了 ${time} 毫秒",
+            }
+        }, 
+
+        Valine : {
+            switch         : true,
+            el             : ".comments-content",
+            appId          : "srhKtvWPQTWYKh3qX8G8M7v0-gzGzoHsz",
+            appKey         : "8uVSP1q6UlALVC5igYfIfv2h",
+            serverURLs     : "",
+            placeholder    : "你是我一生只会遇见一次的惊喜...",
+            avatar         : "mm",
+            meta           : "nick,mail,link",
+            requiredFields : "nick,mail",
+            pageSize       : 5,
+            lang           : "zh-cn",
+            visitor        : true,
+            enableQQ       : true
+        },
+
+        Tocbot : {
+            switch                : true,
+            tocSelector           : ".toc",
+            contentSelector       : ".article-body",
+            headingSelector       : "h1, h2, h3, h4, h5",
+            headingsOffset        : 0,
+            scrollSmooth          : true,
+            scrollSmoothOffset    : -5,
+            positionFixedSelector : ".toc",
+            positionFixedClass    : "toc-fixed",
+            fixedSidebarOffset    : "",
+        },
+
+        Require : {
+            baseUrl     : "/js/",
+            waitSeconds : 100
+        },
+
+        Music : {
+            type : "Meting"
+        },
+        APlayer : {
+            container : ".aplayer",
+            fixed     : true,
+            autoplay  : true,
+            loop      : "all",
+            order     : "random",
+            preload   : "auto",
+            volume    : 0.67,
+            mutex     : true,
+            lrcType   : 2,
+            audio     : [
+                
+                    {
+                        name   : "Endless Tears",
+                        artist : "CLIFF EDGE",
+                        cover  : "/music/cover/Endless Tears.jpg",
+                        url    : "/music/song/Endless Tears.mp3",
+                        lrc    : "/music/lrc/Endless Tears.lrc"
+                    },
+                
+            ]
+        },
+        Meting : {
+            id       : "3778678", 
+            lrcshow  : false, 
+            server   : "netease", 
+            type     : "playlist", 
+            fixed    : true, 
+            autoplay : false, 
+            loop     : "all", 
+            order    : "random", 
+            preload  : "auto", 
+            volume   : 0.67, 
+            mutex    : true
+        },
+
+        Mouse : {
+            enable  : true,
+            options : {
+                size  : 6,
+                sizeF : 24
+            }
+        },
+
+        LazyLoad : {
+            default : "/image/website/lazyload.svg"
+        },
+  
+        Style : {
+            aplayer          : "/css/APlayer.css",
+            archive          : "/css/archive.css",
+            base             : "/css/base.css",
+            clipboard        : "/css/clipboard.css",
+            code             : "/css/code.css",
+            donate           : "/css/donate.css",
+            fancybox         : "/css/jquery.fancybox.css",
+            footer           : "/css/footer.css",
+            iconfont         : "/iconfont/iconfont.css",
+            index            : "/css/index.css",
+            menuBubble       : "/css/menu-bubble.css",
+            mouse            : "/css/mouse.css",
+            page             : "/css/page.css",
+            post             : "/css/post.css",
+            search           : "/css/search.css",
+            tocbot           : "/css/tocbot.css",
+            valine           : "/css/valine.css"
+        },
+
+        Script: {
+            aplayer          : "/js/APlayer.min.js",
+            config           : "/js/require.config.js",
+            index            : "/js/index.js",
+            instantSearch    : "/js/instantsearch.min.js",
+            iscroll          : "/js/iscroll.js",
+            jQuery           : "/js/jquery-3.4.1.min.js",
+            loading          : "/js/loading.js",
+            meting           : "/js/Meting.min.js",
+            require          : "/js/require.min.js"
+        },
+
+        Font: {
+            LongCang    : "/font/LongCang.css",
+            Monda       : "/font/Monda.css",
+            NotoSansSC  : "/font/NotoSansSC.css",
+            NotoSerifSC : "/font/NotoSerifSC.css",
+            Playball    : "/font/Playball.css",
+            PTMono      : "/font/PTMono.css",
+            Roboto      : "/font/Roboto.css",
+            RobotoSlab  : "/font/RobotoSlab.css",
+            Rosario     : "/font/Rosario.css",
+            UbuntuMono  : "/font/UbuntuMono.css"
+        },
+
+        Suffix : {
+            about : "你知道的越多,你不知道的越多"
+        },
+            
+        Theme : {
+            url  : "https://fadeway32.gitee.io/",
+            name : "fadeway32"
+        }  
+    };
+</script>
+    <script type="text/javascript" src="/js/index.js"></script>
+</body>
+</html>
