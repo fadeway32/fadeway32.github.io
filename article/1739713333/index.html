@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <!--    <meta name="referrer" content="origin">-->
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>
+        
+            08、RocketMQ源码分析：Producer发送单向、同步、异步消息源码【一万字】
+        
+    </title>
+    <link rel="shortcut icon" href="#"/>
+
+    <link type="text/css" rel="stylesheet" href="/font/LongCang.css">
+    <link type="text/css" rel="stylesheet" href="/font/Monda.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSansSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSerifSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/Playball.css">
+    <link type="text/css" rel="stylesheet" href="/font/PTMono.css">
+    <link type="text/css" rel="stylesheet" href="/font/Roboto.css">
+    <link type="text/css" rel="stylesheet" href="/font/RobotoSlab.css">
+    <link type="text/css" rel="stylesheet" href="/font/Rosario.css">
+    <link type="text/css" rel="stylesheet" href="/font/UbuntuMono.css">
+
+    <link type="text/css" rel="stylesheet" href="/css/base.css">
+    <link type="text/css" rel="stylesheet" href="/css/code.css">
+
+    <script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
+<meta name="generator" content="Hexo 6.2.0"></head>
+<body>
+    <a id="cover"></a>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
+<header>
+    <meta name="referrer" content="no-referrer">
+</header>
+<div id="header" class="header">
+    <div class="vertical">
+        <div class="inner">
+            
+                <h1 class="header-subtitle">08、RocketMQ源码分析：Producer发送单向、同步、异步消息源码【一万字】</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2025-02-16
+                        </span>
+                        
+                            <span id="/article/1739713333/" class="leancloud_visitors" data-flag-title="08、RocketMQ源码分析：Producer发送单向、同步、异步消息源码【一万字】">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1739713333/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">RocketMq</span>
+                        
+                    
+                </div>
+            
+        </div>
+    </div>
+    
+</div>
+<div id="container">
+    
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="08、RocketMQ源码分析：Producer发送单向、同步、异步消息源码【一万字】"><a href="#08、RocketMQ源码分析：Producer发送单向、同步、异步消息源码【一万字】" class="headerlink" title="08、RocketMQ源码分析：Producer发送单向、同步、异步消息源码【一万字】"></a>08、RocketMQ源码分析：Producer发送单向、同步、异步消息源码【一万字】</h1><ul>
+<li>1 invokeOneway单向发送</li>
+<li><ul>
+<li>1.1 invokeOnewayImpl单向调用</li>
+</ul>
+</li>
+<li>2 sendMessageSync同步发送</li>
+<li><ul>
+<li>2.1 invokeSync同步调用</li>
+</ul>
+</li>
+<li><ul>
+<li>2.1.1 invokeSyncImpl同步调用实现</li>
+<li><ul>
+<li>2.1.1.1 请求的阻塞和唤醒</li>
+</ul>
+</li>
+<li>2.1.2 processSendResponse处理响应结果</li>
+</ul>
+</li>
+<li>3 sendMessageAsync异步发送消息</li>
+<li><ul>
+<li>3.1 invokeAsync异步调用</li>
+</ul>
+</li>
+<li><ul>
+<li>3.1.1 invokeAsyncImpl异步调用实现</li>
+</ul>
+</li>
+<li>3.2 onExceptionImpl异常处理</li>
+<li>4 NettyClientHandler处理服务端消息</li>
+<li><ul>
+<li>4.1 processResponseCommand处理响应</li>
+</ul>
+</li>
+<li><ul>
+<li>4.1.1 executeInvokeCallback执行回调函数</li>
+<li><ul>
+<li>4.1.1.1 executeInvokeCallback指定回调</li>
+</ul>
+</li>
+<li>4.1.2 putResponse存入响应</li>
+</ul>
+</li>
+<li>5 总结</li>
+</ul>
+<p>此前，我们学习了<a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_43767015/article/details/126729959">RocketMQ源码(7)—Producer发送消息源码(1)—发送消息的总体流程【一万字】</a><br>，我们知道了Producer发送消息的总体流程，现在我们专门来学习一个重要的发送消息的内部方法<strong>MQClientAPIImpl#sendMessage</strong>的源码。</p>
+<p>**当一切准备就绪，最终异步、单向、同步发送模式都会调用MQClientAPIImpl#sendMessage方法发送消息，该方法是真正的发起请求的方法。<br>**</p>
+<p>这个方法的逻辑就比较简单了：</p>
+<p><strong>1、</strong><br>首先构建发送消息命令对象RemotingCommand，此时会判断是否需要更换轻量级消息头，如果sendSmartMsg属性为true（默认为true）或者是批量消息，则使用轻量级消息头SendMessageRequestHeaderV2相比于requestHeader，其field全为a,b,c,d等短变量名，可以加快FastJson反序列化过程；</p>
+<ol start="2">
+<li>根据发送模式执行不同的发送逻辑。*<br>*单向发送模式调用RemotingClient#invokeOneway方法；异步发送模式调用MQClientAPIImpl#sendMessageAsync方法；同步发送模式调用MQClientAPIImpl#sendMessageSync方法。在异步和同步模式发送方法的调用前还会再检查是否超时，如果超时则不再调用。<br>**</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * MQClientAPIImpl的方法</span></span><br><span class="line"><span class="comment"> * 同步、异步、单向消息的最终发送消息的方法</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> addr                     brokerAddr</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> brokerName               brokerName</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> msg                      msg</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> requestHeader            requestHeader</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> timeoutMillis            剩余超时时间</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> communicationMode        发送模式</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> sendCallback             发送回调函数</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> topicPublishInfo         topic信息</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> instance                 MQClientInstance</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> retryTimesWhenSendFailed 异步发送失败时的重试次数，默认2</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> context                  发送消息上下文</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> producer                 DefaultMQProducerImpl</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> * <span class="doctag">@throws</span> RemotingException</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@throws</span> MQBrokerException</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@throws</span> InterruptedException</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> SendResult <span class="title function_">sendMessage</span><span class="params">(</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> String addr,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> String brokerName,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> Message msg,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> SendMessageRequestHeader requestHeader,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> <span class="type">long</span> timeoutMillis,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> CommunicationMode communicationMode,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> SendCallback sendCallback,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> TopicPublishInfo topicPublishInfo,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> MQClientInstance instance,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> <span class="type">int</span> retryTimesWhenSendFailed,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> SendMessageContext context,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> DefaultMQProducerImpl producer</span></span><br><span class="line"><span class="params">)</span> <span class="keyword">throws</span> RemotingException, MQBrokerException, InterruptedException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="type">long</span> <span class="variable">beginStartTime</span> <span class="operator">=</span> System.currentTimeMillis();</span><br><span class="line">    <span class="type">RemotingCommand</span> <span class="variable">request</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">    <span class="comment">//消息类型</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">msgType</span> <span class="operator">=</span> msg.getProperty(MessageConst.PROPERTY_MESSAGE_TYPE);</span><br><span class="line">    <span class="comment">//是否时重试消息</span></span><br><span class="line">    <span class="type">boolean</span> <span class="variable">isReply</span> <span class="operator">=</span> msgType != <span class="literal">null</span> &amp;&amp; msgType.equals(MixAll.REPLY_MESSAGE_FLAG);</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 1 构建发送消息命令对象RemotingCommand，更换轻量级消息头</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * sendSmartMsg表示是否使用更轻量级的消息头SendMessageRequestHeaderV2</span></span><br><span class="line"><span class="comment">     * 相比于requestHeader，其field 全为 a,b,c,d 等短变量名，可以加快FastJson反序列化过程。</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">if</span> (isReply) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//sendSmartMsg默认为true</span></span><br><span class="line">        <span class="keyword">if</span> (sendSmartMsg) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//构建轻量级消息头</span></span><br><span class="line">            <span class="type">SendMessageRequestHeaderV2</span> <span class="variable">requestHeaderV2</span> <span class="operator">=</span> SendMessageRequestHeaderV2.createSendMessageRequestHeaderV2(requestHeader);</span><br><span class="line">            <span class="comment">//创建发送消息命令对象，RequestCode为SEND_REPLY_MESSAGE_V2</span></span><br><span class="line">            request = RemotingCommand.createRequestCommand(RequestCode.SEND_REPLY_MESSAGE_V2, requestHeaderV2);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//创建发送消息命令对象，RequestCode为SEND_REPLY_MESSAGE</span></span><br><span class="line">            request = RemotingCommand.createRequestCommand(RequestCode.SEND_REPLY_MESSAGE, requestHeader);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">if</span> (sendSmartMsg || msg <span class="keyword">instanceof</span> MessageBatch) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//构建轻量级消息头</span></span><br><span class="line">            <span class="type">SendMessageRequestHeaderV2</span> <span class="variable">requestHeaderV2</span> <span class="operator">=</span> SendMessageRequestHeaderV2.createSendMessageRequestHeaderV2(requestHeader);</span><br><span class="line">            <span class="comment">//如果是批量消息，则RequestCode为SEND_BATCH_MESSAGE，否则RequestCode为SEND_MESSAGE_V2</span></span><br><span class="line">            request = RemotingCommand.createRequestCommand(msg <span class="keyword">instanceof</span> MessageBatch ? RequestCode.SEND_BATCH_MESSAGE : RequestCode.SEND_MESSAGE_V2, requestHeaderV2);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//创建发送消息命令对象，RequestCode为SEND_MESSAGE</span></span><br><span class="line">            request = RemotingCommand.createRequestCommand(RequestCode.SEND_MESSAGE, requestHeader);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//设置body</span></span><br><span class="line">    request.setBody(msg.getBody());</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 2 根据发送模式执行不同的发送逻辑</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">switch</span> (communicationMode) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">case</span> ONEWAY:</span><br><span class="line">            <span class="comment">/*</span></span><br><span class="line"><span class="comment">             * 单向发送，调用该方法之后不接收返回值，直接返回null</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            <span class="built_in">this</span>.remotingClient.invokeOneway(addr, request, timeoutMillis);</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">        <span class="keyword">case</span> ASYNC:</span><br><span class="line">            <span class="comment">//异步消息重试计数器</span></span><br><span class="line">            <span class="keyword">final</span> <span class="type">AtomicInteger</span> <span class="variable">times</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">AtomicInteger</span>();</span><br><span class="line">            <span class="comment">//计算是否超时，如果超时则不再发送</span></span><br><span class="line">            <span class="type">long</span> <span class="variable">costTimeAsync</span> <span class="operator">=</span> System.currentTimeMillis() - beginStartTime;</span><br><span class="line">            <span class="keyword">if</span> (timeoutMillis &lt; costTimeAsync) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RemotingTooMuchRequestException</span>(<span class="string">&quot;sendMessage call timeout&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">/*</span></span><br><span class="line"><span class="comment">             * 异步发送，调用该方法之后不接收返回值，直接返回null</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            <span class="built_in">this</span>.sendMessageAsync(addr, brokerName, msg, timeoutMillis - costTimeAsync, request, sendCallback, topicPublishInfo, instance,</span><br><span class="line">                    retryTimesWhenSendFailed, times, context, producer);</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">        <span class="keyword">case</span> SYNC:</span><br><span class="line">            <span class="comment">//计算是否超时，如果超时则不再发送</span></span><br><span class="line">            <span class="type">long</span> <span class="variable">costTimeSync</span> <span class="operator">=</span> System.currentTimeMillis() - beginStartTime;</span><br><span class="line">            <span class="keyword">if</span> (timeoutMillis &lt; costTimeSync) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RemotingTooMuchRequestException</span>(<span class="string">&quot;sendMessage call timeout&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">/*</span></span><br><span class="line"><span class="comment">             * 同步发送，调用该方法之后阻塞直至收到返回值</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            <span class="keyword">return</span> <span class="built_in">this</span>.sendMessageSync(addr, brokerName, msg, timeoutMillis - costTimeSync, request);</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">assert</span> <span class="literal">false</span>;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="1-invokeOneway单向发送"><a href="#1-invokeOneway单向发送" class="headerlink" title="1 invokeOneway单向发送"></a>1 invokeOneway单向发送</h2><p>该模式下，消息只会发送一次，且不会返回任何结果，即只管发送不管结果。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * NettyRemotingClient的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 单向消息发送的通用方法</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> addr          服务器地址</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> request       请求命令对象</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> timeoutMillis 超时时间</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">invokeOneway</span><span class="params">(String addr, RemotingCommand request, <span class="type">long</span> timeoutMillis)</span> <span class="keyword">throws</span> InterruptedException,</span><br><span class="line">        RemotingConnectException, RemotingTooMuchRequestException, RemotingTimeoutException, RemotingSendRequestException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//获取或者建立同服务器的通道，即连接</span></span><br><span class="line">    <span class="keyword">final</span> <span class="type">Channel</span> <span class="variable">channel</span> <span class="operator">=</span> <span class="built_in">this</span>.getAndCreateChannel(addr);</span><br><span class="line">    <span class="keyword">if</span> (channel != <span class="literal">null</span> &amp;&amp; channel.isActive()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//执行rpcHook的前置方法doBeforeRequest</span></span><br><span class="line">            doBeforeRpcHooks(addr, request);</span><br><span class="line">            <span class="comment">/*</span></span><br><span class="line"><span class="comment">             * 调用另一个invokeOnewayImpl方法，发送单向消息</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            <span class="built_in">this</span>.invokeOnewayImpl(channel, request, timeoutMillis);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (RemotingSendRequestException e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.warn(<span class="string">&quot;invokeOneway: send request exception, so close the channel[&#123;&#125;]&quot;</span>, addr);</span><br><span class="line">            <span class="built_in">this</span>.closeChannel(addr, channel);</span><br><span class="line">            <span class="keyword">throw</span> e;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="built_in">this</span>.closeChannel(addr, channel);</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RemotingConnectException</span>(addr);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>首先会调用getAndCreateChannel方法，尝试获取此broker的通道，如果没有获取到，那么会创建一个通道，即连接。然后执行rpcHook的前置方法doBeforeRequest，随后调用另一个invokeOnewayImpl方法，发送单向消息。</p>
+<h3 id="1-1-invokeOnewayImpl单向调用"><a href="#1-1-invokeOnewayImpl单向调用" class="headerlink" title="1.1 invokeOnewayImpl单向调用"></a>1.1 invokeOnewayImpl单向调用</h3><p>这个方法是单向消息的真正发送方法，终于到了最底层了，不容易啊。</p>
+<p><strong>该方法首先将请求标记为单向发送，然后基于</strong><a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_43767015/article/details/108079508">**Semaphore信号量<br>**</a>*<br><em>尝试获取单向发送的资源，通过信号量控制单向消息并发发送的消息数，从而保护系统内存占用。客户端单向发送的Semaphore信号量默认为65535，即单向消息最大并发为65535，可通过配置”<br>com.rocketmq.remoting.clientOnewaySemaphoreValue”系统变量更改。</em>*</p>
+<p>获取到了信号量资源之后。构建<strong>SemaphoreReleaseOnlyOnce</strong>对象，保证信号量本次只被释放一次，防止并发操作引起线程安全问题，然后就通过channel发送请求即可。</p>
+<p>在其监听器ChannelFutureListener中，会释放信号量，如果发送失败了，仅仅是打印一行warn日志，然后就不管了。如果没有获取到信号量资源，那么直接抛出异常即可，并且不再发送。</p>
+<p><strong>只管发送不管结果，不会进行任何重试，这就是单向发送消息的真正含义。</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * NettyRemotingAbstract的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 单向消息发送的逻辑</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> channel       通道</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> request       请求</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> timeoutMillis 超时时间</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">invokeOnewayImpl</span><span class="params">(<span class="keyword">final</span> Channel channel, <span class="keyword">final</span> RemotingCommand request, <span class="keyword">final</span> <span class="type">long</span> timeoutMillis)</span></span><br><span class="line">        <span class="keyword">throws</span> InterruptedException, RemotingTooMuchRequestException, RemotingTimeoutException, RemotingSendRequestException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//标记为单向发送</span></span><br><span class="line">    request.markOnewayRPC();</span><br><span class="line">    <span class="comment">//基于Semaphore信号量尝试获取单向发送的资源，通过信号量控制单向消息并发发送的消息数，从而保护系统内存占用。</span></span><br><span class="line">    <span class="comment">//客户端单向发送的Semaphore信号量默认为65535，可通过配置&quot;com.rocketmq.remoting.clientOnewaySemaphoreValue&quot;系统变量更改</span></span><br><span class="line">    <span class="type">boolean</span> <span class="variable">acquired</span> <span class="operator">=</span> <span class="built_in">this</span>.semaphoreOneway.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS);</span><br><span class="line">    <span class="comment">//如果获取到了信号量资源</span></span><br><span class="line">    <span class="keyword">if</span> (acquired) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//构建SemaphoreReleaseOnlyOnce对象，保证信号量本次只被释放一次，防止并发操作引起线程安全问题</span></span><br><span class="line">        <span class="keyword">final</span> <span class="type">SemaphoreReleaseOnlyOnce</span> <span class="variable">once</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SemaphoreReleaseOnlyOnce</span>(<span class="built_in">this</span>.semaphoreOneway);</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//将请求发送出去即可</span></span><br><span class="line">            channel.writeAndFlush(request).addListener(<span class="keyword">new</span> <span class="title class_">ChannelFutureListener</span>() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">operationComplete</span><span class="params">(ChannelFuture f)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//释放信号量</span></span><br><span class="line">                    once.release();</span><br><span class="line">                    <span class="comment">//如果发送失败了，仅仅是打印一行warn日志，然后就不管了，这就是单向发送</span></span><br><span class="line">                    <span class="keyword">if</span> (!f.isSuccess()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        log.warn(<span class="string">&quot;send a request command to channel &lt;&quot;</span> + channel.remoteAddress() + <span class="string">&quot;&gt; failed.&quot;</span>);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//释放信号量</span></span><br><span class="line">            once.release();</span><br><span class="line">            log.warn(<span class="string">&quot;write send a request command to channel &lt;&quot;</span> + channel.remoteAddress() + <span class="string">&quot;&gt; failed.&quot;</span>);</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RemotingSendRequestException</span>(RemotingHelper.parseChannelRemoteAddr(channel), e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//如果没有获取到信号量资源，那么直接抛出异常即可，并且不再发送</span></span><br><span class="line">        <span class="keyword">if</span> (timeoutMillis &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RemotingTooMuchRequestException</span>(<span class="string">&quot;invokeOnewayImpl invoke too fast&quot;</span>);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="type">String</span> <span class="variable">info</span> <span class="operator">=</span> String.format(</span><br><span class="line">                    <span class="string">&quot;invokeOnewayImpl tryAcquire semaphore timeout, %dms, waiting thread nums: %d semaphoreOnewayValue: %d&quot;</span>,</span><br><span class="line">                    timeoutMillis,</span><br><span class="line">                    <span class="built_in">this</span>.semaphoreOneway.getQueueLength(),</span><br><span class="line">                    <span class="built_in">this</span>.semaphoreOneway.availablePermits()</span><br><span class="line">            );</span><br><span class="line">            log.warn(info);</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RemotingTimeoutException</span>(info);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-sendMessageSync同步发送"><a href="#2-sendMessageSync同步发送" class="headerlink" title="2 sendMessageSync同步发送"></a>2 sendMessageSync同步发送</h2><p>该模式下，发送之后会同步阻塞直到结果返回。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * MQClientAPIImpl的方法</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> SendResult <span class="title function_">sendMessageSync</span><span class="params">(</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> String addr,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> String brokerName,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> Message msg,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> <span class="type">long</span> timeoutMillis,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> RemotingCommand request</span></span><br><span class="line"><span class="params">)</span> <span class="keyword">throws</span> RemotingException, MQBrokerException, InterruptedException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 发送同步消息</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="type">RemotingCommand</span> <span class="variable">response</span> <span class="operator">=</span> <span class="built_in">this</span>.remotingClient.invokeSync(addr, request, timeoutMillis);</span><br><span class="line">    <span class="keyword">assert</span> response != <span class="literal">null</span>;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 处理响应结果</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">this</span>.processSendResponse(brokerName, msg, response, addr);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其内部调用NettyRemotingClient#invokeSync方法执行同步调用，然后调用processSendResponse方法处理响应结果。</p>
+<h3 id="2-1-invokeSync同步调用"><a href="#2-1-invokeSync同步调用" class="headerlink" title="2.1 invokeSync同步调用"></a>2.1 invokeSync同步调用</h3><p>该方法执行同步调用。首先获取或者创建通道，即连接。然后在发送消息前后执行<strong>rpcHook</strong>钩子方法，即<strong>RPCHook#doBeforeRequest</strong><br>方法，通过调用<strong>invokeSyncImpl</strong>方法发起同步调用并获取响应结果返回。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * NettyRemotingClient的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 同步调用</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> RemotingCommand <span class="title function_">invokeSync</span><span class="params">(String addr, <span class="keyword">final</span> RemotingCommand request, <span class="type">long</span> timeoutMillis)</span></span><br><span class="line">        <span class="keyword">throws</span> InterruptedException, RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="type">long</span> <span class="variable">beginStartTime</span> <span class="operator">=</span> System.currentTimeMillis();</span><br><span class="line">    <span class="comment">//根据addr建立连接，获取channel</span></span><br><span class="line">    <span class="keyword">final</span> <span class="type">Channel</span> <span class="variable">channel</span> <span class="operator">=</span> <span class="built_in">this</span>.getAndCreateChannel(addr);</span><br><span class="line">    <span class="keyword">if</span> (channel != <span class="literal">null</span> &amp;&amp; channel.isActive()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//执行rpc钩子的doBeforeRequest方法</span></span><br><span class="line">            doBeforeRpcHooks(addr, request);</span><br><span class="line">            <span class="comment">//检查超时，如果超时则抛出异常</span></span><br><span class="line">            <span class="type">long</span> <span class="variable">costTime</span> <span class="operator">=</span> System.currentTimeMillis() - beginStartTime;</span><br><span class="line">            <span class="keyword">if</span> (timeoutMillis &lt; costTime) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RemotingTimeoutException</span>(<span class="string">&quot;invokeSync call the addr[&quot;</span> + addr + <span class="string">&quot;] timeout&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//执行同步远程调用，或者调用结果</span></span><br><span class="line">            <span class="type">RemotingCommand</span> <span class="variable">response</span> <span class="operator">=</span> <span class="built_in">this</span>.invokeSyncImpl(channel, request, timeoutMillis - costTime);</span><br><span class="line">            <span class="comment">//执行rpc钩子的doAfterResponse方法</span></span><br><span class="line">            doAfterRpcHooks(RemotingHelper.parseChannelRemoteAddr(channel), request, response);</span><br><span class="line">            <span class="keyword">return</span> response;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (RemotingSendRequestException e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.warn(<span class="string">&quot;invokeSync: send request exception, so close the channel[&#123;&#125;]&quot;</span>, addr);</span><br><span class="line">            <span class="built_in">this</span>.closeChannel(addr, channel);</span><br><span class="line">            <span class="keyword">throw</span> e;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (RemotingTimeoutException e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="keyword">if</span> (nettyClientConfig.isClientCloseSocketIfTimeout()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="built_in">this</span>.closeChannel(addr, channel);</span><br><span class="line">                log.warn(<span class="string">&quot;invokeSync: close socket because of timeout, &#123;&#125;ms, &#123;&#125;&quot;</span>, timeoutMillis, addr);</span><br><span class="line">            &#125;</span><br><span class="line">            log.warn(<span class="string">&quot;invokeSync: wait response timeout exception, the channel[&#123;&#125;]&quot;</span>, addr);</span><br><span class="line">            <span class="keyword">throw</span> e;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="built_in">this</span>.closeChannel(addr, channel);</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RemotingConnectException</span>(addr);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-1-1-invokeSyncImpl同步调用实现"><a href="#2-1-1-invokeSyncImpl同步调用实现" class="headerlink" title="2.1.1 invokeSyncImpl同步调用实现"></a>2.1.1 invokeSyncImpl同步调用实现</h4><p>invokeSyncImpl方法发起同步调用并获取响应结果。</p>
+<p><strong>1、</strong> 首先创建一个ResponseFuture，然后将本次请求id和respone存入responseTable缓存；<br><strong>2、</strong> 随后执行调用，并添加一个ChannelFutureListener，消息发送完毕会进行回调然后responseFuture通过waitResponse方法阻塞当前线程，直到得到响应结果或者到达超时时间；<br><strong>3、</strong> 当ChannelFutureListener回调的时候会判断如果消息发送成功，那么设置发送成功并返回，否则设置发送失败标志和失败原因，并且设置响应结果为null，唤醒阻塞的responseFuture；<br><strong>4、</strong> responseFuture被唤醒后会进行一系列判断如果响应结果为null，那么会根据不同情况抛出不同的异常，如果响应结果不为null，那么返回响应结果；<br><strong>5、</strong> 最后在finaly块中从responseTable中移除响应结果缓存；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * NettyRemotingAbstract的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 执行同步调用</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> RemotingCommand <span class="title function_">invokeSyncImpl</span><span class="params">(<span class="keyword">final</span> Channel channel, <span class="keyword">final</span> RemotingCommand request,</span></span><br><span class="line"><span class="params">                                      <span class="keyword">final</span> <span class="type">long</span> timeoutMillis)</span></span><br><span class="line">        <span class="keyword">throws</span> InterruptedException, RemotingSendRequestException, RemotingTimeoutException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//获取请求id，通过id可以获取请求结果</span></span><br><span class="line">    <span class="keyword">final</span> <span class="type">int</span> <span class="variable">opaque</span> <span class="operator">=</span> request.getOpaque();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//创建一个Future的map成员ResponseFuture</span></span><br><span class="line">        <span class="keyword">final</span> <span class="type">ResponseFuture</span> <span class="variable">responseFuture</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ResponseFuture</span>(channel, opaque, timeoutMillis, <span class="literal">null</span>, <span class="literal">null</span>);</span><br><span class="line">        <span class="comment">//将请求id和responseFuture存入responseTable缓存中</span></span><br><span class="line">        <span class="built_in">this</span>.responseTable.put(opaque, responseFuture);</span><br><span class="line">        <span class="keyword">final</span> <span class="type">SocketAddress</span> <span class="variable">addr</span> <span class="operator">=</span> channel.remoteAddress();</span><br><span class="line">        <span class="comment">//发送请求，添加一个ChannelFutureListener，消息发送完毕会进行回调</span></span><br><span class="line">        channel.writeAndFlush(request).addListener(<span class="keyword">new</span> <span class="title class_">ChannelFutureListener</span>() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">operationComplete</span><span class="params">(ChannelFuture f)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//如果消息发送成功，那么设置responseFuture发送成功并返回</span></span><br><span class="line">                <span class="keyword">if</span> (f.isSuccess()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    responseFuture.setSendRequestOK(<span class="literal">true</span>);</span><br><span class="line">                    <span class="keyword">return</span>;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    responseFuture.setSendRequestOK(<span class="literal">false</span>);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">//如果发送失败，那么从responseTable移除该缓存</span></span><br><span class="line">                responseTable.remove(opaque);</span><br><span class="line">                <span class="comment">//设置失败原因</span></span><br><span class="line">                responseFuture.setCause(f.cause());</span><br><span class="line">                <span class="comment">//设置响应结果为null，唤醒阻塞的responseFuture</span></span><br><span class="line">                <span class="comment">//其内部调用了countDownLatch.countDown()方法</span></span><br><span class="line">                responseFuture.putResponse(<span class="literal">null</span>);</span><br><span class="line">                log.warn(<span class="string">&quot;send a request command to channel &lt;&quot;</span> + addr + <span class="string">&quot;&gt; failed.&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         *  responseFuture同步阻塞等待直到得到响应结果或者到达超时时间</span></span><br><span class="line"><span class="comment">         * 其内部调用了countDownLatch.await(timeoutMillis, TimeUnit.MILLISECONDS)方法</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="type">RemotingCommand</span> <span class="variable">responseCommand</span> <span class="operator">=</span> responseFuture.waitResponse(timeoutMillis);</span><br><span class="line">        <span class="comment">//如果响应结果为null</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="literal">null</span> == responseCommand) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//如果是发送成功，但是没有响应，表示等待响应超时，那么抛出超时异常</span></span><br><span class="line">            <span class="keyword">if</span> (responseFuture.isSendRequestOK()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RemotingTimeoutException</span>(RemotingHelper.parseSocketAddressAddr(addr), timeoutMillis,</span><br><span class="line">                        responseFuture.getCause());</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//如果是发送失败，抛出发送失败异常</span></span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RemotingSendRequestException</span>(RemotingHelper.parseSocketAddressAddr(addr), responseFuture.getCause());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//否则返回响应结果</span></span><br><span class="line">        <span class="keyword">return</span> responseCommand;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//最后从responseTable中移除响应结果缓存</span></span><br><span class="line">        <span class="built_in">this</span>.responseTable.remove(opaque);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="2-1-1-1-请求的阻塞和唤醒"><a href="#2-1-1-1-请求的阻塞和唤醒" class="headerlink" title="2.1.1.1 请求的阻塞和唤醒"></a>2.1.1.1 请求的阻塞和唤醒</h5><p>从上面的源码可以得知，同步发送消息的请求可能会经历短暂的阻塞状态。responseFuture通过waitResponse方法阻塞当前线程，直到得到响应结果或者到达超时时间。进入该方法，可以发现其阻塞使用的工具其实就是CountDownLatch。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ResponseFuture的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 同步等待响应结果</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> timeoutMillis 超时时间</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> RemotingCommand <span class="title function_">waitResponse</span><span class="params">(<span class="keyword">final</span> <span class="type">long</span> timeoutMillis)</span> <span class="keyword">throws</span> InterruptedException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//使用countDownLatch等待给定的时间</span></span><br><span class="line">    <span class="built_in">this</span>.countDownLatch.await(timeoutMillis, TimeUnit.MILLISECONDS);</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">this</span>.responseCommand;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_43767015/article/details/108035192">CountDownLatch</a><br>也被称为闭锁，它一般用来确保某些活动直到其他活动都完成才继续执行，ResponseFuture中的CountDownLatch的倒计数只有1。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> <span class="type">CountDownLatch</span> <span class="variable">countDownLatch</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">CountDownLatch</span>(<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+
+<p>那么什么时候计数变为0呢，那就是调用putResponse方法的时候，该方法有两个调用点，一个是在ChannelFutureListener中判断请求发送失败的时候，直接设置一个null进去，另一个就是请求正常处理完毕的时候，在processResponseCommand方法中会将执行结果设置进去。</p>
+<p>putResponse方法源码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ResponseFuture的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 存入响应结果并且唤醒等待的线程</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> responseCommand 响应结果</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">putResponse</span><span class="params">(<span class="keyword">final</span> RemotingCommand responseCommand)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//存入结果</span></span><br><span class="line">    <span class="built_in">this</span>.responseCommand = responseCommand;</span><br><span class="line">    <span class="comment">//倒计数减去1，唤醒等待的线程</span></span><br><span class="line">    <span class="built_in">this</span>.countDownLatch.countDown();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>putResponse方法中会调用countDownLatch#countDown方法，此时倒计数为0，此前阻塞的请求线程将会被唤醒。</strong></p>
+<h4 id="2-1-2-processSendResponse处理响应结果"><a href="#2-1-2-processSendResponse处理响应结果" class="headerlink" title="2.1.2 processSendResponse处理响应结果"></a>2.1.2 processSendResponse处理响应结果</h4><p>获得响应之后，调用processSendResponse方法处理响应结果，主要就是进行响应码的对应封装操作，然后对发送正常和异常情况分别进行不同的处理并返回sendResult对象。</p>
+<p>从源码中可以看到，sendResult的构造器中，将会设置客户端生成的uniqMsgId为msgId属性，设置broker生成的MsgId为offsetMsgId属性。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * MQClientAPIImpl的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 处理响应结果</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> SendResult <span class="title function_">processSendResponse</span><span class="params">(</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> String brokerName,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> Message msg,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> RemotingCommand response,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> String addr</span></span><br><span class="line"><span class="params">)</span> <span class="keyword">throws</span> MQBrokerException, RemotingCommandException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    SendStatus sendStatus;</span><br><span class="line">    <span class="comment">//根据responseCode设置对应的SendStatus</span></span><br><span class="line">    <span class="keyword">switch</span> (response.getCode()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">case</span> ResponseCode.FLUSH_DISK_TIMEOUT: &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            sendStatus = SendStatus.FLUSH_DISK_TIMEOUT;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">case</span> ResponseCode.FLUSH_SLAVE_TIMEOUT: &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            sendStatus = SendStatus.FLUSH_SLAVE_TIMEOUT;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">case</span> ResponseCode.SLAVE_NOT_AVAILABLE: &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            sendStatus = SendStatus.SLAVE_NOT_AVAILABLE;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">case</span> ResponseCode.SUCCESS: &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            sendStatus = SendStatus.SEND_OK;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">default</span>: &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">MQBrokerException</span>(response.getCode(), response.getRemark(), addr);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//获取响应头</span></span><br><span class="line">    <span class="type">SendMessageResponseHeader</span> <span class="variable">responseHeader</span> <span class="operator">=</span></span><br><span class="line">            (SendMessageResponseHeader) response.decodeCommandCustomHeader(SendMessageResponseHeader.class);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//If namespace not null , reset Topic without namespace.</span></span><br><span class="line">    <span class="comment">//如果命名空间不为null，重置不带命名空间的topic</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">topic</span> <span class="operator">=</span> msg.getTopic();</span><br><span class="line">    <span class="keyword">if</span> (StringUtils.isNotEmpty(<span class="built_in">this</span>.clientConfig.getNamespace())) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        topic = NamespaceUtil.withoutNamespace(topic, <span class="built_in">this</span>.clientConfig.getNamespace());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//新建一个MessageQueue，设置属性</span></span><br><span class="line">    <span class="type">MessageQueue</span> <span class="variable">messageQueue</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">MessageQueue</span>(topic, brokerName, responseHeader.getQueueId());</span><br><span class="line">    <span class="comment">//获取客户端生成的uniqId</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">uniqMsgId</span> <span class="operator">=</span> MessageClientIDSetter.getUniqID(msg);</span><br><span class="line">    <span class="keyword">if</span> (msg <span class="keyword">instanceof</span> MessageBatch) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="type">StringBuilder</span> <span class="variable">sb</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">StringBuilder</span>();</span><br><span class="line">        <span class="keyword">for</span> (Message message : (MessageBatch) msg) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            sb.append(sb.length() == <span class="number">0</span> ? <span class="string">&quot;&quot;</span> : <span class="string">&quot;,&quot;</span>).append(MessageClientIDSetter.getUniqID(message));</span><br><span class="line">        &#125;</span><br><span class="line">        uniqMsgId = sb.toString();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//新建SendResult，即最终返回的对象，设置客户端生成的uniqMsgId为msgId属性，设置broker生成的MsgId为offsetMsgId属性</span></span><br><span class="line">    <span class="type">SendResult</span> <span class="variable">sendResult</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SendResult</span>(sendStatus,</span><br><span class="line">            uniqMsgId,</span><br><span class="line">            responseHeader.getMsgId(), messageQueue, responseHeader.getQueueOffset());</span><br><span class="line">    <span class="comment">//设置事务id</span></span><br><span class="line">    sendResult.setTransactionId(responseHeader.getTransactionId());</span><br><span class="line">    <span class="comment">//设置regionId和traceOn</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">regionId</span> <span class="operator">=</span> response.getExtFields().get(MessageConst.PROPERTY_MSG_REGION);</span><br><span class="line">    <span class="type">String</span> <span class="variable">traceOn</span> <span class="operator">=</span> response.getExtFields().get(MessageConst.PROPERTY_TRACE_SWITCH);</span><br><span class="line">    <span class="keyword">if</span> (regionId == <span class="literal">null</span> || regionId.isEmpty()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        regionId = MixAll.DEFAULT_TRACE_REGION_ID;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (traceOn != <span class="literal">null</span> &amp;&amp; traceOn.equals(<span class="string">&quot;false&quot;</span>)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        sendResult.setTraceOn(<span class="literal">false</span>);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        sendResult.setTraceOn(<span class="literal">true</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    sendResult.setRegionId(regionId);</span><br><span class="line">    <span class="keyword">return</span> sendResult;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="3-sendMessageAsync异步发送消息"><a href="#3-sendMessageAsync异步发送消息" class="headerlink" title="3 sendMessageAsync异步发送消息"></a>3 sendMessageAsync异步发送消息</h2><p>**该模式下，调用该方法之后不接收返回值，直接返回null，执行完毕之后会自动执行回调函数operationComplete。异步发送同样支持重试。<br>**</p>
+<p>调用异步发送方法传递的<strong>SendCallback</strong><br>对象并不会被直接调用，而是会被封装为另一个内部回调对象InvokeCallback，当异步请求获得响应结果，或者超时时间到了之后，会回调它的operationComplete方法。</p>
+<p>该方法中会调用<strong>processSendResponse</strong><br>方法解析响应结果为SendResult，如果是响应成功的状态，那么接着执行sendCallback的onSuccess方法，这里的sendCallback就是发送消息时传入的回调函数。</p>
+<p>随后会调用<strong>updateFaultItem</strong>更新本地更新本地错误表缓存数据，用于延迟时间的故障转移的功能。</p>
+<p>**如果抛出了异常，或者没有获取到broker的返回值，那么调用onExceptionImpl方法处理异常，该方法中会继续重试异步调用，这就是异步发送消息重试的逻辑。<br>**</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * MQClientAPIImpl的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 异步发送消息的方法，包含重试的逻辑</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> retryTimesWhenSendFailed 异步发送失败重试次数</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> times                    重试计数器</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">sendMessageAsync</span><span class="params">(</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> String addr,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> String brokerName,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> Message msg,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> <span class="type">long</span> timeoutMillis,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> RemotingCommand request,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> SendCallback sendCallback,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> TopicPublishInfo topicPublishInfo,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> MQClientInstance instance,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> <span class="type">int</span> retryTimesWhenSendFailed,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> AtomicInteger times,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> SendMessageContext context,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> DefaultMQProducerImpl producer</span></span><br><span class="line"><span class="params">)</span> <span class="keyword">throws</span> InterruptedException, RemotingException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//起始时间</span></span><br><span class="line">    <span class="keyword">final</span> <span class="type">long</span> <span class="variable">beginStartTime</span> <span class="operator">=</span> System.currentTimeMillis();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 发送异步消息，设置一个InvokeCallback回调对象</span></span><br><span class="line"><span class="comment">         *</span></span><br><span class="line"><span class="comment">         * InvokeCallback#operationComplete方法将会在得到结果之后进行回调</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="built_in">this</span>.remotingClient.invokeAsync(addr, request, timeoutMillis, <span class="keyword">new</span> <span class="title class_">InvokeCallback</span>() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">/**</span></span><br><span class="line"><span class="comment">             * 异步执行的回调方法</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">operationComplete</span><span class="params">(ResponseFuture responseFuture)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//花费的时间</span></span><br><span class="line">                <span class="type">long</span> <span class="variable">cost</span> <span class="operator">=</span> System.currentTimeMillis() - beginStartTime;</span><br><span class="line">                <span class="type">RemotingCommand</span> <span class="variable">response</span> <span class="operator">=</span> responseFuture.getResponseCommand();</span><br><span class="line">                <span class="comment">//如果没有设置回调函数</span></span><br><span class="line">                <span class="keyword">if</span> (<span class="literal">null</span> == sendCallback &amp;&amp; response != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line"></span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        <span class="comment">//调用processSendResponse方法处理响应结果</span></span><br><span class="line">                        <span class="type">SendResult</span> <span class="variable">sendResult</span> <span class="operator">=</span> MQClientAPIImpl.<span class="built_in">this</span>.processSendResponse(brokerName, msg, response, addr);</span><br><span class="line">                        <span class="keyword">if</span> (context != <span class="literal">null</span> &amp;&amp; sendResult != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                            context.setSendResult(sendResult);</span><br><span class="line">                            context.getProducer().executeSendMessageHookAfter(context);</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="comment">//更新本地错误表缓存数据，用于延迟时间的故障转移的功能</span></span><br><span class="line">                    producer.updateFaultItem(brokerName, System.currentTimeMillis() - responseFuture.getBeginTimestamp(), <span class="literal">false</span>);</span><br><span class="line">                    <span class="keyword">return</span>;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">//如果存在响应结果</span></span><br><span class="line">                <span class="keyword">if</span> (response != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        <span class="comment">//调用processSendResponse方法处理响应结果</span></span><br><span class="line">                        <span class="type">SendResult</span> <span class="variable">sendResult</span> <span class="operator">=</span> MQClientAPIImpl.<span class="built_in">this</span>.processSendResponse(brokerName, msg, response, addr);</span><br><span class="line">                        <span class="keyword">assert</span> sendResult != <span class="literal">null</span>;</span><br><span class="line">                        <span class="keyword">if</span> (context != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                            context.setSendResult(sendResult);</span><br><span class="line">                            <span class="comment">//执行消息发送之后的钩子函数，即SendMessageHook#sendMessageAfter方法</span></span><br><span class="line">                            context.getProducer().executeSendMessageHookAfter(context);</span><br><span class="line">                        &#125;</span><br><span class="line"></span><br><span class="line">                        <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                            <span class="comment">//响应成功时调用，执行sendCallback的onSuccess方法</span></span><br><span class="line">                            <span class="comment">//这里的sendCallback就是发送消息时传入的回调函数</span></span><br><span class="line">                            sendCallback.onSuccess(sendResult);</span><br><span class="line">                        &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        &#125;</span><br><span class="line">                        <span class="comment">//更新本地错误表缓存数据，用于延迟时间的故障转移的功能</span></span><br><span class="line">                        producer.updateFaultItem(brokerName, System.currentTimeMillis() - responseFuture.getBeginTimestamp(), <span class="literal">false</span>);</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        producer.updateFaultItem(brokerName, System.currentTimeMillis() - responseFuture.getBeginTimestamp(), <span class="literal">true</span>);</span><br><span class="line">                        <span class="comment">//异常处理，不需要重试</span></span><br><span class="line">                        onExceptionImpl(brokerName, msg, timeoutMillis - cost, request, sendCallback, topicPublishInfo, instance,</span><br><span class="line">                                retryTimesWhenSendFailed, times, e, context, <span class="literal">false</span>, producer);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//更新本地错误表缓存数据，用于延迟时间的故障转移的功能</span></span><br><span class="line">                    producer.updateFaultItem(brokerName, System.currentTimeMillis() - responseFuture.getBeginTimestamp(), <span class="literal">true</span>);</span><br><span class="line">                    <span class="comment">//异常处理，需要重试</span></span><br><span class="line">                    <span class="comment">//发送失败</span></span><br><span class="line">                    <span class="keyword">if</span> (!responseFuture.isSendRequestOK()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        <span class="type">MQClientException</span> <span class="variable">ex</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">MQClientException</span>(<span class="string">&quot;send request failed&quot;</span>, responseFuture.getCause());</span><br><span class="line">                        onExceptionImpl(brokerName, msg, timeoutMillis - cost, request, sendCallback, topicPublishInfo, instance,</span><br><span class="line">                                retryTimesWhenSendFailed, times, ex, context, <span class="literal">true</span>, producer);</span><br><span class="line">                    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (responseFuture.isTimeout()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        <span class="comment">//超时</span></span><br><span class="line">                        <span class="type">MQClientException</span> <span class="variable">ex</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">MQClientException</span>(<span class="string">&quot;wait response timeout &quot;</span> + responseFuture.getTimeoutMillis() + <span class="string">&quot;ms&quot;</span>,</span><br><span class="line">                                responseFuture.getCause());</span><br><span class="line">                        onExceptionImpl(brokerName, msg, timeoutMillis - cost, request, sendCallback, topicPublishInfo, instance,</span><br><span class="line">                                retryTimesWhenSendFailed, times, ex, context, <span class="literal">true</span>, producer);</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        <span class="type">MQClientException</span> <span class="variable">ex</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">MQClientException</span>(<span class="string">&quot;unknow reseaon&quot;</span>, responseFuture.getCause());</span><br><span class="line">                        onExceptionImpl(brokerName, msg, timeoutMillis - cost, request, sendCallback, topicPublishInfo, instance,</span><br><span class="line">                                retryTimesWhenSendFailed, times, ex, context, <span class="literal">true</span>, producer);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception ex) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="type">long</span> <span class="variable">cost</span> <span class="operator">=</span> System.currentTimeMillis() - beginStartTime;</span><br><span class="line">        <span class="comment">//更新本地错误表缓存数据，用于延迟时间的故障转移的功能</span></span><br><span class="line">        producer.updateFaultItem(brokerName, cost, <span class="literal">true</span>);</span><br><span class="line">        <span class="comment">//异常处理</span></span><br><span class="line">        onExceptionImpl(brokerName, msg, timeoutMillis - cost, request, sendCallback, topicPublishInfo, instance,</span><br><span class="line">                retryTimesWhenSendFailed, times, ex, context, <span class="literal">true</span>, producer);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-1-invokeAsync异步调用"><a href="#3-1-invokeAsync异步调用" class="headerlink" title="3.1 invokeAsync异步调用"></a>3.1 invokeAsync异步调用</h3><p>该方法执行异步调用。首先获取或者创建生产者与broker通道，即连接。然后在发送消息前后执行rpcHook钩子方法，即RPCHook#doBeforeRequest方法，最后通过调用invokeAsyncImpl方法发起异步调用。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * NettyRemotingClient的方法</span></span><br><span class="line"><span class="comment"> * 异步发送消息</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">invokeAsync</span><span class="params">(String addr, RemotingCommand request, <span class="type">long</span> timeoutMillis, InvokeCallback invokeCallback)</span></span><br><span class="line">        <span class="keyword">throws</span> InterruptedException, RemotingConnectException, RemotingTooMuchRequestException, RemotingTimeoutException,</span><br><span class="line">        RemotingSendRequestException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//开始时间</span></span><br><span class="line">    <span class="type">long</span> <span class="variable">beginStartTime</span> <span class="operator">=</span> System.currentTimeMillis();</span><br><span class="line">    <span class="comment">//获取或创建一个与broker的连接</span></span><br><span class="line">    <span class="keyword">final</span> <span class="type">Channel</span> <span class="variable">channel</span> <span class="operator">=</span> <span class="built_in">this</span>.getAndCreateChannel(addr);</span><br><span class="line">    <span class="keyword">if</span> (channel != <span class="literal">null</span> &amp;&amp; channel.isActive()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//执行rpc钩子的doBeforeRequest方法</span></span><br><span class="line">            doBeforeRpcHooks(addr, request);</span><br><span class="line">            <span class="comment">//如果超时，则直接抛出异常，不再执行</span></span><br><span class="line">            <span class="type">long</span> <span class="variable">costTime</span> <span class="operator">=</span> System.currentTimeMillis() - beginStartTime;</span><br><span class="line">            <span class="keyword">if</span> (timeoutMillis &lt; costTime) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RemotingTooMuchRequestException</span>(<span class="string">&quot;invokeAsync call the addr[&quot;</span> + addr + <span class="string">&quot;] timeout&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//执行异步远程调用</span></span><br><span class="line">            <span class="built_in">this</span>.invokeAsyncImpl(channel, request, timeoutMillis - costTime, invokeCallback);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (RemotingSendRequestException e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.warn(<span class="string">&quot;invokeAsync: send request exception, so close the channel[&#123;&#125;]&quot;</span>, addr);</span><br><span class="line">            <span class="built_in">this</span>.closeChannel(addr, channel);</span><br><span class="line">            <span class="keyword">throw</span> e;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="built_in">this</span>.closeChannel(addr, channel);</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RemotingConnectException</span>(addr);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="3-1-1-invokeAsyncImpl异步调用实现"><a href="#3-1-1-invokeAsyncImpl异步调用实现" class="headerlink" title="3.1.1 invokeAsyncImpl异步调用实现"></a>3.1.1 invokeAsyncImpl异步调用实现</h4><p>invokeAsyncImpl方法发起异步调用。该方法和单向发送的方法一样，都会基于<a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_43767015/article/details/108079508">Semaphore信号量</a><br>尝试获取异步发送的资源，通过信号量控制异步消息并发发送的消息数，从而保护系统内存占用。客户端单向发送的Semaphore信号量默认为65535，即异步消息最大并发为65535，可通过配置”<br>com.rocketmq.remoting.clientAsyncSemaphoreValue”系统变量更改。</p>
+<p>在获取到了信号量资源之后。构建SemaphoreReleaseOnlyOnce对象，保证信号量本次只被释放一次，防止并发操作引起线程安全问题，然后就通过channel发送请求即可。</p>
+<p>然后创建一个ResponseFuture，设置超时时间、回调函数。然后将本次请求id和respone存入responseTable缓存。</p>
+<p>随后执行调用，并添加一个ChannelFutureListener，消息发送完毕会进行回调。当ChannelFutureListener回调的时候会判断如果消息发送成功，那么设置发送成功并返回，否则如果发送失败了，则移除缓存、设置false、并且执行InvokeCallback#operationComplete回调。</p>
+<p>如果发送成功了，那么InvokeCallback#operationComplete回调会执行吗，当让会了，当请求正常处理完毕的时候，在processResponseCommand方法中会将执行InvokeCallback#operationComplete回调。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * NettyRemotingAbstract的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 异步调用实现</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">invokeAsyncImpl</span><span class="params">(<span class="keyword">final</span> Channel channel, <span class="keyword">final</span> RemotingCommand request, <span class="keyword">final</span> <span class="type">long</span> timeoutMillis,</span></span><br><span class="line"><span class="params">                            <span class="keyword">final</span> InvokeCallback invokeCallback)</span></span><br><span class="line">        <span class="keyword">throws</span> InterruptedException, RemotingTooMuchRequestException, RemotingTimeoutException, RemotingSendRequestException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//起始时间</span></span><br><span class="line">    <span class="type">long</span> <span class="variable">beginStartTime</span> <span class="operator">=</span> System.currentTimeMillis();</span><br><span class="line">    <span class="comment">//获取请求id，通过id可以获取请求结果</span></span><br><span class="line">    <span class="keyword">final</span> <span class="type">int</span> <span class="variable">opaque</span> <span class="operator">=</span> request.getOpaque();</span><br><span class="line">    <span class="comment">//基于Semaphore信号量尝试获取异步发送的资源，通过信号量控制异步消息并发发送的消息数，从而保护系统内存占用。</span></span><br><span class="line">    <span class="comment">//客户端异步发送的Semaphore信号量默认为65535，可通过配置&quot;com.rocketmq.remoting.clientOnewaySemaphoreValue&quot;系统变量更改</span></span><br><span class="line">    <span class="type">boolean</span> <span class="variable">acquired</span> <span class="operator">=</span> <span class="built_in">this</span>.semaphoreAsync.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS);</span><br><span class="line">    <span class="comment">//如果获取到了信号量资源</span></span><br><span class="line">    <span class="keyword">if</span> (acquired) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//构建SemaphoreReleaseOnlyOnce对象，保证信号量本次只被释放一次，防止并发操作引起线程安全问题</span></span><br><span class="line">        <span class="keyword">final</span> <span class="type">SemaphoreReleaseOnlyOnce</span> <span class="variable">once</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SemaphoreReleaseOnlyOnce</span>(<span class="built_in">this</span>.semaphoreAsync);</span><br><span class="line">        <span class="comment">//如果超时，则不发送</span></span><br><span class="line">        <span class="type">long</span> <span class="variable">costTime</span> <span class="operator">=</span> System.currentTimeMillis() - beginStartTime;</span><br><span class="line">        <span class="keyword">if</span> (timeoutMillis &lt; costTime) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            once.release();</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RemotingTimeoutException</span>(<span class="string">&quot;invokeAsyncImpl call timeout&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//创建一个Future的map成员ResponseFuture，设置超时时间、回调函数</span></span><br><span class="line">        <span class="keyword">final</span> <span class="type">ResponseFuture</span> <span class="variable">responseFuture</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ResponseFuture</span>(channel, opaque, timeoutMillis - costTime, invokeCallback, once);</span><br><span class="line">        <span class="comment">//将请求id和responseFuture存入responseTable缓存中</span></span><br><span class="line">        <span class="built_in">this</span>.responseTable.put(opaque, responseFuture);</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//发送请求，添加一个ChannelFutureListener，消息发送完毕会进行回调</span></span><br><span class="line">            channel.writeAndFlush(request).addListener(<span class="keyword">new</span> <span class="title class_">ChannelFutureListener</span>() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">operationComplete</span><span class="params">(ChannelFuture f)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//如果消息发送成功，那么设置responseFuture发送成功并返回</span></span><br><span class="line">                    <span class="keyword">if</span> (f.isSuccess()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        responseFuture.setSendRequestOK(<span class="literal">true</span>);</span><br><span class="line">                        <span class="keyword">return</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="comment">/*</span></span><br><span class="line"><span class="comment">                     * 如果发送失败，则移除缓存、设置false、并且执行InvokeCallback#operationComplete回调</span></span><br><span class="line"><span class="comment">                     */</span></span><br><span class="line">                    requestFail(opaque);</span><br><span class="line">                    log.warn(<span class="string">&quot;send a request command to channel &lt;&#123;&#125;&gt; failed.&quot;</span>, RemotingHelper.parseChannelRemoteAddr(channel));</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//释放信号量</span></span><br><span class="line">            responseFuture.release();</span><br><span class="line">            log.warn(<span class="string">&quot;send a request command to channel &lt;&quot;</span> + RemotingHelper.parseChannelRemoteAddr(channel) + <span class="string">&quot;&gt; Exception&quot;</span>, e);</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RemotingSendRequestException</span>(RemotingHelper.parseChannelRemoteAddr(channel), e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//如果没有获取到信号量资源，那么直接抛出异常即可，并且不再发送</span></span><br><span class="line">        <span class="keyword">if</span> (timeoutMillis &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RemotingTooMuchRequestException</span>(<span class="string">&quot;invokeAsyncImpl invoke too fast&quot;</span>);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="type">String</span> <span class="variable">info</span> <span class="operator">=</span></span><br><span class="line">                    String.format(<span class="string">&quot;invokeAsyncImpl tryAcquire semaphore timeout, %dms, waiting thread nums: %d semaphoreAsyncValue: %d&quot;</span>,</span><br><span class="line">                            timeoutMillis,</span><br><span class="line">                            <span class="built_in">this</span>.semaphoreAsync.getQueueLength(),</span><br><span class="line">                            <span class="built_in">this</span>.semaphoreAsync.availablePermits()</span><br><span class="line">                    );</span><br><span class="line">            log.warn(info);</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RemotingTimeoutException</span>(info);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-2-onExceptionImpl异常处理"><a href="#3-2-onExceptionImpl异常处理" class="headerlink" title="3.2 onExceptionImpl异常处理"></a>3.2 onExceptionImpl异常处理</h3><p>异步调用如果发生了异常，例如broker返回了错入的响应，或者没有获得响应，那会会执行onExceptionImpl这个异常处理方法。</p>
+<p>可以看到，所谓的重试实际上就是重复的调用sendMessageAsync方法。重试之前，首先会判断本次重试的次数是否大于重试总次数，参数为retryTimesWhenSendFailed，默认2次。如果超过了最大重试次数，那么便不会重试，而是执行<br><strong>sendCallback#onException</strong>方法。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * MQClientAPIImpl的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 异步发送消息的异常处理的方法，包含重试的逻辑</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> e          抛出的异常</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> timesTotal 异步发送失败重试次数</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> curTimes   重试计数器</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> needRetry  是否需要重试</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">onExceptionImpl</span><span class="params">(<span class="keyword">final</span> String brokerName,</span></span><br><span class="line"><span class="params">                             <span class="keyword">final</span> Message msg,</span></span><br><span class="line"><span class="params">                             <span class="keyword">final</span> <span class="type">long</span> timeoutMillis,</span></span><br><span class="line"><span class="params">                             <span class="keyword">final</span> RemotingCommand request,</span></span><br><span class="line"><span class="params">                             <span class="keyword">final</span> SendCallback sendCallback,</span></span><br><span class="line"><span class="params">                             <span class="keyword">final</span> TopicPublishInfo topicPublishInfo,</span></span><br><span class="line"><span class="params">                             <span class="keyword">final</span> MQClientInstance instance,</span></span><br><span class="line"><span class="params">                             <span class="keyword">final</span> <span class="type">int</span> timesTotal,</span></span><br><span class="line"><span class="params">                             <span class="keyword">final</span> AtomicInteger curTimes,</span></span><br><span class="line"><span class="params">                             <span class="keyword">final</span> Exception e,</span></span><br><span class="line"><span class="params">                             <span class="keyword">final</span> SendMessageContext context,</span></span><br><span class="line"><span class="params">                             <span class="keyword">final</span> <span class="type">boolean</span> needRetry,</span></span><br><span class="line"><span class="params">                             <span class="keyword">final</span> DefaultMQProducerImpl producer</span></span><br><span class="line"><span class="params">)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//重试次数加1并获取</span></span><br><span class="line">    <span class="type">int</span> <span class="variable">tmp</span> <span class="operator">=</span> curTimes.incrementAndGet();</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 如果需要重试，并且本次重试次数小于等于总次数</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">if</span> (needRetry &amp;&amp; tmp &lt;= timesTotal) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//保存brokerName，异步重试将会发送到相同的broker</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">retryBrokerName</span> <span class="operator">=</span> brokerName;<span class="comment">//by default, it will send to the same broker</span></span><br><span class="line">        <span class="keyword">if</span> (topicPublishInfo != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">      <span class="comment">//select one message queue accordingly, in order to determine which broker to send</span></span><br><span class="line">            <span class="comment">//选择一个消息队列</span></span><br><span class="line">            <span class="type">MessageQueue</span> <span class="variable">mqChosen</span> <span class="operator">=</span> producer.selectOneMessageQueue(topicPublishInfo, brokerName);</span><br><span class="line">            retryBrokerName = mqChosen.getBrokerName();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">String</span> <span class="variable">addr</span> <span class="operator">=</span> instance.findBrokerAddressInPublish(retryBrokerName);</span><br><span class="line">        log.warn(String.format(<span class="string">&quot;async send msg by retry &#123;&#125; times. topic=&#123;&#125;, brokerAddr=&#123;&#125;, brokerName=&#123;&#125;&quot;</span>, tmp, msg.getTopic(), addr,</span><br><span class="line">                retryBrokerName), e);</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//设置请求id，通过id可以获取请求结果</span></span><br><span class="line">            request.setOpaque(RemotingCommand.createNewRequestId());</span><br><span class="line">            <span class="comment">//调用sendMessageAsync再次发送异步消息</span></span><br><span class="line">            sendMessageAsync(addr, retryBrokerName, msg, timeoutMillis, request, sendCallback, topicPublishInfo, instance,</span><br><span class="line">                    timesTotal, curTimes, context, producer);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e1) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//不再重试，设置异常</span></span><br><span class="line">            onExceptionImpl(retryBrokerName, msg, timeoutMillis, request, sendCallback, topicPublishInfo, instance, timesTotal, curTimes, e1,</span><br><span class="line">                    context, <span class="literal">false</span>, producer);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (RemotingTooMuchRequestException e1) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//不再重试，设置异常</span></span><br><span class="line">            onExceptionImpl(retryBrokerName, msg, timeoutMillis, request, sendCallback, topicPublishInfo, instance, timesTotal, curTimes, e1,</span><br><span class="line">                    context, <span class="literal">false</span>, producer);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (RemotingException e1) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//更新异常表</span></span><br><span class="line">            producer.updateFaultItem(brokerName, <span class="number">3000</span>, <span class="literal">true</span>);</span><br><span class="line">            <span class="comment">//继续重试</span></span><br><span class="line">            onExceptionImpl(retryBrokerName, msg, timeoutMillis, request, sendCallback, topicPublishInfo, instance, timesTotal, curTimes, e1,</span><br><span class="line">                    context, <span class="literal">true</span>, producer);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//如果本次重试次数大于总次数</span></span><br><span class="line">        <span class="keyword">if</span> (context != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            context.setException(e);</span><br><span class="line">            context.getProducer().executeSendMessageHookAfter(context);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//最后执行sendCallback的onException方法</span></span><br><span class="line">            sendCallback.onException(e);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception ignored) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="4-NettyClientHandler处理服务端消息"><a href="#4-NettyClientHandler处理服务端消息" class="headerlink" title="4 NettyClientHandler处理服务端消息"></a>4 NettyClientHandler处理服务端消息</h2><p>RocketMQ在启动的时候，在MQClientInstance的start方法中，会创建一个netty客户端，然后会添加一个处理器NettyClientHandler。</p>
+<p>这个NettyClientHandler用于处理RemotingCommand消息，即来处理自服务端的请求消息，或者客户端发出去的请求消息后，服务的返回来的响应消息。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * NettyRemotingClient的内部类</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 处理来自服务端的RemotingCommand消息</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">NettyClientHandler</span> <span class="keyword">extends</span> <span class="title class_">SimpleChannelInboundHandler</span>&lt;RemotingCommand&gt; &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 处理来自服务端的RemotingCommand消息</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">void</span> <span class="title function_">channelRead0</span><span class="params">(ChannelHandlerContext ctx, RemotingCommand msg)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        processMessageReceived(ctx, msg);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>NettyClientHandler通过processMessageReceived方法处理RemotingCommand消息。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * NettyRemotingAbstract的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 处理RemotingCommand命令消息，传入的远程处理命令可能是：</span></span><br><span class="line"><span class="comment"> * 1、来自远程对等组件的查询请求</span></span><br><span class="line"><span class="comment"> * 2、对该参与者之前发出的请求的响应</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">processMessageReceived</span><span class="params">(ChannelHandlerContext ctx, RemotingCommand msg)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="keyword">final</span> <span class="type">RemotingCommand</span> <span class="variable">cmd</span> <span class="operator">=</span> msg;</span><br><span class="line">    <span class="keyword">if</span> (cmd != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">switch</span> (cmd.getType()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//处理来源服务端的请求request</span></span><br><span class="line">            <span class="keyword">case</span> REQUEST_COMMAND:</span><br><span class="line">                processRequestCommand(ctx, cmd);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="comment">//处理来源服务端的响应response</span></span><br><span class="line">            <span class="keyword">case</span> RESPONSE_COMMAND:</span><br><span class="line">                <span class="comment">//客户端发送消息之后服务端的响应会被processResponseCommand方法处理</span></span><br><span class="line">                processResponseCommand(ctx, cmd);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">default</span>:</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里我们主要看<strong>processResponseCommand</strong>方法，即客户端发送消息之后服务端的响应会被<strong>processResponseCommand</strong>方法处理。</p>
+<h3 id="4-1-processResponseCommand处理响应"><a href="#4-1-processResponseCommand处理响应" class="headerlink" title="4.1 processResponseCommand处理响应"></a>4.1 processResponseCommand处理响应</h3><p>客户端发送消息之后服务端的响应会被processResponseCommand方法处理。消息发送请求的响应处理也是该方法完成的。其大概流程为：</p>
+<p><strong>1、</strong> 先根据请求id找到之前放到responseTable的ResponseFuture，然后从responseTable中移除ResponseFuture缓存；<br><strong>2、</strong> 判断如果存在回调函数，即异步请求，那么调用executeInvokeCallback方法，该方法会执行回调函数的方法；<br><strong>3、</strong> 如果没有回调函数，则调用putResponse方法该方法将响应数据设置到responseCommand，然后调用countDownLatch.countDown，即倒计数减去1，唤醒等待的线程；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * NettyRemotingAbstract的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 客户端发送消息之后服务端的响应会被processResponseCommand方法处理</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">processResponseCommand</span><span class="params">(ChannelHandlerContext ctx, RemotingCommand cmd)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//获取请求id，通过id可以获取请求结果</span></span><br><span class="line">    <span class="keyword">final</span> <span class="type">int</span> <span class="variable">opaque</span> <span class="operator">=</span> cmd.getOpaque();</span><br><span class="line">    <span class="comment">//根据请求标识找到之前放到responseTable的ResponseFuture</span></span><br><span class="line">    <span class="keyword">final</span> <span class="type">ResponseFuture</span> <span class="variable">responseFuture</span> <span class="operator">=</span> responseTable.get(opaque);</span><br><span class="line">    <span class="keyword">if</span> (responseFuture != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        responseFuture.setResponseCommand(cmd);</span><br><span class="line">        <span class="comment">//从responseTable中移除该响应</span></span><br><span class="line">        responseTable.remove(opaque);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (responseFuture.getInvokeCallback() != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//如果存在回调函数，即异步请求</span></span><br><span class="line">            <span class="comment">//那么调用回调函数的方法</span></span><br><span class="line">            executeInvokeCallback(responseFuture);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//如果时同步请求，则调用putResponse方法</span></span><br><span class="line">            <span class="comment">//该方法将响应数据设置到responseCommand，然后调用countDownLatch.countDown，即倒计数减去1，唤醒等待的线程</span></span><br><span class="line">            responseFuture.putResponse(cmd);</span><br><span class="line">            responseFuture.release();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        log.warn(<span class="string">&quot;receive response, but not matched any request, &quot;</span> + RemotingHelper.parseChannelRemoteAddr(ctx.channel()));</span><br><span class="line">        log.warn(cmd.toString());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="4-1-1-executeInvokeCallback执行回调函数"><a href="#4-1-1-executeInvokeCallback执行回调函数" class="headerlink" title="4.1.1 executeInvokeCallback执行回调函数"></a>4.1.1 executeInvokeCallback执行回调函数</h4><p>该方法主要是在异步请求的时候被调用，例如之前的异步发送消息，之前我们知道，异步请求发送的时候，会同时指定一个回调函数。而当前获得来自服务端的响应之后，就会调用了该回调函数。</p>
+<p>该方法尝试在回调执行器中执行回调操作，如果回调执行器为null，则在当前线程中执行回调。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * NettyRemotingAbstract的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 在回调执行器中执行回调操作，如果回调执行器为null，则在当前线程中执行回调</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">executeInvokeCallback</span><span class="params">(<span class="keyword">final</span> ResponseFuture responseFuture)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="type">boolean</span> <span class="variable">runInThisThread</span> <span class="operator">=</span> <span class="literal">false</span>;</span><br><span class="line">    <span class="comment">//获取回调执行器，如果没有设置回调执行器callbackExecutor（默认没有），那么使用publicExecutor</span></span><br><span class="line">    <span class="type">ExecutorService</span> <span class="variable">executor</span> <span class="operator">=</span> <span class="built_in">this</span>.getCallbackExecutor();</span><br><span class="line">    <span class="keyword">if</span> (executor != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            executor.submit(<span class="keyword">new</span> <span class="title class_">Runnable</span>() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        <span class="comment">//通过线程池异步的执行回调操作</span></span><br><span class="line">                        responseFuture.executeInvokeCallback();</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        log.warn(<span class="string">&quot;execute callback in executor exception, and callback throw&quot;</span>, e);</span><br><span class="line">                    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        responseFuture.release();</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            runInThisThread = <span class="literal">true</span>;</span><br><span class="line">            log.warn(<span class="string">&quot;execute callback in executor exception, maybe executor busy&quot;</span>, e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        runInThisThread = <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//在本线程中执行回调操作</span></span><br><span class="line">    <span class="keyword">if</span> (runInThisThread) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            responseFuture.executeInvokeCallback();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.warn(<span class="string">&quot;executeInvokeCallback Exception&quot;</span>, e);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            responseFuture.release();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="4-1-1-1-executeInvokeCallback指定回调"><a href="#4-1-1-1-executeInvokeCallback指定回调" class="headerlink" title="4.1.1.1 executeInvokeCallback指定回调"></a>4.1.1.1 executeInvokeCallback指定回调</h5><p>该方法将会调用<strong>invokeCallback.operationComplete</strong>回调方法，这个方法我们之前在异步发送请求的时候就讲过了。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ResponseFuture的方法</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">executeInvokeCallback</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="keyword">if</span> (invokeCallback != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//通过cas保证只允许一次调用</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="built_in">this</span>.executeCallbackOnlyOnce.compareAndSet(<span class="literal">false</span>, <span class="literal">true</span>)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//执行回调器的回调方法operationComplete</span></span><br><span class="line">            invokeCallback.operationComplete(<span class="built_in">this</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="4-1-2-putResponse存入响应"><a href="#4-1-2-putResponse存入响应" class="headerlink" title="4.1.2 putResponse存入响应"></a>4.1.2 putResponse存入响应</h4><p>该方法主要是在同步请求的时候被调用，例如之前的同步发送消息，之前我们知道，同步请求发送之后，请求线程会阻塞。而当前获得来自服务端的响应之后，就会调用了该方法。</p>
+<p>该方法将响应数据设置到<strong>responseCommand</strong>，然后调用<strong>countDownLatch.countDown</strong>，即倒计数减去1，唤醒等待的线程。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ResponseFuture的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 存入响应结果并且唤醒等待的线程</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> responseCommand 响应结果</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">putResponse</span><span class="params">(<span class="keyword">final</span> RemotingCommand responseCommand)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//存入结果</span></span><br><span class="line">    <span class="built_in">this</span>.responseCommand = responseCommand;</span><br><span class="line">    <span class="comment">//倒计数减去1，唤醒等待的线程</span></span><br><span class="line">    <span class="built_in">this</span>.countDownLatch.countDown();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="5-总结"><a href="#5-总结" class="headerlink" title="5 总结"></a>5 总结</h2><p>本次我们讲解了重要的发送消息的内部方法<strong>MQClientAPIImpl#sendMessage</strong>的源码，该方法内部又会根据发送模式执行不同的发送逻辑。<br>*<br>*单向发送模式调用RemotingClient#invokeOneway方法；异步发送模式调用MQClientAPIImpl#sendMessageAsync方法；同步发送模式调用MQClientAPIImpl#sendMessageSync方法。在异步和同步模式发送方法的调用前还会再检查是否超时，如果超时则不再调用。<br>**</p>
+<p><strong>同步发送模式内部采用CountDownLatch工具实现线程的阻塞和唤醒</strong><br>，当发送了同步消息之后，当前线程阻塞，当服务端响应返回之后，将会通过CountDownLatch减少倒计数来唤醒阻塞的线程。发送请求和响应怎么对应上的呢？发送请求的时候会生成并带上本次请求的请求Id，客户端返回响应中带有对应的请求的请求Id，这样就能对应上了。</p>
+<p><strong>同步发送和异步发送模式都会有消息重试</strong><br>，消息发送过程中如果抛出了RemotingException、MQClientException、以及部分MQBrokerException异常时，那么会进行重试，<strong>默认重试2次<br><strong>。如果抛出了</strong>InterruptedException</strong>，或者因为<strong>超时</strong>则不再重试。</p>
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1739713333/" target="_blank">08、RocketMQ源码分析：Producer发送单向、同步、异步消息源码【一万字】</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
+                        
+                            <a href="/category/Web/">Web</a>
+                        
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
+                        
+                            <a href="/tag/RocketMq/">RocketMq</a>
+                        
+                    </div>
+                
+                <div class="article-prev-next">
+                    
+                        <a href="/article/1739713334/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1739713334/" title="发布于 2025-02-16 09:42">09、RocketMQ源码分析：Broker接收消息入口源码</a>
+                        <br>
+                    
+                    
+                        <a href="/article/1739713335/" class="next-prefix">» </a> 下一篇：    <a href="/article/1739713335/" title="发布于 2025-02-16 09:42">10、RocketMQ源码分析：BrokerasyncSendMessage处理消息以及自动创建Topic</a>
+                    
+                </div>
+            </div>
+            
+    <div class="article-comments">
+        
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
+    
+</div>
+    <div id="footer"></div>
+    <div id="sidebar">
+    <div class="menu-wrap" style="display:none;">
+        
+            <div class="menu-notice">
+                <span class="iconfont icon-notice"></span>
+                <div class="notice">
+                    <span>简单地活着，肆意而又精彩！</span>
+                </div>
+            </div>
+        
+        <nav class="menu">
+            <div class="menu-introduce"> 
+                <div class="introduce-avatar">
+                    <img src="/image/sidebar/avatar.jpg">
+                </div> 
+                <div class="introduce-info"> 
+                    <div class="introduce-user"><span>Live For Code</span></div>
+                </div> 
+            </div> 
+            <div class="menu-list">
+                <ul>
+                    
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                    
+                        <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
+                    
+                        <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
+                    
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                    
+                        <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
+                    
+                        <li class=""><a href="/about" class="" target="_self"><span class="iconfont icon-about-fill"></span>关于</a></li>
+                    
+                        <li class=""><a href="/atom.xml" class="" target="_blank"><span class="iconfont icon-rss"></span>订阅</a></li>
+                    
+                        <li class=""><a href="javascript:;" class="search" target="_self"><span class="iconfont icon-search-menu"></span>搜索</a></li>
+                    
+                        <li class=""><a href="/comment" class="" target="_self"><span class="iconfont icon-comments-fill"></span>留言板</a></li>
+                    
+                        <li class=""><a href="/friend" class="" target="_self"><span class="iconfont icon-link"></span>友情链接</a></li>
+                    
+                </ul> 
+            </div> 
+            <div class="menu-link">
+                <div class="box">
+                    <div class="image-box"></div>
+                </div>
+                
+                    <a name="知乎" href="https://www.zhihu.com/people/wo-xin-de-love" class="" target="_blank" data=""><span class="iconfont icon-zhihu"></span></a>
+                
+                    <a name="微博" href="https://weibo.com/u/3939432776" class="" target="_blank" data=""><span class="iconfont icon-weibo"></span></a>
+                
+                    <a name="QQ" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"><span class="iconfont icon-qq"></span></a>
+                
+                    <a name="微信" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"><span class="iconfont icon-wechat"></span></a>
+                
+                    <a name="GitHub" href="https://github.com/first19326" class="" target="_blank" data=""><span class="iconfont icon-github"></span></a>
+                
+            </div> 
+        </nav>
+        <button class="menu-button-close"></button>
+        <div class="morph-shape" id="morph-shape" data-morph-open="M-7.312,0H15c0,0,66,113.339,66,399.5C81,664.006,15,800,15,800H-7.312V0z;M-7.312,0H100c0,0,0,113.839,0,400c0,264.506,0,400,0,400H-7.312V0z">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 800" preserveAspectRatio="none">
+                <path d="M-7.312,0H0c0,0,0,113.839,0,400c0,264.506,0,400,0,400h-7.312V0z"/>
+            </svg>
+        </div>
+    </div>
+    <button class="menu-button-open">MENU</button>
+    <div class="menu-cover"></div>
+</div>
+    <link type="text/css" rel="stylesheet" href="/css/search.css">
+<script type="text/javascript" src="/js/iscroll.js"></script>
+<script type="text/javascript" src="/js/instantsearch.min.js"></script>
+<div class="search-window">
+    <div class="search-content">
+        <div class="search-content-icon">
+            <i class="iconfont icon-search"></i>
+        </div>
+        <div id="search-input" class="search-input"></div>
+    </div>
+
+    <div class="search-scroll">
+        <div class="search-result">
+            <div id="search-stats" class="search-stats"></div>
+            <div id="search-hits"></div>
+            <div id="search-pagination" class="search-pagination"></div>
+        </div>
+    </div>
+
+    <span class="search-close-icon">
+        <i class="iconfont icon-close"></i>
+    </span>
+</div>
+    <div id="tools">
+    <div class="progressbar-top"></div>
+
+    
+        <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
+        <script type="text/javascript" src="/js/APlayer.min.js"></script>
+        <script type="text/javascript" src="/js/Meting.min.js"></script>
+        <meting-js id="3778678" lrcshow="false" server="netease" type="playlist" fixed="true" autoplay="false" loop="all" order="random" preload="auto" volume="0.67" mutex="true"></meting-js>
+    
+    
+    <div class="wrap-right">
+        <div class="setting">
+            <div class="iconbox favorites" switch="false">
+                <span class="iconfont icon-favorites"></span>
+                <span class="icontext">关注</span>
+            </div>
+            <div class="iconbox mode">
+                <div class="light">
+                    <span class="iconfont icon-daymode"></span>
+                    <span class="icontext">浅色模式</span>
+                </div>
+                <div class="dark">
+                    <span class="iconfont icon-nightmode-fill"></span>
+                    <span class="icontext">深色模式</span>
+                </div>
+            </div>
+            <a href="javascript:;" target="_self" class="search">
+                <div class="iconbox">
+                    <span class="iconfont icon-search-menu"></span>
+                    <span class="icontext">搜索</span>
+                </div>
+            </a>
+            <div class="iconbox bottom">
+                <div style="display: inline-block; transform: rotate(180deg);">
+                    <span class="iconfont icon-top"></span>
+                </div>
+                <span class="icontext">跳至底部</span>
+            </div>
+        </div>
+        <div class="iconbox set">
+            <div style="display: inline-block;">
+                <span class="iconfont icon-setting"></span>
+            </div>
+            <span class="icontext">设置</span>
+        </div>
+        <div class="iconbox top">
+            <span class="iconfont icon-top"></span>
+            <span class="icontext">返回顶部</span>
+        </div>
+    </div>
+    <div class="loading"></div>
+</div>
+    <script>
+    window.config = {
+        GitHubUserName     : "first19326",
+        GitHubRepositories : "Hexo-LiveForCode",
+
+        User             : "Live For Code",
+        UserAvatar       : "/image/sidebar/avatar.jpg",
+        WebsiteStartDate : "2020-01-01",
+
+        WebsiteTitleBlur         : "(◍´꒳`◍) Hi, Live For Code",
+        WebsiteTitleBlurTimeOut  : 500,
+        WebsiteTitleFocus        : "(*´∇｀*) 欢迎回来!",
+        WebsiteTitleFocusTimeOut : 1000,
+        WebsiteFavicon           : "/image/website/logo.png",
+
+        ProgressBar : {
+            id       : "topProgressBar",
+            color    : "#77B6FF",
+            height   : "2px",
+            duration : 0.2
+        },
+
+        Loading: {
+            rebound : {
+                tension  : 16,
+                friction : 5
+            },
+            spinner : {
+                id     : "spinner",
+                radius : 90,
+                sides  : 3,
+                depth  : 4,
+                colors : {
+                    background : "#F0F0F0",
+                    stroke     : "#272633",
+                    base       : "",
+                    child      : "#272633"
+                },
+                alwaysForward : true,
+                restAt        : 0.5,
+                renderBase    : false
+            }
+        },
+
+        HomeHeaderAnimationRendered : true,
+        HomeHeaderAnimation         : {
+            radius      : 15,
+            density     : 0.2,
+            color       : "rgba(255, 255, 255, .2)",
+            clearOffset : 0.3
+        },
+
+        BackAnimationRendered          : true,
+        IEBrowserBackAnimationRendered : false,
+        BackAnimation                  : {
+            colorSaturation  : "60%",
+            colorBrightness  : "50%",
+            colorAlpha       : 0.5,
+            colorCycleSpeed  : 5,
+            verticalPosition : "random",
+            horizontalSpeed  : 200,
+            ribbonCount      : 3,
+            strokeSize       : 0,
+            parallaxAmount   : -0.2,
+            animateSections  : true
+        },
+
+        HomeHeaderImage : [
+            
+                "/image/header/home.jpg",
+            
+                "/image/header/home.jpeg",
+            
+                "/image/header/2023-04-17-20-51-03.jpg",
+            
+                "/image/header/2023-04-17-20-54-07.jpg",
+            
+                "/image/header/2023-04-17-20-54-22.jpg",
+            
+                "/image/header/2023-04-17-20-55-25.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+        HomeBannerText  : "",
+
+        ArticleHeaderImage : [
+            
+                "/image/header/article.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+
+        OtherBannerText : "",
+
+        Error : {
+            icon    : "icon-swimming",
+            title   : "PAGE NOT FOUND",
+            content : [
+                
+                    "很抱歉，您访问的页面不存在！",
+                
+                    "可能是输入地址有误或该地址已变更。",
+                
+            ],
+            buttons : [
+                
+                    {
+                        icon  : "icon-home",
+                        text  : "返回首页",
+                        href  : "https://fadeway32.gitee.io/",
+                        class : ""
+                    },
+                
+            ]
+        },
+
+        MenuNotice : {
+            enable : true,
+            notice : "简单地活着，肆意而又精彩！",
+            speed  : 20
+        },
+        MenuList : [
+            
+                {
+                    name   : "首页",
+                    icon   : "icon-home-fill",
+                    href   : "/",
+                    type   : "index",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "分类",
+                    icon   : "icon-folder-fill",
+                    href   : "/category",
+                    type   : "category",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "标签",
+                    icon   : "icon-discount-fill",
+                    href   : "/tag",
+                    type   : "tag",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "归档",
+                    icon   : "icon-calendar-fill",
+                    href   : "/archive",
+                    type   : "archive",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "赞赏",
+                    icon   : "icon-heart-fill",
+                    href   : "/donate",
+                    type   : "donate",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "关于",
+                    icon   : "icon-about-fill",
+                    href   : "/about",
+                    type   : "about",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "订阅",
+                    icon   : "icon-rss",
+                    href   : "/atom.xml",
+                    type   : "",
+                    class  : "",
+                    target : "_blank"
+                },
+            
+                {
+                    name   : "搜索",
+                    icon   : "icon-search-menu",
+                    href   : "javascript:;",
+                    type   : "",
+                    class  : "search",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "留言板",
+                    icon   : "icon-comments-fill",
+                    href   : "/comment",
+                    type   : "comment",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "友情链接",
+                    icon   : "icon-link",
+                    href   : "/friend",
+                    type   : "friend",
+                    class  : "",
+                    target : "_self"
+                },
+            
+        ],
+        MenuLink : [
+            
+                
+                    {
+                        name   : "知乎",
+                        icon   : "icon-zhihu",
+                        href   : "https://www.zhihu.com/people/wo-xin-de-love",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "微博",
+                        icon   : "icon-weibo",
+                        href   : "https://weibo.com/u/3939432776",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "QQ",
+                        icon   : "icon-qq",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"
+                    },
+                
+                    {
+                        name   : "微信",
+                        icon   : "icon-wechat",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"
+                    },
+                
+                    {
+                        name   : "GitHub",
+                        icon   : "icon-github",
+                        href   : "https://github.com/first19326",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+            
+        ],
+
+        FooterStyle : 2,
+        BottomText  : "<div><span class='face'>ღゝ◡╹)ノ♡</span></div><div>【人生若只如初见<span><i class='iconfont icon-like-fill'></i></span>何事秋风悲画扇】</div><div>&copy; 2020-2022 WorstOne. All Rights Reserved.</div>",
+
+        ConsoleList : [
+            
+                
+                    [
+                        
+                            
+                                "Based on cnblogs theme SimpleMemory.",
+                            
+                                "",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "SimpleMemory Author:",
+                            
+                                "BNDong",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "Theme:",
+                            
+                                "LiveForCode",
+                            
+                        
+                    ],
+                
+            
+        ],
+
+        FontIconExtend : "",
+
+        Donate : {
+            paypal  : "",
+            bitcoin : "",
+            alipay  : "/image/donate/alipay.png",
+            wechat  : "/image/donate/wechat.png"
+        },
+
+        Search : {
+            applicationID : "758UIQ1V0H",
+            apiKey        : "2e038c318ac6813e4b4baa91f6ccfa63",
+            indexName     : "hexo2",
+            hits          : {
+                page : 30
+            },
+            labels        : {
+                placeholder : "搜索",
+                empty       : "未发现与 「${query}」 相关的内容",
+                stats       : "${hits} 条相关条目，使用了 ${time} 毫秒",
+            }
+        }, 
+
+        Valine : {
+            switch         : true,
+            el             : ".comments-content",
+            appId          : "srhKtvWPQTWYKh3qX8G8M7v0-gzGzoHsz",
+            appKey         : "8uVSP1q6UlALVC5igYfIfv2h",
+            serverURLs     : "",
+            placeholder    : "你是我一生只会遇见一次的惊喜...",
+            avatar         : "mm",
+            meta           : "nick,mail,link",
+            requiredFields : "nick,mail",
+            pageSize       : 5,
+            lang           : "zh-cn",
+            visitor        : true,
+            enableQQ       : true
+        },
+
+        Tocbot : {
+            switch                : true,
+            tocSelector           : ".toc",
+            contentSelector       : ".article-body",
+            headingSelector       : "h1, h2, h3, h4, h5",
+            headingsOffset        : 0,
+            scrollSmooth          : true,
+            scrollSmoothOffset    : -5,
+            positionFixedSelector : ".toc",
+            positionFixedClass    : "toc-fixed",
+            fixedSidebarOffset    : "",
+        },
+
+        Require : {
+            baseUrl     : "/js/",
+            waitSeconds : 100
+        },
+
+        Music : {
+            type : "Meting"
+        },
+        APlayer : {
+            container : ".aplayer",
+            fixed     : true,
+            autoplay  : true,
+            loop      : "all",
+            order     : "random",
+            preload   : "auto",
+            volume    : 0.67,
+            mutex     : true,
+            lrcType   : 2,
+            audio     : [
+                
+                    {
+                        name   : "Endless Tears",
+                        artist : "CLIFF EDGE",
+                        cover  : "/music/cover/Endless Tears.jpg",
+                        url    : "/music/song/Endless Tears.mp3",
+                        lrc    : "/music/lrc/Endless Tears.lrc"
+                    },
+                
+            ]
+        },
+        Meting : {
+            id       : "3778678", 
+            lrcshow  : false, 
+            server   : "netease", 
+            type     : "playlist", 
+            fixed    : true, 
+            autoplay : false, 
+            loop     : "all", 
+            order    : "random", 
+            preload  : "auto", 
+            volume   : 0.67, 
+            mutex    : true
+        },
+
+        Mouse : {
+            enable  : true,
+            options : {
+                size  : 6,
+                sizeF : 24
+            }
+        },
+
+        LazyLoad : {
+            default : "/image/website/lazyload.svg"
+        },
+  
+        Style : {
+            aplayer          : "/css/APlayer.css",
+            archive          : "/css/archive.css",
+            base             : "/css/base.css",
+            clipboard        : "/css/clipboard.css",
+            code             : "/css/code.css",
+            donate           : "/css/donate.css",
+            fancybox         : "/css/jquery.fancybox.css",
+            footer           : "/css/footer.css",
+            iconfont         : "/iconfont/iconfont.css",
+            index            : "/css/index.css",
+            menuBubble       : "/css/menu-bubble.css",
+            mouse            : "/css/mouse.css",
+            page             : "/css/page.css",
+            post             : "/css/post.css",
+            search           : "/css/search.css",
+            tocbot           : "/css/tocbot.css",
+            valine           : "/css/valine.css"
+        },
+
+        Script: {
+            aplayer          : "/js/APlayer.min.js",
+            config           : "/js/require.config.js",
+            index            : "/js/index.js",
+            instantSearch    : "/js/instantsearch.min.js",
+            iscroll          : "/js/iscroll.js",
+            jQuery           : "/js/jquery-3.4.1.min.js",
+            loading          : "/js/loading.js",
+            meting           : "/js/Meting.min.js",
+            require          : "/js/require.min.js"
+        },
+
+        Font: {
+            LongCang    : "/font/LongCang.css",
+            Monda       : "/font/Monda.css",
+            NotoSansSC  : "/font/NotoSansSC.css",
+            NotoSerifSC : "/font/NotoSerifSC.css",
+            Playball    : "/font/Playball.css",
+            PTMono      : "/font/PTMono.css",
+            Roboto      : "/font/Roboto.css",
+            RobotoSlab  : "/font/RobotoSlab.css",
+            Rosario     : "/font/Rosario.css",
+            UbuntuMono  : "/font/UbuntuMono.css"
+        },
+
+        Suffix : {
+            about : "你知道的越多,你不知道的越多"
+        },
+            
+        Theme : {
+            url  : "https://fadeway32.gitee.io/",
+            name : "fadeway32"
+        }  
+    };
+</script>
+    <script type="text/javascript" src="/js/index.js"></script>
+</body>
+</html>

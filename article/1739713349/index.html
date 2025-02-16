@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <!--    <meta name="referrer" content="origin">-->
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>
+        
+            24、RocketMQ源码分析：延时消息实现原理解析
+        
+    </title>
+    <link rel="shortcut icon" href="#"/>
+
+    <link type="text/css" rel="stylesheet" href="/font/LongCang.css">
+    <link type="text/css" rel="stylesheet" href="/font/Monda.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSansSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSerifSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/Playball.css">
+    <link type="text/css" rel="stylesheet" href="/font/PTMono.css">
+    <link type="text/css" rel="stylesheet" href="/font/Roboto.css">
+    <link type="text/css" rel="stylesheet" href="/font/RobotoSlab.css">
+    <link type="text/css" rel="stylesheet" href="/font/Rosario.css">
+    <link type="text/css" rel="stylesheet" href="/font/UbuntuMono.css">
+
+    <link type="text/css" rel="stylesheet" href="/css/base.css">
+    <link type="text/css" rel="stylesheet" href="/css/code.css">
+
+    <script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
+<meta name="generator" content="Hexo 6.2.0"></head>
+<body>
+    <a id="cover"></a>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
+<header>
+    <meta name="referrer" content="no-referrer">
+</header>
+<div id="header" class="header">
+    <div class="vertical">
+        <div class="inner">
+            
+                <h1 class="header-subtitle">24、RocketMQ源码分析：延时消息实现原理解析</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2025-02-16
+                        </span>
+                        
+                            <span id="/article/1739713349/" class="leancloud_visitors" data-flag-title="24、RocketMQ源码分析：延时消息实现原理解析">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1739713349/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">RocketMq</span>
+                        
+                    
+                </div>
+            
+        </div>
+    </div>
+    
+</div>
+<div id="container">
+    
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="24、RocketMQ源码分析：延时消息实现原理解析"><a href="#24、RocketMQ源码分析：延时消息实现原理解析" class="headerlink" title="24、RocketMQ源码分析：延时消息实现原理解析"></a>24、RocketMQ源码分析：延时消息实现原理解析</h1><p>分类：<a target="_blank" rel="noopener" href="https://cxykk.com/?cat=318">RocketMQ源码分析（1）</a>  2024-03-27 阅读(152)</p>
+<blockquote>
+<p>基于RocketMQ release-4.9.3，深入的介绍了DefaultMQPushConsumer延迟消息源码。</p>
+</blockquote>
+<h4 id="文章目录"><a href="#文章目录" class="headerlink" title="文章目录"></a>文章目录</h4><ul>
+<li>1 load加载延迟消息数据</li>
+<li><ul>
+<li>1.1 parseDelayLevel解析延迟等级</li>
+</ul>
+</li>
+<li>2 start启动调度消息服务</li>
+<li>3 DeliverDelayedMessageTimerTask投递延迟消息任务</li>
+<li><ul>
+<li>3.1 executeOnTimeup执行延迟消息投递</li>
+</ul>
+</li>
+<li>3.2 scheduleNextTimerTask下一个调度任务</li>
+<li>3.3 correctDeliverTimestamp校验投递时间</li>
+<li>3.4 messageTimeup恢复正常消息</li>
+<li>3.5 syncDeliver同步投递消息</li>
+<li>4 延迟消息的总结</li>
+</ul>
+<ul>
+<li>*并发消息消费失败引发消费重试时，默认情况下重试16次，从延迟等级level3（10s）开始，每次延迟时间递增，时间到了又会发送到重试topic去消费，这其中就涉及到RocketMQ的延迟消息，可以说RocketMQ并发消息消费失败引发消费重试就是基于topic替换和延迟消息这两个技术实现的。<br>**</li>
+</ul>
+<p>此前我们学习了RocketMQ的消费重试，我们知道在判断消息为延迟消息的时候，即DelayTimeLevel大于0，那么替换topic为SCHEDULE_TOPIC_XXXX，替换queueId为延迟队列id，<br>id &#x3D; level -<br>1，如果延迟级别大于最大级别，则设置为最大级别18，，默认延迟2h。这些参数可以在broker端配置类MessageStoreConfig中配置。最后保存真实topic到消息的REAL_TOPIC属性，保存queueId到消息的REAL_QID属性，方便后面恢复。</p>
+<p>**实际上普通的延迟消息也会进行topic替换，那么，发送到SCHEDULE_TOPIC_XXXX对应的消息队列里面的延迟消息，到底是做到能够在给定的延迟时间之后取出来重新投递的呢？下面我们来看看RocketMQ延迟消息的源码。<br>**</p>
+<ul>
+<li>*实际上RocketMQ通过ScheduleMessageService调度消息服务实现延迟（定时）消息。ScheduleMessageService继承了ConfigManager，在DefaultMessageStore实例化的时候被实例化。<br>**</li>
+</ul>
+<h2 id="1-load加载延迟消息数据"><a href="#1-load加载延迟消息数据" class="headerlink" title="1 load加载延迟消息数据"></a>1 load加载延迟消息数据</h2><p>在broker启动执行DefaultMessageStore#load方法加载Commit Log、Consume Queue、index<br>file等文件，将数据加载到内存中，并完成数据的恢复的时候，同样会执行ScheduleMessageService#load方法，加载延迟消息数据，初始化delayLevelTable和offsetTable。</p>
+<p>首先调用父类的ConfigManager#load方法（在broker启动部分就讲过源码了），将延迟消息文件<code>$</code><br>{user.home}&#x2F;store&#x2F;config&#x2F;delayOffset.json加载到内存的offsetTable集合中，delayOffset.json中保存着延迟topic每个队列的消费进度（消费偏移量）。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ScheduleMessageService的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 加载延迟消息数据，初始化delayLevelTable和offsetTable</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">load</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//调用父类ConfigManager#load方法，将延迟消息文件$&#123;user.home&#125;/store/config/delayOffset.json加载到内存的offsetTable集合中</span></span><br><span class="line">    <span class="comment">//delayOffset.json中保存着延迟topic每个队列的消费进度（消费偏移量）</span></span><br><span class="line">    <span class="type">boolean</span> <span class="variable">result</span> <span class="operator">=</span> <span class="built_in">super</span>.load();</span><br><span class="line">    <span class="comment">//解析延迟级别到delayLevelTable集合中</span></span><br><span class="line">    result = result &amp;&amp; <span class="built_in">this</span>.parseDelayLevel();</span><br><span class="line">    <span class="comment">//矫正每个延迟队列的偏移量</span></span><br><span class="line">    result = result &amp;&amp; <span class="built_in">this</span>.correctDelayOffset();</span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ScheduleMessageService的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 获取延迟消息文件路径$&#123;user.home&#125;/store/config/delayOffset.json</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> String <span class="title function_">configFilePath</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//$&#123;user.home&#125;/store/config/delayOffset.json</span></span><br><span class="line">    <span class="keyword">return</span> StorePathConfigHelper.getDelayOffsetStorePath(<span class="built_in">this</span>.defaultMessageStore.getMessageStoreConfig()</span><br><span class="line">            .getStorePathRootDir());</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ScheduleMessageService的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * json字符串转换为offsetTable对象</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">decode</span><span class="params">(String jsonString)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="keyword">if</span> (jsonString != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="type">DelayOffsetSerializeWrapper</span> <span class="variable">delayOffsetSerializeWrapper</span> <span class="operator">=</span></span><br><span class="line">                DelayOffsetSerializeWrapper.fromJson(jsonString, DelayOffsetSerializeWrapper.class);</span><br><span class="line">        <span class="keyword">if</span> (delayOffsetSerializeWrapper != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="built_in">this</span>.offsetTable.putAll(delayOffsetSerializeWrapper.getOffsetTable());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>延迟消息文件${user.home}&#x2F;store&#x2F;config&#x2F;delayOffset.json的内容，它保存着延迟队列对应的消费偏移量。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">  <span class="string">&quot;offsetTable&quot;</span>:&#123;</span><br><span class="line">   </span><br><span class="line">     <span class="number">3</span>:<span class="number">2</span>,<span class="number">4</span>:<span class="number">1</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-1-parseDelayLevel解析延迟等级"><a href="#1-1-parseDelayLevel解析延迟等级" class="headerlink" title="1.1 parseDelayLevel解析延迟等级"></a>1.1 parseDelayLevel解析延迟等级</h3><p><strong>延迟等级字符串存储在MessageStoreConfig的messageDelayLevel属性中，默认值为”1s 5s 10s 30s 1m 2m 3m 4m 5m 6m 7m 8m 9m 10m<br>20m 30m 1h 2h”，即18个等级，因此也是可以配置的，但是单位仅支持s、m、h、d，分别表示秒、分、时、天。</strong></p>
+<p><strong>该方法解析延迟等级以及对应的延迟时间到delayLevelTable中，单位统一转换为毫秒，注意延迟等级从1开始。</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ScheduleMessageService的方法</span></span><br><span class="line"><span class="comment"> * 解析延迟等级到delayLevelTable中</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">parseDelayLevel</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//时间单位表</span></span><br><span class="line">    HashMap&lt;String, Long&gt; timeUnitTable = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;String, Long&gt;();</span><br><span class="line">    timeUnitTable.put(<span class="string">&quot;s&quot;</span>, <span class="number">1000L</span>);</span><br><span class="line">    timeUnitTable.put(<span class="string">&quot;m&quot;</span>, <span class="number">1000L</span> * <span class="number">60</span>);</span><br><span class="line">    timeUnitTable.put(<span class="string">&quot;h&quot;</span>, <span class="number">1000L</span> * <span class="number">60</span> * <span class="number">60</span>);</span><br><span class="line">    timeUnitTable.put(<span class="string">&quot;d&quot;</span>, <span class="number">1000L</span> * <span class="number">60</span> * <span class="number">60</span> * <span class="number">24</span>);</span><br><span class="line">    <span class="comment">//从MessageStoreConfig中获取延迟等级字符串messageDelayLevel</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">levelString</span> <span class="operator">=</span> <span class="built_in">this</span>.defaultMessageStore.getMessageStoreConfig().getMessageDelayLevel();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//通过空格拆分</span></span><br><span class="line">        String[] levelArray = levelString.split(<span class="string">&quot; &quot;</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; levelArray.length; i++) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//获取每个等级的延迟时间</span></span><br><span class="line">            <span class="type">String</span> <span class="variable">value</span> <span class="operator">=</span> levelArray[i];</span><br><span class="line">            <span class="comment">//获取延迟单位</span></span><br><span class="line">            <span class="type">String</span> <span class="variable">ch</span> <span class="operator">=</span> value.substring(value.length() - <span class="number">1</span>);</span><br><span class="line">            <span class="comment">//获取对应的延迟单位的时间毫秒</span></span><br><span class="line">            <span class="type">Long</span> <span class="variable">tu</span> <span class="operator">=</span> timeUnitTable.get(ch);</span><br><span class="line">            <span class="comment">//延迟等级，从1开始</span></span><br><span class="line">            <span class="type">int</span> <span class="variable">level</span> <span class="operator">=</span> i + <span class="number">1</span>;</span><br><span class="line">            <span class="comment">//如果当前等级已经大于最大等级，则赋值为最大等级</span></span><br><span class="line">            <span class="keyword">if</span> (level &gt; <span class="built_in">this</span>.maxDelayLevel) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="built_in">this</span>.maxDelayLevel = level;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//延迟时间</span></span><br><span class="line">            <span class="type">long</span> <span class="variable">num</span> <span class="operator">=</span> Long.parseLong(value.substring(<span class="number">0</span>, value.length() - <span class="number">1</span>));</span><br><span class="line">            <span class="comment">//计算该等级的延迟时间毫秒</span></span><br><span class="line">            <span class="type">long</span> <span class="variable">delayTimeMillis</span> <span class="operator">=</span> tu * num;</span><br><span class="line">            <span class="comment">//存入delayLevelTable中</span></span><br><span class="line">            <span class="built_in">this</span>.delayLevelTable.put(level, delayTimeMillis);</span><br><span class="line">            <span class="keyword">if</span> (<span class="built_in">this</span>.enableAsyncDeliver) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="built_in">this</span>.deliverPendingTable.put(level, <span class="keyword">new</span> <span class="title class_">LinkedBlockingQueue</span>&lt;&gt;());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        log.error(<span class="string">&quot;parseDelayLevel exception&quot;</span>, e);</span><br><span class="line">        log.info(<span class="string">&quot;levelString String = &#123;&#125;&quot;</span>, levelString);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-start启动调度消息服务"><a href="#2-start启动调度消息服务" class="headerlink" title="2 start启动调度消息服务"></a>2 start启动调度消息服务</h2><p>ScheduleMessageService依靠内部的定时任务实现延迟消息，ScheduleMessageService通过start方法完成启动。</p>
+<p>在broker的启动过程中，会执行DefaultMessageStore的start方法中，该方法内部通过handleScheduleMessageService方法执行ScheduleMessageService的start方法。</p>
+<p>该方法的大概逻辑为：</p>
+<p><strong>1、</strong> 初始化延迟消息投递线程池deliverExecutorService，该线程池是一个调度任务线程池ScheduledThreadPoolExecutor，核心线程数就是最大的延迟等级，默认18；<br><strong>2、</strong> 遍历所有的延迟等级，为每一个延迟等级构建一个对应的DeliverDelayedMessageTimerTask调度任务放到deliverExecutorService中，默认延迟1000ms后执行；<br><strong>3、</strong> 构建一个延迟队列消费偏移量持久化的定时调度任务，首次延迟1000ms之后执行，后续每次执行间隔flushDelayOffsetInterval时间，默认10s；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ScheduleMessageService的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 启动调度消息服务</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">start</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//将启动标志CAS的从false改为true，该服务只能启动一次</span></span><br><span class="line">    <span class="keyword">if</span> (started.compareAndSet(<span class="literal">false</span>, <span class="literal">true</span>)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//调用父类的load方法，将延迟消息文件$&#123;user.home&#125;/store/config/delayOffset.json加载到内存的offsetTable集合中</span></span><br><span class="line">        <span class="comment">//fix(dledger): reload the delay offset when master changed (#2518)</span></span><br><span class="line">        <span class="built_in">super</span>.load();</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 1 初始化延迟消息投递线程池，核心线程数就是最大的延迟等级，默认18</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="built_in">this</span>.deliverExecutorService = <span class="keyword">new</span> <span class="title class_">ScheduledThreadPoolExecutor</span>(<span class="built_in">this</span>.maxDelayLevel, <span class="keyword">new</span> <span class="title class_">ThreadFactoryImpl</span>(<span class="string">&quot;ScheduleMessageTimerThread_&quot;</span>));</span><br><span class="line">        <span class="comment">//异步投递，默认不支持</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="built_in">this</span>.enableAsyncDeliver) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="built_in">this</span>.handleExecutorService = <span class="keyword">new</span> <span class="title class_">ScheduledThreadPoolExecutor</span>(<span class="built_in">this</span>.maxDelayLevel, <span class="keyword">new</span> <span class="title class_">ThreadFactoryImpl</span>(<span class="string">&quot;ScheduleMessageExecutorHandleThread_&quot;</span>));</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 2 对所有的延迟等级构建一个对应的DeliverDelayedMessageTimerTask调度任务，默认延迟1000ms后执行</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">for</span> (Map.Entry&lt;Integer, Long&gt; entry : <span class="built_in">this</span>.delayLevelTable.entrySet()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//延迟等级</span></span><br><span class="line">            <span class="type">Integer</span> <span class="variable">level</span> <span class="operator">=</span> entry.getKey();</span><br><span class="line">            <span class="comment">//延迟时间，毫秒</span></span><br><span class="line">            <span class="type">Long</span> <span class="variable">timeDelay</span> <span class="operator">=</span> entry.getValue();</span><br><span class="line">            <span class="comment">//根据延迟等级获取对应的延迟队列的消费偏移量，如果没有则设置为0</span></span><br><span class="line">            <span class="type">Long</span> <span class="variable">offset</span> <span class="operator">=</span> <span class="built_in">this</span>.offsetTable.get(level);</span><br><span class="line">            <span class="keyword">if</span> (<span class="literal">null</span> == offset) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                offset = <span class="number">0L</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//延迟时间不为null，那么为该等级的延迟队列构建一个DeliverDelayedMessageTimerTask调度任务，默认延迟1000ms后执行</span></span><br><span class="line">            <span class="keyword">if</span> (timeDelay != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="keyword">if</span> (<span class="built_in">this</span>.enableAsyncDeliver) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="built_in">this</span>.handleExecutorService.schedule(<span class="keyword">new</span> <span class="title class_">HandlePutResultTask</span>(level), FIRST_DELAY_TIME, TimeUnit.MILLISECONDS);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">//DeliverDelayedMessageTimerTask构造参数包括对应的延迟等级，以及最新消费偏移量</span></span><br><span class="line">                <span class="built_in">this</span>.deliverExecutorService.schedule(<span class="keyword">new</span> <span class="title class_">DeliverDelayedMessageTimerTask</span>(level, offset), FIRST_DELAY_TIME, TimeUnit.MILLISECONDS);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 3 构建一个延迟队列消费偏移量持久化的定时调度任务，首次延迟1000ms之后执行，后续每次执行间隔flushDelayOffsetInterval时间，默认10s</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="built_in">this</span>.deliverExecutorService.scheduleAtFixedRate(<span class="keyword">new</span> <span class="title class_">Runnable</span>() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line"></span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="keyword">if</span> (started.get()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        ScheduleMessageService.<span class="built_in">this</span>.persist();</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    log.error(<span class="string">&quot;scheduleAtFixedRate flush exception&quot;</span>, e);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;, <span class="number">10000</span>, <span class="built_in">this</span>.defaultMessageStore.getMessageStoreConfig().getFlushDelayOffsetInterval(), TimeUnit.MILLISECONDS);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="3-DeliverDelayedMessageTimerTask投递延迟消息任务"><a href="#3-DeliverDelayedMessageTimerTask投递延迟消息任务" class="headerlink" title="3 DeliverDelayedMessageTimerTask投递延迟消息任务"></a>3 DeliverDelayedMessageTimerTask投递延迟消息任务</h2><p>**在start方法中，ScheduleMessageService会为每一个延迟等级创建一个DeliverDelayedMessageTimerTask投递延迟消息任务，不同延迟等级的消息放到不同的延迟队列里面，被不同的Task处理。<br>**</p>
+<p>**采用不同的队列处理同一个延迟等级的消息的方式，不再需要进行消息排序，避免了消息排序的复杂逻辑，能比较简单的实现有限等级的延迟消息，RocketMQ的开源版本不支持任意时间的延迟消息，这也是它的一个限制吧！<br>**</p>
+<p><strong>DeliverDelayedMessageTimerTask是一个线程任务，下面来看看它的run方法，主要是调用executeOnTimeup执行消息投递。</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//如果服务已启动，那么继续执行</span></span><br><span class="line">        <span class="keyword">if</span> (isStarted()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//执行消息投递</span></span><br><span class="line">            <span class="built_in">this</span>.executeOnTimeup();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">// <span class="doctag">XXX:</span> warn and notify me</span></span><br><span class="line">        log.error(<span class="string">&quot;ScheduleMessageService, executeOnTimeup exception&quot;</span>, e);</span><br><span class="line">        <span class="comment">//抛出异常，新建一个DeliverDelayedMessageTimerTask任务存入deliverExecutorService，10000ms后执行，本次任务结束</span></span><br><span class="line">        <span class="built_in">this</span>.scheduleNextTimerTask(<span class="built_in">this</span>.offset, DELAY_FOR_A_PERIOD);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-1-executeOnTimeup执行延迟消息投递"><a href="#3-1-executeOnTimeup执行延迟消息投递" class="headerlink" title="3.1 executeOnTimeup执行延迟消息投递"></a>3.1 executeOnTimeup执行延迟消息投递</h3><p>延迟消息的核心逻辑实现，执行延迟消息消息投递。</p>
+<p><strong>1、</strong><br>调用findConsumeQueue方法，根据topic和延迟队列id从consumeQueueTable查找需要写入的ConsumeQueue，如果没找到就新建，即ConsumeQueue文件是延迟创建的该方法的源码我们在ReputMessageService异步构建ConsumeQueue和IndexFile部分已经讲过了；<br><strong>2、</strong><br>如果没找到对应的消息队列，调用scheduleNextTimerTask方法，新建一个DeliverDelayedMessageTimerTask任务存入deliverExecutorService，100ms后执行，本次任务结束；<br><strong>3、</strong><br>调用getIndexBuffer方法，根据逻辑offset定位到物理偏移量，然后截取该偏移量之后的一段Buffer，其包含要拉取的消息的索引数据及对应consumeQueue文件之后的全部索引数据，即这里截取的Buffer可能包含多条索引数据该方法的源码我们在broker处理拉取消息请求部分已经讲过了；<br><strong>4、</strong> 遍历缓存buffer中的消息，根据tagsCode投递时间判断消息是否到期，如果到期则回复真实消息并且投递安到真实topic以及对应的queueId中；</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1.  获取该条目对应的消息的tagsCode，对于延迟消息，tagsCode被替换为延迟消息的发送时间（在CommitLog\#checkMessageAndReturnSize方法中，源码此前讲过了）。</span><br></pre></td></tr></table></figure>
+
+<p><strong>2、</strong><br>如果投递时间小于当前时间，那么可以投递该延迟消息如果投递时间大于当前时间，那么新建一个DeliverDelayedMessageTimerTask任务存入deliverExecutorService，指定新的消费偏移量，100ms后执行，本次任务结束；<br><strong>3、</strong><br>根据消息物理偏移量从commitLog中找到该条消息，调用messageTimeup方法构建内部消息对象，设置topic为REAL_TOPIC属性值，即原始topic，设置queueId为REAL_QID属性值，即原始queueId即恢复为正常消息；<br><strong>4、</strong> 最后调用syncDeliver方法投递该消息，消息将会被投递到原始topic和队列中，这样就可以被消费了；<br><strong>5、</strong> 遍历结束，更新下一个offset，新建一个DeliverDelayedMessageTimerTask任务存入deliverExecutorService，指定新的消费偏移量，100ms后执行，本次任务结束保证线程任务的活性；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * DeliverDelayedMessageTimerTask的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 执行延迟消息消息投递</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">executeOnTimeup</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 1 根据topic和延迟队列id从consumeQueueTable查找需要写入的ConsumeQueue，如果没找到就新建，即ConsumeQueue文件是延迟创建的。</span></span><br><span class="line"><span class="comment">     * 该方法的源码我们在ReputMessageService异步构建ConsumeQueue和IndexFile部分已经讲过了</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="type">ConsumeQueue</span> <span class="variable">cq</span> <span class="operator">=</span></span><br><span class="line">            ScheduleMessageService.<span class="built_in">this</span>.defaultMessageStore.findConsumeQueue(TopicValidator.RMQ_SYS_SCHEDULE_TOPIC,</span><br><span class="line">                    delayLevel2QueueId(delayLevel));</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 2 如果没找到对应的消息队列，新建一个DeliverDelayedMessageTimerTask任务存入deliverExecutorService，100ms后执行，本次任务结束</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">if</span> (cq == <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="built_in">this</span>.scheduleNextTimerTask(<span class="built_in">this</span>.offset, DELAY_FOR_A_WHILE);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 3 根据逻辑offset定位到物理偏移量，然后截取该偏移量之后的一段Buffer，其包含要拉取的消息的索引数据及对应consumeQueue文件之后的全部索引数据。</span></span><br><span class="line"><span class="comment">     * 这里截取的Buffer可能包含多条索引数据，因为需要批量拉取多条消息，以及进行消息过滤。</span></span><br><span class="line"><span class="comment">     * 该方法的源码我们在broker处理拉取消息请求部分已经讲过了</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="type">SelectMappedBufferResult</span> <span class="variable">bufferCQ</span> <span class="operator">=</span> cq.getIndexBuffer(<span class="built_in">this</span>.offset);</span><br><span class="line">    <span class="comment">//没获取到缓存buffer</span></span><br><span class="line">    <span class="keyword">if</span> (bufferCQ == <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="type">long</span> resetOffset;</span><br><span class="line">        <span class="comment">//如果当前消息队列的最小偏移量 大于 当前偏移量，那么当前偏移量无效，设置新的offset为最小偏移量</span></span><br><span class="line">        <span class="keyword">if</span> ((resetOffset = cq.getMinOffsetInQueue()) &gt; <span class="built_in">this</span>.offset) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.error(<span class="string">&quot;schedule CQ offset invalid. offset=&#123;&#125;, cqMinOffset=&#123;&#125;, queueId=&#123;&#125;&quot;</span>,</span><br><span class="line">                    <span class="built_in">this</span>.offset, resetOffset, cq.getQueueId());</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//如果当前消息队列的最大偏移量 小于 当前偏移量，那么当前偏移量无效，设置新的offset为最大偏移量</span></span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> ((resetOffset = cq.getMaxOffsetInQueue()) &lt; <span class="built_in">this</span>.offset) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.error(<span class="string">&quot;schedule CQ offset invalid. offset=&#123;&#125;, cqMaxOffset=&#123;&#125;, queueId=&#123;&#125;&quot;</span>,</span><br><span class="line">                    <span class="built_in">this</span>.offset, resetOffset, cq.getQueueId());</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            resetOffset = <span class="built_in">this</span>.offset;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//新建一个DeliverDelayedMessageTimerTask任务存入deliverExecutorService，指定新的消费偏移量，100ms后执行，本次任务结束</span></span><br><span class="line">        <span class="built_in">this</span>.scheduleNextTimerTask(resetOffset, DELAY_FOR_A_WHILE);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 3 遍历缓存buffer中的消息，根据tagsCode投递时间判断消息是否到期，如果到期则回复真实消息并且投递安到真实topic以及对应的queueId中</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="comment">//下一个消费的offset</span></span><br><span class="line">    <span class="type">long</span> <span class="variable">nextOffset</span> <span class="operator">=</span> <span class="built_in">this</span>.offset;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//i表示consumeQueue消息索引大小</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        ConsumeQueueExt.<span class="type">CqExtUnit</span> <span class="variable">cqExtUnit</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ConsumeQueueExt</span>.CqExtUnit();</span><br><span class="line">        <span class="comment">//遍历截取的Buffer中的consumeQueue消息索引，固定长度20b</span></span><br><span class="line">        <span class="keyword">for</span> (; i &lt; bufferCQ.getSize() &amp;&amp; isStarted(); i += ConsumeQueue.CQ_STORE_UNIT_SIZE) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//获取该条目对应的消息在commitlog文件中的物理偏移量</span></span><br><span class="line">            <span class="type">long</span> <span class="variable">offsetPy</span> <span class="operator">=</span> bufferCQ.getByteBuffer().getLong();</span><br><span class="line">            <span class="comment">//获取该条目对应的消息在commitlog文件中的总长度</span></span><br><span class="line">            <span class="type">int</span> <span class="variable">sizePy</span> <span class="operator">=</span> bufferCQ.getByteBuffer().getInt();</span><br><span class="line">            <span class="comment">//获取该条目对应的消息的tagsCode，对于延迟消息，tagsCode被替换为延迟消息的发送时间（CommitLog#checkMessageAndReturnSize方法中）</span></span><br><span class="line">            <span class="type">long</span> <span class="variable">tagsCode</span> <span class="operator">=</span> bufferCQ.getByteBuffer().getLong();</span><br><span class="line">            <span class="comment">//如果tagsCode是扩展文件地址</span></span><br><span class="line">            <span class="keyword">if</span> (cq.isExtAddr(tagsCode)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="keyword">if</span> (cq.getExt(tagsCode, cqExtUnit)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    tagsCode = cqExtUnit.getTagsCode();</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    <span class="comment">//can&#x27;t find ext content.So re compute tags code.</span></span><br><span class="line">                    log.error(<span class="string">&quot;[BUG] can&#x27;t find consume queue extend file content!addr=&#123;&#125;, offsetPy=&#123;&#125;, sizePy=&#123;&#125;&quot;</span>,</span><br><span class="line">                            tagsCode, offsetPy, sizePy);</span><br><span class="line">                    <span class="type">long</span> <span class="variable">msgStoreTime</span> <span class="operator">=</span> defaultMessageStore.getCommitLog().pickupStoreTimestamp(offsetPy, sizePy);</span><br><span class="line">                    tagsCode = computeDeliverTimestamp(delayLevel, msgStoreTime);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//当前时间戳</span></span><br><span class="line">            <span class="type">long</span> <span class="variable">now</span> <span class="operator">=</span> System.currentTimeMillis();</span><br><span class="line">            <span class="comment">//校验投递时间，必须小于等于当前时间 + 延迟时间</span></span><br><span class="line">            <span class="type">long</span> <span class="variable">deliverTimestamp</span> <span class="operator">=</span> <span class="built_in">this</span>.correctDeliverTimestamp(now, tagsCode);</span><br><span class="line">            <span class="comment">//计算下一个offset</span></span><br><span class="line">            nextOffset = offset + (i / ConsumeQueue.CQ_STORE_UNIT_SIZE);</span><br><span class="line">            <span class="comment">//如果投递时间大于当前时间，那么新建一个DeliverDelayedMessageTimerTask任务存入deliverExecutorService，指定新的消费偏移量，100ms后执行，本次任务结束</span></span><br><span class="line">            <span class="type">long</span> <span class="variable">countdown</span> <span class="operator">=</span> deliverTimestamp - now;</span><br><span class="line">            <span class="keyword">if</span> (countdown &gt; <span class="number">0</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="built_in">this</span>.scheduleNextTimerTask(nextOffset, DELAY_FOR_A_WHILE);</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//根据消息物理偏移量从commitLog中找到该条消息。</span></span><br><span class="line">            <span class="type">MessageExt</span> <span class="variable">msgExt</span> <span class="operator">=</span> ScheduleMessageService.<span class="built_in">this</span>.defaultMessageStore.lookMessageByOffset(offsetPy, sizePy);</span><br><span class="line">            <span class="keyword">if</span> (msgExt == <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//构建内部消息对象，设置topic为REAL_TOPIC属性值，即原始topic，设置queueId为REAL_QID属性值，即原始queueId。即恢复为正常消息</span></span><br><span class="line">            <span class="type">MessageExtBrokerInner</span> <span class="variable">msgInner</span> <span class="operator">=</span> ScheduleMessageService.<span class="built_in">this</span>.messageTimeup(msgExt);</span><br><span class="line">            <span class="keyword">if</span> (TopicValidator.RMQ_SYS_TRANS_HALF_TOPIC.equals(msgInner.getTopic())) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                log.error(<span class="string">&quot;[BUG] the real topic of schedule msg is &#123;&#125;, discard the msg. msg=&#123;&#125;&quot;</span>,</span><br><span class="line">                        msgInner.getTopic(), msgInner);</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="type">boolean</span> deliverSuc;</span><br><span class="line">            <span class="comment">/*</span></span><br><span class="line"><span class="comment">             * 消息投递</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            <span class="keyword">if</span> (ScheduleMessageService.<span class="built_in">this</span>.enableAsyncDeliver) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//异步投递，默认不支持</span></span><br><span class="line">                deliverSuc = <span class="built_in">this</span>.asyncDeliver(msgInner, msgExt.getMsgId(), offset, offsetPy, sizePy);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//默认同步投递</span></span><br><span class="line">                deliverSuc = <span class="built_in">this</span>.syncDeliver(msgInner, msgExt.getMsgId(), offset, offsetPy, sizePy);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//如果投递失败，那么新建一个DeliverDelayedMessageTimerTask任务存入deliverExecutorService，指定新的消费偏移量，100ms后执行，本次任务结束</span></span><br><span class="line">            <span class="keyword">if</span> (!deliverSuc) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="built_in">this</span>.scheduleNextTimerTask(nextOffset, DELAY_FOR_A_WHILE);</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//遍历结束，更新下一个offset</span></span><br><span class="line">        nextOffset = <span class="built_in">this</span>.offset + (i / ConsumeQueue.CQ_STORE_UNIT_SIZE);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        log.error(<span class="string">&quot;ScheduleMessageService, messageTimeup execute error, offset = &#123;&#125;&quot;</span>, nextOffset, e);</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//释放内存</span></span><br><span class="line">        bufferCQ.release();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 4 新建一个DeliverDelayedMessageTimerTask任务存入deliverExecutorService，指定新的消费偏移量，100ms后执行，本次任务结束</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * 保证线程任务的活性</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="built_in">this</span>.scheduleNextTimerTask(nextOffset, DELAY_FOR_A_WHILE);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-2-scheduleNextTimerTask下一个调度任务"><a href="#3-2-scheduleNextTimerTask下一个调度任务" class="headerlink" title="3.2 scheduleNextTimerTask下一个调度任务"></a>3.2 scheduleNextTimerTask下一个调度任务</h3><ul>
+<li>*如果没找到对应的消息队列，或者没找到缓存buffer，或者没有过期的消息，获取投递失败等原因，将会新建一个DeliverDelayedMessageTimerTask任务存入deliverExecutorService，100ms后执行，本次任务结束。<br>**</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * DeliverDelayedMessageTimerTask的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 新建一个DeliverDelayedMessageTimerTask任务存入deliverExecutorService，100ms后执行，本次任务结束</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> offset 消费偏移量</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> delay  延迟时间</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">scheduleNextTimerTask</span><span class="params">(<span class="type">long</span> offset, <span class="type">long</span> delay)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    ScheduleMessageService.<span class="built_in">this</span>.deliverExecutorService.schedule(<span class="keyword">new</span> <span class="title class_">DeliverDelayedMessageTimerTask</span>(</span><br><span class="line">            <span class="built_in">this</span>.delayLevel, offset), delay, TimeUnit.MILLISECONDS);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-3-correctDeliverTimestamp校验投递时间"><a href="#3-3-correctDeliverTimestamp校验投递时间" class="headerlink" title="3.3 correctDeliverTimestamp校验投递时间"></a>3.3 correctDeliverTimestamp校验投递时间</h3><p>校验投递时间，要求投递时间最晚不大于保证投递时间小于等于当前时间 + 延迟时间。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * DeliverDelayedMessageTimerTask的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 校验投递时间</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="type">long</span> <span class="title function_">correctDeliverTimestamp</span><span class="params">(<span class="keyword">final</span> <span class="type">long</span> now, <span class="keyword">final</span> <span class="type">long</span> deliverTimestamp)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//投递时间戳</span></span><br><span class="line">    <span class="type">long</span> <span class="variable">result</span> <span class="operator">=</span> deliverTimestamp;</span><br><span class="line">    <span class="comment">//当前时间 + 延迟时间</span></span><br><span class="line">    <span class="type">long</span> <span class="variable">maxTimestamp</span> <span class="operator">=</span> now + ScheduleMessageService.<span class="built_in">this</span>.delayLevelTable.get(<span class="built_in">this</span>.delayLevel);</span><br><span class="line">    <span class="comment">//保证投递时间小于等于当前时间 + 延迟时间</span></span><br><span class="line">    <span class="keyword">if</span> (deliverTimestamp &gt; maxTimestamp) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        result = now;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-4-messageTimeup恢复正常消息"><a href="#3-4-messageTimeup恢复正常消息" class="headerlink" title="3.4 messageTimeup恢复正常消息"></a>3.4 messageTimeup恢复正常消息</h3><p>构建一个MessageExtBrokerInner，恢复为正常消息。设置topic的值为REAL_TOPIC属性值，这是原始topic，可能是重试topic或者真实topic。设置queueId的值为REAL_QID属性值，这是原始queueId，可能是重试queueId或者真实queueId。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * DeliverDelayedMessageTimerTask的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 还原原始消息，设置topic为REAL_TOPIC属性值，即原始topic，设置queueId为REAL_QID属性值，即原始queueId。即恢复为正常消息</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> msgExt 延迟消息</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> 真实消息</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> MessageExtBrokerInner <span class="title function_">messageTimeup</span><span class="params">(MessageExt msgExt)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//构建MessageExtBrokerInner对象</span></span><br><span class="line">    <span class="type">MessageExtBrokerInner</span> <span class="variable">msgInner</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">MessageExtBrokerInner</span>();</span><br><span class="line">    msgInner.setBody(msgExt.getBody());</span><br><span class="line">    msgInner.setFlag(msgExt.getFlag());</span><br><span class="line">    MessageAccessor.setProperties(msgInner, msgExt.getProperties());</span><br><span class="line"></span><br><span class="line">    <span class="type">TopicFilterType</span> <span class="variable">topicFilterType</span> <span class="operator">=</span> MessageExt.parseTopicFilterType(msgInner.getSysFlag());</span><br><span class="line">    <span class="comment">//延迟消息的tagsCode为投递时间，现在来计算真正的tagsCodeValue</span></span><br><span class="line">    <span class="type">long</span> <span class="variable">tagsCodeValue</span> <span class="operator">=</span></span><br><span class="line">            MessageExtBrokerInner.tagsString2tagsCode(topicFilterType, msgInner.getTags());</span><br><span class="line">    msgInner.setTagsCode(tagsCodeValue);</span><br><span class="line">    msgInner.setPropertiesString(MessageDecoder.messageProperties2String(msgExt.getProperties()));</span><br><span class="line"></span><br><span class="line">    msgInner.setSysFlag(msgExt.getSysFlag());</span><br><span class="line">    msgInner.setBornTimestamp(msgExt.getBornTimestamp());</span><br><span class="line">    msgInner.setBornHost(msgExt.getBornHost());</span><br><span class="line">    msgInner.setStoreHost(msgExt.getStoreHost());</span><br><span class="line">    msgInner.setReconsumeTimes(msgExt.getReconsumeTimes());</span><br><span class="line">    <span class="comment">//不需要等待存储完成后才返回</span></span><br><span class="line">    msgInner.setWaitStoreMsgOK(<span class="literal">false</span>);</span><br><span class="line">    MessageAccessor.clearProperty(msgInner, MessageConst.PROPERTY_DELAY_TIME_LEVEL);</span><br><span class="line">    <span class="comment">//设置topic的值为REAL_TOPIC属性值，这是原始topic，可能是重试topic或者真实topic</span></span><br><span class="line">    msgInner.setTopic(msgInner.getProperty(MessageConst.PROPERTY_REAL_TOPIC));</span><br><span class="line">    <span class="comment">//设置queueId的值为REAL_QID属性值，这是原始queueId，可能是重试queueId或者真实queueId</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">queueIdStr</span> <span class="operator">=</span> msgInner.getProperty(MessageConst.PROPERTY_REAL_QUEUE_ID);</span><br><span class="line">    <span class="type">int</span> <span class="variable">queueId</span> <span class="operator">=</span> Integer.parseInt(queueIdStr);</span><br><span class="line">    msgInner.setQueueId(queueId);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> msgInner;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-5-syncDeliver同步投递消息"><a href="#3-5-syncDeliver同步投递消息" class="headerlink" title="3.5 syncDeliver同步投递消息"></a>3.5 syncDeliver同步投递消息</h3><p><strong>syncDeliver内部调用asyncPutMessage方法同步投递消息，投递完毕之后，更新offsetTable中的对应延迟队列的消费偏移量。</strong></p>
+<p><strong>这里有个bug，第三个参数应该使用当前偏移量，而不是最开始的偏移量，在4.9.4版本已经修复。</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * DeliverDelayedMessageTimerTask的方法</span></span><br><span class="line"><span class="comment"> * 同步投递</span></span><br><span class="line"><span class="comment"> * 这里有个bug，第三个参数应该使用当前偏移量，而不是最开始的偏移量，在4.9.4版本已经修复</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> msgInner 内部消息对象</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> msgId    消息id</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> offset   当前消费偏移量</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> offsetPy 消息物理偏移量</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> sizePy   消息大小</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="type">boolean</span> <span class="title function_">syncDeliver</span><span class="params">(MessageExtBrokerInner msgInner, String msgId, <span class="type">long</span> offset, <span class="type">long</span> offsetPy,</span></span><br><span class="line"><span class="params">                            <span class="type">int</span> sizePy)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//投递消息，内部调用asyncPutMessage方法</span></span><br><span class="line">    <span class="type">PutResultProcess</span> <span class="variable">resultProcess</span> <span class="operator">=</span> deliverMessage(msgInner, msgId, offset, offsetPy, sizePy, <span class="literal">false</span>);</span><br><span class="line">    <span class="comment">//投递结果</span></span><br><span class="line">    <span class="type">PutMessageResult</span> <span class="variable">result</span> <span class="operator">=</span> resultProcess.get();</span><br><span class="line">    <span class="type">boolean</span> <span class="variable">sendStatus</span> <span class="operator">=</span> result != <span class="literal">null</span> &amp;&amp; result.getPutMessageStatus() == PutMessageStatus.PUT_OK;</span><br><span class="line">    <span class="keyword">if</span> (sendStatus) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//如果发送成功，那么更新offsetTable中的消费偏移量</span></span><br><span class="line">        ScheduleMessageService.<span class="built_in">this</span>.updateOffset(<span class="built_in">this</span>.delayLevel, resultProcess.getNextOffset());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> sendStatus;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="4-延迟消息的总结"><a href="#4-延迟消息的总结" class="headerlink" title="4 延迟消息的总结"></a>4 延迟消息的总结</h2><p>投递的消息在broker处理过成功，会判断如果是延迟消息，即DelayTimeLevel大于0，那么替换topic为SCHEDULE_TOPIC_XXXX，替换queueId为延迟队列id，<br>id &#x3D; level - 1，如果延迟级别大于最大级别，则设置为最大级别18，默认延迟2h。这些参数可以在broker端配置类MessageStoreConfig中配置。</p>
+<p>最后保存真实topic到消息的REAL_TOPIC属性，保存queueId到消息的REAL_QID属性，方便后面恢复。</p>
+<p>而在RocketMQ端，通过ScheduleMessageService调度消息服务处理投递到SCHEDULE_TOPIC_XXXX的延迟消息。</p>
+<p>从源码中可以看到，每个延迟级别都有一个线程专门处理该级别的延迟消息，这样避免了消息的排序，具体的处理逻辑其被封装为一个DeliverDelayedMessageTimerTask线程任务。</p>
+<p>不同延迟级别的处理线程将会从各自对应的延迟队列中获取延迟消息，然后和当前时间比较看消息是否过期，如果消息过期，那么构造一个新的消息，设置topic为REAL_TOPIC属性值，即原始topic，设置queueId为REAL_QID属性值，即原始queueId，即恢复为正常消息然后再次进行投递。</p>
+<p>另外，延迟消息的consumeQueue条目中的tagsCode并不是tag的hashCOde，而是该条消息的到期时间。</p>
+<p>RocketMQ在内部通过内部topic替换实现延迟消息，非常巧妙，而且并发消息重试也是使用了延迟消息。</p>
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1739713349/" target="_blank">24、RocketMQ源码分析：延时消息实现原理解析</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
+                        
+                            <a href="/category/Web/">Web</a>
+                        
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
+                        
+                            <a href="/tag/RocketMq/">RocketMq</a>
+                        
+                    </div>
+                
+                <div class="article-prev-next">
+                    
+                        <a href="/article/1739713348/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1739713348/" title="发布于 2025-02-16 09:42">23、RocketMQ源码分析：DefaultMQPushConsumer消费者重试消息和死信消息源码</a>
+                        <br>
+                    
+                    
+                        <a href="/article/1739713350/" class="next-prefix">» </a> 下一篇：    <a href="/article/1739713350/" title="发布于 2025-02-16 09:42">25、RocketMQ源码分析：DefaultMQPushConsumer消费进度管理源码</a>
+                    
+                </div>
+            </div>
+            
+    <div class="article-comments">
+        
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
+    
+</div>
+    <div id="footer"></div>
+    <div id="sidebar">
+    <div class="menu-wrap" style="display:none;">
+        
+            <div class="menu-notice">
+                <span class="iconfont icon-notice"></span>
+                <div class="notice">
+                    <span>简单地活着，肆意而又精彩！</span>
+                </div>
+            </div>
+        
+        <nav class="menu">
+            <div class="menu-introduce"> 
+                <div class="introduce-avatar">
+                    <img src="/image/sidebar/avatar.jpg">
+                </div> 
+                <div class="introduce-info"> 
+                    <div class="introduce-user"><span>Live For Code</span></div>
+                </div> 
+            </div> 
+            <div class="menu-list">
+                <ul>
+                    
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                    
+                        <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
+                    
+                        <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
+                    
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                    
+                        <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
+                    
+                        <li class=""><a href="/about" class="" target="_self"><span class="iconfont icon-about-fill"></span>关于</a></li>
+                    
+                        <li class=""><a href="/atom.xml" class="" target="_blank"><span class="iconfont icon-rss"></span>订阅</a></li>
+                    
+                        <li class=""><a href="javascript:;" class="search" target="_self"><span class="iconfont icon-search-menu"></span>搜索</a></li>
+                    
+                        <li class=""><a href="/comment" class="" target="_self"><span class="iconfont icon-comments-fill"></span>留言板</a></li>
+                    
+                        <li class=""><a href="/friend" class="" target="_self"><span class="iconfont icon-link"></span>友情链接</a></li>
+                    
+                </ul> 
+            </div> 
+            <div class="menu-link">
+                <div class="box">
+                    <div class="image-box"></div>
+                </div>
+                
+                    <a name="知乎" href="https://www.zhihu.com/people/wo-xin-de-love" class="" target="_blank" data=""><span class="iconfont icon-zhihu"></span></a>
+                
+                    <a name="微博" href="https://weibo.com/u/3939432776" class="" target="_blank" data=""><span class="iconfont icon-weibo"></span></a>
+                
+                    <a name="QQ" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"><span class="iconfont icon-qq"></span></a>
+                
+                    <a name="微信" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"><span class="iconfont icon-wechat"></span></a>
+                
+                    <a name="GitHub" href="https://github.com/first19326" class="" target="_blank" data=""><span class="iconfont icon-github"></span></a>
+                
+            </div> 
+        </nav>
+        <button class="menu-button-close"></button>
+        <div class="morph-shape" id="morph-shape" data-morph-open="M-7.312,0H15c0,0,66,113.339,66,399.5C81,664.006,15,800,15,800H-7.312V0z;M-7.312,0H100c0,0,0,113.839,0,400c0,264.506,0,400,0,400H-7.312V0z">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 800" preserveAspectRatio="none">
+                <path d="M-7.312,0H0c0,0,0,113.839,0,400c0,264.506,0,400,0,400h-7.312V0z"/>
+            </svg>
+        </div>
+    </div>
+    <button class="menu-button-open">MENU</button>
+    <div class="menu-cover"></div>
+</div>
+    <link type="text/css" rel="stylesheet" href="/css/search.css">
+<script type="text/javascript" src="/js/iscroll.js"></script>
+<script type="text/javascript" src="/js/instantsearch.min.js"></script>
+<div class="search-window">
+    <div class="search-content">
+        <div class="search-content-icon">
+            <i class="iconfont icon-search"></i>
+        </div>
+        <div id="search-input" class="search-input"></div>
+    </div>
+
+    <div class="search-scroll">
+        <div class="search-result">
+            <div id="search-stats" class="search-stats"></div>
+            <div id="search-hits"></div>
+            <div id="search-pagination" class="search-pagination"></div>
+        </div>
+    </div>
+
+    <span class="search-close-icon">
+        <i class="iconfont icon-close"></i>
+    </span>
+</div>
+    <div id="tools">
+    <div class="progressbar-top"></div>
+
+    
+        <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
+        <script type="text/javascript" src="/js/APlayer.min.js"></script>
+        <script type="text/javascript" src="/js/Meting.min.js"></script>
+        <meting-js id="3778678" lrcshow="false" server="netease" type="playlist" fixed="true" autoplay="false" loop="all" order="random" preload="auto" volume="0.67" mutex="true"></meting-js>
+    
+    
+    <div class="wrap-right">
+        <div class="setting">
+            <div class="iconbox favorites" switch="false">
+                <span class="iconfont icon-favorites"></span>
+                <span class="icontext">关注</span>
+            </div>
+            <div class="iconbox mode">
+                <div class="light">
+                    <span class="iconfont icon-daymode"></span>
+                    <span class="icontext">浅色模式</span>
+                </div>
+                <div class="dark">
+                    <span class="iconfont icon-nightmode-fill"></span>
+                    <span class="icontext">深色模式</span>
+                </div>
+            </div>
+            <a href="javascript:;" target="_self" class="search">
+                <div class="iconbox">
+                    <span class="iconfont icon-search-menu"></span>
+                    <span class="icontext">搜索</span>
+                </div>
+            </a>
+            <div class="iconbox bottom">
+                <div style="display: inline-block; transform: rotate(180deg);">
+                    <span class="iconfont icon-top"></span>
+                </div>
+                <span class="icontext">跳至底部</span>
+            </div>
+        </div>
+        <div class="iconbox set">
+            <div style="display: inline-block;">
+                <span class="iconfont icon-setting"></span>
+            </div>
+            <span class="icontext">设置</span>
+        </div>
+        <div class="iconbox top">
+            <span class="iconfont icon-top"></span>
+            <span class="icontext">返回顶部</span>
+        </div>
+    </div>
+    <div class="loading"></div>
+</div>
+    <script>
+    window.config = {
+        GitHubUserName     : "first19326",
+        GitHubRepositories : "Hexo-LiveForCode",
+
+        User             : "Live For Code",
+        UserAvatar       : "/image/sidebar/avatar.jpg",
+        WebsiteStartDate : "2020-01-01",
+
+        WebsiteTitleBlur         : "(◍´꒳`◍) Hi, Live For Code",
+        WebsiteTitleBlurTimeOut  : 500,
+        WebsiteTitleFocus        : "(*´∇｀*) 欢迎回来!",
+        WebsiteTitleFocusTimeOut : 1000,
+        WebsiteFavicon           : "/image/website/logo.png",
+
+        ProgressBar : {
+            id       : "topProgressBar",
+            color    : "#77B6FF",
+            height   : "2px",
+            duration : 0.2
+        },
+
+        Loading: {
+            rebound : {
+                tension  : 16,
+                friction : 5
+            },
+            spinner : {
+                id     : "spinner",
+                radius : 90,
+                sides  : 3,
+                depth  : 4,
+                colors : {
+                    background : "#F0F0F0",
+                    stroke     : "#272633",
+                    base       : "",
+                    child      : "#272633"
+                },
+                alwaysForward : true,
+                restAt        : 0.5,
+                renderBase    : false
+            }
+        },
+
+        HomeHeaderAnimationRendered : true,
+        HomeHeaderAnimation         : {
+            radius      : 15,
+            density     : 0.2,
+            color       : "rgba(255, 255, 255, .2)",
+            clearOffset : 0.3
+        },
+
+        BackAnimationRendered          : true,
+        IEBrowserBackAnimationRendered : false,
+        BackAnimation                  : {
+            colorSaturation  : "60%",
+            colorBrightness  : "50%",
+            colorAlpha       : 0.5,
+            colorCycleSpeed  : 5,
+            verticalPosition : "random",
+            horizontalSpeed  : 200,
+            ribbonCount      : 3,
+            strokeSize       : 0,
+            parallaxAmount   : -0.2,
+            animateSections  : true
+        },
+
+        HomeHeaderImage : [
+            
+                "/image/header/home.jpg",
+            
+                "/image/header/home.jpeg",
+            
+                "/image/header/2023-04-17-20-51-03.jpg",
+            
+                "/image/header/2023-04-17-20-54-07.jpg",
+            
+                "/image/header/2023-04-17-20-54-22.jpg",
+            
+                "/image/header/2023-04-17-20-55-25.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+        HomeBannerText  : "",
+
+        ArticleHeaderImage : [
+            
+                "/image/header/article.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+
+        OtherBannerText : "",
+
+        Error : {
+            icon    : "icon-swimming",
+            title   : "PAGE NOT FOUND",
+            content : [
+                
+                    "很抱歉，您访问的页面不存在！",
+                
+                    "可能是输入地址有误或该地址已变更。",
+                
+            ],
+            buttons : [
+                
+                    {
+                        icon  : "icon-home",
+                        text  : "返回首页",
+                        href  : "https://fadeway32.gitee.io/",
+                        class : ""
+                    },
+                
+            ]
+        },
+
+        MenuNotice : {
+            enable : true,
+            notice : "简单地活着，肆意而又精彩！",
+            speed  : 20
+        },
+        MenuList : [
+            
+                {
+                    name   : "首页",
+                    icon   : "icon-home-fill",
+                    href   : "/",
+                    type   : "index",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "分类",
+                    icon   : "icon-folder-fill",
+                    href   : "/category",
+                    type   : "category",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "标签",
+                    icon   : "icon-discount-fill",
+                    href   : "/tag",
+                    type   : "tag",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "归档",
+                    icon   : "icon-calendar-fill",
+                    href   : "/archive",
+                    type   : "archive",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "赞赏",
+                    icon   : "icon-heart-fill",
+                    href   : "/donate",
+                    type   : "donate",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "关于",
+                    icon   : "icon-about-fill",
+                    href   : "/about",
+                    type   : "about",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "订阅",
+                    icon   : "icon-rss",
+                    href   : "/atom.xml",
+                    type   : "",
+                    class  : "",
+                    target : "_blank"
+                },
+            
+                {
+                    name   : "搜索",
+                    icon   : "icon-search-menu",
+                    href   : "javascript:;",
+                    type   : "",
+                    class  : "search",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "留言板",
+                    icon   : "icon-comments-fill",
+                    href   : "/comment",
+                    type   : "comment",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "友情链接",
+                    icon   : "icon-link",
+                    href   : "/friend",
+                    type   : "friend",
+                    class  : "",
+                    target : "_self"
+                },
+            
+        ],
+        MenuLink : [
+            
+                
+                    {
+                        name   : "知乎",
+                        icon   : "icon-zhihu",
+                        href   : "https://www.zhihu.com/people/wo-xin-de-love",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "微博",
+                        icon   : "icon-weibo",
+                        href   : "https://weibo.com/u/3939432776",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "QQ",
+                        icon   : "icon-qq",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"
+                    },
+                
+                    {
+                        name   : "微信",
+                        icon   : "icon-wechat",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"
+                    },
+                
+                    {
+                        name   : "GitHub",
+                        icon   : "icon-github",
+                        href   : "https://github.com/first19326",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+            
+        ],
+
+        FooterStyle : 2,
+        BottomText  : "<div><span class='face'>ღゝ◡╹)ノ♡</span></div><div>【人生若只如初见<span><i class='iconfont icon-like-fill'></i></span>何事秋风悲画扇】</div><div>&copy; 2020-2022 WorstOne. All Rights Reserved.</div>",
+
+        ConsoleList : [
+            
+                
+                    [
+                        
+                            
+                                "Based on cnblogs theme SimpleMemory.",
+                            
+                                "",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "SimpleMemory Author:",
+                            
+                                "BNDong",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "Theme:",
+                            
+                                "LiveForCode",
+                            
+                        
+                    ],
+                
+            
+        ],
+
+        FontIconExtend : "",
+
+        Donate : {
+            paypal  : "",
+            bitcoin : "",
+            alipay  : "/image/donate/alipay.png",
+            wechat  : "/image/donate/wechat.png"
+        },
+
+        Search : {
+            applicationID : "758UIQ1V0H",
+            apiKey        : "2e038c318ac6813e4b4baa91f6ccfa63",
+            indexName     : "hexo2",
+            hits          : {
+                page : 30
+            },
+            labels        : {
+                placeholder : "搜索",
+                empty       : "未发现与 「${query}」 相关的内容",
+                stats       : "${hits} 条相关条目，使用了 ${time} 毫秒",
+            }
+        }, 
+
+        Valine : {
+            switch         : true,
+            el             : ".comments-content",
+            appId          : "srhKtvWPQTWYKh3qX8G8M7v0-gzGzoHsz",
+            appKey         : "8uVSP1q6UlALVC5igYfIfv2h",
+            serverURLs     : "",
+            placeholder    : "你是我一生只会遇见一次的惊喜...",
+            avatar         : "mm",
+            meta           : "nick,mail,link",
+            requiredFields : "nick,mail",
+            pageSize       : 5,
+            lang           : "zh-cn",
+            visitor        : true,
+            enableQQ       : true
+        },
+
+        Tocbot : {
+            switch                : true,
+            tocSelector           : ".toc",
+            contentSelector       : ".article-body",
+            headingSelector       : "h1, h2, h3, h4, h5",
+            headingsOffset        : 0,
+            scrollSmooth          : true,
+            scrollSmoothOffset    : -5,
+            positionFixedSelector : ".toc",
+            positionFixedClass    : "toc-fixed",
+            fixedSidebarOffset    : "",
+        },
+
+        Require : {
+            baseUrl     : "/js/",
+            waitSeconds : 100
+        },
+
+        Music : {
+            type : "Meting"
+        },
+        APlayer : {
+            container : ".aplayer",
+            fixed     : true,
+            autoplay  : true,
+            loop      : "all",
+            order     : "random",
+            preload   : "auto",
+            volume    : 0.67,
+            mutex     : true,
+            lrcType   : 2,
+            audio     : [
+                
+                    {
+                        name   : "Endless Tears",
+                        artist : "CLIFF EDGE",
+                        cover  : "/music/cover/Endless Tears.jpg",
+                        url    : "/music/song/Endless Tears.mp3",
+                        lrc    : "/music/lrc/Endless Tears.lrc"
+                    },
+                
+            ]
+        },
+        Meting : {
+            id       : "3778678", 
+            lrcshow  : false, 
+            server   : "netease", 
+            type     : "playlist", 
+            fixed    : true, 
+            autoplay : false, 
+            loop     : "all", 
+            order    : "random", 
+            preload  : "auto", 
+            volume   : 0.67, 
+            mutex    : true
+        },
+
+        Mouse : {
+            enable  : true,
+            options : {
+                size  : 6,
+                sizeF : 24
+            }
+        },
+
+        LazyLoad : {
+            default : "/image/website/lazyload.svg"
+        },
+  
+        Style : {
+            aplayer          : "/css/APlayer.css",
+            archive          : "/css/archive.css",
+            base             : "/css/base.css",
+            clipboard        : "/css/clipboard.css",
+            code             : "/css/code.css",
+            donate           : "/css/donate.css",
+            fancybox         : "/css/jquery.fancybox.css",
+            footer           : "/css/footer.css",
+            iconfont         : "/iconfont/iconfont.css",
+            index            : "/css/index.css",
+            menuBubble       : "/css/menu-bubble.css",
+            mouse            : "/css/mouse.css",
+            page             : "/css/page.css",
+            post             : "/css/post.css",
+            search           : "/css/search.css",
+            tocbot           : "/css/tocbot.css",
+            valine           : "/css/valine.css"
+        },
+
+        Script: {
+            aplayer          : "/js/APlayer.min.js",
+            config           : "/js/require.config.js",
+            index            : "/js/index.js",
+            instantSearch    : "/js/instantsearch.min.js",
+            iscroll          : "/js/iscroll.js",
+            jQuery           : "/js/jquery-3.4.1.min.js",
+            loading          : "/js/loading.js",
+            meting           : "/js/Meting.min.js",
+            require          : "/js/require.min.js"
+        },
+
+        Font: {
+            LongCang    : "/font/LongCang.css",
+            Monda       : "/font/Monda.css",
+            NotoSansSC  : "/font/NotoSansSC.css",
+            NotoSerifSC : "/font/NotoSerifSC.css",
+            Playball    : "/font/Playball.css",
+            PTMono      : "/font/PTMono.css",
+            Roboto      : "/font/Roboto.css",
+            RobotoSlab  : "/font/RobotoSlab.css",
+            Rosario     : "/font/Rosario.css",
+            UbuntuMono  : "/font/UbuntuMono.css"
+        },
+
+        Suffix : {
+            about : "你知道的越多,你不知道的越多"
+        },
+            
+        Theme : {
+            url  : "https://fadeway32.gitee.io/",
+            name : "fadeway32"
+        }  
+    };
+</script>
+    <script type="text/javascript" src="/js/index.js"></script>
+</body>
+</html>

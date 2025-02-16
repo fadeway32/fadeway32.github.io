@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <!--    <meta name="referrer" content="origin">-->
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>
+        
+            14、RocketMQ源码分析：BrokerCommitLogDispatcher异步构建ConsumeQueue和IndexFile源码解析
+        
+    </title>
+    <link rel="shortcut icon" href="#"/>
+
+    <link type="text/css" rel="stylesheet" href="/font/LongCang.css">
+    <link type="text/css" rel="stylesheet" href="/font/Monda.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSansSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSerifSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/Playball.css">
+    <link type="text/css" rel="stylesheet" href="/font/PTMono.css">
+    <link type="text/css" rel="stylesheet" href="/font/Roboto.css">
+    <link type="text/css" rel="stylesheet" href="/font/RobotoSlab.css">
+    <link type="text/css" rel="stylesheet" href="/font/Rosario.css">
+    <link type="text/css" rel="stylesheet" href="/font/UbuntuMono.css">
+
+    <link type="text/css" rel="stylesheet" href="/css/base.css">
+    <link type="text/css" rel="stylesheet" href="/css/code.css">
+
+    <script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
+<meta name="generator" content="Hexo 6.2.0"></head>
+<body>
+    <a id="cover"></a>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
+<header>
+    <meta name="referrer" content="no-referrer">
+</header>
+<div id="header" class="header">
+    <div class="vertical">
+        <div class="inner">
+            
+                <h1 class="header-subtitle">14、RocketMQ源码分析：BrokerCommitLogDispatcher异步构建ConsumeQueue和IndexFile源码解析</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2025-02-16
+                        </span>
+                        
+                            <span id="/article/1739713339/" class="leancloud_visitors" data-flag-title="14、RocketMQ源码分析：BrokerCommitLogDispatcher异步构建ConsumeQueue和IndexFile源码解析">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1739713339/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">RocketMq</span>
+                        
+                    
+                </div>
+            
+        </div>
+    </div>
+    
+</div>
+<div id="container">
+    
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="14、RocketMQ源码分析：BrokerCommitLogDispatcher异步构建ConsumeQueue和IndexFile源码解析"><a href="#14、RocketMQ源码分析：BrokerCommitLogDispatcher异步构建ConsumeQueue和IndexFile源码解析" class="headerlink" title="14、RocketMQ源码分析：BrokerCommitLogDispatcher异步构建ConsumeQueue和IndexFile源码解析"></a>14、RocketMQ源码分析：BrokerCommitLogDispatcher异步构建ConsumeQueue和IndexFile源码解析</h1><p>分类：<a target="_blank" rel="noopener" href="https://cxykk.com/?cat=318">RocketMQ源码分析（1）</a>  2024-03-27 阅读(138)</p>
+<blockquote>
+<p>基于RocketMQ release-4.9.3，深入的介绍了Broker 消息重放服务ReputMessageService中基于 CommitLogDispatcher<br>异步构建ConsumeQueue和IndexFile的源码。</p>
+</blockquote>
+<p>**上一章我们学习了ReputMessageService消息重放服务的总体流程：<br>**<a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_43767015/article/details/127454060">RocketMQ源码(13)—Broker 消息重放服务ReputMessageService源码解析</a><br>**，这一篇文章我们将深入学习CommitLogDispatcherBuildConsumeQueue、CommitLogDispatcherBuildIndex到底是如何构建异步构建ConsumeQueue和IndexFile索引文件的。<br>**</p>
+<h4 id="文章目录"><a href="#文章目录" class="headerlink" title="文章目录"></a>文章目录</h4><ul>
+<li>1 CommitLogDispatcherBuildConsumeQueue构建ConsumeQueue</li>
+<li><ul>
+<li>1.1 putMessagePositionInfo写入消息位置信息</li>
+</ul>
+</li>
+<li>1.2 findConsumeQueue查找ConsumeQueue</li>
+<li><ul>
+<li>1.2.1 创建ConsumeQueue</li>
+</ul>
+</li>
+<li>1.3 putMessagePositionInfoWrapper追加消息索引</li>
+<li><ul>
+<li><h2 id="1-3-1-putMessagePositionInfo写入消息位置信息"><a href="#1-3-1-putMessagePositionInfo写入消息位置信息" class="headerlink" title="1.3.1 putMessagePositionInfo写入消息位置信息"></a>1.3.1 putMessagePositionInfo写入消息位置信息</h2><pre><code>  - 1.3.1.1 MappedFile#appendMessage追加消息
+</code></pre>
+</li>
+</ul>
+</li>
+<li>2 CommitLogDispatcherBuildIndex构建IndexFile</li>
+<li><ul>
+<li>2.1 buildIndex构建Index索引</li>
+</ul>
+</li>
+<li><ul>
+<li>2.1.1 retryGetAndCreateIndexFile获取IndexFile</li>
+<li><ul>
+<li>2.1.1.1 getAndCreateLastIndexFile获取最新IndexFile</li>
+<li>1.1.1.2 创建IndexFile</li>
+</ul>
+</li>
+<li>2.1.2 buildKey构建Key</li>
+<li><h2 id="2-1-3-putKey构建Index索引"><a href="#2-1-3-putKey构建Index索引" class="headerlink" title="2.1.3 putKey构建Index索引"></a>2.1.3 putKey构建Index索引</h2><pre><code>  - 2.1.3.1 IndexFile#putKey构建Index索引
+</code></pre>
+</li>
+</ul>
+</li>
+<li>3 IndexFile小结</li>
+</ul>
+<h2 id="1-CommitLogDispatcherBuildConsumeQueue构建ConsumeQueue"><a href="#1-CommitLogDispatcherBuildConsumeQueue构建ConsumeQueue" class="headerlink" title="1 CommitLogDispatcherBuildConsumeQueue构建ConsumeQueue"></a>1 CommitLogDispatcherBuildConsumeQueue构建ConsumeQueue</h2><p>CommitLogDispatcherBuildConsumeQueue用于接收分发请求并构建ConsumeQueue。</p>
+<p>对于非事务消息或者是事务commit消息，则调用<strong>DefaultMessageStore#putMessagePositionInfo</strong><br>方法写入消息位置信息到consumeQueue，如果是事务prepared消息或者是事务rollback消息，则不进行处理。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">CommitLogDispatcherBuildConsumeQueue</span> <span class="keyword">implements</span> <span class="title class_">CommitLogDispatcher</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * DefaultMessageStore的方法</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> request 分派消息请求</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">dispatch</span><span class="params">(DispatchRequest request)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//从该消息的消息系统flag中获取事务状态</span></span><br><span class="line">        <span class="keyword">final</span> <span class="type">int</span> <span class="variable">tranType</span> <span class="operator">=</span> MessageSysFlag.getTransactionValue(request.getSysFlag());</span><br><span class="line">        <span class="keyword">switch</span> (tranType) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//如果不是事务消息或者是事务commit消息，则进行处理</span></span><br><span class="line">            <span class="keyword">case</span> MessageSysFlag.TRANSACTION_NOT_TYPE:</span><br><span class="line">            <span class="keyword">case</span> MessageSysFlag.TRANSACTION_COMMIT_TYPE:</span><br><span class="line">                <span class="comment">//写入消息位置信息到consumeQueue</span></span><br><span class="line">                DefaultMessageStore.<span class="built_in">this</span>.putMessagePositionInfo(request);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="comment">//如果是事务prepared消息或者是事务rollback消息，则不进行处理</span></span><br><span class="line">            <span class="keyword">case</span> MessageSysFlag.TRANSACTION_PREPARED_TYPE:</span><br><span class="line">            <span class="keyword">case</span> MessageSysFlag.TRANSACTION_ROLLBACK_TYPE:</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-1-putMessagePositionInfo写入消息位置信息"><a href="#1-1-putMessagePositionInfo写入消息位置信息" class="headerlink" title="1.1 putMessagePositionInfo写入消息位置信息"></a>1.1 putMessagePositionInfo写入消息位置信息</h3><p>该方法首先调用<strong>findConsumeQueue</strong>方法根据topic和队列id确定需要写入的ConsumeQueue。然后调用*<br>*ConsumeQueue#putMessagePositionInfoWrapper**方法将消息信息追加到ConsumeQueue索引文件中。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * DefaultMessageStore的方法</span></span><br><span class="line"><span class="comment"> * 写入消息位置信息</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> dispatchRequest 分派消息请求</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">putMessagePositionInfo</span><span class="params">(DispatchRequest dispatchRequest)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 根据topic和队列id确定ConsumeQueue</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="type">ConsumeQueue</span> <span class="variable">cq</span> <span class="operator">=</span> <span class="built_in">this</span>.findConsumeQueue(dispatchRequest.getTopic(), dispatchRequest.getQueueId());</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 将消息信息追加到ConsumeQueue索引文件中</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    cq.putMessagePositionInfoWrapper(dispatchRequest, checkMultiDispatchQueue(dispatchRequest));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-2-findConsumeQueue查找ConsumeQueue"><a href="#1-2-findConsumeQueue查找ConsumeQueue" class="headerlink" title="1.2 findConsumeQueue查找ConsumeQueue"></a>1.2 findConsumeQueue查找ConsumeQueue</h3><p>该方法根据topic和队列id确定需要写入的ConsumeQueue，查找的目标就是consumeQueueTable缓存集合。还可以知道，ConsumeQueue文件是延迟创建的，即当需要到该ConsumeQueue的时候才会新建。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * DefaultMessageStore</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 根据topic和队列id查找ConsumeQueue</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> ConsumeQueue <span class="title function_">findConsumeQueue</span><span class="params">(String topic, <span class="type">int</span> queueId)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//从consumeQueueTable中获取该topic所有的队列</span></span><br><span class="line">    ConcurrentMap&lt;Integer, ConsumeQueue&gt; map = consumeQueueTable.get(topic);</span><br><span class="line">    <span class="comment">//如果没有保存该topic的喜喜，那么存入一个空的map</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="literal">null</span> == map) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        ConcurrentMap&lt;Integer, ConsumeQueue&gt; newMap = <span class="keyword">new</span> <span class="title class_">ConcurrentHashMap</span>&lt;Integer, ConsumeQueue&gt;(<span class="number">128</span>);</span><br><span class="line">        ConcurrentMap&lt;Integer, ConsumeQueue&gt; oldMap = consumeQueueTable.putIfAbsent(topic, newMap);</span><br><span class="line">        <span class="keyword">if</span> (oldMap != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            map = oldMap;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            map = newMap;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 从map中根据queueId 获取对应的 消费队列</span></span><br><span class="line">    <span class="type">ConsumeQueue</span> <span class="variable">logic</span> <span class="operator">=</span> map.get(queueId);</span><br><span class="line">    <span class="comment">//如果ConsumeQueue为null，那么新建，所以说ConsumeQueue是延迟创建的</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="literal">null</span> == logic) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//新建ConsumeQueue</span></span><br><span class="line">        <span class="type">ConsumeQueue</span> <span class="variable">newLogic</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ConsumeQueue</span>(</span><br><span class="line">                topic,</span><br><span class="line">                queueId,</span><br><span class="line">                StorePathConfigHelper.getStorePathConsumeQueue(<span class="built_in">this</span>.messageStoreConfig.getStorePathRootDir()),</span><br><span class="line">                <span class="comment">//单个文件大小，默认为可存储30W数据的大小，每条数据20Byte</span></span><br><span class="line">                <span class="built_in">this</span>.getMessageStoreConfig().getMappedFileSizeConsumeQueue(),</span><br><span class="line">                <span class="built_in">this</span>);</span><br><span class="line">        <span class="comment">//存入map中，如果已存在则取旧的</span></span><br><span class="line">        <span class="type">ConsumeQueue</span> <span class="variable">oldLogic</span> <span class="operator">=</span> map.putIfAbsent(queueId, newLogic);</span><br><span class="line">        <span class="keyword">if</span> (oldLogic != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            logic = oldLogic;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">// light message queue(LMQ)</span></span><br><span class="line">            <span class="keyword">if</span> (MixAll.isLmq(topic)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                lmqConsumeQueueNum.getAndIncrement();</span><br><span class="line">            &#125;</span><br><span class="line">            logic = newLogic;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> logic;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="1-2-1-创建ConsumeQueue"><a href="#1-2-1-创建ConsumeQueue" class="headerlink" title="1.2.1 创建ConsumeQueue"></a>1.2.1 创建ConsumeQueue</h4><p>创建<strong>ConsumeQueue</strong>的构造器方法如下，将会初始化各种属性，然后会初始化<strong>20个字节的堆外内存</strong>，用于临时存储单个索引，这段内存可循环使用。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="title function_">ConsumeQueue</span><span class="params">(</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> String topic,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> <span class="type">int</span> queueId,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> String storePath,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> <span class="type">int</span> mappedFileSize,</span></span><br><span class="line"><span class="params">        <span class="keyword">final</span> DefaultMessageStore defaultMessageStore)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//各种属性</span></span><br><span class="line">    <span class="built_in">this</span>.storePath = storePath;</span><br><span class="line">    <span class="comment">//单个文件大小，默认为可存储30W数据的大小，每条数据20Byte</span></span><br><span class="line">    <span class="built_in">this</span>.mappedFileSize = mappedFileSize;</span><br><span class="line">    <span class="built_in">this</span>.defaultMessageStore = defaultMessageStore;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">this</span>.topic = topic;</span><br><span class="line">    <span class="built_in">this</span>.queueId = queueId;</span><br><span class="line">    <span class="comment">//queue的路径 $HOME/store/consumequeue/&#123;topic&#125;/&#123;queueId&#125;/&#123;fileName&#125;</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">queueDir</span> <span class="operator">=</span> <span class="built_in">this</span>.storePath</span><br><span class="line">            + File.separator + topic</span><br><span class="line">            + File.separator + queueId;</span><br><span class="line">    <span class="comment">//创建mappedFileQueue，内部保存在该queueId下面的所有的consumeQueue文件集合mappedFiles相当于一个文件夹</span></span><br><span class="line">    <span class="built_in">this</span>.mappedFileQueue = <span class="keyword">new</span> <span class="title class_">MappedFileQueue</span>(queueDir, mappedFileSize, <span class="literal">null</span>);</span><br><span class="line">    <span class="comment">//分配20个字节的堆外内存，用于临时存储单个索引，这段内存可循环使用</span></span><br><span class="line">    <span class="built_in">this</span>.byteBufferIndex = ByteBuffer.allocate(CQ_STORE_UNIT_SIZE);</span><br><span class="line">    <span class="comment">//是否启用消息队列的扩展存储，默认false</span></span><br><span class="line">    <span class="keyword">if</span> (defaultMessageStore.getMessageStoreConfig().isEnableConsumeQueueExt()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="built_in">this</span>.consumeQueueExt = <span class="keyword">new</span> <span class="title class_">ConsumeQueueExt</span>(</span><br><span class="line">                topic,</span><br><span class="line">                queueId,</span><br><span class="line">                StorePathConfigHelper.getStorePathConsumeQueueExt(defaultMessageStore.getMessageStoreConfig().getStorePathRootDir()),</span><br><span class="line">                defaultMessageStore.getMessageStoreConfig().getMappedFileSizeConsumeQueueExt(),</span><br><span class="line">                defaultMessageStore.getMessageStoreConfig().getBitMapLengthConsumeQueueExt()</span><br><span class="line">        );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>*ConsumeQueue文件可以看成是基于topic的commitlog索引文件，故ConsumeQueue文件夹的组织方式如下：topic&#x2F;queue&#x2F;file三层组织结构，具体存储路径为：$HOME&#x2F;store&#x2F;consumequeue&#x2F;{topic}&#x2F;{queueId}&#x2F;{fileName}。<br>**</li>
+</ul>
+<p>例如topic名为TopicTest，并且有四个队列，则该topic的ConsumeQueue的组织方式为：<br><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202502162106995.png" alt="*"></p>
+<h3 id="1-3-putMessagePositionInfoWrapper追加消息索引"><a href="#1-3-putMessagePositionInfoWrapper追加消息索引" class="headerlink" title="1.3 putMessagePositionInfoWrapper追加消息索引"></a>1.3 putMessagePositionInfoWrapper追加消息索引</h3><p><strong>该方法用于构建消息索引信息并且存入找到的ConsumeQueue文件中。支持重试，最大重试30次。</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ConsumeQueue的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 将消息信息追加到ConsumeQueue索引文件中</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">putMessagePositionInfoWrapper</span><span class="params">(DispatchRequest request, <span class="type">boolean</span> multiQueue)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//最大重试次数30</span></span><br><span class="line">    <span class="keyword">final</span> <span class="type">int</span> <span class="variable">maxRetries</span> <span class="operator">=</span> <span class="number">30</span>;</span><br><span class="line">    <span class="comment">//检查ConsumeQueue文件是否可写</span></span><br><span class="line">    <span class="type">boolean</span> <span class="variable">canWrite</span> <span class="operator">=</span> <span class="built_in">this</span>.defaultMessageStore.getRunningFlags().isCQWriteable();</span><br><span class="line">    <span class="comment">//如果文件可写，并且重试次数小于30次，那么写入ConsumeQueue索引</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; maxRetries &amp;&amp; canWrite; i++) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//获取tagCode</span></span><br><span class="line">        <span class="type">long</span> <span class="variable">tagsCode</span> <span class="operator">=</span> request.getTagsCode();</span><br><span class="line">        <span class="comment">//如果支持扩展信息写入，默认false</span></span><br><span class="line">        <span class="keyword">if</span> (isExtWriteEnable()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            ConsumeQueueExt.<span class="type">CqExtUnit</span> <span class="variable">cqExtUnit</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ConsumeQueueExt</span>.CqExtUnit();</span><br><span class="line">            cqExtUnit.setFilterBitMap(request.getBitMap());</span><br><span class="line">            cqExtUnit.setMsgStoreTime(request.getStoreTimestamp());</span><br><span class="line">            cqExtUnit.setTagsCode(request.getTagsCode());</span><br><span class="line"></span><br><span class="line">            <span class="type">long</span> <span class="variable">extAddr</span> <span class="operator">=</span> <span class="built_in">this</span>.consumeQueueExt.put(cqExtUnit);</span><br><span class="line">            <span class="keyword">if</span> (isExtAddr(extAddr)) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                tagsCode = extAddr;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                log.warn(<span class="string">&quot;Save consume queue extend fail, So just save tagsCode! &#123;&#125;, topic:&#123;&#125;, queueId:&#123;&#125;, offset:&#123;&#125;&quot;</span>, cqExtUnit,</span><br><span class="line">                        topic, queueId, request.getCommitLogOffset());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 写入消息位置信息到ConsumeQueue中</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="type">boolean</span> <span class="variable">result</span> <span class="operator">=</span> <span class="built_in">this</span>.putMessagePositionInfo(request.getCommitLogOffset(),</span><br><span class="line">                request.getMsgSize(), tagsCode, request.getConsumeQueueOffset());</span><br><span class="line">        <span class="keyword">if</span> (result) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="keyword">if</span> (<span class="built_in">this</span>.defaultMessageStore.getMessageStoreConfig().getBrokerRole() == BrokerRole.SLAVE ||</span><br><span class="line">                    <span class="built_in">this</span>.defaultMessageStore.getMessageStoreConfig().isEnableDLegerCommitLog()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//修改StoreCheckpoint中的physicMsgTimestamp：最新commitlog文件的刷盘时间戳，单位毫秒</span></span><br><span class="line">                <span class="built_in">this</span>.defaultMessageStore.getStoreCheckpoint().setPhysicMsgTimestamp(request.getStoreTimestamp());</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="built_in">this</span>.defaultMessageStore.getStoreCheckpoint().setLogicsMsgTimestamp(request.getStoreTimestamp());</span><br><span class="line">            <span class="keyword">if</span> (multiQueue) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                multiDispatchLmqQueue(request, maxRetries);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">// <span class="doctag">XXX:</span> warn and notify me</span></span><br><span class="line">            log.warn(<span class="string">&quot;[BUG]put commit log position info to &quot;</span> + topic + <span class="string">&quot;:&quot;</span> + queueId + <span class="string">&quot; &quot;</span> + request.getCommitLogOffset()</span><br><span class="line">                    + <span class="string">&quot; failed, retry &quot;</span> + i + <span class="string">&quot; times&quot;</span>);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                log.warn(<span class="string">&quot;&quot;</span>, e);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// <span class="doctag">XXX:</span> warn and notify me</span></span><br><span class="line">    log.error(<span class="string">&quot;[BUG]consume queue can not write, &#123;&#125; &#123;&#125;&quot;</span>, <span class="built_in">this</span>.topic, <span class="built_in">this</span>.queueId);</span><br><span class="line">    <span class="built_in">this</span>.defaultMessageStore.getRunningFlags().makeLogicsQueueError();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="1-3-1-putMessagePositionInfo写入消息位置信息-1"><a href="#1-3-1-putMessagePositionInfo写入消息位置信息-1" class="headerlink" title="1.3.1 putMessagePositionInfo写入消息位置信息"></a>1.3.1 putMessagePositionInfo写入消息位置信息</h4><p><strong>该方法将消息位置信息写入到ConsumeQueue文件中。大概步骤为：</strong></p>
+<p><strong>1、</strong> 校验如果消息偏移量+消息大小小于等于ConsumeQueue已处理的最大物理偏移量说明该消息已经被写过了，直接返回true；<br><strong>2、</strong> 将消息信息offset、size、tagsCode按照顺序存入临时缓冲区byteBufferIndex中；<br><strong>3、</strong> 调用getLastMappedFile方法，根据偏移量获取将要写入的最新ConsumeQueue文件的MappedFile，可能会新建ConsumeQueue文件getLastMappedFile方法的源码我们此前学过了；<br><strong>4、</strong> 进行一系列校验，例如是否需要重设索引信息，是否存在写入错误等等；<br><strong>5、</strong> 更新消息最大物理偏移量maxPhysicOffset&#x3D;消息在CommitLog中的物理偏移量+消息的大小；</p>
+<ol start="6">
+<li>调用MappedFile#appendMessage方法将临时缓冲区中的索引信息追加到mappedFile的mappedByteBuffer中，并且更新wrotePosition的位置信息，到此构建ComsumeQueue完毕。</li>
+</ol>
+<p>**从该方法中我们可以知道一条消息在ConsumeQueue中的一个索引条目的存储方式，固定为8B的offset+4B的size+8BtagsCode，固定占用20B。<br>**</p>
+<p><strong>1、</strong> <strong>offset，消息在CommitLog中的物理偏移量</strong>；<br><strong>2、</strong> <strong>size，消息大小</strong>；<br><strong>3、</strong> <strong>tagsCode，延迟消息就是消息投递时间，其他消息就是消息的tags的hashCode</strong>；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 写入消息位置信息到ConsumeQueue中</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> offset   消息在CommitLog中的物理偏移量</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> size     消息大小</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> tagsCode 消息tagsCode，延迟消息就是消息投递时间，其他消息就是消息的tags的hashCode</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> cqOffset 消息在消息消费队列的偏移量</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="type">boolean</span> <span class="title function_">putMessagePositionInfo</span><span class="params">(<span class="keyword">final</span> <span class="type">long</span> offset, <span class="keyword">final</span> <span class="type">int</span> size, <span class="keyword">final</span> <span class="type">long</span> tagsCode,</span></span><br><span class="line"><span class="params">                                       <span class="keyword">final</span> <span class="type">long</span> cqOffset)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//如果消息偏移量+消息大小 小于等于ConsumeQueue已处理的最大物理偏移量</span></span><br><span class="line">    <span class="comment">//说明该消息已经被写过了，直接返回true</span></span><br><span class="line">    <span class="keyword">if</span> (offset + size &lt;= <span class="built_in">this</span>.maxPhysicOffset) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        log.warn(<span class="string">&quot;Maybe try to build consume queue repeatedly maxPhysicOffset=&#123;&#125; phyOffset=&#123;&#125;&quot;</span>, maxPhysicOffset, offset);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 将消息信息offset、size、tagsCode按照顺序存入临时缓冲区byteBufferIndex中</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="comment">//position指针移到缓冲区头部</span></span><br><span class="line">    <span class="built_in">this</span>.byteBufferIndex.flip();</span><br><span class="line">    <span class="comment">//缓冲区的限制20B</span></span><br><span class="line">    <span class="built_in">this</span>.byteBufferIndex.limit(CQ_STORE_UNIT_SIZE);</span><br><span class="line">    <span class="comment">//存入8个字节长度的offset，消息在CommitLog中的物理偏移量</span></span><br><span class="line">    <span class="built_in">this</span>.byteBufferIndex.putLong(offset);</span><br><span class="line">    <span class="comment">//存入4个字节长度的size，消息大小</span></span><br><span class="line">    <span class="built_in">this</span>.byteBufferIndex.putInt(size);</span><br><span class="line">    <span class="comment">//存入8个字节长度的tagsCode，延迟消息就是消息投递时间，其他消息就是消息的tags的hashCode</span></span><br><span class="line">    <span class="built_in">this</span>.byteBufferIndex.putLong(tagsCode);</span><br><span class="line">    <span class="comment">//已存在索引数据的最大预计偏移量</span></span><br><span class="line">    <span class="keyword">final</span> <span class="type">long</span> <span class="variable">expectLogicOffset</span> <span class="operator">=</span> cqOffset * CQ_STORE_UNIT_SIZE;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 根据偏移量获取将要写入的最新ConsumeQueue文件的MappedFile，可能会新建ConsumeQueue文件</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="type">MappedFile</span> <span class="variable">mappedFile</span> <span class="operator">=</span> <span class="built_in">this</span>.mappedFileQueue.getLastMappedFile(expectLogicOffset);</span><br><span class="line">    <span class="keyword">if</span> (mappedFile != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//如果mappedFile是第一个创建的消费队列，并且消息在消费队列的偏移量不为0，并且消费队列写入指针为0</span></span><br><span class="line">        <span class="comment">//那么表示消费索引数据错误，需要重设索引信息</span></span><br><span class="line">        <span class="keyword">if</span> (mappedFile.isFirstCreateInQueue() &amp;&amp; cqOffset != <span class="number">0</span> &amp;&amp; mappedFile.getWrotePosition() == <span class="number">0</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//设置最小偏移量为预计偏移量</span></span><br><span class="line">            <span class="built_in">this</span>.minLogicOffset = expectLogicOffset;</span><br><span class="line">            <span class="comment">//设置刷盘最新位置，提交的最新位置</span></span><br><span class="line">            <span class="built_in">this</span>.mappedFileQueue.setFlushedWhere(expectLogicOffset);</span><br><span class="line">            <span class="built_in">this</span>.mappedFileQueue.setCommittedWhere(expectLogicOffset);</span><br><span class="line">            <span class="comment">//对该ConsumeQueue文件expectLogicOffset之前的位置填充前导0</span></span><br><span class="line">            <span class="built_in">this</span>.fillPreBlank(mappedFile, expectLogicOffset);</span><br><span class="line">            log.info(<span class="string">&quot;fill pre blank space &quot;</span> + mappedFile.getFileName() + <span class="string">&quot; &quot;</span> + expectLogicOffset + <span class="string">&quot; &quot;</span></span><br><span class="line">                    + mappedFile.getWrotePosition());</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//如果消息在消费队列的偏移量不为0，即此前有数据</span></span><br><span class="line">        <span class="keyword">if</span> (cqOffset != <span class="number">0</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//获取当前ConsumeQueue文件最新已写入物理偏移量</span></span><br><span class="line">            <span class="type">long</span> <span class="variable">currentLogicOffset</span> <span class="operator">=</span> mappedFile.getWrotePosition() + mappedFile.getFileFromOffset();</span><br><span class="line">            <span class="comment">//最新已写入物理偏移量大于预期偏移量，那么表示重复构建消费队列</span></span><br><span class="line">            <span class="keyword">if</span> (expectLogicOffset &lt; currentLogicOffset) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                log.warn(<span class="string">&quot;Build  consume queue repeatedly, expectLogicOffset: &#123;&#125; currentLogicOffset: &#123;&#125; Topic: &#123;&#125; QID: &#123;&#125; Diff: &#123;&#125;&quot;</span>,</span><br><span class="line">                        expectLogicOffset, currentLogicOffset, <span class="built_in">this</span>.topic, <span class="built_in">this</span>.queueId, expectLogicOffset - currentLogicOffset);</span><br><span class="line">                <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//如果不相等，表示存在写入错误，正常情况下，两个值应该相等，因为一个索引条目固定大小20B</span></span><br><span class="line">            <span class="keyword">if</span> (expectLogicOffset != currentLogicOffset) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                LOG_ERROR.warn(</span><br><span class="line">                        <span class="string">&quot;[BUG]logic queue order maybe wrong, expectLogicOffset: &#123;&#125; currentLogicOffset: &#123;&#125; Topic: &#123;&#125; QID: &#123;&#125; Diff: &#123;&#125;&quot;</span>,</span><br><span class="line">                        expectLogicOffset,</span><br><span class="line">                        currentLogicOffset,</span><br><span class="line">                        <span class="built_in">this</span>.topic,</span><br><span class="line">                        <span class="built_in">this</span>.queueId,</span><br><span class="line">                        expectLogicOffset - currentLogicOffset</span><br><span class="line">                );</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//更新消息最大物理偏移量 = 消息在CommitLog中的物理偏移量 + 消息的大小</span></span><br><span class="line">        <span class="built_in">this</span>.maxPhysicOffset = offset + size;</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 将临时缓冲区中的索引信息追加到mappedFile的mappedByteBuffer中，并且更新wrotePosition的位置信息，到此构建ComsumeQueue完毕</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">return</span> mappedFile.appendMessage(<span class="built_in">this</span>.byteBufferIndex.array());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="1-3-1-1-MappedFile-appendMessage追加消息"><a href="#1-3-1-1-MappedFile-appendMessage追加消息" class="headerlink" title="1.3.1.1 MappedFile#appendMessage追加消息"></a>1.3.1.1 MappedFile#appendMessage追加消息</h5><p>**该方法用于将数据追加到MappedFile，这里仅仅是追加到对应的mappedByteBuffer中，基于mmap技术仅仅是将数据写入pageCache中，并没有立即刷盘，而是依靠操作系统判断刷盘，这样保证了写入的高性能。<br>**</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * MappedFile的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 追加消息</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> data 追加的数据</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">appendMessage</span><span class="params">(<span class="keyword">final</span> <span class="type">byte</span>[] data)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//获取写入位置</span></span><br><span class="line">    <span class="type">int</span> <span class="variable">currentPos</span> <span class="operator">=</span> <span class="built_in">this</span>.wrotePosition.get();</span><br><span class="line">    <span class="comment">//如果当前位置加上消息大小小于等于文件大小，那么将消息写入mappedByteBuffer</span></span><br><span class="line">    <span class="keyword">if</span> ((currentPos + data.length) &lt;= <span class="built_in">this</span>.fileSize) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//消息写入mappedByteBuffer即可，并没有执行刷盘</span></span><br><span class="line">            <span class="type">ByteBuffer</span> <span class="variable">buf</span> <span class="operator">=</span> <span class="built_in">this</span>.mappedByteBuffer.slice();</span><br><span class="line">            buf.position(currentPos);</span><br><span class="line">            buf.put(data);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.error(<span class="string">&quot;Error occurred when append message to mappedFile.&quot;</span>, e);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//更新写入位置</span></span><br><span class="line">        <span class="built_in">this</span>.wrotePosition.addAndGet(data.length);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-CommitLogDispatcherBuildIndex构建IndexFile"><a href="#2-CommitLogDispatcherBuildIndex构建IndexFile" class="headerlink" title="2 CommitLogDispatcherBuildIndex构建IndexFile"></a>2 CommitLogDispatcherBuildIndex构建IndexFile</h2><p><strong>CommitLogDispatcherBuildIndex用于接收分发请求并构建IndexFile。</strong></p>
+<p>首先判断是否支持消息Index，默认是支持的，那么调用<strong>IndexService#buildIndex</strong>方法构建。如果不存在则不构建，*<br><em>因此Index文件是否存在都不影响RocketMQ的正常运行，它进被用来提升根据keys或者时间范围查询消息的效率。</em>*</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * DefaultMessageStore的方法</span></span><br><span class="line"><span class="comment"> * 写入消息位置信息到IndexFile</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> request 分派消息请求</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">dispatch</span><span class="params">(DispatchRequest request)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//是否支持IndexFile，默认true</span></span><br><span class="line">    <span class="keyword">if</span> (DefaultMessageStore.<span class="built_in">this</span>.messageStoreConfig.isMessageIndexEnable()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//构建Index</span></span><br><span class="line">        DefaultMessageStore.<span class="built_in">this</span>.indexService.buildIndex(request);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-1-buildIndex构建Index索引"><a href="#2-1-buildIndex构建Index索引" class="headerlink" title="2.1 buildIndex构建Index索引"></a>2.1 buildIndex构建Index索引</h3><p><strong>该方法用于为一条消息构建Index索引，大概步骤为：</strong></p>
+<p><strong>1、</strong> 通过<strong>retryGetAndCreateIndexFile</strong>方法获取或创建最新索引文件IndexFile，支持重试最多<strong>3次</strong>；<br><strong>2、</strong> 判断当前消息在commitlog中的偏移量小于该文件的结束索引在commitlog中的偏移量，那么表示已为该消息构建Index索引，直接返回如果该消息是事务回滚消息，则同样直接返回，不需要创建索引；<br><strong>3、</strong> 获取客户端生成的<strong>uniqId</strong>，也被称为msgId，从逻辑上代表客户端生成的唯一一条消息，如果uniqId不为null，那么调用putKey方法为uniqId构建索引；<br><strong>4、</strong> 获取客户端传递的keys，如果keys不为空，那么调用putKey方法为keys中的每一个key构建索引；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * IndexService的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 构建Index索引</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">buildIndex</span><span class="params">(DispatchRequest req)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 获取或创建最新索引文件，支持重试最多3次</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="type">IndexFile</span> <span class="variable">indexFile</span> <span class="operator">=</span> retryGetAndCreateIndexFile();</span><br><span class="line">    <span class="keyword">if</span> (indexFile != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//获取结束物理索引</span></span><br><span class="line">        <span class="type">long</span> <span class="variable">endPhyOffset</span> <span class="operator">=</span> indexFile.getEndPhyOffset();</span><br><span class="line">        <span class="type">DispatchRequest</span> <span class="variable">msg</span> <span class="operator">=</span> req;</span><br><span class="line">        <span class="comment">//获取topic和keys</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">topic</span> <span class="operator">=</span> msg.getTopic();</span><br><span class="line">        <span class="type">String</span> <span class="variable">keys</span> <span class="operator">=</span> msg.getKeys();</span><br><span class="line">        <span class="comment">//如果消息在commitlog中的偏移量小于该文件的结束索引在commitlog中的偏移量，那么表示已为该消息之后的消息构建Index索引</span></span><br><span class="line">        <span class="comment">//此时直接返回，不需要创建索引</span></span><br><span class="line">        <span class="keyword">if</span> (msg.getCommitLogOffset() &lt; endPhyOffset) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//获取该消息的事务类型</span></span><br><span class="line">        <span class="keyword">final</span> <span class="type">int</span> <span class="variable">tranType</span> <span class="operator">=</span> MessageSysFlag.getTransactionValue(msg.getSysFlag());</span><br><span class="line">        <span class="keyword">switch</span> (tranType) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="keyword">case</span> MessageSysFlag.TRANSACTION_NOT_TYPE:</span><br><span class="line">            <span class="keyword">case</span> MessageSysFlag.TRANSACTION_PREPARED_TYPE:</span><br><span class="line">            <span class="keyword">case</span> MessageSysFlag.TRANSACTION_COMMIT_TYPE:</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="comment">//如果是事务回滚消息，则直接返回，不需要创建索引</span></span><br><span class="line">            <span class="keyword">case</span> MessageSysFlag.TRANSACTION_ROLLBACK_TYPE:</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//获取客户端生成的uniqId，也被称为msgId，从逻辑上代表客户端生成的唯一一条消息</span></span><br><span class="line">        <span class="comment">//如果uniqId不为null，那么为uniqId构建索引</span></span><br><span class="line">        <span class="keyword">if</span> (req.getUniqKey() != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            indexFile = putKey(indexFile, msg, buildKey(topic, req.getUniqKey()));</span><br><span class="line">            <span class="keyword">if</span> (indexFile == <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                log.error(<span class="string">&quot;putKey error commitlog &#123;&#125; uniqkey &#123;&#125;&quot;</span>, req.getCommitLogOffset(), req.getUniqKey());</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//获取客户端传递的keys</span></span><br><span class="line">        <span class="comment">//如果keys不为空，那么为keys中的每一个key构建索引</span></span><br><span class="line">        <span class="keyword">if</span> (keys != <span class="literal">null</span> &amp;&amp; keys.length() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//按照空格拆分key</span></span><br><span class="line">            String[] keyset = keys.split(MessageConst.KEY_SEPARATOR);</span><br><span class="line">            <span class="comment">//为keys中的每一个key构建索引</span></span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; keyset.length; i++) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="type">String</span> <span class="variable">key</span> <span class="operator">=</span> keyset[i];</span><br><span class="line">                <span class="keyword">if</span> (key.length() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    indexFile = putKey(indexFile, msg, buildKey(topic, key));</span><br><span class="line">                    <span class="keyword">if</span> (indexFile == <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                        log.error(<span class="string">&quot;putKey error commitlog &#123;&#125; uniqkey &#123;&#125;&quot;</span>, req.getCommitLogOffset(), req.getUniqKey());</span><br><span class="line">                        <span class="keyword">return</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        log.error(<span class="string">&quot;build index error, stop building index&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-1-1-retryGetAndCreateIndexFile获取IndexFile"><a href="#2-1-1-retryGetAndCreateIndexFile获取IndexFile" class="headerlink" title="2.1.1 retryGetAndCreateIndexFile获取IndexFile"></a>2.1.1 retryGetAndCreateIndexFile获取IndexFile</h4><p>**该方法用于获取或创建索引文件，支持重试。方法中开启了一个循环，最多循环三次，在循环中调用getAndCreateLastIndexFile方法获取最新的索引文件，如果文件写满了或者还没有文件则会自动创建新的索引文件。<br>**</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * IndexService的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 获取或创建索引文件，支持重试</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> IndexFile <span class="title function_">retryGetAndCreateIndexFile</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="type">IndexFile</span> <span class="variable">indexFile</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">    <span class="comment">//循环尝试，尝试创建索引文件的最大次数为3</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">times</span> <span class="operator">=</span> <span class="number">0</span>; <span class="literal">null</span> == indexFile &amp;&amp; times &lt; MAX_TRY_IDX_CREATE; times++) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//获取最新的索引文件，如果文件写满了或者还没有文件则会自动创建新的索引文件</span></span><br><span class="line">        indexFile = <span class="built_in">this</span>.getAndCreateLastIndexFile();</span><br><span class="line">        <span class="comment">//如果获取的indexFile不为null，那么退出循环</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="literal">null</span> != indexFile)</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.info(<span class="string">&quot;Tried to create index file &quot;</span> + times + <span class="string">&quot; times&quot;</span>);</span><br><span class="line">            Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.error(<span class="string">&quot;Interrupted&quot;</span>, e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//标记indexFile异常</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="literal">null</span> == indexFile) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="built_in">this</span>.defaultMessageStore.getAccessRights().makeIndexFileError();</span><br><span class="line">        log.error(<span class="string">&quot;Mark index file cannot build flag&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> indexFile;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="2-1-1-1-getAndCreateLastIndexFile获取最新IndexFile"><a href="#2-1-1-1-getAndCreateLastIndexFile获取最新IndexFile" class="headerlink" title="2.1.1.1 getAndCreateLastIndexFile获取最新IndexFile"></a>2.1.1.1 getAndCreateLastIndexFile获取最新IndexFile</h5><p><strong>该方法尝试获取最新的索引文件，如果文件写满了或者还没有文件则会自动创建新的索引文件。大概步骤为：</strong></p>
+<p><strong>1、</strong> 首先获取读锁；</p>
+<p><strong>1、</strong> 如果indexFileList不为空，那么尝试获取最后一个IndexFile，否则创建一个新的，比如第一次写；<br><strong>2、</strong> 如果最后一个IndexFile没写满，则赋值给indexFile，后面直接返回；<br><strong>3、</strong> 如果最后一个IndexFile写满了，则创建新文件，获取目前最后一个文件的endPhyOffset，获取目前最后一个文件的endTimestamp等信息；<br><strong>4、</strong> 释放读锁；<br><strong>2、</strong> 如果上一步没有获取到indexFile，那么尝试创建一个新的IndexFile；</p>
+<p><strong>1、</strong> 获取完整文件名$HOME&#x2F;store&#x2F;index${fileName}，fileName是以创建时的时间戳命名的，精确到毫秒，例如20220512214613292；<br><strong>2、</strong> 调用IndexFile的构造器创建新的IndexFile；<br><strong>3、</strong> 获取写锁将新建的IndexFile加入到indexFileList集合尾部释放写锁；</p>
+<ol start="4">
+<li>创建了新的文件之后，那么尝试将上一个文件刷盘。新开一个线程，异步的调用IndexService#flush方法对上一个IndexFile文件刷盘。</li>
+</ol>
+<p><strong>3、</strong> 最后返回获取的indexFile；</p>
+<ul>
+<li>*可以看到，这里尝试获取的是最新的IndexService，并且引入了读写锁的设计。在获取indexFileList的最后一个元素时使用读锁，而在创建了indexFile之后向indexFileList添加indexFile的时候使用写锁。使用读写锁的好处很明显，既保证了数据安全，同时保证了效率的最大化，因为Index文件的使用永远都是查询远远大于创建的。<br>**</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * IndexService的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 获取最新的索引文件，如果文件写满了或者还没有文件则会自动创建新的索引文件</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> IndexFile <span class="title function_">getAndCreateLastIndexFile</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="type">IndexFile</span> <span class="variable">indexFile</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">    <span class="type">IndexFile</span> <span class="variable">prevIndexFile</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">    <span class="type">long</span> <span class="variable">lastUpdateEndPhyOffset</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">    <span class="type">long</span> <span class="variable">lastUpdateIndexTimestamp</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 尝试获取最新IndexFile</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//尝试获取读锁</span></span><br><span class="line">        <span class="built_in">this</span>.readWriteLock.readLock().lock();</span><br><span class="line">        <span class="comment">//如果indexFileList不为空</span></span><br><span class="line">        <span class="keyword">if</span> (!<span class="built_in">this</span>.indexFileList.isEmpty()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//尝试获取最后一个IndexFile</span></span><br><span class="line">            <span class="type">IndexFile</span> <span class="variable">tmp</span> <span class="operator">=</span> <span class="built_in">this</span>.indexFileList.get(<span class="built_in">this</span>.indexFileList.size() - <span class="number">1</span>);</span><br><span class="line">            <span class="keyword">if</span> (!tmp.isWriteFull()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//如果最后一个IndexFile没写满，则赋值给indexFile</span></span><br><span class="line">                indexFile = tmp;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="comment">//如果最后一个IndexFile写满了，则创建新文件</span></span><br><span class="line">                <span class="comment">//获取目前最后一个文件的endPhyOffset</span></span><br><span class="line">                lastUpdateEndPhyOffset = tmp.getEndPhyOffset();</span><br><span class="line">                <span class="comment">//获取目前最后一个文件的endTimestamp</span></span><br><span class="line">                lastUpdateIndexTimestamp = tmp.getEndTimestamp();</span><br><span class="line">                <span class="comment">//赋值给prevIndexFile</span></span><br><span class="line">                prevIndexFile = tmp;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="built_in">this</span>.readWriteLock.readLock().unlock();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 尝试创建一个新的IndexFile</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">if</span> (indexFile == <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//获取完整文件名$HOME/store/index$&#123;fileName&#125;，fileName是以创建时的时间戳命名的，精确到毫秒</span></span><br><span class="line">            <span class="type">String</span> <span class="variable">fileName</span> <span class="operator">=</span></span><br><span class="line">                    <span class="built_in">this</span>.storePath + File.separator</span><br><span class="line">                            + UtilAll.timeMillisToHumanString(System.currentTimeMillis());</span><br><span class="line">            <span class="comment">//创建IndexFile</span></span><br><span class="line">            indexFile =</span><br><span class="line">                    <span class="keyword">new</span> <span class="title class_">IndexFile</span>(fileName, <span class="built_in">this</span>.hashSlotNum, <span class="built_in">this</span>.indexNum, lastUpdateEndPhyOffset,</span><br><span class="line">                            lastUpdateIndexTimestamp);</span><br><span class="line">            <span class="comment">//获取写锁</span></span><br><span class="line">            <span class="built_in">this</span>.readWriteLock.writeLock().lock();</span><br><span class="line">            <span class="comment">//加入到indexFileList集合中</span></span><br><span class="line">            <span class="built_in">this</span>.indexFileList.add(indexFile);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.error(<span class="string">&quot;getLastIndexFile exception &quot;</span>, e);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="comment">//释放写锁</span></span><br><span class="line">            <span class="built_in">this</span>.readWriteLock.writeLock().unlock();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * 创建了新的文件之后，尝试将上一个文件刷盘</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">if</span> (indexFile != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="keyword">final</span> <span class="type">IndexFile</span> <span class="variable">flushThisFile</span> <span class="operator">=</span> prevIndexFile;</span><br><span class="line">            <span class="comment">/*</span></span><br><span class="line"><span class="comment">             * 新开一个线程，异步的对上一个IndexFile文件刷盘</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            <span class="type">Thread</span> <span class="variable">flushThread</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Thread</span>(<span class="keyword">new</span> <span class="title class_">Runnable</span>() &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    IndexService.<span class="built_in">this</span>.flush(flushThisFile);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;, <span class="string">&quot;FlushIndexFileThread&quot;</span>);</span><br><span class="line"></span><br><span class="line">            flushThread.setDaemon(<span class="literal">true</span>);</span><br><span class="line">            flushThread.start();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> indexFile;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="1-1-1-2-创建IndexFile"><a href="#1-1-1-2-创建IndexFile" class="headerlink" title="1.1.1.2 创建IndexFile"></a>1.1.1.2 创建IndexFile</h5><p><strong>当第一次构建Index或者之前的IndexFile写满了的时候，需要通过IndexFile的构造器创建新的IndexFile。</strong></p>
+<p><strong>Index文件的存储位置是：$HOME&#x2F;store&#x2F;index${fileName}，文件名fileName是以创建时的时间戳命名的，固定的单个IndexFile文件大小约为：40B<br>头数据indexHeader + 500w * 4B hashslot + 2000w * 20B index &#x3D; 420000040B，约为400M。</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 创建IndexFile</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> fileName     文件名</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> hashSlotNum  哈希槽数量，默认5000000</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> indexNum     索引数量默认，默认5000000 * 4</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> endPhyOffset 上一个文件的endPhyOffset</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> endTimestamp 上一个文件的endTimestamp</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@throws</span> IOException</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="title function_">IndexFile</span><span class="params">(<span class="keyword">final</span> String fileName, <span class="keyword">final</span> <span class="type">int</span> hashSlotNum, <span class="keyword">final</span> <span class="type">int</span> indexNum,</span></span><br><span class="line"><span class="params">                 <span class="keyword">final</span> <span class="type">long</span> endPhyOffset, <span class="keyword">final</span> <span class="type">long</span> endTimestamp)</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//文件大小，默认约400M左右</span></span><br><span class="line">    <span class="comment">//40B 头数据 + 500w * 4B hashslot + 2000w * 20B index</span></span><br><span class="line">    <span class="type">int</span> <span class="variable">fileTotalSize</span> <span class="operator">=</span></span><br><span class="line">            IndexHeader.INDEX_HEADER_SIZE + (hashSlotNum * hashSlotSize) + (indexNum * indexSize);</span><br><span class="line">    <span class="comment">//构建mappedFile</span></span><br><span class="line">    <span class="built_in">this</span>.mappedFile = <span class="keyword">new</span> <span class="title class_">MappedFile</span>(fileName, fileTotalSize);</span><br><span class="line">    <span class="built_in">this</span>.fileChannel = <span class="built_in">this</span>.mappedFile.getFileChannel();</span><br><span class="line">    <span class="built_in">this</span>.mappedByteBuffer = <span class="built_in">this</span>.mappedFile.getMappedByteBuffer();</span><br><span class="line">    <span class="built_in">this</span>.hashSlotNum = hashSlotNum;</span><br><span class="line">    <span class="built_in">this</span>.indexNum = indexNum;</span><br><span class="line">    <span class="comment">//生成DirectByteBuffer，对该buffer写操作会被反映到文件里面</span></span><br><span class="line">    <span class="type">ByteBuffer</span> <span class="variable">byteBuffer</span> <span class="operator">=</span> <span class="built_in">this</span>.mappedByteBuffer.slice();</span><br><span class="line">    <span class="comment">//获取indexHeader</span></span><br><span class="line">    <span class="built_in">this</span>.indexHeader = <span class="keyword">new</span> <span class="title class_">IndexHeader</span>(byteBuffer);</span><br><span class="line">    <span class="comment">//设置新文件的起始物理索引和结束物理索引都为上一个文件的结束物理索引</span></span><br><span class="line">    <span class="keyword">if</span> (endPhyOffset &gt; <span class="number">0</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="built_in">this</span>.indexHeader.setBeginPhyOffset(endPhyOffset);</span><br><span class="line">        <span class="built_in">this</span>.indexHeader.setEndPhyOffset(endPhyOffset);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//设置新文件的起始时间戳和结束时间戳都为上一个文件的结束时间戳</span></span><br><span class="line">    <span class="keyword">if</span> (endTimestamp &gt; <span class="number">0</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="built_in">this</span>.indexHeader.setBeginTimestamp(endTimestamp);</span><br><span class="line">        <span class="built_in">this</span>.indexHeader.setEndTimestamp(endTimestamp);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-1-2-buildKey构建Key"><a href="#2-1-2-buildKey构建Key" class="headerlink" title="2.1.2 buildKey构建Key"></a>2.1.2 buildKey构建Key</h4><p>**该方法构建Index索引的key。RocketMQ将会为uniqId和keys中的每个key构建索引，但是并不是直接以这两个参数作为key的，而是通过buildKey方法进行了处理。<br>**</p>
+<p><strong>UniqKey将会转换为topic#UniqKey，而keys则会先通过空格拆分，然后将每个key转换为topic#key，然后才会构建索引。</strong></p>
+<p><strong>也就是说，IndexFile支持通过Topic以及UNIQ_KEY或者KEYS来查询消息。</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * IndexService的方法</span></span><br><span class="line"><span class="comment"> * 构建key</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> String <span class="title function_">buildKey</span><span class="params">(<span class="keyword">final</span> String topic, <span class="keyword">final</span> String key)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//拼接</span></span><br><span class="line">    <span class="keyword">return</span> topic + <span class="string">&quot;#&quot;</span> + key;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-1-3-putKey构建Index索引-1"><a href="#2-1-3-putKey构建Index索引-1" class="headerlink" title="2.1.3 putKey构建Index索引"></a>2.1.3 putKey构建Index索引</h4><p>我们开头就说过Index文件主要用于加快查询的操作，更详细的内容见：<a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_43767015/article/details/121751053">RocketMQ的消息查询（查询消息）</a>。</p>
+<p>**IndexFile文件的存储位置是：$HOME\store\index${fileName}，文件名fileName是以创建时的时间戳命名的，文件大小是固定的，等于40+500W*4+2000W*20&#x3D;<br>420000040个字节大小。即一个IndexFile可以保存2000W个索引，IndexFile的底层存储设计为在文件系统中实现HashMap结构，故rocketmq的索引文件其底层实现为hash索引。<br>**</p>
+<p>putKey方法就是构建Index索引的入口方法，该方法将会循环调用indexFile#putKey方法构建Index索引，知道成功，而每次构建失败都将调用retryGetAndCreateIndexFile方法尝试获取或创建最新索引文件然后再尝试构建。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * IndexService的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 构建Index索引</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> indexFile indexFile</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> msg       消息</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> idxKey    key</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> IndexFile <span class="title function_">putKey</span><span class="params">(IndexFile indexFile, DispatchRequest msg, String idxKey)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//循环尝试构建Index索引</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">boolean</span> <span class="variable">ok</span> <span class="operator">=</span> indexFile.putKey(idxKey, msg.getCommitLogOffset(), msg.getStoreTimestamp()); !ok; ) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        log.warn(<span class="string">&quot;Index file [&quot;</span> + indexFile.getFileName() + <span class="string">&quot;] is full, trying to create another one&quot;</span>);</span><br><span class="line">        <span class="comment">//构建失败，则尝试获取或创建最新索引文件，支持重试</span></span><br><span class="line">        indexFile = retryGetAndCreateIndexFile();</span><br><span class="line">        <span class="keyword">if</span> (<span class="literal">null</span> == indexFile) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//再次尝试构建Index索引</span></span><br><span class="line">        ok = indexFile.putKey(idxKey, msg.getCommitLogOffset(), msg.getStoreTimestamp());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> indexFile;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="2-1-3-1-IndexFile-putKey构建Index索引"><a href="#2-1-3-1-IndexFile-putKey构建Index索引" class="headerlink" title="2.1.3.1 IndexFile#putKey构建Index索引"></a>2.1.3.1 IndexFile#putKey构建Index索引</h5><p>该方法用于构建Index索引，大概步骤为：</p>
+<p><strong>1、</strong> 判断如果当前文件的index索引数量小于<strong>2000w</strong>，则表明当前文件还可以继续构建索引，；<br><strong>2、</strong> 计算Key的哈希值<strong>keyHash</strong><br>，通过哈希值keyHash&amp;hash槽数量hashSlotNum（默认5000w）的方式获取当前key对应的hash槽下标位置slotPos然后计算该消息的绝对hash槽偏移量absSlotPos&#x3D;40B+slotPos*<br>4B；<br><strong>3、</strong> 计算当前消息在commitlog中的消息存储时间与该Index文件起始时间差<strong>timeDiff</strong>计算该消息的索引存放位置的绝对偏移量*<br>*absIndexPos&#x3D;40B+500w*4B+indexCount*20B**；<br><strong>4、</strong> <strong>在absIndexPos位置顺序存放Index索引数据，共计20B</strong><br>存入4B的当前消息的Key的哈希值，存入8B的当前消息在commitlog中的物理偏移量，存入4B的当前消息在commitlog中的消息存储时间与该Index文件起始时间差，存入4B的slotValue，即前面读出来的slotValue，可更新当前hash槽的值为最新的IndexFile的索引条目计数的编号，也就是当前索引存入的编号能是0，也可能不是0，而是上一个发送hash冲突的索引条目的编号；<br><strong>5、</strong> <strong>在absSlotPos位置更新当前hash槽的值为最新的IndexFile的索引条目计数的编号</strong><br>，也就是当前索引存入的编号从存入的数据可以看出来：IndexFile采用用slotValue字段将所有冲突的索引用链表的方式串起来了，而哈希槽SlotTable并不保存真正的索引数据，而是保存每个槽位对应的单向链表的头，即可以看作是头插法插入数据；<br><strong>6、</strong> 判断如果索引数量小于等于1，说明时该文件第一次存入索引，那么初始化beginPhyOffset和beginTimestamp；<br><strong>7、</strong> 继续判断如果slotValue为0，那么表示采用了一个新的哈希槽，此时hashSlotCount自增1；<br><strong>8、</strong> 因为存入了新的索引，那么索引条目计数indexCount自增1，设置新的endPhyOffset和endTimestamp；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * IndexFile的方法</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 构建Index索引</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> key            key</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> phyOffset      当前消息在commitlog中的物理偏移量</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> storeTimestamp 当前消息在commitlog中的消息存储时间</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">putKey</span><span class="params">(<span class="keyword">final</span> String key, <span class="keyword">final</span> <span class="type">long</span> phyOffset, <span class="keyword">final</span> <span class="type">long</span> storeTimestamp)</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">    <span class="comment">//如果当前文件的index索引数量小于2000w，则表明当前文件还可以继续构建索引</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">this</span>.indexHeader.getIndexCount() &lt; <span class="built_in">this</span>.indexNum) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        <span class="comment">//计算Key的哈希值</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">keyHash</span> <span class="operator">=</span> indexKeyHashMethod(key);</span><br><span class="line">        <span class="comment">//通过 哈希值 &amp; hash槽数量 的方式获取当前key对应的hash槽下标位置，hashSlotNum默认为5000w</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">slotPos</span> <span class="operator">=</span> keyHash % <span class="built_in">this</span>.hashSlotNum;</span><br><span class="line">        <span class="comment">//计算该消息的绝对hash槽偏移量 absSlotPos = 40B + slotPos * 4B</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">absSlotPos</span> <span class="operator">=</span> IndexHeader.INDEX_HEADER_SIZE + slotPos * hashSlotSize;</span><br><span class="line"></span><br><span class="line">        <span class="type">FileLock</span> <span class="variable">fileLock</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line"></span><br><span class="line">            <span class="comment">// fileLock = this.fileChannel.lock(absSlotPos, hashSlotSize,</span></span><br><span class="line">            <span class="comment">// false);</span></span><br><span class="line">            <span class="comment">//获取当前hash槽的值，一个hash槽大小为4B</span></span><br><span class="line">            <span class="type">int</span> <span class="variable">slotValue</span> <span class="operator">=</span> <span class="built_in">this</span>.mappedByteBuffer.getInt(absSlotPos);</span><br><span class="line">            <span class="comment">//如果值不为0说明这个hash key已经存在，即存在hash冲突</span></span><br><span class="line">            <span class="keyword">if</span> (slotValue &lt;= invalidIndex || slotValue &gt; <span class="built_in">this</span>.indexHeader.getIndexCount()) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                slotValue = invalidIndex;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//当前消息在commitlog中的消息存储时间与该Index文件起始时间差</span></span><br><span class="line">            <span class="type">long</span> <span class="variable">timeDiff</span> <span class="operator">=</span> storeTimestamp - <span class="built_in">this</span>.indexHeader.getBeginTimestamp();</span><br><span class="line"></span><br><span class="line">            timeDiff = timeDiff / <span class="number">1000</span>;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (<span class="built_in">this</span>.indexHeader.getBeginTimestamp() &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                timeDiff = <span class="number">0</span>;</span><br><span class="line">            &#125; <span class="keyword">else</span> <span class="keyword">if</span> (timeDiff &gt; Integer.MAX_VALUE) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                timeDiff = Integer.MAX_VALUE;</span><br><span class="line">            &#125; <span class="keyword">else</span> <span class="keyword">if</span> (timeDiff &lt; <span class="number">0</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                timeDiff = <span class="number">0</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//获取该消息的索引存放位置的绝对偏移量 absIndexPos = 40B + 500w * 4B + indexCount * 20B</span></span><br><span class="line">            <span class="type">int</span> <span class="variable">absIndexPos</span> <span class="operator">=</span></span><br><span class="line">                    IndexHeader.INDEX_HEADER_SIZE + <span class="built_in">this</span>.hashSlotNum * hashSlotSize</span><br><span class="line">                            + <span class="built_in">this</span>.indexHeader.getIndexCount() * indexSize;</span><br><span class="line">            <span class="comment">//存入4B的当前消息的Key的哈希值</span></span><br><span class="line">            <span class="built_in">this</span>.mappedByteBuffer.putInt(absIndexPos, keyHash);</span><br><span class="line">            <span class="comment">//存入8B的当前消息在commitlog中的物理偏移量</span></span><br><span class="line">            <span class="built_in">this</span>.mappedByteBuffer.putLong(absIndexPos + <span class="number">4</span>, phyOffset);</span><br><span class="line">            <span class="comment">//存入4B的当前消息在commitlog中的消息存储时间与该Index文件起始时间差</span></span><br><span class="line">            <span class="built_in">this</span>.mappedByteBuffer.putInt(absIndexPos + <span class="number">4</span> + <span class="number">8</span>, (<span class="type">int</span>) timeDiff);</span><br><span class="line">            <span class="comment">//存入4B的slotValue，即前面读出来的 slotValue，可能是0，也可能不是0，而是上一个发生hash冲突的索引条目的编号</span></span><br><span class="line">            <span class="built_in">this</span>.mappedByteBuffer.putInt(absIndexPos + <span class="number">4</span> + <span class="number">8</span> + <span class="number">4</span>, slotValue);</span><br><span class="line">            <span class="comment">//更新当前hash槽的值为最新的IndexFile的索引条目计数的编号，也就是当前索引存入的编号</span></span><br><span class="line">            <span class="built_in">this</span>.mappedByteBuffer.putInt(absSlotPos, <span class="built_in">this</span>.indexHeader.getIndexCount());</span><br><span class="line">            <span class="comment">/*</span></span><br><span class="line"><span class="comment">             * 从存入的数据可以看出来：</span></span><br><span class="line"><span class="comment">             * IndexFile采用用slotValue字段将所有冲突的索引用链表的方式串起来了，而哈希槽SlotTable并不保存真正的索引数据，</span></span><br><span class="line"><span class="comment">             * 而是保存每个槽位对应的单向链表的头，即可以看作是头插法插入数据</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line"></span><br><span class="line">            <span class="comment">//如果索引数量小于等于1，说明时该文件第一次存入索引，那么初始化beginPhyOffset和beginTimestamp</span></span><br><span class="line">            <span class="keyword">if</span> (<span class="built_in">this</span>.indexHeader.getIndexCount() &lt;= <span class="number">1</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="built_in">this</span>.indexHeader.setBeginPhyOffset(phyOffset);</span><br><span class="line">                <span class="built_in">this</span>.indexHeader.setBeginTimestamp(storeTimestamp);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//如果slotValue为0，那么表示采用了一个新的哈希槽，此时hashSlotCount自增1</span></span><br><span class="line">            <span class="keyword">if</span> (invalidIndex == slotValue) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="built_in">this</span>.indexHeader.incHashSlotCount();</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//因为存入了新的索引，那么索引条目计数indexCount自增1</span></span><br><span class="line">            <span class="built_in">this</span>.indexHeader.incIndexCount();</span><br><span class="line">            <span class="comment">//设置endPhyOffset和endTimestamp</span></span><br><span class="line">            <span class="built_in">this</span>.indexHeader.setEndPhyOffset(phyOffset);</span><br><span class="line">            <span class="built_in">this</span>.indexHeader.setEndTimestamp(storeTimestamp);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            log.error(<span class="string">&quot;putKey exception, Key: &quot;</span> + key + <span class="string">&quot; KeyHashCode: &quot;</span> + key.hashCode(), e);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">            <span class="keyword">if</span> (fileLock != <span class="literal">null</span>) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    fileLock.release();</span><br><span class="line">                &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">                    log.error(<span class="string">&quot;Failed to release the lock&quot;</span>, e);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">   </span><br><span class="line">     </span><br><span class="line">        log.warn(<span class="string">&quot;Over index file capacity: index count = &quot;</span> + <span class="built_in">this</span>.indexHeader.getIndexCount()</span><br><span class="line">                + <span class="string">&quot;; index max num = &quot;</span> + <span class="built_in">this</span>.indexNum);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="3-IndexFile小结"><a href="#3-IndexFile小结" class="headerlink" title="3 IndexFile小结"></a>3 IndexFile小结</h2><p>学习了上面的源码，我们总结一下。<a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_43767015/article/details/121751053">RocketMQ的消息查询（查询消息）</a>。<br><img src="https://cloud.cxykk.com/images/2024/3/23/2252/1711205548426.png" alt="*"><br><strong>IndexFile的构成包括40B的Header头信息，4*500wB的Slot信息，20*2000wB的Index信息，具体解释为：</strong></p>
+<p><strong>1、</strong> <strong>文件前40个字节存放头信息</strong>，在Java中被表示为IndexHeader，存放着一些统计信息，按顺序包括：；</p>
+<p><strong>1、</strong> 8B的<strong>beginTimestamp</strong>，该索引文件存储的第一条索引对应的消息在commitlog中的消息存储时间；<br><strong>2、</strong> 8B的<strong>endTimestamp</strong>，该索引文件存储的最后一条索引对应的消息在commitlog中的消息存储时间；<br><strong>3、</strong> 8B的<strong>beginPhyOffset</strong>，该索引文件存储的第一条索引对应的消息在commitlog中的物理偏移量；<br><strong>4、</strong> 8B的<strong>endPhyOffset</strong>，该索引文件存储的最后一条索引对应的消息在commitlog中的物理偏移量；<br><strong>5、</strong> 4B的<strong>hashSlotCount</strong>，哈希槽计数；<br><strong>6、</strong> 4B的<strong>indexCount</strong>，索引条目计数+1；<br><strong>2、</strong> <strong>文件第二部分存储4*500wB的HashSlot信息</strong><br>，slotTable并不保存真正的索引数据，而是保存每个槽位对应的单向链表的头即存储的是当前位置的最新消息的索引条目计数的编号indexCount；<br><strong>3、</strong> <strong>文件第三部分存储20*2000wB的Index信息</strong>，这才是真正的索引信息，按顺序包括：；</p>
+<p><strong>1、</strong> 4B的<strong>KeyHash</strong>，当前消息的Key的哈希值；<br><strong>2、</strong> 8B的<strong>CommitLogOffset</strong>，当前消息在commitlog中的物理偏移量；<br><strong>3、</strong> 4B的<strong>Timestamp</strong>，当前消息在commitlog中的消息存储时间与该Index文件起始时间差；<br><strong>4、</strong> 4B的<strong>NextIndexoffset</strong>，即前面读出来的slotValue，可能是0，也可能不是0，而是上一个发生hash冲突的索引条目的编号，或者说链表的下一个索引的Index位置；</p>
+<p><strong>上面描述的是Index索引的物理存储结构，注意一个消息的slot位置是根据哈希值计算出来的，而具体的索引条目是按照顺序存储的。</strong></p>
+<p><strong>我们之前说过Index索引在逻辑上是一个哈希表的实现，采用链表来解决hash冲突，这里该怎么理解呢？</strong></p>
+<p>假设一个<strong>消息A</strong>，根据hash值计算出的<strong>slot位置为240</strong>，这个位置是一个<strong>新位置</strong>，此前没有被使用过。那么其值默认为0，假设此时的<br><strong>indexCount</strong>为100，那么存储的新索引条目的最后NextIndex offset &#x3D;0，随后将该位置的slot置为indexCount，即100。</p>
+<p>后来一个<strong>新的消息B</strong>，根据hash值计算出的<strong>slot位置也是240</strong>，这个位置<strong>已被使用过</strong>。那么其值为100，实际上就是上一个索引存放的Index偏移量，假设此时的<br><strong>indexCount</strong>为200，那么存储的新索引条目的最后NextIndex offset &#x3D;100，随后将该位置的slot置为indexCount，即200。</p>
+<p>**可以发现，slot的值永远保存着具有该hash值的最新索引条目的偏移量信息，而索引条目的NextIndex<br>offset则保存着上一个具有该hash值的索引条目的偏移量信息，这实际上就是一个逻辑上的HashMap，使用链表的方式解决哈希冲突，并且采用头插法插入数据，因为最新的消息通常是最关心的。<br>**</p>
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1739713339/" target="_blank">14、RocketMQ源码分析：BrokerCommitLogDispatcher异步构建ConsumeQueue和IndexFile源码解析</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
+                        
+                            <a href="/category/Web/">Web</a>
+                        
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
+                        
+                            <a href="/tag/RocketMq/">RocketMq</a>
+                        
+                    </div>
+                
+                <div class="article-prev-next">
+                    
+                        <a href="/article/1739713340/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1739713340/" title="发布于 2025-02-16 09:42">15、RocketMQ源码分析：消费者DefaultMQPushConsumer启动主要流程源码</a>
+                        <br>
+                    
+                    
+                        <a href="/article/1739713341/" class="next-prefix">» </a> 下一篇：    <a href="/article/1739713341/" title="发布于 2025-02-16 09:42">16、RocketMQ源码分析：消费者负载均衡服务RebalanceService入口源码</a>
+                    
+                </div>
+            </div>
+            
+    <div class="article-comments">
+        
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
+    
+</div>
+    <div id="footer"></div>
+    <div id="sidebar">
+    <div class="menu-wrap" style="display:none;">
+        
+            <div class="menu-notice">
+                <span class="iconfont icon-notice"></span>
+                <div class="notice">
+                    <span>简单地活着，肆意而又精彩！</span>
+                </div>
+            </div>
+        
+        <nav class="menu">
+            <div class="menu-introduce"> 
+                <div class="introduce-avatar">
+                    <img src="/image/sidebar/avatar.jpg">
+                </div> 
+                <div class="introduce-info"> 
+                    <div class="introduce-user"><span>Live For Code</span></div>
+                </div> 
+            </div> 
+            <div class="menu-list">
+                <ul>
+                    
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                    
+                        <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
+                    
+                        <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
+                    
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                    
+                        <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
+                    
+                        <li class=""><a href="/about" class="" target="_self"><span class="iconfont icon-about-fill"></span>关于</a></li>
+                    
+                        <li class=""><a href="/atom.xml" class="" target="_blank"><span class="iconfont icon-rss"></span>订阅</a></li>
+                    
+                        <li class=""><a href="javascript:;" class="search" target="_self"><span class="iconfont icon-search-menu"></span>搜索</a></li>
+                    
+                        <li class=""><a href="/comment" class="" target="_self"><span class="iconfont icon-comments-fill"></span>留言板</a></li>
+                    
+                        <li class=""><a href="/friend" class="" target="_self"><span class="iconfont icon-link"></span>友情链接</a></li>
+                    
+                </ul> 
+            </div> 
+            <div class="menu-link">
+                <div class="box">
+                    <div class="image-box"></div>
+                </div>
+                
+                    <a name="知乎" href="https://www.zhihu.com/people/wo-xin-de-love" class="" target="_blank" data=""><span class="iconfont icon-zhihu"></span></a>
+                
+                    <a name="微博" href="https://weibo.com/u/3939432776" class="" target="_blank" data=""><span class="iconfont icon-weibo"></span></a>
+                
+                    <a name="QQ" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"><span class="iconfont icon-qq"></span></a>
+                
+                    <a name="微信" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"><span class="iconfont icon-wechat"></span></a>
+                
+                    <a name="GitHub" href="https://github.com/first19326" class="" target="_blank" data=""><span class="iconfont icon-github"></span></a>
+                
+            </div> 
+        </nav>
+        <button class="menu-button-close"></button>
+        <div class="morph-shape" id="morph-shape" data-morph-open="M-7.312,0H15c0,0,66,113.339,66,399.5C81,664.006,15,800,15,800H-7.312V0z;M-7.312,0H100c0,0,0,113.839,0,400c0,264.506,0,400,0,400H-7.312V0z">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 800" preserveAspectRatio="none">
+                <path d="M-7.312,0H0c0,0,0,113.839,0,400c0,264.506,0,400,0,400h-7.312V0z"/>
+            </svg>
+        </div>
+    </div>
+    <button class="menu-button-open">MENU</button>
+    <div class="menu-cover"></div>
+</div>
+    <link type="text/css" rel="stylesheet" href="/css/search.css">
+<script type="text/javascript" src="/js/iscroll.js"></script>
+<script type="text/javascript" src="/js/instantsearch.min.js"></script>
+<div class="search-window">
+    <div class="search-content">
+        <div class="search-content-icon">
+            <i class="iconfont icon-search"></i>
+        </div>
+        <div id="search-input" class="search-input"></div>
+    </div>
+
+    <div class="search-scroll">
+        <div class="search-result">
+            <div id="search-stats" class="search-stats"></div>
+            <div id="search-hits"></div>
+            <div id="search-pagination" class="search-pagination"></div>
+        </div>
+    </div>
+
+    <span class="search-close-icon">
+        <i class="iconfont icon-close"></i>
+    </span>
+</div>
+    <div id="tools">
+    <div class="progressbar-top"></div>
+
+    
+        <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
+        <script type="text/javascript" src="/js/APlayer.min.js"></script>
+        <script type="text/javascript" src="/js/Meting.min.js"></script>
+        <meting-js id="3778678" lrcshow="false" server="netease" type="playlist" fixed="true" autoplay="false" loop="all" order="random" preload="auto" volume="0.67" mutex="true"></meting-js>
+    
+    
+    <div class="wrap-right">
+        <div class="setting">
+            <div class="iconbox favorites" switch="false">
+                <span class="iconfont icon-favorites"></span>
+                <span class="icontext">关注</span>
+            </div>
+            <div class="iconbox mode">
+                <div class="light">
+                    <span class="iconfont icon-daymode"></span>
+                    <span class="icontext">浅色模式</span>
+                </div>
+                <div class="dark">
+                    <span class="iconfont icon-nightmode-fill"></span>
+                    <span class="icontext">深色模式</span>
+                </div>
+            </div>
+            <a href="javascript:;" target="_self" class="search">
+                <div class="iconbox">
+                    <span class="iconfont icon-search-menu"></span>
+                    <span class="icontext">搜索</span>
+                </div>
+            </a>
+            <div class="iconbox bottom">
+                <div style="display: inline-block; transform: rotate(180deg);">
+                    <span class="iconfont icon-top"></span>
+                </div>
+                <span class="icontext">跳至底部</span>
+            </div>
+        </div>
+        <div class="iconbox set">
+            <div style="display: inline-block;">
+                <span class="iconfont icon-setting"></span>
+            </div>
+            <span class="icontext">设置</span>
+        </div>
+        <div class="iconbox top">
+            <span class="iconfont icon-top"></span>
+            <span class="icontext">返回顶部</span>
+        </div>
+    </div>
+    <div class="loading"></div>
+</div>
+    <script>
+    window.config = {
+        GitHubUserName     : "first19326",
+        GitHubRepositories : "Hexo-LiveForCode",
+
+        User             : "Live For Code",
+        UserAvatar       : "/image/sidebar/avatar.jpg",
+        WebsiteStartDate : "2020-01-01",
+
+        WebsiteTitleBlur         : "(◍´꒳`◍) Hi, Live For Code",
+        WebsiteTitleBlurTimeOut  : 500,
+        WebsiteTitleFocus        : "(*´∇｀*) 欢迎回来!",
+        WebsiteTitleFocusTimeOut : 1000,
+        WebsiteFavicon           : "/image/website/logo.png",
+
+        ProgressBar : {
+            id       : "topProgressBar",
+            color    : "#77B6FF",
+            height   : "2px",
+            duration : 0.2
+        },
+
+        Loading: {
+            rebound : {
+                tension  : 16,
+                friction : 5
+            },
+            spinner : {
+                id     : "spinner",
+                radius : 90,
+                sides  : 3,
+                depth  : 4,
+                colors : {
+                    background : "#F0F0F0",
+                    stroke     : "#272633",
+                    base       : "",
+                    child      : "#272633"
+                },
+                alwaysForward : true,
+                restAt        : 0.5,
+                renderBase    : false
+            }
+        },
+
+        HomeHeaderAnimationRendered : true,
+        HomeHeaderAnimation         : {
+            radius      : 15,
+            density     : 0.2,
+            color       : "rgba(255, 255, 255, .2)",
+            clearOffset : 0.3
+        },
+
+        BackAnimationRendered          : true,
+        IEBrowserBackAnimationRendered : false,
+        BackAnimation                  : {
+            colorSaturation  : "60%",
+            colorBrightness  : "50%",
+            colorAlpha       : 0.5,
+            colorCycleSpeed  : 5,
+            verticalPosition : "random",
+            horizontalSpeed  : 200,
+            ribbonCount      : 3,
+            strokeSize       : 0,
+            parallaxAmount   : -0.2,
+            animateSections  : true
+        },
+
+        HomeHeaderImage : [
+            
+                "/image/header/home.jpg",
+            
+                "/image/header/home.jpeg",
+            
+                "/image/header/2023-04-17-20-51-03.jpg",
+            
+                "/image/header/2023-04-17-20-54-07.jpg",
+            
+                "/image/header/2023-04-17-20-54-22.jpg",
+            
+                "/image/header/2023-04-17-20-55-25.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+        HomeBannerText  : "",
+
+        ArticleHeaderImage : [
+            
+                "/image/header/article.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+
+        OtherBannerText : "",
+
+        Error : {
+            icon    : "icon-swimming",
+            title   : "PAGE NOT FOUND",
+            content : [
+                
+                    "很抱歉，您访问的页面不存在！",
+                
+                    "可能是输入地址有误或该地址已变更。",
+                
+            ],
+            buttons : [
+                
+                    {
+                        icon  : "icon-home",
+                        text  : "返回首页",
+                        href  : "https://fadeway32.gitee.io/",
+                        class : ""
+                    },
+                
+            ]
+        },
+
+        MenuNotice : {
+            enable : true,
+            notice : "简单地活着，肆意而又精彩！",
+            speed  : 20
+        },
+        MenuList : [
+            
+                {
+                    name   : "首页",
+                    icon   : "icon-home-fill",
+                    href   : "/",
+                    type   : "index",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "分类",
+                    icon   : "icon-folder-fill",
+                    href   : "/category",
+                    type   : "category",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "标签",
+                    icon   : "icon-discount-fill",
+                    href   : "/tag",
+                    type   : "tag",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "归档",
+                    icon   : "icon-calendar-fill",
+                    href   : "/archive",
+                    type   : "archive",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "赞赏",
+                    icon   : "icon-heart-fill",
+                    href   : "/donate",
+                    type   : "donate",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "关于",
+                    icon   : "icon-about-fill",
+                    href   : "/about",
+                    type   : "about",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "订阅",
+                    icon   : "icon-rss",
+                    href   : "/atom.xml",
+                    type   : "",
+                    class  : "",
+                    target : "_blank"
+                },
+            
+                {
+                    name   : "搜索",
+                    icon   : "icon-search-menu",
+                    href   : "javascript:;",
+                    type   : "",
+                    class  : "search",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "留言板",
+                    icon   : "icon-comments-fill",
+                    href   : "/comment",
+                    type   : "comment",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "友情链接",
+                    icon   : "icon-link",
+                    href   : "/friend",
+                    type   : "friend",
+                    class  : "",
+                    target : "_self"
+                },
+            
+        ],
+        MenuLink : [
+            
+                
+                    {
+                        name   : "知乎",
+                        icon   : "icon-zhihu",
+                        href   : "https://www.zhihu.com/people/wo-xin-de-love",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "微博",
+                        icon   : "icon-weibo",
+                        href   : "https://weibo.com/u/3939432776",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "QQ",
+                        icon   : "icon-qq",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"
+                    },
+                
+                    {
+                        name   : "微信",
+                        icon   : "icon-wechat",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"
+                    },
+                
+                    {
+                        name   : "GitHub",
+                        icon   : "icon-github",
+                        href   : "https://github.com/first19326",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+            
+        ],
+
+        FooterStyle : 2,
+        BottomText  : "<div><span class='face'>ღゝ◡╹)ノ♡</span></div><div>【人生若只如初见<span><i class='iconfont icon-like-fill'></i></span>何事秋风悲画扇】</div><div>&copy; 2020-2022 WorstOne. All Rights Reserved.</div>",
+
+        ConsoleList : [
+            
+                
+                    [
+                        
+                            
+                                "Based on cnblogs theme SimpleMemory.",
+                            
+                                "",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "SimpleMemory Author:",
+                            
+                                "BNDong",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "Theme:",
+                            
+                                "LiveForCode",
+                            
+                        
+                    ],
+                
+            
+        ],
+
+        FontIconExtend : "",
+
+        Donate : {
+            paypal  : "",
+            bitcoin : "",
+            alipay  : "/image/donate/alipay.png",
+            wechat  : "/image/donate/wechat.png"
+        },
+
+        Search : {
+            applicationID : "758UIQ1V0H",
+            apiKey        : "2e038c318ac6813e4b4baa91f6ccfa63",
+            indexName     : "hexo2",
+            hits          : {
+                page : 30
+            },
+            labels        : {
+                placeholder : "搜索",
+                empty       : "未发现与 「${query}」 相关的内容",
+                stats       : "${hits} 条相关条目，使用了 ${time} 毫秒",
+            }
+        }, 
+
+        Valine : {
+            switch         : true,
+            el             : ".comments-content",
+            appId          : "srhKtvWPQTWYKh3qX8G8M7v0-gzGzoHsz",
+            appKey         : "8uVSP1q6UlALVC5igYfIfv2h",
+            serverURLs     : "",
+            placeholder    : "你是我一生只会遇见一次的惊喜...",
+            avatar         : "mm",
+            meta           : "nick,mail,link",
+            requiredFields : "nick,mail",
+            pageSize       : 5,
+            lang           : "zh-cn",
+            visitor        : true,
+            enableQQ       : true
+        },
+
+        Tocbot : {
+            switch                : true,
+            tocSelector           : ".toc",
+            contentSelector       : ".article-body",
+            headingSelector       : "h1, h2, h3, h4, h5",
+            headingsOffset        : 0,
+            scrollSmooth          : true,
+            scrollSmoothOffset    : -5,
+            positionFixedSelector : ".toc",
+            positionFixedClass    : "toc-fixed",
+            fixedSidebarOffset    : "",
+        },
+
+        Require : {
+            baseUrl     : "/js/",
+            waitSeconds : 100
+        },
+
+        Music : {
+            type : "Meting"
+        },
+        APlayer : {
+            container : ".aplayer",
+            fixed     : true,
+            autoplay  : true,
+            loop      : "all",
+            order     : "random",
+            preload   : "auto",
+            volume    : 0.67,
+            mutex     : true,
+            lrcType   : 2,
+            audio     : [
+                
+                    {
+                        name   : "Endless Tears",
+                        artist : "CLIFF EDGE",
+                        cover  : "/music/cover/Endless Tears.jpg",
+                        url    : "/music/song/Endless Tears.mp3",
+                        lrc    : "/music/lrc/Endless Tears.lrc"
+                    },
+                
+            ]
+        },
+        Meting : {
+            id       : "3778678", 
+            lrcshow  : false, 
+            server   : "netease", 
+            type     : "playlist", 
+            fixed    : true, 
+            autoplay : false, 
+            loop     : "all", 
+            order    : "random", 
+            preload  : "auto", 
+            volume   : 0.67, 
+            mutex    : true
+        },
+
+        Mouse : {
+            enable  : true,
+            options : {
+                size  : 6,
+                sizeF : 24
+            }
+        },
+
+        LazyLoad : {
+            default : "/image/website/lazyload.svg"
+        },
+  
+        Style : {
+            aplayer          : "/css/APlayer.css",
+            archive          : "/css/archive.css",
+            base             : "/css/base.css",
+            clipboard        : "/css/clipboard.css",
+            code             : "/css/code.css",
+            donate           : "/css/donate.css",
+            fancybox         : "/css/jquery.fancybox.css",
+            footer           : "/css/footer.css",
+            iconfont         : "/iconfont/iconfont.css",
+            index            : "/css/index.css",
+            menuBubble       : "/css/menu-bubble.css",
+            mouse            : "/css/mouse.css",
+            page             : "/css/page.css",
+            post             : "/css/post.css",
+            search           : "/css/search.css",
+            tocbot           : "/css/tocbot.css",
+            valine           : "/css/valine.css"
+        },
+
+        Script: {
+            aplayer          : "/js/APlayer.min.js",
+            config           : "/js/require.config.js",
+            index            : "/js/index.js",
+            instantSearch    : "/js/instantsearch.min.js",
+            iscroll          : "/js/iscroll.js",
+            jQuery           : "/js/jquery-3.4.1.min.js",
+            loading          : "/js/loading.js",
+            meting           : "/js/Meting.min.js",
+            require          : "/js/require.min.js"
+        },
+
+        Font: {
+            LongCang    : "/font/LongCang.css",
+            Monda       : "/font/Monda.css",
+            NotoSansSC  : "/font/NotoSansSC.css",
+            NotoSerifSC : "/font/NotoSerifSC.css",
+            Playball    : "/font/Playball.css",
+            PTMono      : "/font/PTMono.css",
+            Roboto      : "/font/Roboto.css",
+            RobotoSlab  : "/font/RobotoSlab.css",
+            Rosario     : "/font/Rosario.css",
+            UbuntuMono  : "/font/UbuntuMono.css"
+        },
+
+        Suffix : {
+            about : "你知道的越多,你不知道的越多"
+        },
+            
+        Theme : {
+            url  : "https://fadeway32.gitee.io/",
+            name : "fadeway32"
+        }  
+    };
+</script>
+    <script type="text/javascript" src="/js/index.js"></script>
+</body>
+</html>
