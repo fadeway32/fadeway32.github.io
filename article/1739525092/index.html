@@ -240,6 +240,42 @@
 <p>4、MQ对于主从架构 消息数量量大导致master是 怎么处理</p>
 <p>1、4.5版本之前master down需要手动重启 ，slave接管读请求(改broker id为0表示主 大于0表示 slave)</p>
 <p>2、dledger模式下自动选举， 基于raft算法采用过半机制完成自动完成选举</p>
+<h2 id="问止科技"><a href="#问止科技" class="headerlink" title="问止科技"></a>问止科技</h2><p>CEO面试</p>
+<p>1、自我介绍？</p>
+<p>2、你比同龄人java优势在哪里？</p>
+<p>3、写代码比别人强在哪里？</p>
+<p>4、工作地点问题?</p>
+<p>5、11月份离职到现在没工作在做什么呢</p>
+<p>6、加班时间怎么看？</p>
+<h2 id="酷赛科技"><a href="#酷赛科技" class="headerlink" title="酷赛科技"></a>酷赛科技</h2><p>1、设计一个API接口开发平台</p>
+<p>1AppId和AppSecret<br>2RSASignature和MD5签名<br>3线下把私钥和appid给对方<br>4客户端接口加密<br>5服务端解密（黑白名单、IP地址、noconce时间戳防重方攻击、限流、敏感信息加密（国密加密）</p>
+<p>2、广告系统设计</p>
+<p>1、</p>
+<p>3、消息丢失 或者消息挤压怎么处理</p>
+<p>消息丢失：<br>生产者消息丢失（1、producer重试 2、rocketmq中有 本地错误表 用户计算broker的下次可用时间，筛选出可以发消息的broker<br>3、消息确认模式sendsync，带有消息回调）<br>broker防止丢失（1、多副本机制，follower和leader副本同步）<br>消费者端反丢失（手动确认机制，ConsumeConcurrentlyStatus.CONSUME_SUCCESS。否则我们需要返回<br>ConsumeConcurrentlyStatus.RECONSUME_LATER状态）</p>
+<p>消息挤压:</p>
+<p>首先根据dashboard确认生产和消费点位差距比较大，发现了问题之后，一般可以通过增大消费者数量，配置和messagequeue一样多就好，如果还不行，需要手动创建topic，配置足够多的messagequeue，负责讲旧的消息转投到新的topic上。</p>
+<p>跨越速运</p>
+<p>1、JVM 有什么？</p>
+<p>2、垃圾回收算法，优缺点</p>
+<p>3、索引失效案例</p>
+<p>4、innodb和 myisam存储引擎区别</p>
+<p>5、索引类型</p>
+<p>6、事务消息实现原理</p>
+<p>7、rocketmq组成架构</p>
+<p>8、什么是最左匹配</p>
+<p>9、联合索引</p>
+<p>10、加班什么看法</p>
+<p>11、优惠券设计</p>
+<p>12、风控设计</p>
+<p>13、netty的实现原理</p>
+<p>14、幂等设计</p>
+<p>15、你的优势是什么 缺点是什么（思考的深度不够）</p>
+<p>16、架构师的特点（业务专精）</p>
+<p>17、cap理论</p>
+<p>18、分库分表</p>
+<p>19、datax怎么用的</p>
+<p>20、锁的种类</p>
 
                 
                 <p class="end">__END__</p>
