@@ -276,6 +276,89 @@
 <p>18、分库分表</p>
 <p>19、datax怎么用的</p>
 <p>20、锁的种类</p>
+<p>顺丰科技外包</p>
+<p>1、前端请求到后端服务过程（经过k8s调度过程）</p>
+<ol>
+<li><p>前端请求进入集群<br>用户发起请求：用户通过浏览器访问前端服务（如通过域名或IP）。<br>流量入口：<br>外部访问：请求可能先经过 Ingress（如Nginx Ingress Controller）3或直接通过 LoadBalancer&#x2F;NodePort<br>类型的Service暴露到集群外36 -</p>
+</li>
+<li><p>内部访问：若前端和后端在同一个集群内，请求可能直接通过 ClusterIP 类型的Service通信4—</p>
+</li>
+<li><p>Ingress&#x2F;Service 路由与负载均衡<br>Ingress路由：若使用Ingress，请求会根据配置的路径（如&#x2F;api）转发到后端Service9- Service负载均衡：<br>Service通过 Label Selector 关联后端Pod，并通过 kube-proxy 维护的iptables&#x2F;ipvs规则实现流量分发</p>
+</li>
+<li><p>34 - 负载均衡策略包括轮询（默认）、权重（weight）、IP哈希（ip_hash）等3—</p>
+</li>
+<li><p>Pod调度与请求处理<br>Pod调度：<br>Kubernetes调度器（Scheduler）根据资源需求、节点标签（如disk&#x3D;ssd）、亲和性规则等，</p>
+</li>
+<li><p>将Pod分配到合适的Node3 - 定向调度可通过nodeSelector或nodeName强制指定目标节点3- 后端Pod处理请求：<br>请求到达目标Pod后，后端服务（如Spring Boot应用）执行业务逻辑（如数据库操作）</p>
+</li>
+<li><p>7 - 响应数据返回给前端，通常通过原路径反向传递（如Service→Ingress→用户）。</p>
+</li>
+<li><p>Kubernetes核心组件协作<br>API Server：接收并处理所有资源操作请求（如创建Service&#x2F;Deployment）。<br>kube-proxy：维护Service的IP和端口映射规则，确保流量正确转发4- CNI插件：管理Pod的网络连通性（如Calico、Flannel）。</p>
+</li>
+<li><p>关键配置示例<br>Service定义（ClusterIP类型）：<br>apiVersion: v1<br>kind: Service<br>metadata:<br>name: backend-service<br>spec:<br>selector:<br>app: backend # 关联标签为app&#x3D;backend的Pod<br>ports:</p>
+</li>
+</ol>
+<ul>
+<li>protocol: TCP<br>port: 80 # Service端口<br>targetPort: 8080 # Pod容器端口<br>type: ClusterIP<br>Ingress路由规则：<br>Yaml<br>复制<br>apiVersion: networking.k8s.io&#x2F;v1<br>kind: Ingress<br>metadata:<br>name: example-ingress<br>spec:<br>rules:</li>
+<li>host: example.com<br>http:<br>paths:<ul>
+<li>path: &#x2F;api<br>pathType: Prefix<br>backend:<br>service:<br>name: backend-service<br>port:<br>number: 80<br>常见问题与优化<br>偶发超时：可能因网络插件异常或Pod资源不足导致，需检查集群节点状态及Pod日志</li>
+<li>10- 性能优化：启用长连接、调整负载均衡策略（如最少连接数）13通过以上流程，Kubernetes实现了从请求入口到后端服务的自动化调度与高可用保障。</li>
+</ul>
+</li>
+</ul>
+<p>2、滑动窗口和滚动窗口区别</p>
+<ol>
+<li>窗口分配规则<br>滚动窗口：窗口之间严格首尾相接，无重叠或间隔。参数仅需定义窗口大小（时间或计数）。例如，1小时的滚动窗口会每小时独立处理一次数据12。<br>滑动窗口：窗口按固定步长滑动，可能重叠。需定义窗口大小和滑动步长两个参数。例如，1小时窗口每5分钟滑动一次，数据可能被多个窗口覆盖24。</li>
+<li>数据分配方式<br>滚动窗口：每个数据仅属于一个窗口。例如，8:00-9:00的数据不会出现在其他滚动窗口中23。<br>滑动窗口：若步长小于窗口大小，数据可能被分配到多个窗口。例如，8:55的数据同时属于[8:00-9:00)和[8:30-9:30)两个窗口[24。</li>
+<li>触发计算的频率<br>滚动窗口：窗口结束时触发一次计算。例如，1小时窗口每小时输出一次结果29。<br>滑动窗口：按滑动步长触发计算，频率更高。例如，1小时窗口每5分钟触发一次，输出过去1小时的数据25。</li>
+<li>应用场景<br>滚动窗口：适合固定周期统计，如每日订单总量、每小时PV统计25。<br>滑动窗口：适合实时更新需求，如股票价格实时波动监测、过去10分钟用户点击量监控210。</li>
+<li>技术实现关系<br>滚动窗口是滑动窗口的特殊情况：当滑动步长等于窗口大小时，滑动窗口退化为滚动窗口12。</li>
+</ol>
+<p>3.springboot 为什么要升级springAlibaba</p>
+<ol>
+<li>职责单一 ，可以方便业务量上来了拓展数据</li>
+<li>springCloud有很多高级特性,注册中心、配置中心、服务降级熔断器等等保证在各</li>
+<li>springboot单体代码复杂 冗余</li>
+</ol>
+<p>4.ddd中的实际用了哪几种</p>
+<p>概念：<br>VO（View Object）：视图对象，⽤于展⽰层（如Controller），它的作⽤是把某个指定页⾯（或组件）的所有数据封装起来。<br>DTO（Data Transfer<br>Object）：数据传输对象，这个概念来源于J2EE的设计模式，原来的⽬的是为了EJB的分布式应⽤提供粗粒度的数据实体，以减少分布式调⽤的次数，从⽽提⾼分布式调⽤的性能和降低⽹络负载，但在这⾥，我泛指⽤于展⽰层与服务层之间的数据传输对象。<br>DO（Domain Object）：领域对象，就是从现实世界中抽象出来的有形或⽆形的业务实体。<br>PO（Persistent Object）：持久化对象，它跟持久层（通常是关系型）的形成⼀⼀对应的映射关系，如果持久层是关系型数据库，那么，数据表中的每个字段（或若⼲个）就对应PO的⼀个（或若⼲个）属性。</p>
+<ol start="5">
+<li>腾讯云智</li>
+</ol>
+<p>1、线程数是3 ，任务有10怎么设计去执行线程数？</p>
+<p>核心线程数和最大线程数设置为3，自定义一个arrayblockqueue队列，线程拒绝策略 自定义设置（）</p>
+<p>2、setnx expire 和redission区别 ？</p>
+<p>setnx存在死锁问题，服务部署时候会进行锁不释放的问题</p>
+<p>3、你们项目用的redis集群是 哨兵还是 redis集群</p>
+<p>4、redis常见的 数据类型对应的一些使用场景</p>
+<p>在项目用到了zset和set去做产品迭代更新， 限制数的使用， zset去设置用户操作的设备数，记录这段时间近期操作的设备，如果大于限制数，设备和zset去比较.</p>
+<p>5、为什么B+数索引数据比较快？<br>非叶子节点存储的 键值对是主键和指向子节点的指针，叶子节点是B+树中存储实际数据的节点。<br>6、无侵入代码方式使用Redis实现缓存功能</p>
+<p>Aop注解重写</p>
+<p>7、hashMap扩容？</p>
+<p>1.7扩容：<br>1.8扩容：<br>扩容机制核心方法Node&lt;K,V&gt;[] resize()<br>HashMap扩容可以分为三种情况：</p>
+<p>第一种：使用默认构造方法初始化HashMap。从前文可以知道HashMap在一开始初始化的时候会返回一个空的table，并且thershold为0。因此第一次扩容的容量为默认值DEFAULT_INITIAL_CAPACITY也就是16。同时threshold &#x3D;<br>DEFAULT_INITIAL_CAPACITY * DEFAULT_LOAD_FACTOR &#x3D; 12。</p>
+<p>第二种：指定初始容量的构造方法初始化HashMap。那么从下面源码可以看到初始容量会等于threshold，接着threshold &#x3D;<br>当前的容量（threshold） * DEFAULT_LOAD_FACTOR。</p>
+<p>第三种：HashMap不是第一次扩容。如果HashMap已经扩容过的话，那么每次table的容量以及threshold量为原有的两倍。</p>
+<p>这边也可以引申到一个问题HashMap是先插入还是先扩容：HashMap是先插入数据再进行扩容的，但是如果是刚刚初始化容器的时候是先扩容再插入数据。</p>
+<p>步骤：</p>
+<p>resize（）方法表示的在进行第一次初始化的时候会进行扩容。jdk1.8 之中做的优化就是对同一个桶的位置的进行判断，该元素的位置要么停留在原始位置，要么停止在原始位置+数组大小位置上。<br>而1.7是重新计算hash值，根据hash 值对其进行分发。</p>
+<p>8、redis持久化机制</p>
+<p>启用AOF持久化<br>在redis.conf 配置文件中设置<br>appendonly yes<br>开启混合持久化模式<br>aof-use-rdb-preamble yes<br>重启Redis服务<br>redis-cli shutdown<br>redis-server &#x2F;path&#x2F;to&#x2F;redis.conf</p>
+<h1 id="AOF-文件的重写策略"><a href="#AOF-文件的重写策略" class="headerlink" title="AOF 文件的重写策略"></a>AOF 文件的重写策略</h1><p>auto-aof-rewrite-percentage 100<br>auto-aof-rewrite-min-size 64mb</p>
+<h1 id="AOF-文件同步策略（根据需要选择）"><a href="#AOF-文件同步策略（根据需要选择）" class="headerlink" title="AOF 文件同步策略（根据需要选择）"></a>AOF 文件同步策略（根据需要选择）</h1><h1 id="appendfsync-everysec"><a href="#appendfsync-everysec" class="headerlink" title="appendfsync everysec"></a>appendfsync everysec</h1><p>定期创建 RDB 快照的配置（如果需要）<br>save 900 1 # 900秒（15分钟）内至少有1次写操作<br>save 300 10 # 300秒（5分钟）内至少有10次写操作<br>save 60 10000 # 60秒内至少有10000次写操作</p>
+<p>9、Threadlocal有什么优缺点 使用场景是什么？ 除了有内存泄漏导致的oom还有哪些问题</p>
+<p>数据混乱的问题 和内容泄露的问题</p>
+<p>美的外包</p>
+<p>1、多级缓存一致性怎么解决？</p>
+<p>依赖redis过期监听机制，通过监听 判断key存不存在然后删除本地缓存</p>
+<p>依赖canal 对db进行修改,然后mq发生广播消息</p>
+<p>2、RocketMq+本地消息表 你们是怎么做的</p>
+<p>创建订单后的时候，，会在调用阿里、微信接口后，订单标识代支付状态，写入本地消息表，写入内容为支付订单号、支付状态，消息代处理，提交事务后，通过事务同步管理器<br>重写aftercommit方法<br>发生mq消息，,如果是支付成功，那么就更新消息表为已处理，支付失败为重试，消息表状态不变。在消息息补偿，启动定时任务去刷调用三方支付的接口。默认重试次数3次超过3次人工介入。</p>
+<p>3、GC&#x2F;死锁问题&#x2F;OOM实际案例问题</p>
+<p>1、oom问题，常见的是栈内存溢出、堆外内存分配、list对象add<br>2、GC 的问题 ，es功能上线后，出现overhead负载的问题，慢慢拖垮服务，导致最终的级联故障。解决方法 加大堆内存<br>3、JDK升级 原来的CMS垃圾回收器替换为G1回收器</p>
+<p>4、es重构做了哪些搜索优化</p>
+<p>1、冗余字段去除<br>2、主备索引，定时全量索引 + 增量更新<br>3、加大fileSystemCache<br>4、替换垃圾回收器、加大XMS XMN大小</p>
+<p>5、</p>
 
                 
                 <p class="end">__END__</p>
