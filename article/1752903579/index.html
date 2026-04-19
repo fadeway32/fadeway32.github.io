@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <!--    <meta name="referrer" content="origin">-->
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>
+        
+            02 LangChain框架解析
+        
+    </title>
+    <link rel="shortcut icon" href="#"/>
+
+    <link type="text/css" rel="stylesheet" href="/font/LongCang.css">
+    <link type="text/css" rel="stylesheet" href="/font/Monda.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSansSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSerifSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/Playball.css">
+    <link type="text/css" rel="stylesheet" href="/font/PTMono.css">
+    <link type="text/css" rel="stylesheet" href="/font/Roboto.css">
+    <link type="text/css" rel="stylesheet" href="/font/RobotoSlab.css">
+    <link type="text/css" rel="stylesheet" href="/font/Rosario.css">
+    <link type="text/css" rel="stylesheet" href="/font/UbuntuMono.css">
+
+    <link type="text/css" rel="stylesheet" href="/css/base.css">
+    <link type="text/css" rel="stylesheet" href="/css/code.css">
+
+    <script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
+<meta name="generator" content="Hexo 6.2.0"></head>
+<body>
+    <a id="cover"></a>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
+<header>
+    <meta name="referrer" content="no-referrer">
+</header>
+<div id="header" class="header">
+    <div class="vertical">
+        <div class="inner">
+            
+                <h1 class="header-subtitle">02 LangChain框架解析</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2025-07-16
+                        </span>
+                        
+                            <span id="/article/1752903579/" class="leancloud_visitors" data-flag-title="02 LangChain框架解析">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1752903579/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">LangChain</span>
+                        
+                    
+                </div>
+            
+        </div>
+    </div>
+    
+</div>
+<div id="container">
+    
+        <!-- 文章页面 -->
+        <div id="article">
+            <div class="toc"></div>
+            <div class="article-body">
+                <hr>
+<h2 id="LangChain框架"><a href="#LangChain框架" class="headerlink" title="LangChain框架"></a>LangChain框架</h2><p><strong>学习目标:</strong></p>
+<ol>
+<li>熟悉 LangChain核心组件</li>
+<li>熟悉 LangChain的使用方式</li>
+<li>熟悉 LangChain各个开发组件</li>
+</ol>
+<h3 id="一-简介"><a href="#一-简介" class="headerlink" title="一. 简介"></a>一. 简介</h3><p><code>LangChain</code> 是⼀个⽤于开发由⼤型语⾔模型（LLMs）驱动的应⽤程序的框架。</p>
+<p>官⽅⽂档：<a target="_blank" rel="noopener" href="https://python.langchain.com/docs/introduction/">https://python.langchain.com/docs/introduction/</a></p>
+<p>中文文档:   <a target="_blank" rel="noopener" href="https://langchain.ichuangpai.com/">https://langchain.ichuangpai.com/</a></p>
+<p><strong>说明</strong>: <code>LangChain</code>就是一个开发大模型应用开发框架,可以在原有模型的基础上加一些独属于我们自己的一些数据和配置(<br>公司的内部数据 ),能让我们做开发的时候更加方便,类似<code>java</code>开发中<code>spring</code>和<code>python</code>开发中的<code>Django</code>,爬虫开发中的<code>scrapy</code>.</p>
+<p>LangChain简化了LLM应用程序生命周期的各个阶段：</p>
+<p>开发阶段：使用LangChain的开源构建块和组件构建应用程序，利用第三方集成和模板快速启动。</p>
+<p>生产化阶段：使用LangSmith检查、监控和评估您的链，从而可以自信地持续优化和部署。</p>
+<p>部署阶段：使用LangServe将任何链转化为API。</p>
+<h4 id="1-Langchain的核心组件"><a href="#1-Langchain的核心组件" class="headerlink" title="1. Langchain的核心组件"></a>1. Langchain的核心组件</h4><p><img src="/images/034.png"></p>
+<ul>
+<li>模型（Models）：包含各大语言模型的LangChain接口和调用细节，以及输出解析机制。</li>
+<li>提示模板（Prompts）：使提示工程流线化，进一步激发大语言模型的潜力。</li>
+<li>数据检索（Indexes）：构建并操作文档的方法，接受用户的查询并返回最相关的文档，轻松搭建本地知识库。</li>
+<li>记忆（Memory）：通过短时记忆和长时记忆，在对话过程中存储和检索数据，让ChatBot记住你。</li>
+<li>链（Chains）：LangChain中的核心机制，以特定方式封装各种功能，并通过一系列的组合，自动而灵活地完成任务。</li>
+<li>代理（Agents）：另一个LangChain中的核心机制，通过“代理”让大模型自主调用外部工具和内部工具，使智能Agent成为可能。</li>
+</ul>
+<h4 id="2-模块封装的功能"><a href="#2-模块封装的功能" class="headerlink" title="2. 模块封装的功能"></a>2. 模块封装的功能</h4><blockquote>
+<p>这些核心模块里面又封装了很多功能</p>
+</blockquote>
+<h5 id="2-1模型-I-x2F-O-封装"><a href="#2-1模型-I-x2F-O-封装" class="headerlink" title="2.1模型 I&#x2F;O 封装"></a>2.1模型 I&#x2F;O 封装</h5><ul>
+<li>LLMs：大语言模型</li>
+<li>ChatModels：一般基于 LLMs，但按对话结构重新封装</li>
+<li>Prompt：提示词模板</li>
+<li>OutputParser：解析输出</li>
+</ul>
+<h5 id="2-2-Retrieval-数据连接与向量检索封装"><a href="#2-2-Retrieval-数据连接与向量检索封装" class="headerlink" title="2.2 Retrieval 数据连接与向量检索封装"></a>2.2 Retrieval 数据连接与向量检索封装</h5><ul>
+<li>Retriever: 向量的检索</li>
+<li>Document Loader：各种格式文件的加载器</li>
+<li>Embedding Model：文本向量化表示，用于检索等操作</li>
+<li>Verctor Store: 向量的存储</li>
+<li>Text Splitting：对文档的常用操作</li>
+</ul>
+<h5 id="2-3-Agents-代理封装"><a href="#2-3-Agents-代理封装" class="headerlink" title="2.3 Agents 代理封装"></a>2.3 Agents 代理封装</h5><blockquote>
+<p>根据用户输入，自动规划执行步骤，自动选择每步需要的工具，最终完成用户指定的功能，包括：</p>
+</blockquote>
+<ul>
+<li>Tools：调用外部功能的函数，例如：调 google 搜索、文件 I&#x2F;O、Linux Shell 等等</li>
+<li>Toolkits：操作某软件的一组工具集，例如：操作 DB、操作 Gmail 等等</li>
+</ul>
+<h4 id="3-开源第三方库"><a href="#3-开源第三方库" class="headerlink" title="3. 开源第三方库"></a>3. 开源第三方库</h4><p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202604191333668.png"></p>
+<ul>
+<li>langchain-core ：基础抽象和LangChain表达式语言</li>
+<li>langchain-community ：第三方集成。合作伙伴包（如langchain-openai、langchain-anthropic等），一些集成已经进一步拆分为自己的轻量级包，只依赖于langchain-core</li>
+<li>langchain ：构成应用程序认知架构的链、代理和检索策略</li>
+<li>langgraph：通过将步骤建模为图中的边和节点，使用 LLMs 构建健壮且有状态的多参与者应用程序</li>
+<li>langserve：将 LangChain 链部署为 REST API</li>
+<li>LangSmith：一个开发者平台，可让您调试、测试、评估和监控LLM应用程序，并与LangChain无缝集成</li>
+</ul>
+<blockquote>
+<p>注意: Langchain开发我们一般说的是他的整个生态</p>
+</blockquote>
+<h4 id="4-LangChain基本使用"><a href="#4-LangChain基本使用" class="headerlink" title="4. LangChain基本使用"></a>4. LangChain基本使用</h4><ul>
+<li>模块安装</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># 安装指定版本的LangChain </span><br><span class="line">pip install langchain==0.3.7  -i https://pypi.tuna.tsinghua.edu.cn/simple</span><br><span class="line">pip install langchain-openai==0.2.3  -i https://pypi.tuna.tsinghua.edu.cn/simple</span><br></pre></td></tr></table></figure>
+
+<h5 id="4-1模型调用"><a href="#4-1模型调用" class="headerlink" title="4.1模型调用"></a>4.1模型调用</h5><ul>
+<li>通过LangChain的接口来调用OpenAI对话</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">from dotenv import load_dotenv</span><br><span class="line">from langchain_openai import ChatOpenAI</span><br><span class="line">import os</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line">llm = ChatOpenAI(api_key=os.getenv(&quot;api_key&quot;),</span><br><span class="line">                 base_url=os.getenv(&quot;base_url&quot;),</span><br><span class="line">                 model_name=&quot;qwen-plus&quot;)</span><br><span class="line"></span><br><span class="line"># 直接提供问题，并调用llm</span><br><span class="line">response = llm.invoke(&quot;什么是大模型？&quot;)</span><br><span class="line">print(response)</span><br><span class="line">print(&quot;=&quot; * 50)</span><br><span class="line">print(response.content)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h5 id="4-2-向量存储"><a href="#4-2-向量存储" class="headerlink" title="4.2 向量存储"></a>4.2 向量存储</h5><ul>
+<li>使用一个简单的本地向量存储 FAISS，首先需要安装它</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">pip install faiss-cpu</span><br><span class="line">pip install langchain_community==0.3.7</span><br><span class="line">pip install dashscope</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line">import os</span><br><span class="line">from langchain_community.document_loaders import WebBaseLoader</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line">import bs4</span><br><span class="line">from langchain_community.embeddings import DashScopeEmbeddings</span><br><span class="line">from langchain_community.vectorstores import FAISS</span><br><span class="line">from langchain_text_splitters import RecursiveCharacterTextSplitter</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">def faiss_conn():</span><br><span class="line">    # 读取网页中的数据</span><br><span class="line">    loader = WebBaseLoader(</span><br><span class="line">        web_path=&quot;https://www.gov.cn/zhengce/content/202510/content_7043916.htm&quot;,</span><br><span class="line">        bs_kwargs=dict(parse_only=bs4.SoupStrainer(id=&quot;UCAP-CONTENT&quot;))</span><br><span class="line">    )</span><br><span class="line">    # 读取数据</span><br><span class="line">    docs = loader.load()</span><br><span class="line">    print(docs)</span><br><span class="line">    # 创建嵌入模型</span><br><span class="line">    embeddings = DashScopeEmbeddings(</span><br><span class="line">        dashscope_api_key=os.getenv(&quot;DASHSCOPE_API_KEY&quot;),</span><br><span class="line">        model=&#x27;text-embedding-v4&#x27;</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    # 使用分割器分割文档</span><br><span class="line">    text_splitter = RecursiveCharacterTextSplitter(chunk_size=300, chunk_overlap=50)</span><br><span class="line">    documents = text_splitter.split_documents(docs)</span><br><span class="line">    print(f&quot;分割后的文档数量: &#123;len(documents)&#125;&quot;)</span><br><span class="line"></span><br><span class="line">    # 分批处理文档，限制每次不超过 10 条</span><br><span class="line">    batch_size = 10</span><br><span class="line">    vector = None</span><br><span class="line">    for i in range(0, len(documents), batch_size):</span><br><span class="line">        batch_docs = documents[i:i + batch_size]</span><br><span class="line">        print(f&quot;处理批次 &#123;i // batch_size + 1&#125;，包含 &#123;len(batch_docs)&#125; 个文档&quot;)</span><br><span class="line">        vector = FAISS.from_documents(batch_docs, embeddings)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    # 保存 FAISS 索引到本地</span><br><span class="line">    save_path = &quot;faiss_index_v3&quot;</span><br><span class="line">    # index.faiss: 二进制文件，存储向量索引（例如嵌入向量和搜索结构）。</span><br><span class="line">    # index.pkl: Python 序列化文件（pickle 格式），存储文档元数据（例如文本内容、ID 等）。</span><br><span class="line">    vector.save_local(save_path)</span><br><span class="line">    print(f&quot;FAISS 索引已保存到: &#123;save_path&#125;&quot;)</span><br><span class="line"></span><br><span class="line">    return vector</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">if __name__ == &quot;__main__&quot;:</span><br><span class="line">    faiss_conn()</span><br></pre></td></tr></table></figure>
+
+<h5 id="4-3-RAG-Langchain"><a href="#4-3-RAG-Langchain" class="headerlink" title="4.3 RAG+Langchain"></a>4.3 RAG+Langchain</h5><blockquote>
+<p>基于外部知识，增强大模型回复</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line">import os</span><br><span class="line">from langchain.chains.combine_documents import create_stuff_documents_chain</span><br><span class="line">from langchain_core.prompts import ChatPromptTemplate</span><br><span class="line">from langchain_openai import ChatOpenAI</span><br><span class="line">from langchain.chains import create_retrieval_chain</span><br><span class="line">from langchain_community.vectorstores import FAISS</span><br><span class="line">from langchain_community.embeddings import DashScopeEmbeddings</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line"></span><br><span class="line"># 加载环境变量（用于 LLM 的 API 密钥）</span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"># 创建嵌入模型</span><br><span class="line">embeddings = DashScopeEmbeddings(</span><br><span class="line">    dashscope_api_key=os.getenv(&quot;DASHSCOPE_API_KEY&quot;),</span><br><span class="line">    model=&#x27;text-embedding-v4&#x27;</span><br><span class="line">)</span><br><span class="line"># 加载本地 FAISS 索引</span><br><span class="line">save_path = &quot;faiss_index_v3&quot;</span><br><span class="line"></span><br><span class="line">vector_store = FAISS.load_local(</span><br><span class="line">    folder_path=save_path,</span><br><span class="line">    embeddings=embeddings,</span><br><span class="line">    allow_dangerous_deserialization=True  # 允许加载 pickle 文件（仅限可信文件）</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># 创建提示模板</span><br><span class="line">prompt = ChatPromptTemplate.from_template(&quot;&quot;&quot;仅根据提供的上下文回答以下问题:</span><br><span class="line"></span><br><span class="line">&lt;context&gt;</span><br><span class="line">&#123;context&#125;</span><br><span class="line">&lt;/context&gt;</span><br><span class="line"></span><br><span class="line">问题: &#123;input&#125;&quot;&quot;&quot;)</span><br><span class="line"></span><br><span class="line"># 创建 LLM 连接（继续使用阿里云 qwen-plus）</span><br><span class="line">llm = ChatOpenAI(</span><br><span class="line">    api_key=os.getenv(&quot;DASHSCOPE_API_KEY&quot;),  # 确保环境变量名为 DASHSCOPE_API_KEY</span><br><span class="line">    base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;,</span><br><span class="line">    model=&quot;qwen-plus&quot;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"># 创建文档组合链</span><br><span class="line"># langchain_core\prompts\chat.py可以看到提示词拼接</span><br><span class="line"># format_messages 方法拼接提示词</span><br><span class="line">document_chain = create_stuff_documents_chain(llm, prompt)</span><br><span class="line"></span><br><span class="line"># 创建检索器</span><br><span class="line">retriever = vector_store.as_retriever(search_kwargs=&#123;&quot;k&quot;: 3&#125;)  # 限制检索 3 个文档</span><br><span class="line"></span><br><span class="line"># 创建检索链</span><br><span class="line"># 在langchain_community\vectorstores\faiss.py 可以查看向量检索的实现</span><br><span class="line"># similarity_search_with_score_by_vector 是检索的方法  return docs[:k]</span><br><span class="line">retrieval_chain = create_retrieval_chain(retriever, document_chain)</span><br><span class="line"></span><br><span class="line"># 调用检索链并获取回答</span><br><span class="line"># openai\resources\chat\completions\completions.py</span><br><span class="line"># create方法中 self._post()  调用模型请求的api</span><br><span class="line">response = retrieval_chain.invoke(&#123;&quot;input&quot;: &quot;建设用地使用权是什么？&quot;&#125;)</span><br><span class="line"></span><br><span class="line">print(&quot;\n回答:&quot;, response[&quot;answer&quot;])</span><br></pre></td></tr></table></figure>
+
+<h3 id="二-LangChain的Model"><a href="#二-LangChain的Model" class="headerlink" title="二.LangChain的Model"></a>二.LangChain的Model</h3><p>可以把对模型的使用过程拆解成三块: 输入提示(Format)、调用模型(Predict)、输出解析(Parse)</p>
+<ul>
+<li>1.提示模板: LangChain的模板允许动态选择输入，根据实际需求调整输入内容，适用于各种特定任务和应用。</li>
+<li>2.语言模型: LangChain 提供通用接口调用不同类型的语言模型，提升了灵活性和使用便利性。</li>
+<li>3.输出解析: 利用 LangChain 的输出解析功能，精准提取模型输出中所需信息，避免处理冗余数据，同时将非结构化文本转换为可处理的结构化数据，提高信息处理效率。</li>
+</ul>
+<p>这三块形成了一个整体，在LangChain中这个过程被统称为Model I&#x2F;O。针对每块环节，LangChain都提供了模板和工具，可以帮助快捷的调用各种语言模型的接口</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202604191333271.png"></p>
+<blockquote>
+<p>很多用户可能对大模型使用的不熟练,那么我们给了他模版他只需要填关键字就行</p>
+</blockquote>
+<h4 id="1-提示模板"><a href="#1-提示模板" class="headerlink" title="1. 提示模板"></a>1. 提示模板</h4><p>在LangChain的Model I&#x2F;O中，提示模板是其组成之一,语言模型的提示是用户提供的一组指令或输入，用于指导模型的响应，帮助模型理解上下文并生成相关且连贯的基于语言的输出，例如回答问题、完成句子或参与某项活动、对话</p>
+<p>PromptTemplates 是LangChain中的一个概念，通过接收原始用户输入，并返回一个准备好传递给语言模型的信息（即提示词 prompt）</p>
+<p>通俗点说，prompt template 是一个模板化的字符串，可以用来生成特定的提示（prompts）。你可以将变量插入到模板中，从而创建出不同的提示。这对于重复生成相似格式的提示非常有用，尤其是在自动化任务中</p>
+<h5 id="1-1-LangChain提示模板特点"><a href="#1-1-LangChain提示模板特点" class="headerlink" title="1.1  LangChain提示模板特点"></a>1.1  LangChain提示模板特点</h5><ol>
+<li>清晰易懂的提示: 提高提示文本的可读性，使其更易于理解，尤其是在处理复杂或涉及多个变量的情况下。</li>
+<li>增强可重用性: 使用模板，可以在多个地方重复使用，简化代码，无需重复构建提示字符串。</li>
+<li>简化维护: 使用模板后，如果需要更改提示内容，只需修改模板，无需逐个查找所有用到该提示的地方。</li>
+<li>智能处理变量: 模板可以自动处理变量的插入，无需手动拼接字符串。</li>
+<li>参数化生成: 模板可以根据不同的参数生成不同的提示，有助于个性化文本生成。</li>
+</ol>
+<h5 id="1-2-类型"><a href="#1-2-类型" class="headerlink" title="1.2 类型"></a>1.2 类型</h5><ol>
+<li>LLM提示模板 PromptTemplate：常用的String提示模板</li>
+<li>聊天提示模板 ChatPromptTemplate：<br>常用的Chat提示模板，用于组合各种角色的消息模板，传入聊天模型。消息模板包括：ChatMessagePromptTemplate、HumanMessagePromptTemplate、AIlMessagePromptTemplate、SystemMessagePromptTemplate等</li>
+<li>样本提示模板 FewShotPromptTemplate：通过示例来教模型如何回答</li>
+<li>部分格式化提示模板：提示模板传入所需值的子集，以创建仅期望剩余值子集的新提示模板。</li>
+<li>管道提示模板 PipelinePrompt： 用于把几个提示组合在一起使用。</li>
+<li>自定义模板：允许基于其他模板类来定制自己的提示模板。</li>
+</ol>
+<ul>
+<li>使用的模块</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">from langchain.prompts.prompt import PromptTemplate</span><br><span class="line">from langchain.prompts import FewShotPromptTemplate</span><br><span class="line">from langchain.prompts.pipeline import PipelinePromptTemplate</span><br><span class="line">from langchain.prompts import ChatPromptTemplate</span><br><span class="line">from langchain.prompts import (</span><br><span class="line">    ChatMessagePromptTemplate,</span><br><span class="line">    SystemMessagePromptTemplate,</span><br><span class="line">    AIMessagePromptTemplate,</span><br><span class="line">    HumanMessagePromptTemplate,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<h5 id="1-3-String提示模板"><a href="#1-3-String提示模板" class="headerlink" title="1.3 String提示模板"></a>1.3 String提示模板</h5><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"># 导入LangChain中的OpenAI模型接口</span><br><span class="line">from langchain_openai import ChatOpenAI</span><br><span class="line"># 导入LangChain中的提示模板</span><br><span class="line">from langchain.prompts import PromptTemplate</span><br><span class="line">import os</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"># 创建模型实例</span><br><span class="line">model = ChatOpenAI(api_key=os.getenv(&quot;api_key&quot;),</span><br><span class="line">                   base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;,</span><br><span class="line">                   model=&#x27;qwen-plus&#x27;)</span><br><span class="line"></span><br><span class="line">prompt = PromptTemplate(</span><br><span class="line">    template=&quot;您是一位专业的程序员。\n对于信息 &#123;text&#125; 进行简短描述&quot;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"># 输入提示</span><br><span class="line">input = prompt.format(text=&quot;大模型langchain&quot;)</span><br><span class="line"></span><br><span class="line"># 得到模型的输出</span><br><span class="line">output = model.invoke(input)</span><br><span class="line"># output = model.invoke(&quot;您是一位专业的程序员。对于信息 langchain 进行简短描述&quot;)</span><br><span class="line"></span><br><span class="line"># 打印输出内容</span><br><span class="line">print(output.content)</span><br></pre></td></tr></table></figure>
+
+<h5 id="1-4-聊天提示模板"><a href="#1-4-聊天提示模板" class="headerlink" title="1.4 聊天提示模板"></a>1.4 <strong>聊天提示模板</strong></h5><ul>
+<li>PromptTemplate创建字符串提示的模板。默认情况下，使用Python的str.format语法进行模板化。而ChatPromptTemplate是创建聊天消息列表的提示模板。</li>
+<li>创建一个ChatPromptTemplate提示模板，模板的不同之处是它们有对应的角色。</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">from langchain.prompts.chat import ChatPromptTemplate</span><br><span class="line"># 导入LangChain中的ChatOpenAI模型接口</span><br><span class="line">from langchain_openai import ChatOpenAI</span><br><span class="line">import os</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line">template = &quot;你是一个数学家，你可以计算任何算式&quot;</span><br><span class="line"># template = &quot;你是一个翻译专家,擅长将 &#123;input_language&#125; 语言翻译成 &#123;output_language&#125;语言.&quot;</span><br><span class="line">human_template = &quot;&#123;text&#125;&quot;</span><br><span class="line"></span><br><span class="line">chat_prompt = ChatPromptTemplate.from_messages([</span><br><span class="line">    (&quot;system&quot;, template),</span><br><span class="line">    (&quot;human&quot;, human_template),</span><br><span class="line">])</span><br><span class="line"># print(chat_prompt)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># 创建模型实例</span><br><span class="line">model = ChatOpenAI(api_key=os.getenv(&quot;api_key&quot;),</span><br><span class="line">                   base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;,</span><br><span class="line">                   model=&#x27;qwen-plus&#x27;)</span><br><span class="line"># 输入提示</span><br><span class="line">messages = chat_prompt.format_messages(text=&quot;我今年18岁，我的舅舅今年38岁，我的爷爷今年72岁，我和舅舅一共多少岁了？&quot;)</span><br><span class="line"># print(messages)</span><br><span class="line"># messages = chat_prompt.format_messages(input_language=&quot;英文&quot;, output_language=&quot;中文&quot;, text=&quot;I love Large Language Model.&quot;)</span><br><span class="line">print(messages)</span><br><span class="line"># 得到模型的输出</span><br><span class="line">output = model.invoke(messages)</span><br><span class="line"># 打印输出内容</span><br><span class="line">print(output.content)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>LangChain提供不同类型的MessagePromptTemplate.最常用的是AIMessagePromptTemplate、<br>SystemMessagePromptTemplate和HumanMessagePromptTemplate，分别创建人工智能消息、系统消息和人工消息。</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"># 导入聊天消息类模板</span><br><span class="line">from langchain.prompts import (</span><br><span class="line">    ChatPromptTemplate,</span><br><span class="line">    SystemMessagePromptTemplate,</span><br><span class="line">    HumanMessagePromptTemplate,</span><br><span class="line">)</span><br><span class="line">from langchain_openai import ChatOpenAI</span><br><span class="line">import os</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"># 系统模板的构建</span><br><span class="line">system_template = &quot;你是一个翻译专家,擅长将 &#123;input_language&#125; 语言翻译成 &#123;output_language&#125;语言.&quot;</span><br><span class="line">system_message_prompt = SystemMessagePromptTemplate.from_template(system_template)</span><br><span class="line"></span><br><span class="line"># 用户模版的构建</span><br><span class="line">human_template = &quot;&#123;text&#125;&quot;</span><br><span class="line">human_message_prompt = HumanMessagePromptTemplate.from_template(human_template)</span><br><span class="line"></span><br><span class="line"># 组装成最终模版</span><br><span class="line">prompt_template = ChatPromptTemplate.from_messages([system_message_prompt, human_message_prompt])</span><br><span class="line"></span><br><span class="line"># 格式化提示消息生成提示</span><br><span class="line">prompt = prompt_template.format_prompt(input_language=&quot;英文&quot;, output_language=&quot;中文&quot;,</span><br><span class="line">                                       text=&quot;I love Large Language Model.&quot;).to_messages()</span><br><span class="line"># 打印模版</span><br><span class="line">print(&quot;prompt:&quot;, prompt)</span><br><span class="line"></span><br><span class="line"># 创建模型实例</span><br><span class="line">model = ChatOpenAI(api_key=os.getenv(&quot;DASHSCOPE_API_KEY&quot;),</span><br><span class="line">                   base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;,</span><br><span class="line">                   model=&#x27;qwen-plus&#x27;)</span><br><span class="line"># 得到模型的输出</span><br><span class="line">result = model.invoke(prompt)</span><br><span class="line"># 打印输出内容</span><br><span class="line">print(&quot;result:&quot;, result.content)</span><br></pre></td></tr></table></figure>
+
+<h5 id="1-5-少量样板提示"><a href="#1-5-少量样板提示" class="headerlink" title="1.5 少量样板提示"></a>1.5 少量样板提示</h5><p>基于LLM模型与聊天模型，可分别使用<code>FewShotPromptTemplate</code>或<code>FewShotChatMessagePromptTemplate</code>，两者使用基本一致</p>
+<p>创建示例集：创建一些提示样本，每个示例都是一个字典，其中键是输入变量，值是输入变量的值</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># 创建示例</span><br><span class="line">examples = [</span><br><span class="line">    &#123;&quot;input&quot;: &quot;2+2&quot;, &quot;output&quot;: &quot;4&quot;, &quot;description&quot;: &quot;加法运算&quot;&#125;,</span><br><span class="line">    &#123;&quot;input&quot;: &quot;5-2&quot;, &quot;output&quot;: &quot;3&quot;, &quot;description&quot;: &quot;减法运算&quot;&#125;,</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>创建提示模板</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># 创建提示模板，配置一个提示模板，将一个示例格式化为字符串</span><br><span class="line">prompt_template = &quot;你是一个数学专家,算式： &#123;input&#125; 值： &#123;output&#125; 使用： &#123;description&#125; &quot;</span><br><span class="line"></span><br><span class="line"># 这是一个提示模板，用于设置每个示例的格式</span><br><span class="line">prompt_sample = PromptTemplate.from_template(prompt_template)</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>创建FewShotPromptTemplate对象</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">prompt = FewShotPromptTemplate(</span><br><span class="line">    examples=examples,</span><br><span class="line">    example_prompt=prompt_sample,</span><br><span class="line">    suffix=&quot;你是一个数学专家,算式: &#123;input&#125;  值: &#123;output&#125; &quot;,</span><br><span class="line">    input_variables=[&quot;input&quot;, &quot;output&quot;]</span><br><span class="line">)</span><br><span class="line">print(prompt.format(input=&quot;2*5&quot;, output=&quot;10&quot;))  # 你是一个数学专家,算式: 2*5  值:</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>初始化大模型，然后调用</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"># 创建提示模板，配置一个提示模板，将一个示例格式化为字符串</span><br><span class="line">import os</span><br><span class="line"></span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line">from langchain_core.prompts import PromptTemplate, FewShotPromptTemplate</span><br><span class="line">import langchain_openai</span><br><span class="line">load_dotenv()</span><br><span class="line"># 创建示例</span><br><span class="line">examples = [</span><br><span class="line">    &#123;&quot;input&quot;: &quot;2+2&quot;, &quot;output&quot;: &quot;4&quot;, &quot;description&quot;: &quot;加法运算&quot;&#125;,</span><br><span class="line">    &#123;&quot;input&quot;: &quot;5-2&quot;, &quot;output&quot;: &quot;3&quot;, &quot;description&quot;: &quot;减法运算&quot;&#125;,</span><br><span class="line">]</span><br><span class="line">prompt_template = &quot;你是一个数学专家,算式： &#123;input&#125; 值： &#123;output&#125; 使用： &#123;description&#125; &quot;</span><br><span class="line"></span><br><span class="line"># 这是一个提示模板，用于设置每个示例的格式</span><br><span class="line">prompt_sample = PromptTemplate.from_template(prompt_template)</span><br><span class="line"></span><br><span class="line">prompt = FewShotPromptTemplate(</span><br><span class="line">    examples=examples,</span><br><span class="line">    example_prompt=prompt_sample,</span><br><span class="line">    # 告诉大模型要按照这个格式输出description</span><br><span class="line">    suffix=&quot;&quot;&quot;你是一个数学专家,请计算： &#123;input&#125; 值： &#123;output&#125; &quot;&quot;&quot;,</span><br><span class="line">    input_variables=[&quot;input&quot;, &quot;output&quot;],</span><br><span class="line">)</span><br><span class="line"># print(prompt.format(input=&quot;2*5&quot;, output=&quot;10&quot;))  # 你是一个数学专家,算式: 2*5  值:</span><br><span class="line">#</span><br><span class="line"># print(prompt_sample)</span><br><span class="line">print(&#x27;-&#x27; * 50)</span><br><span class="line"></span><br><span class="line">llm = langchain_openai.ChatOpenAI(api_key=os.getenv(&quot;api_key&quot;),</span><br><span class="line">                                  base_url=os.getenv(&quot;base_url&quot;),</span><br><span class="line">                                  model_name=&#x27;qwen-plus&#x27;)</span><br><span class="line">result = llm.invoke(prompt.format(input=&quot;2*5&quot;, output=&quot;10&quot;))</span><br><span class="line">print(result.content)  # 使用: 乘法运算</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h4 id="2-Model-模型"><a href="#2-Model-模型" class="headerlink" title="2. Model 模型"></a>2. Model 模型</h4><p>LangChain支持的模型有三大类</p>
+<ul>
+<li>1.大语言模型（LLM） ，也叫Text Model，这些模型将文本字符串作为输入，并返回文本字符串作为输出。</li>
+<li>2.聊天模型（Chat Model），主要代表Open AI的ChatGPT系列模型。这些模型通常由语言模型支持，但它们的API更加结构化。具体来说，这些模型将聊天消息列表作为输入，并返回聊天消息。</li>
+<li>3.文本嵌入模型（Embedding Model），这些模型将文本作为输入并返回浮点数列表，也就是Embedding。</li>
+</ul>
+<p>聊天模型通常由大语言模型支持，但专门调整为对话场景。重要的是，它们的提供商API使用不同于纯文本模型的接口。输入被处理为聊天消息列表，输出为AI生成的消息。</p>
+<h5 id="2-1-大语言模型LLM"><a href="#2-1-大语言模型LLM" class="headerlink" title="2.1 大语言模型LLM"></a>2.1 大语言模型LLM</h5><p>LangChain的核心组件是大型语言模型（LLM），它提供一个标准接口以字符串作为输入并返回字符串的形式与多个不同的LLM进行交互。这一接口旨在为诸如OpenAI、Hugging<br>Face等多家LLM供应商提供标准化的对接方法。</p>
+<p>文本补全-千问不支持</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">from langchain_community.llms import Tongyi</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line">import os</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># LLM纯文本补全模型</span><br><span class="line">llm = Tongyi(api_key=os.getenv(&quot;DASHSCOPE_API_KEY&quot;),</span><br><span class="line">                 base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;,</span><br><span class="line">                 model=&#x27;qwen-plus&#x27;)</span><br><span class="line"></span><br><span class="line">text = &quot;我的真的好想（帮我补全这个文本）&quot;</span><br><span class="line">res = llm.invoke(text)</span><br><span class="line">print(res)</span><br></pre></td></tr></table></figure>
+
+<h5 id="2-2-聊天模型"><a href="#2-2-聊天模型" class="headerlink" title="2.2 聊天模型"></a>2.2 聊天模型</h5><p>聊天模型是LangChain的核心组件，使用聊天消息作为输入并返回聊天消息作为输出。</p>
+<p>LangChain有一些内置的消息类型</p>
+<ul>
+<li>SystemMessage:用于启动 AI 行为，通常作为输入消息序列中的第一个传递。</li>
+<li>HumanMessage:表示来自与聊天模型交互的人的消息。</li>
+<li>AIMessage:表示来自聊天模型的消息。这可以是文本，也可以是调用工具的请求。</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">from langchain_community.chat_models import ChatTongyi</span><br><span class="line">from langchain_core.messages import HumanMessage, SystemMessage</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line">import os</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line">human_text = &quot;你好啊&quot;</span><br><span class="line">system_text = &quot;你是一个强大的助手，你的名字叫0713&quot;</span><br><span class="line"># 聊天模型</span><br><span class="line">chat_model = ChatTongyi(</span><br><span class="line">    api_key=os.getenv(&quot;DASHSCOPE_API_KEY&quot;),</span><br><span class="line">    base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;,</span><br><span class="line">    model=&quot;qwen-plus&quot;,  # 此处以qwen-plus为例，您可按需更换模型名称。模型列表：https://help.aliyun.com/zh/model-studio/getting-started/models</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">messages = [HumanMessage(content=human_text)]</span><br><span class="line"># 聊天模型支持多个消息作为输入</span><br><span class="line"># messages = [SystemMessage(content=system_text), HumanMessage(content=human_text)]</span><br><span class="line"></span><br><span class="line">res = chat_model.invoke(messages)</span><br><span class="line">print(res)</span><br></pre></td></tr></table></figure>
+
+<h5 id="2-3-文本嵌入模型"><a href="#2-3-文本嵌入模型" class="headerlink" title="2.3 文本嵌入模型"></a>2.3 文本嵌入模型</h5><p>Embedding类是一个用于与嵌入进行交互的类。有许多嵌入提供商（OpenAI、Cohere、Hugging Face等)- 这个类旨在为所有这些提供商提供一个标准接口。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"></span><br><span class="line">import os</span><br><span class="line"></span><br><span class="line">from langchain_community.embeddings import DashScopeEmbeddings</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line"># 初始化 DashScopeEmbeddings实例</span><br><span class="line">embeddings = DashScopeEmbeddings(dashscope_api_key=os.getenv(&quot;api_key&quot;), model=&#x27;text-embedding-v3&#x27;)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># 获取文本嵌入向量</span><br><span class="line">text = &#x27;大模型&#x27;</span><br><span class="line"></span><br><span class="line"># 嵌入文档 把文档内容转换为向量 他支持多个文档列表形式</span><br><span class="line">doc_res = embeddings.embed_documents([text])</span><br><span class="line">print(doc_res)</span><br><span class="line"></span><br><span class="line"># 嵌入查询  把问题嵌入向量  一般都是一个问题</span><br><span class="line">res = embeddings.embed_query(text)</span><br><span class="line">print(res)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>调用HuggingFaceBgeEmbeddings</strong><ul>
+<li>国内的镜像地址：<a target="_blank" rel="noopener" href="https://hf-mirror.com/">https://hf-mirror.com/</a></li>
+<li>魔塔： <a target="_blank" rel="noopener" href="https://www.modelscope.cn/models/maidalun/bce-embedding-base_v1">https://www.modelscope.cn/models/maidalun/bce-embedding-base_v1</a></li>
+</ul>
+</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># 安装模块</span><br><span class="line">pip install sentence_transformers</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>下载modelscope Embedding的模型</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">from modelscope import snapshot_download</span><br><span class="line"># maidalun/bce-embedding-base_v1 模型名字   cache_dir：下载位置</span><br><span class="line"># model_dir = snapshot_download(&#x27;maidalun/bce-embedding-base_v1&#x27;, cache_dir=&quot;D:\大模型\RAG_Project&quot;)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"># langchain_huggingface 加载huggingface模型</span><br><span class="line">from langchain_huggingface import HuggingFaceEmbeddings</span><br><span class="line"></span><br><span class="line"># 创建嵌入模型</span><br><span class="line">model_name = r&#x27;D:\LLM\Local_model\BAAI\bge-large-zh-v1___5&#x27;</span><br><span class="line"></span><br><span class="line"># 生成的嵌入向量将被标准化, 有助于向量比较</span><br><span class="line">encode_kwargs = &#123;&#x27;normalize_embeddings&#x27;: True&#125;</span><br><span class="line"></span><br><span class="line">embeddings = HuggingFaceEmbeddings(</span><br><span class="line">    model_name=model_name,</span><br><span class="line">    encode_kwargs=encode_kwargs</span><br><span class="line">)</span><br><span class="line">text = &quot;大模型&quot;</span><br><span class="line">query_result = embeddings.embed_query(text)</span><br><span class="line">print(query_result[:5])</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>通过Hugging Face官方包的加持，开发小伙伴们通过简单的api调用就能在langchain中轻松使用Hugging Face上各类流行的开源大语言模型以及各类AI工具</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">import os</span><br><span class="line"></span><br><span class="line">from langchain_huggingface import HuggingFaceEndpoint</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line">ENDPOINT_URL = &quot;HuggingFaceH4/zephyr-7b-beta&quot;</span><br><span class="line"># ENDPOINT_URL = &quot;deepseek-ai/DeepSeek-R1&quot;</span><br><span class="line">HF_TOKEN = os.getenv(&#x27;HF_TOKEN&#x27;)</span><br><span class="line"></span><br><span class="line">llm = HuggingFaceEndpoint(</span><br><span class="line">    endpoint_url=ENDPOINT_URL,</span><br><span class="line">    # max_new_tokens=30,  限制生成的最大 token 数量为 30 个</span><br><span class="line">    typical_p=0.95,     # 控制输出文本的多样性，避免生成太过常见或太过罕见的 tokens</span><br><span class="line">    temperature=0.01,</span><br><span class="line">    repetition_penalty=1.03,    # 对重复出现的 tokens 施加惩罚，避免生成重复的内容</span><br><span class="line">    huggingfacehub_api_token=HF_TOKEN</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">print(llm.invoke(&quot;解释langchain是什么？&quot;))</span><br><span class="line"># 生成token时需要把权限都点上</span><br></pre></td></tr></table></figure>
+
+<h5 id="2-4-输出解析器"><a href="#2-4-输出解析器" class="headerlink" title="2.4 输出解析器"></a>2.4 输出解析器</h5><p>输出解析器负责获取 LLM 的输出并将其转换为更合适的格式。借助LangChain的输出解析器重构程序，使模型能够生成结构化回应，并可以直接解析这些回应</p>
+<p>LangChain有许多不同类型的输出解析器</p>
+<ul>
+<li>CSV解析器:CommaSeparatedListOutputParser,模型的输出以逗号分隔，以列表形式返回输出</li>
+<li>JSON解析器:JsonOutputParser,确保输出符合特定JSON对象格式。</li>
+<li>XML解析器:XMLOutputParser,允许以流行的XML格式从LLM获取结果</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">from langchain_core.prompts import ChatPromptTemplate</span><br><span class="line">from langchain_openai import ChatOpenAI</span><br><span class="line"># 创建解析器</span><br><span class="line">from langchain_core.output_parsers import JsonOutputParser, StrOutputParser, XMLOutputParser</span><br><span class="line">from langchain.chains import LLMChain  # 新增：导入 LLMChain 用于非 LCEL 链式调用</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line">import os</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"># 初始化语言模型</span><br><span class="line">model = ChatOpenAI(</span><br><span class="line">    api_key=os.getenv(&quot;DASHSCOPE_API_KEY&quot;),</span><br><span class="line">    base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;,</span><br><span class="line">    model=&quot;qwen-plus&quot;,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"># output_parser = StrOutputParser()</span><br><span class="line"># output_parser = JsonOutputParser()</span><br><span class="line">xml_parser = XMLOutputParser()</span><br><span class="line"></span><br><span class="line"># 提示模板</span><br><span class="line">prompt = ChatPromptTemplate.from_messages([</span><br><span class="line">    (&quot;system&quot;, &quot;你是一个专业的程序员&quot;),</span><br><span class="line">    (&quot;user&quot;, &quot;&#123;input&#125;&quot;)</span><br><span class="line">])</span><br><span class="line"></span><br><span class="line"># 使用 LLMChain 构建链（非 LCEL 方式）</span><br><span class="line">chain = LLMChain(</span><br><span class="line">    llm=model,</span><br><span class="line">    prompt=prompt,</span><br><span class="line">    output_parser=xml_parser  # 指定输出解析器</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">res = chain.invoke(&#123;&quot;input&quot;: &quot;langchain是什么? 使用xml格式输出&quot;&#125;)</span><br><span class="line"># res = chain.invoke(&#123;&quot;input&quot;: &quot;langchain是什么? 问题用question 回答用ans 返回一个JSON格式&quot;&#125;)</span><br><span class="line"># res = chain.invoke(&#123;&quot;input&quot;: &quot;大模型中的langchain是什么?&quot;&#125;)</span><br><span class="line">print(res)</span><br></pre></td></tr></table></figure>
+
+<h3 id="三-Langchain数据检索"><a href="#三-Langchain数据检索" class="headerlink" title="三. Langchain数据检索"></a>三. Langchain数据检索</h3><p>在前面课程中我们已经讲了大模型存在的缺陷：数据不实时，缺少垂直领域数据和私域数据等。解决这些缺陷的主要方法是通过检索增强生成（RAG）。首先检索外部数据，然后在执行生成步骤时将其传递给LLM。</p>
+<p>LangChain为RAG应用程序提供了从简单到复杂的所有构建块，本文要学习的数据检索（Retrieval）模块包括与检索步骤相关的所有内容，例如数据的获取、切分、向量化、向量存储、向量检索等模块（见下图）。</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202604191333164.png"></p>
+<h4 id="1-Document-loaders-文档加载模块"><a href="#1-Document-loaders-文档加载模块" class="headerlink" title="1. Document loaders 文档加载模块"></a>1. Document loaders 文档加载模块</h4><p>LangChain封装了一系列类型的文档加载模块，例如PDF、CSV、HTML、JSON、Markdown、File<br>Directory等。下面以PDF文件夹在为例看一下用法，其它类型的文档加载的用法都类似。</p>
+<h5 id="1-1-加载本地文件"><a href="#1-1-加载本地文件" class="headerlink" title="1.1 加载本地文件"></a>1.1 加载本地文件</h5><ul>
+<li>LangChain加载PDF文件使用的是pypdf，先安装：</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">python</span><br><span class="line">复制代码</span><br><span class="line">pip install pypdf</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>加载代码示例：</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">from langchain_community.document_loaders import PyPDFLoader</span><br><span class="line"></span><br><span class="line">loader = PyPDFLoader(r&quot;D:\python_project\AI_object\RAG备课\day02\财务管理文档.pdf&quot;)</span><br><span class="line">pages = loader.load_and_split()</span><br><span class="line"></span><br><span class="line">print(f&quot;第0页：\n&#123;pages[0]&#125;&quot;)  ## 也可通过 pages[0].page_content只获取本页内容</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>langchain</code>加载Word文件</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">pip install unstructured</span><br><span class="line"># 下载时需要开科学上网不然会报错File is not a zip file</span><br><span class="line"># 如果报错开科学上网之后</span><br><span class="line"># import nltk</span><br><span class="line"># nltk.download(&#x27;punkt&#x27;)</span><br><span class="line"># nltk.download(&#x27;averaged_perceptron_tagger&#x27;)</span><br><span class="line"># 把nltk 重新加载</span><br><span class="line">pip install python-doc</span><br><span class="line">pip install python-docx</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># from langchain_community.document_loaders import PyPDFLoader</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># loader = PyPDFLoader(r&quot;D:\python_project\AI_object\RAG备课\day02\财务管理文档.pdf&quot;)</span></span><br><span class="line"><span class="comment"># pages = loader.load_and_split()</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># print(f&quot;第0页：\n&#123;pages[0]&#125;&quot;)  ## 也可通过 pages[0].page_content只获取本页内容</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> UnstructuredWordDocumentLoader</span><br><span class="line"></span><br><span class="line"><span class="comment"># 指定要加载的Word文档路径</span></span><br><span class="line">loader = UnstructuredWordDocumentLoader(<span class="string">r&quot;D:\python_project\AI_object\RAG备课\day02\人事管理流程.docx&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(loader)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 加载文档并分割成段落或元素</span></span><br><span class="line">documents = loader.load()</span><br><span class="line"><span class="built_in">print</span>(documents)</span><br><span class="line"><span class="comment"># 输出加载的内容</span></span><br><span class="line"><span class="keyword">for</span> doc <span class="keyword">in</span> documents:</span><br><span class="line">    <span class="built_in">print</span>(doc.page_content)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 需要科学上网需要下载一个包 punkt_tab </span></span><br></pre></td></tr></table></figure>
+
+<h5 id="1-2-加载在线PDF文件"><a href="#1-2-加载在线PDF文件" class="headerlink" title="1.2 加载在线PDF文件"></a>1.2 加载在线PDF文件</h5><ul>
+<li>LangChain也能加载在线的PDF文件。</li>
+<li>在开始之前，你可能需要安装以下的Python包：</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">pip install -i https://pypi.tuna.tsinghua.edu.cn/simple unstructured</span><br><span class="line">pip install -i https://pypi.tuna.tsinghua.edu.cn/simple pdf2image</span><br><span class="line">pip install -i https://pypi.tuna.tsinghua.edu.cn/simple opencv-python</span><br><span class="line">pip install -i https://pypi.tuna.tsinghua.edu.cn/simple unstructured-inference</span><br><span class="line">pip install -i https://pypi.tuna.tsinghua.edu.cn/simple pikepdf</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>代码示例：</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> PyPDFLoader</span><br><span class="line"></span><br><span class="line">loader = PyPDFLoader(<span class="string">&quot;https://arxiv.org/pdf/2302.03803.pdf&quot;</span>)</span><br><span class="line">data = loader.load()</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;第0页：\n<span class="subst">&#123;data[<span class="number">0</span>].page_content&#125;</span>&quot;</span>)  <span class="comment"># 也可通过 pages[0].page_content只获取本页内容</span></span><br><span class="line"><span class="comment"># 需要注意科学上网</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="2-文档切分模块"><a href="#2-文档切分模块" class="headerlink" title="2. 文档切分模块"></a>2. 文档切分模块</h4><ul>
+<li>LangChain提供了许多不同类型的文本切分器，具体见下表：</li>
+</ul>
+<p><img src="/images/038.png"></p>
+<p>这里以Recursive为例展示用法。RecursiveCharacterTextSplitter是LangChain对这种文档切分方式的封装，里面的几个重点参数：</p>
+<ul>
+<li>chunk_size：每个切块的token数量</li>
+<li>chunk_overlap：相邻两个切块之间重复的token数量</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"></span><br><span class="line">from langchain_community.document_loaders import PyPDFLoader</span><br><span class="line">from langchain.text_splitter import RecursiveCharacterTextSplitter</span><br><span class="line"></span><br><span class="line">loader = PyPDFLoader(&quot;财务管理文档.pdf&quot;)</span><br><span class="line">pages = loader.load_and_split()</span><br><span class="line"># print(f&quot;第0页：\n&#123;pages[0].page_content&#125;&quot;)</span><br><span class="line"># print(pages)</span><br><span class="line"></span><br><span class="line">text_splitter = RecursiveCharacterTextSplitter(</span><br><span class="line">    chunk_size=200,</span><br><span class="line">    chunk_overlap=100,</span><br><span class="line">    length_function=len,</span><br><span class="line">)</span><br><span class="line"># [pages[1].page_content]</span><br><span class="line"># print([page.page_content for page in pages if pages])</span><br><span class="line">paragraphs = text_splitter.create_documents([page.page_content.replace(&#x27;\n&#x27;, &#x27;&#x27;).replace(&#x27; &#x27;, &#x27;&#x27;) for page in pages if pages])</span><br><span class="line">print(paragraphs)</span><br><span class="line">for para in paragraphs:</span><br><span class="line">    print(para.page_content)</span><br><span class="line">    print(&#x27;-------&#x27;, len(para.page_content))</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>以上示例程序将chunk_overlap设置为100，看下运行效果，可以看到上一个chunk和下一个chunk会有一部分的信息重合，*<br>*这样做的原因是尽可能地保证两个chunk之间的上下文关系**：</p>
+<p>这里提供了一个可视化展示文本如何分割的工具，感兴趣的可以看下。</p>
+</li>
+<li><p>工具网址：<a target="_blank" rel="noopener" href="http://chunkviz.up.railway.app/">http://chunkviz.up.railway.app/</a></p>
+</li>
+</ul>
+<h4 id="3-文本向量化模型封装"><a href="#3-文本向量化模型封装" class="headerlink" title="3. 文本向量化模型封装"></a>3. 文本向量化模型封装</h4><ul>
+<li>LangChain对一些文本向量化模型的接口做了封装，例如OpenAI, Cohere, Hugging Face等。<br>向量化模型的封装提供了两种接口，一种针对文档的向量化<code>embed_documents</code>，一种针对句子的向量化<code>embed_query</code>。</li>
+<li>示例代码：<ul>
+<li>文档的向量化<code>embed_documents</code>，接收的参数是字符串数组</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">from langchain_community.embeddings import DashScopeEmbeddings</span><br><span class="line">import os</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line">embeddings_model = DashScopeEmbeddings(dashscope_api_key=os.getenv(&#x27;api_key&#x27;))</span><br><span class="line">embeddings = embeddings_model.embed_documents(</span><br><span class="line">    [</span><br><span class="line">        &quot;Hi there!&quot;,</span><br><span class="line">        &quot;Oh, hello!&quot;,</span><br><span class="line">        &quot;What&#x27;s your name?&quot;,</span><br><span class="line">        &quot;My friends call me World&quot;,</span><br><span class="line">        &quot;Hello World!&quot;</span><br><span class="line">    ]</span><br><span class="line">)</span><br><span class="line">print(len(embeddings), len(embeddings[0]), len(embeddings[1]))</span><br><span class="line">##运行结果 (5, 1536)</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>句子的向量化<code>embed_query</code>，接收的参数是字符串</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">from langchain_community.embeddings import DashScopeEmbeddings</span><br><span class="line">import os</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line">embeddings_model = DashScopeEmbeddings(dashscope_api_key=os.getenv(&#x27;api_key&#x27;))</span><br><span class="line"></span><br><span class="line">embedded_query = embeddings_model.embed_query(&quot;What was the name mentioned in the conversation?&quot;)</span><br><span class="line">print(embedded_query[:5])</span><br></pre></td></tr></table></figure>
+
+<h4 id="4-向量存储"><a href="#4-向量存储" class="headerlink" title="4. 向量存储"></a>4. 向量存储</h4><ul>
+<li>将文本向量化之后，下一步就是进行向量的存储。 这部分包含两块：一是向量的存储。二是向量的查询。</li>
+<li>官方提供了三种开源、免费的可用于本地机器的向量数据库示例（chroma、FAISS、 Lance）。因为我在之前RAG的文章中用的chroma数据库，所以这里还是以这个数据库为例。</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">import os</span><br><span class="line"></span><br><span class="line">from langchain_community.embeddings import DashScopeEmbeddings</span><br><span class="line">from langchain_community.vectorstores import Chroma</span><br><span class="line">from langchain_community.document_loaders import PyPDFLoader</span><br><span class="line">from langchain.text_splitter import RecursiveCharacterTextSplitter</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line"># 读取文件</span><br><span class="line">loader = PyPDFLoader(&quot;财务管理文档.pdf&quot;)</span><br><span class="line">pages = loader.load_and_split()</span><br><span class="line"></span><br><span class="line">text_splitter = RecursiveCharacterTextSplitter(</span><br><span class="line">    chunk_size=200,</span><br><span class="line">    chunk_overlap=100,</span><br><span class="line">    length_function=len,</span><br><span class="line">    add_start_index=True,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"># 将数据进行切割成块</span><br><span class="line">paragraphs = text_splitter.create_documents([page.page_content for page in pages if pages])</span><br><span class="line"></span><br><span class="line"># 创建chroma数据库，并将文本数据个向量化的数据存入</span><br><span class="line">db = Chroma.from_documents(paragraphs, DashScopeEmbeddings(dashscope_api_key=os.getenv(&#x27;api_key&#x27;)))  # 一行代码搞定</span><br><span class="line"></span><br><span class="line"># 在数据库中进行搜索</span><br><span class="line">query = &quot;会计核算基础规范&quot;</span><br><span class="line">docs = db.similarity_search(query)  # 一行代码搞定</span><br><span class="line">for doc in docs:</span><br><span class="line">    print(f&quot;&#123;doc&#125;\n-------\n&quot;)</span><br></pre></td></tr></table></figure>
+
+<h4 id="5-Retrievers-检索器"><a href="#5-Retrievers-检索器" class="headerlink" title="5. Retrievers 检索器"></a>5. Retrievers 检索器</h4><ul>
+<li>检索器是在给定非结构化查询的情况下返回相关文本的接口。它比Vector stores更通用。检索器不需要能够存储文档，只需要返回（或检索）文档即可。Vector<br>stores可以用作检索器的主干，但也有其他类型的检索器。<strong>检索器接受字符串查询作为输入，并返回文档列表作为输出</strong>。</li>
+<li>检索器（Retrievers） 是一个用于从文档集合中检索最相关文档或信息片段的关键组件。它们通常与向量存储（Vector<br>Stores）结合使用，通过计算查询向量与存储中的文档向量之间的相似度来实现高效的语义搜索。简单来说，检索器帮助你找到与特定查询最相关的文档。</li>
+<li>LangChain检索器提供的检索类型如下：</li>
+</ul>
+<p><img src="/images/039.png"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">import os</span><br><span class="line"></span><br><span class="line">from langchain_community.embeddings import DashScopeEmbeddings</span><br><span class="line">from langchain_community.vectorstores import Chroma</span><br><span class="line">from langchain_community.document_loaders import PyPDFLoader</span><br><span class="line">from langchain.text_splitter import RecursiveCharacterTextSplitter</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line"># 读取文件</span><br><span class="line">loader = PyPDFLoader(&quot;财务管理文档.pdf&quot;)</span><br><span class="line">pages = loader.load_and_split()</span><br><span class="line"></span><br><span class="line">text_splitter = RecursiveCharacterTextSplitter(</span><br><span class="line">    chunk_size=200,</span><br><span class="line">    chunk_overlap=100,</span><br><span class="line">    length_function=len,</span><br><span class="line">    add_start_index=True,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"># 将数据进行切割成块</span><br><span class="line">paragraphs = text_splitter.create_documents([page.page_content for page in pages if pages])</span><br><span class="line"></span><br><span class="line"># 创建chroma数据库，并将文本数据个向量化的数据存入</span><br><span class="line">db = Chroma.from_documents(paragraphs, DashScopeEmbeddings(dashscope_api_key=os.getenv(&#x27;api_key&#x27;)))  # 一行代码搞定</span><br><span class="line"># 实例化一个检索器</span><br><span class="line">retriever = db.as_retriever()</span><br><span class="line"></span><br><span class="line"># 我们还可以限制检索器返回的文档数量</span><br><span class="line"># retriever = db.as_retriever(search_kwargs=&#123;&quot;k&quot;: 1&#125;)</span><br><span class="line"></span><br><span class="line"># 获取问题相关文档</span><br><span class="line">docs = retriever.get_relevant_documents(&quot;会计核算基础规范&quot;)</span><br><span class="line">for doc in docs:</span><br><span class="line">    print(f&quot;&#123;doc.page_content&#125;\n-------\n&quot;)</span><br></pre></td></tr></table></figure>
+
+<h3 id="四-Langchain之Chain链"><a href="#四-Langchain之Chain链" class="headerlink" title="四. Langchain之Chain链"></a>四. Langchain之Chain链</h3><ul>
+<li>为开发更复杂的应用程序，需要使用Chain来链接LangChain中的各个组件和功能，包括模型之间的链接以及模型与其他组件之间的链接</li>
+<li>链在内部把一系列的功能进行封装，而链的外部则又可以组合串联。 链其实可以被视为LangChain中的一种基本功能单元。</li>
+<li>API地址：<a target="_blank" rel="noopener" href="https://python.langchain.com/api_reference/langchain/chains.html">https://python.langchain.com/api_reference/langchain/chains.html</a></li>
+</ul>
+<h4 id="1-链的基本使用"><a href="#1-链的基本使用" class="headerlink" title="1. 链的基本使用"></a>1. 链的基本使用</h4><ul>
+<li>LLMChain是最基础也是最常见的链。LLMChain结合了语言模型推理功能，并添加了PromptTemplate和Output<br>Parser等功能，将模型输入输出整合在一个链中操作。</li>
+<li>它利用提示模板格式化输入，将格式化后的字符串传递给LLM模型，并返回LLM的输出。这样使得整个处理过程更加高效和便捷。</li>
+</ul>
+<h5 id="1-1-未使用Chain"><a href="#1-1-未使用Chain" class="headerlink" title="1.1 未使用Chain"></a>1.1 未使用Chain</h5><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"># 导入LangChain中的提示模板</span><br><span class="line">from langchain_core.prompts import PromptTemplate</span><br><span class="line"># 导入LangChain中的OpenAI模型接口</span><br><span class="line">from langchain_openai import ChatOpenAI</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line">import os</span><br><span class="line"></span><br><span class="line"># 原始字符串模板</span><br><span class="line">template = &quot;桌上有&#123;number&#125;个苹果，四个桃子和 3 本书，一共有几个水果?&quot;</span><br><span class="line"></span><br><span class="line"># 创建LangChain模板</span><br><span class="line">prompt_temp = PromptTemplate.from_template(template)</span><br><span class="line"></span><br><span class="line"># 根据模板创建提示</span><br><span class="line">prompt = prompt_temp.format(number=2)</span><br><span class="line"></span><br><span class="line">model = ChatOpenAI(api_key=os.getenv(&quot;api_key&quot;),</span><br><span class="line">                   base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;,</span><br><span class="line">                   model=&#x27;qwen-plus&#x27;,</span><br><span class="line">                   temperature=0)</span><br><span class="line"># 传入提示，调用模型返回结果</span><br><span class="line">result = model.invoke(prompt)</span><br><span class="line">print(result)</span><br></pre></td></tr></table></figure>
+
+<h5 id="1-2-使用Chain"><a href="#1-2-使用Chain" class="headerlink" title="1.2 使用Chain"></a>1.2 <strong>使用Chain</strong></h5><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">from langchain.chains.llm import LLMChain</span><br><span class="line">from langchain_core.prompts import PromptTemplate</span><br><span class="line">from langchain_openai import ChatOpenAI</span><br><span class="line">import os</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"># 原始字符串模板</span><br><span class="line">template = &quot;桌上有&#123;number&#125;个苹果，四个桃子和 3 本书，一共有几个水果?&quot;</span><br><span class="line"></span><br><span class="line"># 创建模型实例</span><br><span class="line">llm = ChatOpenAI(api_key=os.getenv(&quot;api_key&quot;),</span><br><span class="line">                 base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;,</span><br><span class="line">                 model=&#x27;qwen-max&#x27;,</span><br><span class="line">                 temperature=0)</span><br><span class="line"></span><br><span class="line"># 创建LLMChain</span><br><span class="line">llm_chain = LLMChain(</span><br><span class="line">    llm=llm,</span><br><span class="line">    prompt=PromptTemplate.from_template(template)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"># 调用LLMChain，返回结果</span><br><span class="line">result = llm_chain.invoke(&#123;&quot;number&quot;: 2&#125;)</span><br><span class="line">print(type(result))</span><br><span class="line">print(result[&#x27;text&#x27;])</span><br></pre></td></tr></table></figure>
+
+<h5 id="1-3-使用表达式语言-LCEL"><a href="#1-3-使用表达式语言-LCEL" class="headerlink" title="1.3 使用表达式语言 (LCEL)"></a>1.3 <strong>使用表达式语言 (LCEL)</strong></h5><ul>
+<li>LangChain Expression Language 是一种以声明式方法，轻松地将链或组件组合在一起的机制。通过利用管道操作符，构建的任何链将自动具有完整的同步、异步和流式支持。</li>
+<li>LangChain 表达式语言（LangChain Expression Language，简称 LCEL）是一种专为链组件（Chain）编排设计的声明式语法，其核心价值在于以统一的方式实现从简单到复杂的<br>AI 应用构建。从设计之初，LCEL 就致力于消除原型开发与生产部署间的鸿沟 —— 无论是基础的 “提示词 + LLM” 单链结构，还是包含<br>100 + 步骤的复杂工作流，均可通过同一套语法实现，无需修改代码逻辑。</li>
+<li>python实现管道调用</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">from pipe import select</span><br><span class="line"></span><br><span class="line">numbers = [1,2,3]</span><br><span class="line">aa = list(numbers | select(lambda x: x*2))</span><br><span class="line">print(aa)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">class Chain():</span><br><span class="line">    def __init__(self, value):</span><br><span class="line">        self.value = value</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    def __or__(self, other):</span><br><span class="line">        # 调用 | 运算符  触发的魔法方法</span><br><span class="line">        return other(self.value)</span><br><span class="line"></span><br><span class="line">def prompt(text):</span><br><span class="line">    return &quot;请求回答问题:&#123;&#125;&quot;.format(text)</span><br><span class="line"></span><br><span class="line">aa = Chain(&#x27;人工智能是什么?&#x27;)</span><br><span class="line"></span><br><span class="line">res = aa | prompt</span><br><span class="line">print(res)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>普通调用</li>
+</ul>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202604191333929.png"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">from dotenv import load_dotenv</span><br><span class="line">from langchain_openai import ChatOpenAI</span><br><span class="line">from langchain_core.output_parsers import StrOutputParser</span><br><span class="line">from langchain_core.prompts import ChatPromptTemplate</span><br><span class="line">import os</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"># 创建提示词</span><br><span class="line">prompt = ChatPromptTemplate.from_template(&quot;tell me a short joke about &#123;topic&#125;&quot;)</span><br><span class="line"></span><br><span class="line"># 创建llm模型</span><br><span class="line">model = ChatOpenAI(api_key=os.getenv(&quot;api_key&quot;),</span><br><span class="line">                   base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;,</span><br><span class="line">                   model=&quot;qwen-plus&quot;)</span><br><span class="line"># 创建输出解释器</span><br><span class="line">output_parser = StrOutputParser()</span><br><span class="line"># 使用chain链在一起</span><br><span class="line">chain = prompt | model | output_parser</span><br><span class="line">print(chain.invoke(&#123;&quot;topic&quot;: &quot;ice cream&quot;&#125;))</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>语言表达式语言(LCEL) 采用声明式<a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Declarative_programming">方法</a>从现有的<br>Runnable构建新的<a target="_blank" rel="noopener" href="https://python.langchain.com/docs/concepts/runnables/">Runnable</a>。</li>
+</ul>
+<h4 id="2-Runnable是什么？"><a href="#2-Runnable是什么？" class="headerlink" title="2. Runnable是什么？"></a>2. Runnable是什么？</h4><ul>
+<li>Runnable 接口是 <code>LangChain 0.2</code> 版本后推出的核心抽象层，旨在通过函数式编程模型统一各类 AI<br>组件的交互方式。它将语言模型（LLM）、链（Chain）、工具调用、数据处理等操作抽象为可组合的 “可运行单元”<br>（Runnable），允许开发者以类似流水线（Pipeline）的方式编排复杂逻辑，而无需关注底层实现细节。</li>
+</ul>
+<h5 id="2-1-核心特性"><a href="#2-1-核心特性" class="headerlink" title="2.1 核心特性"></a>2.1 核心特性</h5><p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202604191333097.png"></p>
+<h5 id="2-2-主要实现类"><a href="#2-2-主要实现类" class="headerlink" title="2.2  主要实现类"></a>2.2  主要实现类</h5><ul>
+<li><code>LangChain</code> 中几乎所有核心组件都实现了 <code>Runnable</code> 接口</li>
+</ul>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202604191334724.png"></p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://python.langchain.com/api_reference/core/runnables/langchain_core.runnables.base.Runnable.html#langchain_core.runnables.base.Runnable%E5%8F%AF%E4%BB%A5%E5%9C%A8%E8%BF%99%E4%B8%AA%E7%BD%91%E7%AB%99%E4%B8%AD%E6%9F%A5%E8%AF%A2%E6%89%80%E6%9C%89Runnable%E5%AF%B9%E5%BA%94%E7%9A%84%E6%96%B9%E6%B3%95">https://python.langchain.com/api_reference/core/runnables/langchain_core.runnables.base.Runnable.html#langchain_core.runnables.base.Runnable可以在这个网站中查询所有Runnable对应的方法</a></li>
+</ul>
+<h5 id="2-3-案例"><a href="#2-3-案例" class="headerlink" title="2.3 案例"></a>2.3 案例</h5><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br></pre></td><td class="code"><pre><span class="line">from langchain_openai import ChatOpenAI</span><br><span class="line">from langchain.schema import SystemMessage</span><br><span class="line">from langchain.prompts import ChatPromptTemplate</span><br><span class="line">from langchain_core.output_parsers import JsonOutputParser</span><br><span class="line">from langchain_core.vectorstores import InMemoryVectorStore</span><br><span class="line">from langchain.schema.runnable import RunnableMap, RunnableBranch, RunnableLambda</span><br><span class="line">from langchain_community.tools.tavily_search import TavilySearchResults</span><br><span class="line">from langchain_huggingface import HuggingFaceEmbeddings</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line">import os</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">class TravelQASystem:</span><br><span class="line">    def __init__(self, openai_api_key, serpapi_api_key, embed_path):</span><br><span class="line">        &quot;&quot;&quot;初始化旅游问答系统核心组件&quot;&quot;&quot;</span><br><span class="line"></span><br><span class="line">        # 初始化语言模型</span><br><span class="line">        self.llm = ChatOpenAI(api_key=openai_api_key,</span><br><span class="line">                              base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;,</span><br><span class="line">                              model=&quot;qwen-plus&quot;)</span><br><span class="line"></span><br><span class="line">        # 初始化搜索工具</span><br><span class="line">        self.search = TavilySearchResults(tavily_api_key=serpapi_api_key)</span><br><span class="line"></span><br><span class="line">        # 初始化嵌入模型</span><br><span class="line">        self.embeddings = HuggingFaceEmbeddings(model_name=embed_path)</span><br><span class="line"></span><br><span class="line">        # 构建景点知识库</span><br><span class="line">        self.attraction_data = [</span><br><span class="line">            &quot;故宫：北京地标，明清皇宫，开放时间8:30-17:00&quot;,</span><br><span class="line">            &quot;颐和园：皇家园林，昆明湖、长廊等景点&quot;,</span><br><span class="line">            &quot;八达岭长城：距离市区70公里，建议游览3-4小时&quot;</span><br><span class="line">        ]</span><br><span class="line"></span><br><span class="line">        # 使用内存型向量存储类</span><br><span class="line">        self.vector_store = InMemoryVectorStore.from_texts(</span><br><span class="line">            self.attraction_data, self.embeddings, k=1</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">    def setup_runnable_pipeline(self):</span><br><span class="line">        &quot;&quot;&quot;定义Runnable流程管道&quot;&quot;&quot;</span><br><span class="line">        # 3.1 问题解析模块：识别地点与查询类型</span><br><span class="line">        parse_prompt = ChatPromptTemplate.from_messages([</span><br><span class="line">            SystemMessage(content=&quot;你是旅游助手，需从用户问题中提取地点和查询类型（天气/景点介绍/行程规划）&quot;),</span><br><span class="line">            (&quot;user&quot;, &quot;&quot;&quot;问题：&#123;user_question&#125;请以JSON格式返回：&#123;&#123;&quot;location&quot;: &quot;地点&quot;, &quot;type&quot;: &quot;查询类型&quot;&#125;&#125;&quot;&quot;&quot;)</span><br><span class="line">        ])</span><br><span class="line">        parse_module = parse_prompt | self.llm | JsonOutputParser()  # Output JSON string</span><br><span class="line"></span><br><span class="line">        # 3.2 并行数据获取：天气查询+景点信息检索</span><br><span class="line">        weather_query = RunnableLambda(</span><br><span class="line">            lambda x: self.search.invoke(f&quot;&#123;x[&#x27;location&#x27;]&#125; 今日天气&quot;)</span><br><span class="line">        )</span><br><span class="line">        attraction_retrieval = (lambda x: x[&quot;location&quot;]) | self.vector_store.as_retriever() | (</span><br><span class="line">            lambda x: x[0].page_content)</span><br><span class="line">        data_acquisition = RunnableMap(&#123;</span><br><span class="line">            &quot;weather&quot;: weather_query,</span><br><span class="line">            &quot;attraction&quot;: attraction_retrieval,</span><br><span class="line">            &quot;location&quot;: (lambda x: x[&quot;location&quot;])</span><br><span class="line">        &#125;)</span><br><span class="line"></span><br><span class="line">        # 3.3 回答生成模块：整合信息并格式化</span><br><span class="line">        generate_prompt = ChatPromptTemplate.from_messages([</span><br><span class="line">            SystemMessage(content=&quot;你是专业旅游顾问，需结合景点信息和天气生成建议&quot;),</span><br><span class="line">            (&quot;user&quot;, &quot;&quot;&quot;地点：&#123;location&#125;</span><br><span class="line">                景点信息：&#123;attraction&#125;</span><br><span class="line">                天气情况：&#123;weather&#125;</span><br><span class="line">                请生成1条行程建议，包含注意事项（如天气相关准备）&quot;&quot;&quot;)</span><br><span class="line">        ])</span><br><span class="line">        generate_module = generate_prompt | self.llm | (lambda x: x.content.strip())</span><br><span class="line"></span><br><span class="line">        # 3.4 全流程串联</span><br><span class="line">        self.travel_qa_pipeline = (</span><br><span class="line">            # 阶段1：解析问题</span><br><span class="line">            parse_module</span><br><span class="line">            | (lambda x: &#123;&quot;location&quot;: x[&quot;location&quot;], &quot;type&quot;: x[&quot;type&quot;]&#125;)</span><br><span class="line">            # 阶段2：并行获取数据（仅当查询类型为天气或行程时触发）</span><br><span class="line">            | RunnableBranch(</span><br><span class="line">                (lambda x: &quot;天气&quot; in x[&quot;type&quot;], data_acquisition),</span><br><span class="line">                lambda x: &#123;&quot;location&quot;: x[&quot;location&quot;], &quot;attraction&quot;: attraction_retrieval.invoke(x)&#125;</span><br><span class="line">            )</span><br><span class="line">            # 阶段3：生成回答</span><br><span class="line">            | generate_module</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">    def process_user_question(self, user_question):</span><br><span class="line">        &quot;&quot;&quot;处理用户提问并返回回答&quot;&quot;&quot;</span><br><span class="line">        input_data = &#123;&quot;user_question&quot;: user_question&#125;</span><br><span class="line">        # try:</span><br><span class="line">        response = self.travel_qa_pipeline.invoke(input_data)</span><br><span class="line">        return response</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># 示例用法</span><br><span class="line">if __name__ == &quot;__main__&quot;:</span><br><span class="line">    # 替换为实际API密钥</span><br><span class="line">    OPENAI_API_KEY = os.getenv(&quot;api_key&quot;)</span><br><span class="line">    # https://www.tavily.com/</span><br><span class="line">    SERPAPI_API_KEY = os.getenv(&quot;TAVILY_API_KEY&quot;)</span><br><span class="line">    embed_path = r&quot;D:\LLM\Local_model\BAAI\bge-large-zh-v1___5&quot;</span><br><span class="line"></span><br><span class="line">    # 初始化系统</span><br><span class="line">    travel_qa = TravelQASystem(OPENAI_API_KEY, SERPAPI_API_KEY, embed_path)</span><br><span class="line">    travel_qa.setup_runnable_pipeline()</span><br><span class="line"></span><br><span class="line">    # 测试1：查询天气与景点建议</span><br><span class="line">    question1 = &quot;今天故宫的天气怎么样?&quot;</span><br><span class="line">    answer1 = travel_qa.process_user_question(question1)</span><br><span class="line">    print(f&quot;User Question: &#123;question1&#125;\nAI Answer: &#123;answer1&#125;\n&quot;)</span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h4 id=""><a href="#" class="headerlink" title=""></a></h4><h4 id="3-链的调用方式"><a href="#3-链的调用方式" class="headerlink" title="3. 链的调用方式"></a>3. 链的调用方式</h4><ul>
+<li><strong>通过invoke方法</strong></li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">from langchain_core.prompts import PromptTemplate</span><br><span class="line">from langchain_openai import ChatOpenAI</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line">import os</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"># 原始字符串模板</span><br><span class="line">template = &quot;桌上有&#123;number&#125;个苹果，四个桃子和 3 本书，一共有几个水果?&quot;</span><br><span class="line">prompt = PromptTemplate.from_template(template)</span><br><span class="line"></span><br><span class="line"># 创建模型实例</span><br><span class="line">llm = ChatOpenAI(api_key=os.getenv(&quot;api_key&quot;),</span><br><span class="line">                 base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;,</span><br><span class="line">                 model=&#x27;qwen-plus&#x27;,</span><br><span class="line">                 temperature=0)</span><br><span class="line"></span><br><span class="line"># 创建Chain</span><br><span class="line">chain = prompt | llm</span><br><span class="line"></span><br><span class="line"># 调用Chain，返回结果</span><br><span class="line">result = chain.invoke(&#123;&quot;number&quot;: &quot;3&quot;&#125;)</span><br><span class="line">print(result)</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>通过predict方法</strong>,将输入键指定为关键字参数</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">from langchain.chains.llm import LLMChain</span><br><span class="line">from langchain_core.prompts import PromptTemplate</span><br><span class="line">from langchain_openai import ChatOpenAI</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line">import os</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"># 创建模型实例</span><br><span class="line">template = &quot;桌上有&#123;number&#125;个苹果，四个桃子和 3 本书，一共有几个水果?&quot;</span><br><span class="line">prompt = PromptTemplate(template=template, input_variables=[&quot;number&quot;])</span><br><span class="line"></span><br><span class="line"># 创建模型实例</span><br><span class="line">llm = ChatOpenAI(api_key=os.getenv(&quot;api_key&quot;),</span><br><span class="line">                 base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;,</span><br><span class="line">                 model=&#x27;qwen-plus&#x27;,</span><br><span class="line">                 temperature=0)</span><br><span class="line"># 创建LLMChain    0.1.17 开始被标记为弃用，并计划在未来的 1.0 版本中移除</span><br><span class="line">llm_chain = LLMChain(llm=llm, prompt=prompt)</span><br><span class="line"># 调用LLMChain，返回结果</span><br><span class="line">result = llm_chain.predict(number=3)</span><br><span class="line">print(result)</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>通过batch方法(原apply方法)</strong>:batch方法允许输入列表运行链，一次处理多个输入。</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">from langchain.chains.llm import LLMChain</span><br><span class="line">from langchain_core.prompts import PromptTemplate</span><br><span class="line">from langchain_openai import ChatOpenAI</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line">import os</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># 创建模型实例</span><br><span class="line">template = PromptTemplate(</span><br><span class="line">    input_variables=[&quot;role&quot;, &quot;fruit&quot;],</span><br><span class="line">    template=&quot;&#123;role&#125;喜欢吃&#123;fruit&#125;?&quot;,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"># 创建LLM</span><br><span class="line">llm = ChatOpenAI(api_key=os.getenv(&quot;api_key&quot;),</span><br><span class="line">                 base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;,</span><br><span class="line">                 model=&#x27;qwen-plus&#x27;,</span><br><span class="line">                 temperature=0)</span><br><span class="line"></span><br><span class="line"># 创建LLMChain     0.1.17 开始被标记为弃用，并计划在未来的 1.0 版本中移除</span><br><span class="line"># llm_chain = LLMChain(llm=llm, prompt=template)</span><br><span class="line">llm_chain = template | llm</span><br><span class="line"></span><br><span class="line"># 输入列表</span><br><span class="line">input_list = [</span><br><span class="line">    &#123;&quot;role&quot;: &quot;猪八戒&quot;, &quot;fruit&quot;: &quot;人参果&quot;&#125;, &#123;&quot;role&quot;: &quot;孙悟空&quot;, &quot;fruit&quot;: &quot;仙桃&quot;&#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"># 调用LLMChain，返回结果</span><br><span class="line">result = llm_chain.batch(input_list)</span><br><span class="line">print(result[0].content)</span><br><span class="line">print(result[1].content)</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>LLMMathChain：数学链</strong><ul>
+<li>LLMMathChain将用户问题转换为数学问题，然后将数学问题转换为可以使用 Python 的 numexpr 库执行的表达式。使用运行此代码的输出来回答问题</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># 使用LLMMathChain，需要安装numexpr库</span><br><span class="line">pip install numexpr</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">from langchain_openai import ChatOpenAI</span><br><span class="line">from langchain.chains import LLMMathChain</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line">import os</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line"># 创建模型对象</span><br><span class="line">llm = ChatOpenAI(</span><br><span class="line">    api_key=os.getenv(&quot;api_key&quot;),</span><br><span class="line">    base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;,</span><br><span class="line">    model=&#x27;qwen-plus&#x27;,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"># 创建数学链</span><br><span class="line"># llm_math = LLMMathChain.from_llm(llm)</span><br><span class="line"></span><br><span class="line"># 执行链</span><br><span class="line">res = llm_math.invoke(&quot;5 ** 3 + 100 / 2的结果是多少？&quot;)</span><br><span class="line">print(res)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>create_sql_query_chain：SQL查询链</strong><ul>
+<li>create_sql_query_chain是创建生成SQL查询的链，用于将自然语言转换成数据库的SQL查询 (了解)</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># 这里使用MySQL数据库，需要安装pymysql</span><br><span class="line">pip install pymysql</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">from langchain_community.utilities import SQLDatabase</span><br><span class="line"></span><br><span class="line"># 连接 MySQL 数据库</span><br><span class="line">db_user = &quot;root&quot;</span><br><span class="line">db_password = &quot;root&quot;</span><br><span class="line">db_host = &quot;127.0.0.1&quot;</span><br><span class="line">db_port = &quot;3306&quot;</span><br><span class="line">db_name = &quot;spiders&quot;</span><br><span class="line">db = SQLDatabase.from_uri(f&quot;mysql+pymysql://&#123;db_user&#125;:&#123;db_password&#125;@&#123;db_host&#125;:&#123;db_port&#125;/&#123;db_name&#125;&quot;)</span><br><span class="line"></span><br><span class="line">print(&quot;哪种数据库：&quot;, db.dialect)</span><br><span class="line">print(&quot;获取数据表：&quot;, db.get_usable_table_names())</span><br><span class="line"># 执行查询</span><br><span class="line">res = db.run(&quot;SELECT count(*) FROM ali;&quot;)</span><br><span class="line">print(&quot;查询结果：&quot;, res)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">from langchain_community.utilities import SQLDatabase</span><br><span class="line">from langchain_openai import ChatOpenAI</span><br><span class="line">from langchain.chains import create_sql_query_chain</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line">import os</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line"># 连接 sqlite 数据库</span><br><span class="line"># db = SQLDatabase.from_uri(&quot;sqlite:///demo.db&quot;)</span><br><span class="line"></span><br><span class="line"># 连接 MySQL 数据库</span><br><span class="line">db_user = &quot;root&quot;</span><br><span class="line">db_password = &quot;root&quot;</span><br><span class="line">db_host = &quot;127.0.0.1&quot;</span><br><span class="line">db_port = &quot;3306&quot;</span><br><span class="line">db_name = &quot;spiders&quot;</span><br><span class="line">db = SQLDatabase.from_uri(f&quot;mysql+pymysql://&#123;db_user&#125;:&#123;db_password&#125;@&#123;db_host&#125;:&#123;db_port&#125;/&#123;db_name&#125;&quot;)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># 加上大模型</span><br><span class="line"># 创建模型对象</span><br><span class="line">llm = ChatOpenAI(api_key=os.getenv(&quot;api_key&quot;),</span><br><span class="line">                 base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;,</span><br><span class="line">                 model=&#x27;qwen-plus&#x27;</span><br><span class="line">                 )</span><br><span class="line"></span><br><span class="line">chain = create_sql_query_chain(llm=llm, db=db)</span><br><span class="line"># 限制使用的表</span><br><span class="line">response = chain.invoke(&#123;&quot;question&quot;: &quot;有哪些城市招聘的岗位最多？&quot;, &quot;table_names_to_use&quot;: [&quot;ali&quot;]&#125;)</span><br><span class="line"># 去除 SQLQuery</span><br><span class="line">print(response[10:])</span><br><span class="line">print(&quot;查询结果：&quot;, db.run(response[10:]))</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="五-Agent代理"><a href="#五-Agent代理" class="headerlink" title="五. Agent代理"></a>五. Agent代理</h3><p>在LangChain框架中，Agents是一种利用大型语言模型（Large Language Models，简称LLMs）来执行任务和做出决策的系统</p>
+<p>在 LangChain 的世界里，Agent 是一个智能代理，它的任务是听取你的需求（用户输入）和分析当前的情境（应用场景），然后从它的工具箱（一系列可用工具）中选择最合适的工具来执行操作</p>
+<ul>
+<li>使用工具（Tool）：LangChain中的Agents可以使用一系列的工具（Tools）实现，这些工具可以是API调用、数据库查询、文件处理等，Agents通过这些工具来执行特定的功能。</li>
+<li>推理引擎（Reasoning Engine）：Agents使用语言模型作为推理引擎，以确定在给定情境下应该采取哪些行动，以及这些行动的执行顺序。</li>
+<li>可追溯性（Traceability）：LangChain的Agents操作是可追溯的，这意味着可以记录和审查Agents执行的所有步骤，这对于调试和理解代理的行为非常有用。</li>
+<li>自定义（Customizability）：开发者可以根据需要自定义Agents的行为，包括创建新的工具、定义新的Agents类型或修改现有的Agents。</li>
+<li>交互式（Interactivity）：Agents可以与用户进行交互，响应用户的查询，并根据用户的输入采取行动。</li>
+<li>记忆能力（Memory）：LangChain的Agents可以被赋予记忆能力，这意味着它们可以记住先前的交互和状态，从而在后续的决策中使用这些信息。</li>
+<li>执行器（Agent Executor）：LangChain提供了Agent Executor，这是一个用来运行代理并执行其决策的工具，负责协调代理的决策和实际的工具执行。</li>
+</ul>
+<p>Agent代理的核心思想是使用语言模型来选择要采取的一系列动作。在链中，动作序列是硬编码的。</p>
+<p>在代理中，语言模型用作推理引擎来确定要采取哪些动作以及按什么顺序进行。</p>
+<p>因此，在LangChain中，Agent代理就是使用语言模型作为推理引擎，让模型自主判断、调用工具和决定下一步行动。</p>
+<p>Agent代理像是一个多功能接口，能够使用多种工具，并根据用户输入决定调用哪些工具，同时能够将一个工具的输出数据作为另一个工具的输入数据。</p>
+<h4 id="1-Agent的基本使用"><a href="#1-Agent的基本使用" class="headerlink" title="1. Agent的基本使用"></a>1. Agent的基本使用</h4><h5 id="1-1-Tavily在线搜索"><a href="#1-1-Tavily在线搜索" class="headerlink" title="1.1 Tavily在线搜索"></a>1.1 Tavily在线搜索</h5><ul>
+<li>构建一个具有两种工具的代理：一种用于在线查找，另一种用于查找加载到索引中的特定数据。</li>
+<li>在LangChain中有一个内置的工具，可以方便地使用Tavily搜索引擎作为工具。</li>
+<li>访问Tavily（用于在线搜索）注册账号并登录，获取API 密钥</li>
+<li>TAVILY_API_KEY申请：<a target="_blank" rel="noopener" href="https://tavily.com/">https://tavily.com/</a></li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"># 加载所需的库</span><br><span class="line">import os</span><br><span class="line">from langchain_community.tools.tavily_search import TavilySearchResults</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"># 查询 Tavily 搜索 API 并返回 json 的工具</span><br><span class="line">search = TavilySearchResults(tavily_api_key=os.getenv(&quot;tavily_key&quot;))</span><br><span class="line"># 执行查询</span><br><span class="line">res = search.invoke(&quot;目前市场上苹果手机16的售价是多少？&quot;)</span><br><span class="line">print(res)</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>创建检索器</strong><ul>
+<li>根据上述查询结果中的某个URL中，获取一些数据创建一个检索器。</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"># 加载所需的库</span><br><span class="line">import os</span><br><span class="line"></span><br><span class="line">from langchain_community.tools.tavily_search import TavilySearchResults</span><br><span class="line">from langchain_community.document_loaders import WebBaseLoader</span><br><span class="line">from langchain_community.vectorstores import FAISS</span><br><span class="line">from langchain_community.embeddings import DashScopeEmbeddings</span><br><span class="line">from langchain_text_splitters import RecursiveCharacterTextSplitter</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"># 查询 Tavily 搜索 API 并返回 json 的工具</span><br><span class="line"># search = TavilySearchResults()</span><br><span class="line"># # 执行查询</span><br><span class="line"># res = search.invoke(&quot;目前市场上苹果手机16的售价是多少？&quot;)</span><br><span class="line"># print(res)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># 创建索引器根据上述查询的结果</span><br><span class="line"></span><br><span class="line"># 加载HTML内容为一个文档对象</span><br><span class="line">loader = WebBaseLoader(&quot;https://news.qq.com/rain/a/20240920A07Y5Y00&quot;)</span><br><span class="line"># 读取文档</span><br><span class="line">docs = loader.load()</span><br><span class="line"># print(docs)</span><br><span class="line"></span><br><span class="line"># 分割文档</span><br><span class="line">documents = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200).split_documents(docs)</span><br><span class="line"></span><br><span class="line"># 向量化</span><br><span class="line">vector = FAISS.from_documents(documents, DashScopeEmbeddings(dashscope_api_key=os.getenv(&#x27;api_key&#x27;)))</span><br><span class="line"></span><br><span class="line"># 创建检索器</span><br><span class="line">retriever = vector.as_retriever()</span><br><span class="line"></span><br><span class="line"># 测试检索结果</span><br><span class="line">print(retriever.get_relevant_documents(&quot;目前市场上苹果手机16的售价是多少？&quot;))</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>得到工具列表</strong></li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">from langchain.tools.retriever import create_retriever_tool</span><br><span class="line"># 创建一个工具来检索文档</span><br><span class="line">retriever_tool = create_retriever_tool(</span><br><span class="line">    retriever,</span><br><span class="line">    &quot;iPhone_price_search&quot;,</span><br><span class="line">    &quot;搜索有关 iPhone 16 的价格信息。对于iPhone 16的任何问题，您必须使用此工具！&quot;,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"># 创建将在下游使用的工具列表</span><br><span class="line">tools = [search, retriever_tool]</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>对接大模型</li>
+<li>创建Agent,这里使用LangChain中一个叫OpenAI functions的代理，然后得到一个AgentExecutor代理执行器</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br></pre></td><td class="code"><pre><span class="line"># 加载所需的库</span><br><span class="line">import os</span><br><span class="line"></span><br><span class="line">from langchain import hub</span><br><span class="line">from langchain_community.tools.tavily_search import TavilySearchResults</span><br><span class="line">from langchain_community.document_loaders import WebBaseLoader</span><br><span class="line">from langchain_community.vectorstores import FAISS</span><br><span class="line">from langchain_community.embeddings import DashScopeEmbeddings</span><br><span class="line">from langchain_openai import ChatOpenAI</span><br><span class="line">from langchain_text_splitters import RecursiveCharacterTextSplitter</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line">from langchain.tools.retriever import create_retriever_tool</span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"># 查询 Tavily 搜索 API 并返回 json 的工具</span><br><span class="line">search = TavilySearchResults(tavily_api_key=os.getenv(&quot;tavily_key&quot;))</span><br><span class="line"># # 执行查询</span><br><span class="line"># res = search.invoke(&quot;目前市场上苹果手机16的售价是多少？&quot;)</span><br><span class="line"># print(res)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># 创建索引器根据上述查询的结果</span><br><span class="line"></span><br><span class="line"># 加载HTML内容为一个文档对象</span><br><span class="line">loader = WebBaseLoader(&quot;https://news.qq.com/rain/a/20240920A07Y5Y00&quot;)</span><br><span class="line"># 读取文档</span><br><span class="line">docs = loader.load()</span><br><span class="line"># print(docs)</span><br><span class="line"></span><br><span class="line"># 分割文档</span><br><span class="line">documents = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200).split_documents(docs)</span><br><span class="line"></span><br><span class="line"># 向量化</span><br><span class="line">vector = FAISS.from_documents(documents, DashScopeEmbeddings(dashscope_api_key=os.getenv(&#x27;api_key&#x27;)))</span><br><span class="line"></span><br><span class="line"># 创建检索器</span><br><span class="line">retriever = vector.as_retriever()</span><br><span class="line"></span><br><span class="line"># 测试检索结果</span><br><span class="line"># print(retriever.get_relevant_documents(&quot;目前市场上苹果手机16的售价是多少？&quot;))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># 创建一个工具来检索文档</span><br><span class="line">retriever_tool = create_retriever_tool(</span><br><span class="line">    retriever,</span><br><span class="line">    &quot;iPhone_price_search&quot;,</span><br><span class="line">    &quot;搜索有关 iPhone 16 的价格信息。对于iPhone 16的任何问题，您必须使用此工具！&quot;,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"># 创建将在下游使用的工具列表</span><br><span class="line">tools = [search, retriever_tool]</span><br><span class="line"></span><br><span class="line"># 初始化大模型</span><br><span class="line">llm = ChatOpenAI(api_key=os.getenv(&quot;api_key&quot;),</span><br><span class="line">                 base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;,</span><br><span class="line">                 model=&#x27;qwen-plus&#x27;, temperature=0)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># https://smith.langchain.com/hub</span><br><span class="line"># 获取要使用的提示</span><br><span class="line">prompt = hub.pull(&quot;hwchase17/openai-functions-agent&quot;)</span><br><span class="line"># 打印Prompt</span><br><span class="line"># print(prompt)</span><br><span class="line"></span><br><span class="line"># 使用OpenAI functions代理</span><br><span class="line">from langchain.agents import create_openai_functions_agent</span><br><span class="line"></span><br><span class="line"># 构建OpenAI函数代理：使用 LLM、提示模板和工具来初始化代理</span><br><span class="line">agent = create_openai_functions_agent(llm, tools, prompt)</span><br><span class="line"></span><br><span class="line">from langchain.agents import AgentExecutor</span><br><span class="line"># 将代理与AgentExecutor工具结合起来</span><br><span class="line">agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)</span><br><span class="line"># 执行代理 进行对比</span><br><span class="line"># agent_executor.invoke(&#123;&quot;input&quot;: &quot;目前市场上苹果手机16的各个型号的售价是多少？如果我在此基础上加价5%卖出，应该如何定价?&quot;&#125;)</span><br><span class="line">agent_executor.invoke(&#123;&quot;input&quot;: &quot;美国2024年谁胜出了总统的选举?&quot;&#125;)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h4 id="2-OpenAI-Functions-Agent"><a href="#2-OpenAI-Functions-Agent" class="headerlink" title="2. OpenAI Functions Agent"></a>2. OpenAI Functions Agent</h4><ul>
+<li>在<code>LangChain</code>中，<code>create_openai_functions_agent</code>是一个便捷的函数，用于创建能够与<code>OpenAI</code><br>提供的函数交互的代理。这使得开发人员可以创建智能应用程序，通过代理与用户进行更自然、更有效的对话。</li>
+</ul>
+<h5 id="2-1-应用示例"><a href="#2-1-应用示例" class="headerlink" title="2.1 应用示例"></a>2.1 <strong>应用示例</strong></h5><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">from langchain.agents import create_openai_functions_agent, AgentExecutor</span><br><span class="line">from langchain_community.tools.tavily_search import TavilySearchResults</span><br><span class="line">from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder</span><br><span class="line">from langchain_openai import ChatOpenAI</span><br><span class="line">from langchain_core.tools import Tool</span><br><span class="line">import os</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># 定义查询订单状态的函数</span><br><span class="line">def query_order_status(order_id):</span><br><span class="line">    if order_id == &quot;1024&quot;:</span><br><span class="line">        return &quot;订单 1024 的状态是：已发货，预计送达时间是 3-5 个工作日。&quot;</span><br><span class="line">    else:</span><br><span class="line">        return f&quot;未找到订单 &#123;order_id&#125; 的信息，请检查订单号是否正确。&quot;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># 定义退款政策说明函数</span><br><span class="line">def company_refund_policy(company_name):</span><br><span class="line">    print(company_name)</span><br><span class="line">    if company_name == &quot;tom公司&quot;:</span><br><span class="line">        return &quot;tom公司的退款政策是：在购买后7天内可以申请全额退款，需提供购买凭证。&quot;</span><br><span class="line">    else:</span><br><span class="line">        print(&#x27;输入有误&#x27;)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># 查询年龄</span><br><span class="line">def get_age(name):</span><br><span class="line">    if name == &quot;tom&quot;:</span><br><span class="line">        print(name)</span><br><span class="line">        return &quot;我的年龄是56岁！&quot;</span><br><span class="line">    else:</span><br><span class="line">        print(&#x27;输入有误&#x27;)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># 初始化工具</span><br><span class="line">tools = [</span><br><span class="line">    TavilySearchResults(max_results=1, tavily_api_key=os.getenv(&quot;tavily_key&quot;)),</span><br><span class="line">    Tool(</span><br><span class="line">        name=&quot;queryOrderStatus&quot;,</span><br><span class="line">        func=query_order_status,</span><br><span class="line">        description=&quot;根据订单ID查询订单状态&quot;,</span><br><span class="line">        args=&#123;&quot;order_id&quot;: &quot;订单的ID&quot;&#125;</span><br><span class="line">    ),</span><br><span class="line">    Tool(</span><br><span class="line">        name=&quot;companyRefundPolicy&quot;,</span><br><span class="line">        func=company_refund_policy,</span><br><span class="line">        description=&quot;查询某某公司退款政策详细内容&quot;,</span><br><span class="line">        args=&#123;&quot;company_name&quot;: &quot;公司名称&quot;&#125;</span><br><span class="line">    ),</span><br><span class="line">    Tool(</span><br><span class="line">        name=&quot;getAge&quot;,</span><br><span class="line">        func=get_age,</span><br><span class="line">        description=&quot;查询tom年龄大小&quot;,</span><br><span class="line">        args=&#123;&quot;name&quot;: &quot;查询tom年龄大小&quot;&#125;</span><br><span class="line">    ),</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"># 获取使用的提示</span><br><span class="line">prompt = ChatPromptTemplate.from_messages([</span><br><span class="line">    (&quot;system&quot;,</span><br><span class="line">        &quot;你是一个客服助手，使用工具回答问题。传递给工具的内容必须是准确的json数据不结尾的括号多加一个,如果是字符串数据必须和输入的保持一致要完整,不是篡改**重要规则**, &quot;</span><br><span class="line">    ),</span><br><span class="line">    # 用户输入变量</span><br><span class="line">    (&quot;user&quot;, &quot;&#123;input&#125;&quot;),</span><br><span class="line">    # 关键点：添加代理中间步骤占位符</span><br><span class="line">    MessagesPlaceholder(variable_name=&quot;agent_scratchpad&quot;)</span><br><span class="line">])</span><br><span class="line"># print(prompt)</span><br><span class="line"># 选择将驱动代理的LLM</span><br><span class="line">llm = ChatOpenAI(api_key=os.getenv(&quot;api_key&quot;),</span><br><span class="line">                 base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;,</span><br><span class="line">                 model=&#x27;qwen-plus&#x27;)</span><br><span class="line"></span><br><span class="line"># 构建OpenAI函数代理</span><br><span class="line">agent = create_openai_functions_agent(llm, tools, prompt)</span><br><span class="line"></span><br><span class="line"># 通过传入代理和工具创建代理执行器</span><br><span class="line">agent_executor = AgentExecutor(agent=agent, tools=tools, handle_parsing_errors=True, verbose=True)</span><br><span class="line"></span><br><span class="line"># 定义一些测试询问</span><br><span class="line">queries = [</span><br><span class="line">    &quot;请问订单1024的状态是什么？&quot;,</span><br><span class="line">    &quot;请问tom公司退款政策是什么？&quot;,</span><br><span class="line">    &quot;2024年谁胜出了美国总统的选举&quot;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"># 运行代理并输出结果</span><br><span class="line">for input in queries:</span><br><span class="line">    response = agent_executor.invoke(&#123;&quot;input&quot;: input&#125;)</span><br><span class="line">    print(f&quot;客户提问：&#123;input&#125;&quot;)</span><br><span class="line">    print(f&quot;代理回答：&#123;response&#125;\n&quot;)</span><br><span class="line"></span><br><span class="line"># response = agent_executor.invoke(&#123;&quot;input&quot;: &quot;2024年谁胜出了美国总统的选举&quot;&#125;)</span><br><span class="line"># print(f&quot;代理回答：&#123;response&#125;\n&quot;)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="六-LangChain之Tools工具"><a href="#六-LangChain之Tools工具" class="headerlink" title="六. LangChain之Tools工具"></a>六. LangChain之Tools工具</h3><h4 id="1-工具Tools"><a href="#1-工具Tools" class="headerlink" title="1. 工具Tools"></a>1. 工具Tools</h4><p>工具是代理、链或LLM可以用来与世界互动的接口。它们结合了几个要素</p>
+<ul>
+<li>工具的名称</li>
+<li>工具的描述</li>
+<li>该工具输入的JSON模式</li>
+<li>要调用的函数</li>
+<li>是否应将工具结果直接返回给用户</li>
+</ul>
+<p>LangChain通过提供统一框架集成功能的具体实现。在框架内，每个功能被封装成一个工具，具有自己的输入输出及处理方法。代理接收任务后，通过大模型推理选择适合的工具处理任务。一旦选定，LangChain将任务输入传递给该工具，工具处理输入生成输出。输出经过大模型推理，可用于其他工具的输入或作为最终结果返回给用户。</p>
+<p>Langchain地址：<a target="_blank" rel="noopener" href="https://python.langchain.com/api_reference/community/tools.html">https://python.langchain.com/api_reference/community/tools.html</a></p>
+<h5 id="1-1-工具的初步认识"><a href="#1-1-工具的初步认识" class="headerlink" title="1.1 工具的初步认识"></a>1.1 工具的初步认识</h5><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"># pip install wikipedia</span><br><span class="line">from langchain_community.tools import WikipediaQueryRun</span><br><span class="line">from langchain_community.utilities import WikipediaAPIWrapper</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line">import os</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"># 初始化工具 可以根据需要进行配置</span><br><span class="line"># 使用包装器WikipediaAPIWrapper进行搜索并获取页面摘要。默认情况下，它将返回前 k 个结果的页面摘要。它通过 doc_content_chars_max 限制文档内容。</span><br><span class="line">api_wrapper = WikipediaAPIWrapper(top_k_results=1, doc_content_chars_max=100)</span><br><span class="line">tool = WikipediaQueryRun(api_wrapper=api_wrapper)</span><br><span class="line"></span><br><span class="line"># 工具默认名称</span><br><span class="line">print(&quot;name:&quot;, tool.name)</span><br><span class="line"># 工具默认的描述</span><br><span class="line">print(&quot;description:&quot;, tool.description)</span><br><span class="line"># 输入内容 默认JSON模式</span><br><span class="line">print(&quot;args:&quot;, tool.args)</span><br><span class="line"># 是否直接返回工具的输出。</span><br><span class="line">print(&quot;return_direct:&quot;, tool.return_direct)</span><br><span class="line"></span><br><span class="line"># 可以用字典输入来调用这个工具</span><br><span class="line">print(tool.run(&#123;&quot;query&quot;: &quot;langchain&quot;&#125;))</span><br><span class="line"># 使用单个字符串输入来调用该工具。</span><br><span class="line">print(tool.run(&quot;langchain&quot;))</span><br><span class="line"># 需要科学上网</span><br></pre></td></tr></table></figure>
+
+<h5 id="1-2-自定义默认工具"><a href="#1-2-自定义默认工具" class="headerlink" title="1.2 自定义默认工具"></a>1.2 <strong>自定义默认工具</strong></h5><ul>
+<li>可以修改参数的内置名称、描述和JSON模式。</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">from langchain_community.tools import WikipediaQueryRun</span><br><span class="line">from langchain_community.utilities import WikipediaAPIWrapper</span><br><span class="line">from pydantic import BaseModel, Field</span><br><span class="line"></span><br><span class="line"># 初始化工具 可以根据需要进行配置</span><br><span class="line">api_wrapper = WikipediaAPIWrapper(top_k_results=1, doc_content_chars_max=100)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">class WikiInputs(BaseModel):</span><br><span class="line">    &quot;&quot;&quot;维基百科工具的输入。&quot;&quot;&quot;</span><br><span class="line"></span><br><span class="line">    query: str = Field(</span><br><span class="line">        description=&quot;维基百科中的查询，字数应在3个字以内&quot;</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">tool = WikipediaQueryRun(</span><br><span class="line">    name=&quot;wiki-tool&quot;,</span><br><span class="line">    description=&quot;在维基百科中查找内容&quot;,</span><br><span class="line">    args_schema=WikiInputs,</span><br><span class="line">    api_wrapper=api_wrapper,</span><br><span class="line">    return_direct=True,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"># 工具默认名称</span><br><span class="line">print(&quot;name:&quot;, tool.name)</span><br><span class="line"># 工具默认的描述</span><br><span class="line">print(&quot;description:&quot;, tool.description)</span><br><span class="line">print(tool.run(&quot;langchain&quot;))</span><br></pre></td></tr></table></figure>
+
+<h5 id="1-3-自定义工具"><a href="#1-3-自定义工具" class="headerlink" title="1.3 自定义工具"></a>1.3 <strong>自定义工具</strong></h5><ul>
+<li>在LangChain中，自定义工具有多种方法</li>
+<li><strong>@tool装饰器</strong></li>
+<li>@tool装饰器是定义自定义工具的最简单方法。装饰器默认使用函数名称作为工具名称，但可以通过传递字符串作为第一个参数来覆盖此设置。此外，装饰器将使用函数的文档字符串作为工具的描述 -<br>因此必须提供文档字符串。</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">from langchain.tools import tool</span><br><span class="line"></span><br><span class="line">@tool</span><br><span class="line">def add_number(a: int, b: int) -&gt; int:</span><br><span class="line">    &quot;&quot;&quot;add two numbers.&quot;&quot;&quot;</span><br><span class="line">    return a + b</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">print(add_number.name)</span><br><span class="line">print(add_number.description)</span><br><span class="line">print(add_number.args)</span><br><span class="line"></span><br><span class="line">res = add_number.run(&#123;&quot;a&quot;: 10, &quot;b&quot;: 20&#125;)</span><br><span class="line">print(res)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h5 id="1-4-更多Tools"><a href="#1-4-更多Tools" class="headerlink" title="1.4 更多Tools"></a>1.4 更多Tools</h5><ul>
+<li>Tavily Search工具：Tavily的搜索API是一个专门为人工智能代理(llm)构建的搜索引擎，可以快速提供实时、准确和真实的结果。</li>
+<li>访问Tavily（<code>https://tavily.com/</code>）注册账号并登录，获取API 密钥</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">from langchain import hub</span><br><span class="line">from langchain.agents import AgentExecutor, create_openai_tools_agent</span><br><span class="line">from langchain_community.tools.tavily_search import TavilySearchResults</span><br><span class="line">from langchain_openai import ChatOpenAI</span><br><span class="line">load_dotenv()</span><br><span class="line">tool = TavilySearchResults(max_results=1)</span><br><span class="line">#  使用Tavily搜索工具</span><br><span class="line">tools = [TavilySearchResults(max_results=1,  tavily_api_key=os.getenv(&quot;TAVILY_API_KEY&quot;))]</span><br><span class="line"># print(tool.run(&quot;目前市场上黄金的售价是多少?&quot;))</span><br><span class="line"># https://smith.langchain.com/hub</span><br><span class="line"># 获取要使用的提示</span><br><span class="line">prompt = hub.pull(&quot;hwchase17/openai-tools-agent&quot;)</span><br><span class="line"></span><br><span class="line"># 初始化大模型</span><br><span class="line">llm = ChatOpenAI(</span><br><span class="line">    api_key=os.getenv(&quot;api_key&quot;),</span><br><span class="line">    base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;,</span><br><span class="line">    model=&quot;qwen-plus&quot;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"># 构建 OpenAI 工具代理</span><br><span class="line">agent = create_openai_tools_agent(llm, tools, prompt)</span><br><span class="line"></span><br><span class="line"># 通过传入代理和工具创建代理执行程序</span><br><span class="line">agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)</span><br><span class="line"></span><br><span class="line"># 运行代理</span><br><span class="line">agent_executor.invoke(&#123;&quot;input&quot;: &quot;中国有多少个省份？&quot;&#125;)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="七-LangChain之Memory"><a href="#七-LangChain之Memory" class="headerlink" title="七. LangChain之Memory"></a>七. LangChain之Memory</h3><ul>
+<li>大多数的 LLM 应用程序都会有一个会话接口，允许我们和 LLM<br>进行多轮的对话，并有一定的上下文记忆能力。但实际上，模型本身是不会记忆任何上下文的，只能依靠用户本身的输入去产生输出。而实现这个记忆功能，就需要额外的模块去保存我们和模型对话的上下文信息，然后在下一次请求时，把所有的历史信息都输入给模型，让模型输出最终结果。</li>
+</ul>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202604191334310.png"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">from dotenv import load_dotenv</span><br><span class="line">from langchain_openai import ChatOpenAI</span><br><span class="line">import os</span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line">llm = ChatOpenAI(api_key=os.getenv(&quot;api_key&quot;),</span><br><span class="line">                 base_url=os.getenv(&quot;base_url&quot;),</span><br><span class="line">                 model_name=&quot;qwen-plus&quot;)</span><br><span class="line"></span><br><span class="line"># 直接提供问题，并调用llm</span><br><span class="line">response = llm.invoke(&quot;你好我是柏汌&quot;)</span><br><span class="line"># print(response)</span><br><span class="line"># print(&quot;=&quot; * 50)</span><br><span class="line">print(response.content)</span><br><span class="line"></span><br><span class="line">response = llm.invoke(&quot;我是谁?&quot;)</span><br><span class="line"></span><br><span class="line">print(response.content)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>而在 LangChain 中，提供这个功能的模块就称为 Memory，用于存储用户和模型交互的历史信息。</li>
+<li>记忆系统需要支持两种基本操作：读取和写入。<ul>
+<li>在接收到初始用户输入之后但在执行核心逻辑之前，链将从其内存系统中读取并增强用户输入。</li>
+<li>在执行核心逻辑之后但在返回答案之前，链会将当前运行的输入和输出写入内存，以便在将来的运行中引用它们。</li>
+</ul>
+</li>
+</ul>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202604191334393.png"></p>
+<ul>
+<li><p>对该图的解释:</p>
+<p>1、输入问题: ({“question”: …})</p>
+<p>2、读取历史消息: 从Memory中READ历史消息（{“past_messages”: […]}）</p>
+<p>3、构建提示（Prompt): 读取到的历史消息和当前问题会被合并，构建一个新的Prompt</p>
+<p>4、模型处理: 构建好的提示会被传递给语言模型进行处理。语言模型根据提示生成一个输出。</p>
+<p>5、解析输出: 输出解析器通过正则表达式 regex(“Answer: (.*)”)来解析,返回一个回答（{“answer”: …}）给用户</p>
+<p>6、得到回复并写入Memory: 新生成的回答会与当前的问题一起写入Memory，更新对话历史。Memory会存储最新的对话内容，为后续的对话提供上下文支持。</p>
+</li>
+</ul>
+<h4 id="1-Chat-Messages"><a href="#1-Chat-Messages" class="headerlink" title="1. Chat Messages"></a>1. Chat Messages</h4><ul>
+<li>Chat Messages: 最基础的记忆管理方法,是用于管理和存储对话历史的具体实现。它们通常用于构建对话系统，帮助系统保持对话的连续性和上下文。这些消息通常包含了对话的每一轮，包括用户的输入和系统的响应。</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">from langchain_community.chat_message_histories import ChatMessageHistory</span><br><span class="line"></span><br><span class="line">history = ChatMessageHistory()</span><br><span class="line">history.add_user_message(&quot;hi!&quot;)</span><br><span class="line">history.add_user_message(&quot;你好&quot;)</span><br><span class="line">history.add_ai_message(&quot;whats up?&quot;)</span><br><span class="line">print(history.messages)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h4 id="2-RunnableWithMessageHistory"><a href="#2-RunnableWithMessageHistory" class="headerlink" title="2. RunnableWithMessageHistory"></a>2. <code>RunnableWithMessageHistory</code></h4><ul>
+<li><code>RunnableWithMessageHistory</code> 包装另一个 Runnable 并为其管理聊天消息历史记录；它负责读取和更新聊天消息历史记录。</li>
+</ul>
+<h5 id="2-1-本地内存存储"><a href="#2-1-本地内存存储" class="headerlink" title="2.1 本地内存存储"></a>2.1 <strong>本地内存存储</strong></h5><ul>
+<li>可以将聊天记录进行本地存储</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br></pre></td><td class="code"><pre><span class="line">import json</span><br><span class="line">from langchain_core.runnables.history import RunnableWithMessageHistory</span><br><span class="line">from langchain_community.chat_message_histories import ChatMessageHistory</span><br><span class="line">from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder</span><br><span class="line">from langchain_openai import ChatOpenAI</span><br><span class="line">from langchain.schema import messages_from_dict, messages_to_dict</span><br><span class="line">from dotenv import load_dotenv</span><br><span class="line">import os</span><br><span class="line"></span><br><span class="line"># 加载环境变量（需要包含API_KEY）</span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"># 初始化大语言模型（通义千问）</span><br><span class="line">llm = ChatOpenAI(</span><br><span class="line">    api_key=os.getenv(&quot;api_key&quot;),  # 从环境变量读取API密钥</span><br><span class="line">    base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;,  # 阿里云兼容端点</span><br><span class="line">    model=&quot;qwen-turbo&quot;  # 使用qwen-turbo模型</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"># 创建对话提示模板</span><br><span class="line">prompt = ChatPromptTemplate.from_messages([</span><br><span class="line">    # 系统角色设定</span><br><span class="line">    (&quot;system&quot;, &quot;你是一个友好的助手&quot;),</span><br><span class="line">    # 历史消息占位符（变量名必须与链配置中的history_messages_key一致）</span><br><span class="line">    MessagesPlaceholder(variable_name=&quot;history&quot;),</span><br><span class="line">    # 用户输入占位符</span><br><span class="line">    (&quot;user&quot;, &quot;&#123;input&#125;&quot;)</span><br><span class="line">])</span><br><span class="line"></span><br><span class="line"># 构建基础对话链（组合提示模板和语言模型）</span><br><span class="line">base_chain = prompt | llm</span><br><span class="line"></span><br><span class="line"># 全局会话存储字典（Key: session_id, Value: ChatMessageHistory实例）</span><br><span class="line">store = &#123;&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">def get_session_history(session_id):</span><br><span class="line">    &quot;&quot;&quot;获取或创建会话历史存储对象</span><br><span class="line">    Args:</span><br><span class="line">        session_id: 会话唯一标识（用于多会话隔离）</span><br><span class="line">    Returns:</span><br><span class="line">        对应会话的聊天历史记录对象</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    if session_id not in store:</span><br><span class="line">        store[session_id] = ChatMessageHistory()  # 初始化空历史记录</span><br><span class="line">    return store[session_id]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># 创建支持历史记录的对话链</span><br><span class="line">conversation = RunnableWithMessageHistory(</span><br><span class="line">    base_chain,  # 基础对话链</span><br><span class="line">    get_session_history=get_session_history,  # 历史记录获取方法</span><br><span class="line">    input_messages_key=&quot;input&quot;,  # 输入文本的键名</span><br><span class="line">    history_messages_key=&quot;history&quot;  # 历史记录的键名（需与提示模板中的变量名一致）</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">def save_memory(filepath, session_id):</span><br><span class="line">    &quot;&quot;&quot;保存指定会话的历史记录到文件</span><br><span class="line">    Args:</span><br><span class="line">        filepath: 文件保存路径（建议使用.json扩展名）</span><br><span class="line">        session_id: 要保存的会话ID（默认&quot;default&quot;）</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    history = get_session_history(session_id)</span><br><span class="line">    # 将消息对象列表转换为字典格式</span><br><span class="line">    dicts = messages_to_dict(history.messages)</span><br><span class="line">    # 写入JSON文件（UTF-8编码）</span><br><span class="line">    with open(filepath, &quot;w&quot;, encoding=&#x27;utf-8&#x27;) as f:</span><br><span class="line">        json.dump(dicts, f, ensure_ascii=False)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">def load_memory(filepath, session_id):</span><br><span class="line">    &quot;&quot;&quot;从文件加载历史记录到指定会话</span><br><span class="line">    Args:</span><br><span class="line">        filepath: 历史记录文件路径</span><br><span class="line">        session_id: 要加载到的会话ID（默认&quot;default&quot;）</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    with open(filepath, &quot;r&quot;, encoding=&#x27;utf-8&#x27;) as f:</span><br><span class="line">        dicts = json.load(f)</span><br><span class="line">    # 将字典转换回消息对象列表</span><br><span class="line">    messages = messages_from_dict(dicts)</span><br><span class="line">    # 更新全局存储中的会话历史</span><br><span class="line">    store[session_id] = ChatMessageHistory(messages=messages)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">def legacy_predict(input_text: str, session_id: str = &quot;default&quot;) -&gt; str:</span><br><span class="line">    &quot;&quot;&quot;模拟旧版predict方法的调用接口</span><br><span class="line">    Args:</span><br><span class="line">        input_text: 用户输入文本</span><br><span class="line">        session_id: 会话ID（默认&quot;default&quot;）</span><br><span class="line">    Returns:</span><br><span class="line">        AI生成的回复文本</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    return conversation.invoke(</span><br><span class="line">        &#123;&quot;input&quot;: input_text&#125;,  # 输入参数</span><br><span class="line">        # 配置参数（必须包含session_id来关联历史记录）</span><br><span class="line">        config=&#123;&quot;configurable&quot;: &#123;&quot;session_id&quot;: session_id&#125;&#125;</span><br><span class="line">    ).content</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">if __name__ == &quot;__main__&quot;:</span><br><span class="line">    # 使用默认会话ID</span><br><span class="line">    SESSION_ID = &quot;default&quot;</span><br><span class="line"></span><br><span class="line">    # 模拟连续对话（4轮）</span><br><span class="line">    legacy_predict(&quot;你好&quot;, SESSION_ID)  # 问候</span><br><span class="line">    legacy_predict(&quot;你是谁,我是柏汌&quot;, SESSION_ID)  # 身份确认</span><br><span class="line">    legacy_predict(&quot;你的背后实现原理是什么&quot;, SESSION_ID)  # 技术原理询问</span><br><span class="line"></span><br><span class="line">    # 查询对话历史（第4轮）</span><br><span class="line">    last_response = legacy_predict(&#x27;截止到现在我们聊了什么?&#x27;, SESSION_ID)</span><br><span class="line">    print(&quot;最后一次回答:&quot;, last_response)</span><br><span class="line"></span><br><span class="line">    # 持久化保存对话历史（JSON格式）</span><br><span class="line">    save_memory(&quot;./memory_new.json&quot;, SESSION_ID)</span><br><span class="line"></span><br><span class="line">    # 模拟重新加载历史记录（清空当前会话后重新加载）</span><br><span class="line">    load_memory(&quot;./memory_new.json&quot;, SESSION_ID)</span><br><span class="line"></span><br><span class="line">    # 验证历史恢复效果（第5轮）</span><br><span class="line">    reload_response = legacy_predict(&quot;我回来了，我们之前都聊了一些什么?&quot;, SESSION_ID)</span><br><span class="line">    print(&quot;\n恢复后的回答:&quot;, reload_response)</span><br></pre></td></tr></table></figure>
+
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1752903579/" target="_blank">02 LangChain框架解析</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
+                        
+                            <a href="/category/Web/">Web</a>
+                        
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
+                        
+                            <a href="/tag/LangChain/">LangChain</a>
+                        
+                    </div>
+                
+                <div class="article-prev-next">
+                    
+                    
+                        <a href="/article/1739713327/" class="next-prefix">» </a> 下一篇：    <a href="/article/1739713327/" title="发布于 2025-02-16 09:42">02 RocketMQ源码：NameServer启动流程源码解析</a>
+                    
+                </div>
+            </div>
+            
+    <div class="article-comments">
+        
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
+    
+</div>
+    <div id="footer"></div>
+    <div id="sidebar">
+    <div class="menu-wrap" style="display:none;">
+        
+            <div class="menu-notice">
+                <span class="iconfont icon-notice"></span>
+                <div class="notice">
+                    <span>简单地活着，肆意而又精彩！</span>
+                </div>
+            </div>
+        
+        <nav class="menu">
+            <div class="menu-introduce"> 
+                <div class="introduce-avatar">
+                    <img src="/image/sidebar/avatar.jpg">
+                </div> 
+                <div class="introduce-info"> 
+                    <div class="introduce-user"><span>Live For Code</span></div>
+                </div> 
+            </div> 
+            <div class="menu-list">
+                <ul>
+                    
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                    
+                        <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
+                    
+                        <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
+                    
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                    
+                        <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
+                    
+                        <li class=""><a href="/about" class="" target="_self"><span class="iconfont icon-about-fill"></span>关于</a></li>
+                    
+                        <li class=""><a href="/atom.xml" class="" target="_blank"><span class="iconfont icon-rss"></span>订阅</a></li>
+                    
+                        <li class=""><a href="javascript:;" class="search" target="_self"><span class="iconfont icon-search-menu"></span>搜索</a></li>
+                    
+                        <li class=""><a href="/comment" class="" target="_self"><span class="iconfont icon-comments-fill"></span>留言板</a></li>
+                    
+                        <li class=""><a href="/friend" class="" target="_self"><span class="iconfont icon-link"></span>友情链接</a></li>
+                    
+                </ul> 
+            </div> 
+            <div class="menu-link">
+                <div class="box">
+                    <div class="image-box"></div>
+                </div>
+                
+                    <a name="知乎" href="https://www.zhihu.com/people/wo-xin-de-love" class="" target="_blank" data=""><span class="iconfont icon-zhihu"></span></a>
+                
+                    <a name="微博" href="https://weibo.com/u/3939432776" class="" target="_blank" data=""><span class="iconfont icon-weibo"></span></a>
+                
+                    <a name="QQ" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"><span class="iconfont icon-qq"></span></a>
+                
+                    <a name="微信" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"><span class="iconfont icon-wechat"></span></a>
+                
+                    <a name="GitHub" href="https://github.com/first19326" class="" target="_blank" data=""><span class="iconfont icon-github"></span></a>
+                
+            </div> 
+        </nav>
+        <button class="menu-button-close"></button>
+        <div class="morph-shape" id="morph-shape" data-morph-open="M-7.312,0H15c0,0,66,113.339,66,399.5C81,664.006,15,800,15,800H-7.312V0z;M-7.312,0H100c0,0,0,113.839,0,400c0,264.506,0,400,0,400H-7.312V0z">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 800" preserveAspectRatio="none">
+                <path d="M-7.312,0H0c0,0,0,113.839,0,400c0,264.506,0,400,0,400h-7.312V0z"/>
+            </svg>
+        </div>
+    </div>
+    <button class="menu-button-open">MENU</button>
+    <div class="menu-cover"></div>
+</div>
+    <link type="text/css" rel="stylesheet" href="/css/search.css">
+<script type="text/javascript" src="/js/iscroll.js"></script>
+<script type="text/javascript" src="/js/instantsearch.min.js"></script>
+<div class="search-window">
+    <div class="search-content">
+        <div class="search-content-icon">
+            <i class="iconfont icon-search"></i>
+        </div>
+        <div id="search-input" class="search-input"></div>
+    </div>
+
+    <div class="search-scroll">
+        <div class="search-result">
+            <div id="search-stats" class="search-stats"></div>
+            <div id="search-hits"></div>
+            <div id="search-pagination" class="search-pagination"></div>
+        </div>
+    </div>
+
+    <span class="search-close-icon">
+        <i class="iconfont icon-close"></i>
+    </span>
+</div>
+    <div id="tools">
+    <div class="progressbar-top"></div>
+
+    
+        <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
+        <script type="text/javascript" src="/js/APlayer.min.js"></script>
+        <script type="text/javascript" src="/js/Meting.min.js"></script>
+        <meting-js id="3778678" lrcshow="false" server="netease" type="playlist" fixed="true" autoplay="false" loop="all" order="random" preload="auto" volume="0.67" mutex="true"></meting-js>
+    
+    
+    <div class="wrap-right">
+        <div class="setting">
+            <div class="iconbox favorites" switch="false">
+                <span class="iconfont icon-favorites"></span>
+                <span class="icontext">关注</span>
+            </div>
+            <div class="iconbox mode">
+                <div class="light">
+                    <span class="iconfont icon-daymode"></span>
+                    <span class="icontext">浅色模式</span>
+                </div>
+                <div class="dark">
+                    <span class="iconfont icon-nightmode-fill"></span>
+                    <span class="icontext">深色模式</span>
+                </div>
+            </div>
+            <a href="javascript:;" target="_self" class="search">
+                <div class="iconbox">
+                    <span class="iconfont icon-search-menu"></span>
+                    <span class="icontext">搜索</span>
+                </div>
+            </a>
+            <div class="iconbox bottom">
+                <div style="display: inline-block; transform: rotate(180deg);">
+                    <span class="iconfont icon-top"></span>
+                </div>
+                <span class="icontext">跳至底部</span>
+            </div>
+        </div>
+        <div class="iconbox set">
+            <div style="display: inline-block;">
+                <span class="iconfont icon-setting"></span>
+            </div>
+            <span class="icontext">设置</span>
+        </div>
+        <div class="iconbox top">
+            <span class="iconfont icon-top"></span>
+            <span class="icontext">返回顶部</span>
+        </div>
+    </div>
+    <div class="loading"></div>
+</div>
+    <script>
+    window.config = {
+        GitHubUserName     : "first19326",
+        GitHubRepositories : "Hexo-LiveForCode",
+
+        User             : "Live For Code",
+        UserAvatar       : "/image/sidebar/avatar.jpg",
+        WebsiteStartDate : "2020-01-01",
+
+        WebsiteTitleBlur         : "(◍´꒳`◍) Hi, Live For Code",
+        WebsiteTitleBlurTimeOut  : 500,
+        WebsiteTitleFocus        : "(*´∇｀*) 欢迎回来!",
+        WebsiteTitleFocusTimeOut : 1000,
+        WebsiteFavicon           : "/image/website/logo.png",
+
+        ProgressBar : {
+            id       : "topProgressBar",
+            color    : "#77B6FF",
+            height   : "2px",
+            duration : 0.2
+        },
+
+        Loading: {
+            rebound : {
+                tension  : 16,
+                friction : 5
+            },
+            spinner : {
+                id     : "spinner",
+                radius : 90,
+                sides  : 3,
+                depth  : 4,
+                colors : {
+                    background : "#F0F0F0",
+                    stroke     : "#272633",
+                    base       : "",
+                    child      : "#272633"
+                },
+                alwaysForward : true,
+                restAt        : 0.5,
+                renderBase    : false
+            }
+        },
+
+        HomeHeaderAnimationRendered : true,
+        HomeHeaderAnimation         : {
+            radius      : 15,
+            density     : 0.2,
+            color       : "rgba(255, 255, 255, .2)",
+            clearOffset : 0.3
+        },
+
+        BackAnimationRendered          : true,
+        IEBrowserBackAnimationRendered : false,
+        BackAnimation                  : {
+            colorSaturation  : "60%",
+            colorBrightness  : "50%",
+            colorAlpha       : 0.5,
+            colorCycleSpeed  : 5,
+            verticalPosition : "random",
+            horizontalSpeed  : 200,
+            ribbonCount      : 3,
+            strokeSize       : 0,
+            parallaxAmount   : -0.2,
+            animateSections  : true
+        },
+
+        HomeHeaderImage : [
+            
+                "/image/header/home.jpg",
+            
+                "/image/header/home.jpeg",
+            
+                "/image/header/2023-04-17-20-51-03.jpg",
+            
+                "/image/header/2023-04-17-20-54-07.jpg",
+            
+                "/image/header/2023-04-17-20-54-22.jpg",
+            
+                "/image/header/2023-04-17-20-55-25.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+        HomeBannerText  : "",
+
+        ArticleHeaderImage : [
+            
+                "/image/header/article.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+
+        OtherBannerText : "",
+
+        Error : {
+            icon    : "icon-swimming",
+            title   : "PAGE NOT FOUND",
+            content : [
+                
+                    "很抱歉，您访问的页面不存在！",
+                
+                    "可能是输入地址有误或该地址已变更。",
+                
+            ],
+            buttons : [
+                
+                    {
+                        icon  : "icon-home",
+                        text  : "返回首页",
+                        href  : "https://fadeway32.gitee.io/",
+                        class : ""
+                    },
+                
+            ]
+        },
+
+        MenuNotice : {
+            enable : true,
+            notice : "简单地活着，肆意而又精彩！",
+            speed  : 20
+        },
+        MenuList : [
+            
+                {
+                    name   : "首页",
+                    icon   : "icon-home-fill",
+                    href   : "/",
+                    type   : "index",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "分类",
+                    icon   : "icon-folder-fill",
+                    href   : "/category",
+                    type   : "category",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "标签",
+                    icon   : "icon-discount-fill",
+                    href   : "/tag",
+                    type   : "tag",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "归档",
+                    icon   : "icon-calendar-fill",
+                    href   : "/archive",
+                    type   : "archive",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "赞赏",
+                    icon   : "icon-heart-fill",
+                    href   : "/donate",
+                    type   : "donate",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "关于",
+                    icon   : "icon-about-fill",
+                    href   : "/about",
+                    type   : "about",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "订阅",
+                    icon   : "icon-rss",
+                    href   : "/atom.xml",
+                    type   : "",
+                    class  : "",
+                    target : "_blank"
+                },
+            
+                {
+                    name   : "搜索",
+                    icon   : "icon-search-menu",
+                    href   : "javascript:;",
+                    type   : "",
+                    class  : "search",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "留言板",
+                    icon   : "icon-comments-fill",
+                    href   : "/comment",
+                    type   : "comment",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "友情链接",
+                    icon   : "icon-link",
+                    href   : "/friend",
+                    type   : "friend",
+                    class  : "",
+                    target : "_self"
+                },
+            
+        ],
+        MenuLink : [
+            
+                
+                    {
+                        name   : "知乎",
+                        icon   : "icon-zhihu",
+                        href   : "https://www.zhihu.com/people/wo-xin-de-love",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "微博",
+                        icon   : "icon-weibo",
+                        href   : "https://weibo.com/u/3939432776",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "QQ",
+                        icon   : "icon-qq",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"
+                    },
+                
+                    {
+                        name   : "微信",
+                        icon   : "icon-wechat",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"
+                    },
+                
+                    {
+                        name   : "GitHub",
+                        icon   : "icon-github",
+                        href   : "https://github.com/first19326",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+            
+        ],
+
+        FooterStyle : 2,
+        BottomText  : "<div><span class='face'>ღゝ◡╹)ノ♡</span></div><div>【人生若只如初见<span><i class='iconfont icon-like-fill'></i></span>何事秋风悲画扇】</div><div>&copy; 2020-2022 WorstOne. All Rights Reserved.</div>",
+
+        ConsoleList : [
+            
+                
+                    [
+                        
+                            
+                                "Based on cnblogs theme SimpleMemory.",
+                            
+                                "",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "SimpleMemory Author:",
+                            
+                                "BNDong",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "Theme:",
+                            
+                                "LiveForCode",
+                            
+                        
+                    ],
+                
+            
+        ],
+
+        FontIconExtend : "",
+
+        Donate : {
+            paypal  : "",
+            bitcoin : "",
+            alipay  : "/image/donate/alipay.png",
+            wechat  : "/image/donate/wechat.png"
+        },
+
+        Search : {
+            applicationID : "758UIQ1V0H",
+            apiKey        : "2e038c318ac6813e4b4baa91f6ccfa63",
+            indexName     : "hexo2",
+            hits          : {
+                page : 30
+            },
+            labels        : {
+                placeholder : "搜索",
+                empty       : "未发现与 「${query}」 相关的内容",
+                stats       : "${hits} 条相关条目，使用了 ${time} 毫秒",
+            }
+        }, 
+
+        Valine : {
+            switch         : true,
+            el             : ".comments-content",
+            appId          : "srhKtvWPQTWYKh3qX8G8M7v0-gzGzoHsz",
+            appKey         : "8uVSP1q6UlALVC5igYfIfv2h",
+            serverURLs     : "",
+            placeholder    : "你是我一生只会遇见一次的惊喜...",
+            avatar         : "mm",
+            meta           : "nick,mail,link",
+            requiredFields : "nick,mail",
+            pageSize       : 5,
+            lang           : "zh-cn",
+            visitor        : true,
+            enableQQ       : true
+        },
+
+        Tocbot : {
+            switch                : true,
+            tocSelector           : ".toc",
+            contentSelector       : ".article-body",
+            headingSelector       : "h1, h2, h3, h4, h5",
+            headingsOffset        : 0,
+            scrollSmooth          : true,
+            scrollSmoothOffset    : -5,
+            positionFixedSelector : ".toc",
+            positionFixedClass    : "toc-fixed",
+            fixedSidebarOffset    : "",
+        },
+
+        Require : {
+            baseUrl     : "/js/",
+            waitSeconds : 100
+        },
+
+        Music : {
+            type : "Meting"
+        },
+        APlayer : {
+            container : ".aplayer",
+            fixed     : true,
+            autoplay  : true,
+            loop      : "all",
+            order     : "random",
+            preload   : "auto",
+            volume    : 0.67,
+            mutex     : true,
+            lrcType   : 2,
+            audio     : [
+                
+                    {
+                        name   : "Endless Tears",
+                        artist : "CLIFF EDGE",
+                        cover  : "/music/cover/Endless Tears.jpg",
+                        url    : "/music/song/Endless Tears.mp3",
+                        lrc    : "/music/lrc/Endless Tears.lrc"
+                    },
+                
+            ]
+        },
+        Meting : {
+            id       : "3778678", 
+            lrcshow  : false, 
+            server   : "netease", 
+            type     : "playlist", 
+            fixed    : true, 
+            autoplay : false, 
+            loop     : "all", 
+            order    : "random", 
+            preload  : "auto", 
+            volume   : 0.67, 
+            mutex    : true
+        },
+
+        Mouse : {
+            enable  : true,
+            options : {
+                size  : 6,
+                sizeF : 24
+            }
+        },
+
+        LazyLoad : {
+            default : "/image/website/lazyload.svg"
+        },
+  
+        Style : {
+            aplayer          : "/css/APlayer.css",
+            archive          : "/css/archive.css",
+            base             : "/css/base.css",
+            clipboard        : "/css/clipboard.css",
+            code             : "/css/code.css",
+            donate           : "/css/donate.css",
+            fancybox         : "/css/jquery.fancybox.css",
+            footer           : "/css/footer.css",
+            iconfont         : "/iconfont/iconfont.css",
+            index            : "/css/index.css",
+            menuBubble       : "/css/menu-bubble.css",
+            mouse            : "/css/mouse.css",
+            page             : "/css/page.css",
+            post             : "/css/post.css",
+            search           : "/css/search.css",
+            tocbot           : "/css/tocbot.css",
+            valine           : "/css/valine.css"
+        },
+
+        Script: {
+            aplayer          : "/js/APlayer.min.js",
+            config           : "/js/require.config.js",
+            index            : "/js/index.js",
+            instantSearch    : "/js/instantsearch.min.js",
+            iscroll          : "/js/iscroll.js",
+            jQuery           : "/js/jquery-3.4.1.min.js",
+            loading          : "/js/loading.js",
+            meting           : "/js/Meting.min.js",
+            require          : "/js/require.min.js"
+        },
+
+        Font: {
+            LongCang    : "/font/LongCang.css",
+            Monda       : "/font/Monda.css",
+            NotoSansSC  : "/font/NotoSansSC.css",
+            NotoSerifSC : "/font/NotoSerifSC.css",
+            Playball    : "/font/Playball.css",
+            PTMono      : "/font/PTMono.css",
+            Roboto      : "/font/Roboto.css",
+            RobotoSlab  : "/font/RobotoSlab.css",
+            Rosario     : "/font/Rosario.css",
+            UbuntuMono  : "/font/UbuntuMono.css"
+        },
+
+        Suffix : {
+            about : "你知道的越多,你不知道的越多"
+        },
+            
+        Theme : {
+            url  : "https://fadeway32.gitee.io/",
+            name : "fadeway32"
+        }  
+    };
+</script>
+    <script type="text/javascript" src="/js/index.js"></script>
+</body>
+</html>
