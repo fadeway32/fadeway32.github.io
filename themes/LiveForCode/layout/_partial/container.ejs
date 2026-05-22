@@ -1,7 +1,14 @@
-<div id="container">
+<div id="container"
+<% if (is_home()) { %> class="home-container"
+        <% } %>
+>
     <% if (is_post()) { %>
         <!-- 文章页面 -->
-        <div id="article">
+        <% function docAttr(value) {
+            return String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        } %>
+        <div id="article" data-doc-title="<%- docAttr(post.title) %>" data-doc-path="<%- url_for(post.path) %>"
+             data-doc-url="<%- url_for(post.path) %>" data-doc-date="<%- date(post.date, 'YYYY-MM-DD') %>">
             <%- partial('_partial/toc') %>
             <div class="article-body">
                 <%- post.content %>
@@ -84,38 +91,54 @@
     <% } else { %>
         <% if (is_home()) { %>
             <!-- 首页 -->
-            <div class="articles">
-                <% page.posts.each(function(post) { %>
-                    <div class="article">
-                        <div class="article-title">
-                            <a href="<%- url_for(post.path) %>"><%- post.title %></a>
-                            <% if (post.sticky) { %>
-                                <span class="article-sticky"><%- __('post.sticky') %></span>
-                            <% } %>
+            <% function homeAttr(value) {
+                return String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            } %>
+            <div class="home-portal" data-current-page="<%- page.current %>" data-total-page="<%- page.total %>"
+                 data-per-page="15">
+                <section class="home-docs" aria-label="首页文档流">
+                    <div class="home-docs-head">
+                        <div>
+                            <h2>记录文档</h2>
+                            <p>当前页 <%- page.posts.length %> 篇</p>
                         </div>
-                        <div class="article-abstract">
-                            <% if (post.description && post.description != '') { %>
-                                <%- __('post.description') %><%- post.description %>
-                                <a href="<%- url_for(post.path) %>"><%- __('post.more') %></a>
-                            <% } %>
-                        </div>
-                        <div class="clear"></div>
-                        <div class="article-info">
-                            <span>
-                                <i class="iconfont icon-time"></i> <%- __('post.date') %><%- date(post.date, 'YYYY-MM-DD') %>
-                            </span>
-                            <% if (theme.Valine.visitor) { %>
-                                <span id="/<%- post.path %>" class="leancloud_visitors" data-flag-title="<%- post.title %>">
-                                    <i class="iconfont icon-browse"></i> <%- __('post.visitor') %><sapn class="leancloud-visitors-count"></span>
-                                </span>
-                            <% } %>
-                            <span>
-                                <i class="iconfont icon-interactive"></i> <%- __('post.comment') %><span class="valine-comment-count" data-xid="/<%- post.path %>"></span>
-                            </span>
-                        </div>
-                        <div class="clear"></div>     
+                        <span class="home-docs-page">第 <%- page.current %> / <%- page.total %> 页</span>
                     </div>
-                <% }) %>
+                    <div class="home-doc-grid">
+                        <% page.posts.each(function(post, i) { %>
+                            <%
+                                const postUrl = url_for(post.path);
+                                const postDate = date(post.date, 'YYYY-MM-DD');
+                                const postDescription = post.description && post.description != '' ? post.description : '点击进入文档详情继续阅读。';
+                                const coverPage = page.current || 1;
+                                const coverSlot = String(i + 1).padStart(2, '0');
+                                const postCover = `/image/home-covers/page-${coverPage}/${coverSlot}.jpg`;
+                            %>
+                            <article class="home-doc-card" data-doc-title="<%- homeAttr(post.title) %>"
+                                     data-doc-path="<%- postUrl %>" data-doc-url="<%- postUrl %>"
+                                     data-doc-date="<%- postDate %>" data-doc-cover="<%- postCover %>"
+                                     data-cover-page="<%- coverPage %>" data-cover-slot="<%- coverSlot %>">
+                                <a class="home-doc-cover home-doc-link" href="<%- postUrl %>"
+                                   aria-label="打开 <%- homeAttr(post.title) %>">
+                                    <img class="home-doc-image" src="<%- postCover %>"
+                                         data-local-cover="<%- postCover %>" data-fallback="/image/header/home.jpg"
+                                         loading="eager" decoding="async" alt="">
+                                </a>
+                                <div class="home-doc-body">
+                                    <h3 class="home-doc-title">
+                                        <a class="home-doc-link" href="<%- postUrl %>"><%- post.title %></a>
+                                    </h3>
+                                    <div class="home-doc-meta">
+                                        <span><i class="iconfont icon-time"></i><%- postDate %></span>
+                                        <% if (post.sticky || post.top) { %>
+                                            <span class="home-doc-badge"><%- __('post.sticky') %></span>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </article>
+                        <% }) %>
+                    </div>
+                </section>
             </div>
         <% } else { %>
             <!-- 归档页面、分类归档页面、标签归档页面 -->

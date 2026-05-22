@@ -525,6 +525,60 @@
     }
 }
 
+@media only screen and (min-width: 1201px) {
+
+    body {
+        box-sizing: border-box;
+        padding-left: 280px
+    }
+
+    .menu-button-open,
+    .menu-button-close,
+    .menu-cover {
+        display: none !important
+    }
+
+    .menu-wrap {
+        display: block !important;
+        width: 280px;
+        max-width: 280px;
+        background: rgba(20, 24, 30, 0.94);
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.16);
+        -webkit-transform: translate3d(0, 0, 0) !important;
+        transform: translate3d(0, 0, 0) !important
+    }
+
+    .menu,
+    .menu-notice {
+        opacity: 1 !important;
+        cursor: default;
+        -webkit-transform: translate3d(0, 0, 0) !important;
+        transform: translate3d(0, 0, 0) !important;
+        -webkit-transition: none !important;
+        transition: none !important
+    }
+
+    .menu {
+        background: transparent
+    }
+
+    .menu-introduce {
+        height: 220px
+    }
+
+    .menu-link {
+        margin-bottom: 80px
+    }
+
+    .morph-shape {
+        display: none !important
+    }
+
+    .menu-notice .notice span {
+        animation: notice 16s linear infinite normal
+    }
+}
+
 /* Dark Mode CSS */
 
 @media (prefers-color-scheme: dark) {

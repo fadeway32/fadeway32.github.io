@@ -1,0 +1,300 @@
+- generic [active] [ref=e1]:
+    - banner
+    - generic [ref=e2]:
+        - heading "Live For Code" [level=1] [ref=e5]
+        - link "" [ref=e6] [cursor=pointer]:
+            - /url: javascript:;
+            - generic [ref=e7]: 
+    - generic [ref=e9]:
+        - region "首页文档流" [ref=e11]:
+            - generic [ref=e12]:
+                - generic [ref=e13]:
+                    - heading "记录文档" [level=2] [ref=e14]
+                    - paragraph [ref=e15]: 当前页 15 篇
+                - generic [ref=e16]: 第 1 / 8 页
+            - generic [ref=e17]:
+                - article [ref=e18]:
+                    - link "打开 搭建自己的chatgpt" [ref=e19] [cursor=pointer]:
+                        - /url: /article/1683208917/
+                    - generic:
+                        - heading "搭建自己的chatgpt" [level=3]:
+                            - link "搭建自己的chatgpt" [ref=e20] [cursor=pointer]:
+                                - /url: /article/1683208917/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2023-05-04
+                            - generic: 置顶
+                - article [ref=e21]:
+                    - link "打开 gitee及hexo搭建教程" [ref=e22] [cursor=pointer]:
+                        - /url: /article/1305786659/
+                    - generic:
+                        - heading "gitee及hexo搭建教程" [level=3]:
+                            - link "gitee及hexo搭建教程" [ref=e23] [cursor=pointer]:
+                                - /url: /article/1305786659/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2023-09-01
+                            - generic: 置顶
+                - article [ref=e24]:
+                    - link "打开 设计模式专题" [ref=e25] [cursor=pointer]:
+                        - /url: /article/1739696051/
+                    - generic:
+                        - heading "设计模式专题" [level=3]:
+                            - link "设计模式专题" [ref=e26] [cursor=pointer]:
+                                - /url: /article/1739696051/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-02-16
+                            - generic: 置顶
+                - article [ref=e27]:
+                    - link "打开 02 LangChain框架解析" [ref=e28] [cursor=pointer]:
+                        - /url: /article/1752903579/
+                    - generic:
+                        - heading "02 LangChain框架解析" [level=3]:
+                            - link "02 LangChain框架解析" [ref=e29] [cursor=pointer]:
+                                - /url: /article/1752903579/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-07-16
+                            - generic: 置顶
+                - article [ref=e30]:
+                    - link "打开 02 RocketMQ源码：NameServer启动流程源码解析" [ref=e31] [cursor=pointer]:
+                        - /url: /article/1739713327/
+                    - generic:
+                        - heading "02 RocketMQ源码：NameServer启动流程源码解析" [level=3]:
+                            - link "02 RocketMQ源码：NameServer启动流程源码解析" [ref=e32] [cursor=pointer]:
+                                - /url: /article/1739713327/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-02-16
+                            - generic: 置顶
+                - article [ref=e33]:
+                    - link "打开 03、RocketMQ源码分析：Broker启动流程源码解析【一万字】" [ref=e34] [cursor=pointer]:
+                        - /url: /article/1739713328/
+                    - generic:
+                        - heading "03、RocketMQ源码分析：Broker启动流程源码解析【一万字】" [level=3]:
+                            - link "03、RocketMQ源码分析：Broker启动流程源码解析【一万字】" [ref=e35] [cursor=pointer]:
+                                - /url: /article/1739713328/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-02-16
+                            - generic: 置顶
+                - article [ref=e36]:
+                    - link "打开 04、RocketMQ源码分析：Broker启动加载消息文件以及恢复数据源码【一万字】" [ref=e37] [cursor=pointer]:
+                        - /url: /article/1739713329/
+                    - generic:
+                        - heading "04、RocketMQ源码分析：Broker启动加载消息文件以及恢复数据源码【一万字】" [level=3]:
+                            - link "04、RocketMQ源码分析：Broker启动加载消息文件以及恢复数据源码【一万字】" [ref=e38] [cursor=pointer]:
+                                - /url: /article/1739713329/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-02-16
+                            - generic: 置顶
+                - article [ref=e39]:
+                    - link "打开 05、RocketMQ源码分析：Broker与NameServer的心跳服务源码" [ref=e40] [cursor=pointer]:
+                        - /url: /article/1739713330/
+                    - generic:
+                        - heading "05、RocketMQ源码分析：Broker与NameServer的心跳服务源码" [level=3]:
+                            - link "05、RocketMQ源码分析：Broker与NameServer的心跳服务源码" [ref=e41] [cursor=pointer]:
+                                - /url: /article/1739713330/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-02-16
+                            - generic: 置顶
+                - article [ref=e42]:
+                    - link "打开 06、RocketMQ源码分析：Producer生产者启动源码【一万字】" [ref=e43] [cursor=pointer]:
+                        - /url: /article/1739713331/
+                    - generic:
+                        - heading "06、RocketMQ源码分析：Producer生产者启动源码【一万字】" [level=3]:
+                            - link "06、RocketMQ源码分析：Producer生产者启动源码【一万字】" [ref=e44] [cursor=pointer]:
+                                - /url: /article/1739713331/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-02-16
+                            - generic: 置顶
+                - article [ref=e45]:
+                    - link "打开 08、RocketMQ源码分析：Producer发送单向、同步、异步消息源码【一万字】" [ref=e46] [cursor=pointer]:
+                        - /url: /article/1739713333/
+                    - generic:
+                        - heading "08、RocketMQ源码分析：Producer发送单向、同步、异步消息源码【一万字】" [level=3]:
+                            - link "08、RocketMQ源码分析：Producer发送单向、同步、异步消息源码【一万字】" [ref=e47] [cursor=pointer]:
+                                - /url: /article/1739713333/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-02-16
+                            - generic: 置顶
+                - article [ref=e48]:
+                    - link "打开 09、RocketMQ源码分析：Broker接收消息入口源码" [ref=e49] [cursor=pointer]:
+                        - /url: /article/1739713334/
+                    - generic:
+                        - heading "09、RocketMQ源码分析：Broker接收消息入口源码" [level=3]:
+                            - link "09、RocketMQ源码分析：Broker接收消息入口源码" [ref=e50] [cursor=pointer]:
+                                - /url: /article/1739713334/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-02-16
+                            - generic: 置顶
+                - article [ref=e51]:
+                    - link "打开 10、RocketMQ源码分析：BrokerasyncSendMessage处理消息以及自动创建Topic" [ref=e52] [cursor=pointer]:
+                        - /url: /article/1739713335/
+                    - generic:
+                        - heading "10、RocketMQ源码分析：BrokerasyncSendMessage处理消息以及自动创建Topic" [level=3]:
+                            - link "10、RocketMQ源码分析：BrokerasyncSendMessage处理消息以及自动创建Topic" [ref=e53] [cursor=pointer]:
+                                - /url: /article/1739713335/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-02-16
+                            - generic: 置顶
+                - article [ref=e54]:
+                    - link "打开 07、RocketMQ源码分析：Producer发送消息的总体流程【一万字】" [ref=e55] [cursor=pointer]:
+                        - /url: /article/1739713332/
+                    - generic:
+                        - heading "07、RocketMQ源码分析：Producer发送消息的总体流程【一万字】" [level=3]:
+                            - link "07、RocketMQ源码分析：Producer发送消息的总体流程【一万字】" [ref=e56] [cursor=pointer]:
+                                - /url: /article/1739713332/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-02-16
+                            - generic: 置顶
+                - article [ref=e57]:
+                    - link "打开 11、RocketMQ源码分析：BrokerasyncPutMessage处理消息以及存储的高性能设计【一万字】" [ref=e58] [cursor=pointer]:
+                        - /url: /article/1739713336/
+                    - generic:
+                        - heading "11、RocketMQ源码分析：BrokerasyncPutMessage处理消息以及存储的高性能设计【一万字】" [level=3]:
+                            - link "11、RocketMQ源码分析：BrokerasyncPutMessage处理消息以及存储的高性能设计【一万字】" [ref=e59] [cursor=pointer]:
+                                - /url: /article/1739713336/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-02-16
+                            - generic: 置顶
+                - article [ref=e60]:
+                    - link "打开 13、RocketMQ源码分析：Broker消息重放服务ReputMessageService源码解析" [ref=e61] [cursor=pointer]:
+                        - /url: /article/1739713338/
+                    - generic:
+                        - heading "13、RocketMQ源码分析：Broker消息重放服务ReputMessageService源码解析" [level=3]:
+                            - link "13、RocketMQ源码分析：Broker消息重放服务ReputMessageService源码解析" [ref=e62] [cursor=pointer]:
+                                - /url: /article/1739713338/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-02-16
+                            - generic: 置顶
+        - generic [ref=e64]:
+            - text: "1"
+            - link "2" [ref=e65] [cursor=pointer]:
+                - /url: /page/2/
+            - link "3" [ref=e66] [cursor=pointer]:
+                - /url: /page/3/
+            - text: …
+            - link "8" [ref=e67] [cursor=pointer]:
+                - /url: /page/8/
+            - link "下一页" [ref=e68] [cursor=pointer]:
+                - /url: /page/2/
+    - generic [ref=e69]:
+        - contentinfo:
+            - generic [ref=e70]:
+                - figure [ref=e71]
+                - figure [ref=e72]
+                - figure [ref=e73]
+        - generic [ref=e75]: ღゝ◡╹)ノ♡
+        - generic [ref=e76]:
+            - text: 【人生若只如初见
+            - generic [ref=e78]: 
+            - text: 何事秋风悲画扇】
+        - generic [ref=e79]: © 2020-2022 WorstOne. All Rights Reserved.
+    - generic [ref=e80]:
+        - generic [ref=e81]:
+            - generic [ref=e82]: 
+            - generic [ref=e84]: 简单地活着，肆意而又精彩！
+        - navigation [ref=e85]:
+            - generic [ref=e86] [cursor=pointer]:
+                - img [ref=e88]
+                - generic [ref=e90]: Live For Code
+            - list [ref=e92]:
+                - listitem [ref=e93]:
+                    - link " 首页" [ref=e94] [cursor=pointer]:
+                        - /url: /
+                        - generic [ref=e95]: 
+                        - text: 首页
+                - listitem [ref=e96]:
+                    - link " 分类" [ref=e97] [cursor=pointer]:
+                        - /url: /category
+                        - generic [ref=e98]: 
+                        - text: 分类
+                - listitem [ref=e99]:
+                    - link " 标签" [ref=e100] [cursor=pointer]:
+                        - /url: /tag
+                        - generic [ref=e101]: 
+                        - text: 标签
+                - listitem [ref=e102]:
+                    - link " 归档" [ref=e103] [cursor=pointer]:
+                        - /url: /archive
+                        - generic [ref=e104]: 
+                        - text: 归档
+                - listitem [ref=e105]:
+                    - link " 赞赏" [ref=e106] [cursor=pointer]:
+                        - /url: /donate
+                        - generic [ref=e107]: 
+                        - text: 赞赏
+                - listitem [ref=e108]:
+                    - link " 关于" [ref=e109] [cursor=pointer]:
+                        - /url: /about
+                        - generic [ref=e110]: 
+                        - text: 关于
+                - listitem [ref=e111]:
+                    - link " 订阅" [ref=e112] [cursor=pointer]:
+                        - /url: /atom.xml
+                        - generic [ref=e113]: 
+                        - text: 订阅
+                - listitem [ref=e114]:
+                    - link " 留言板" [ref=e115] [cursor=pointer]:
+                        - /url: /comment
+                        - generic [ref=e116]: 
+                        - text: 留言板
+                - listitem [ref=e117]:
+                    - link " 友情链接" [ref=e118] [cursor=pointer]:
+                        - /url: /friend
+                        - generic [ref=e119]: 
+                        - text: 友情链接
+            - generic [ref=e120]:
+                - link "" [ref=e121] [cursor=pointer]:
+                    - /url: https://www.zhihu.com/people/wo-xin-de-love
+                    - generic [ref=e122]: 
+                - link "" [ref=e123] [cursor=pointer]:
+                    - /url: https://weibo.com/u/3939432776
+                    - generic [ref=e124]: 
+                - link "" [ref=e125] [cursor=pointer]:
+                    - /url: javascript:;
+                    - generic [ref=e126]: 
+                - link "" [ref=e127] [cursor=pointer]:
+                    - /url: javascript:;
+                    - generic [ref=e128]: 
+                - link "" [ref=e129] [cursor=pointer]:
+                    - /url: https://github.com/first19326
+                    - generic [ref=e130]: 
+    - generic:
+        - generic [ref=e131] [cursor=pointer]:
+            - generic [ref=e132]: 
+            - text: 关闭页面特效
+        - generic [ref=e134]:
+            - img [ref=e137] [cursor=pointer]
+            - button [ref=e140] [cursor=pointer]:
+                - img [ref=e141]
+        - generic [ref=e143]:
+            - text:   
+            - generic [ref=e146] [cursor=pointer]: 
+            - generic [ref=e148] [cursor=pointer]: 

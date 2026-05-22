@@ -1,0 +1,4 @@
+60. [GET] http://localhost:4000/image/home-covers/manifest.json?t=1779368213418 => [404] Not Found
+92. [GET] http://localhost:4000/image/home-covers/manifest.json?t=1779368513419 => [404] Not Found
+
+Note: 84 static requests not shown, run with "static" option to see them.

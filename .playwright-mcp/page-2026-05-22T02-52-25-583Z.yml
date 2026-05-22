@@ -1,0 +1,238 @@
+- generic [active] [ref=e1]:
+    - banner
+    - generic [ref=e2]:
+        - heading "Live For Code" [level=1] [ref=e5]
+        - text: 
+    - generic [ref=e6]:
+        - region "首页文档流" [ref=e8]:
+            - generic [ref=e9]:
+                - generic [ref=e10]:
+                    - heading "记录文档" [level=2] [ref=e11]
+                    - paragraph [ref=e12]: 当前页 15 篇
+                - generic [ref=e13]: 第 1 / 8 页
+            - generic [ref=e14]:
+                - article [ref=e15]:
+                    - link "打开 搭建自己的chatgpt" [ref=e16] [cursor=pointer]:
+                        - /url: /article/1683208917/
+                    - generic:
+                        - heading "搭建自己的chatgpt" [level=3]:
+                            - link "搭建自己的chatgpt" [ref=e17] [cursor=pointer]:
+                                - /url: /article/1683208917/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2023-05-04
+                            - generic: 置顶
+                - article [ref=e18]:
+                    - link "打开 gitee及hexo搭建教程" [ref=e19] [cursor=pointer]:
+                        - /url: /article/1305786659/
+                    - generic:
+                        - heading "gitee及hexo搭建教程" [level=3]:
+                            - link "gitee及hexo搭建教程" [ref=e20] [cursor=pointer]:
+                                - /url: /article/1305786659/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2023-09-01
+                            - generic: 置顶
+                - article [ref=e21]:
+                    - link "打开 设计模式专题" [ref=e22] [cursor=pointer]:
+                        - /url: /article/1739696051/
+                    - generic:
+                        - heading "设计模式专题" [level=3]:
+                            - link "设计模式专题" [ref=e23] [cursor=pointer]:
+                                - /url: /article/1739696051/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-02-16
+                            - generic: 置顶
+                - article [ref=e24]:
+                    - link "打开 02 LangChain框架解析" [ref=e25] [cursor=pointer]:
+                        - /url: /article/1752903579/
+                    - generic:
+                        - heading "02 LangChain框架解析" [level=3]:
+                            - link "02 LangChain框架解析" [ref=e26] [cursor=pointer]:
+                                - /url: /article/1752903579/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-07-16
+                            - generic: 置顶
+                - article [ref=e27]:
+                    - link "打开 02 RocketMQ源码：NameServer启动流程源码解析" [ref=e28] [cursor=pointer]:
+                        - /url: /article/1739713327/
+                    - generic:
+                        - heading "02 RocketMQ源码：NameServer启动流程源码解析" [level=3]:
+                            - link "02 RocketMQ源码：NameServer启动流程源码解析" [ref=e29] [cursor=pointer]:
+                                - /url: /article/1739713327/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-02-16
+                            - generic: 置顶
+                - article [ref=e30]:
+                    - link "打开 03、RocketMQ源码分析：Broker启动流程源码解析【一万字】" [ref=e31] [cursor=pointer]:
+                        - /url: /article/1739713328/
+                    - generic:
+                        - heading "03、RocketMQ源码分析：Broker启动流程源码解析【一万字】" [level=3]:
+                            - link "03、RocketMQ源码分析：Broker启动流程源码解析【一万字】" [ref=e32] [cursor=pointer]:
+                                - /url: /article/1739713328/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-02-16
+                            - generic: 置顶
+                - article [ref=e33]:
+                    - link "打开 04、RocketMQ源码分析：Broker启动加载消息文件以及恢复数据源码【一万字】" [ref=e34] [cursor=pointer]:
+                        - /url: /article/1739713329/
+                    - generic:
+                        - heading "04、RocketMQ源码分析：Broker启动加载消息文件以及恢复数据源码【一万字】" [level=3]:
+                            - link "04、RocketMQ源码分析：Broker启动加载消息文件以及恢复数据源码【一万字】" [ref=e35] [cursor=pointer]:
+                                - /url: /article/1739713329/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-02-16
+                            - generic: 置顶
+                - article [ref=e36]:
+                    - link "打开 05、RocketMQ源码分析：Broker与NameServer的心跳服务源码" [ref=e37] [cursor=pointer]:
+                        - /url: /article/1739713330/
+                    - generic:
+                        - heading "05、RocketMQ源码分析：Broker与NameServer的心跳服务源码" [level=3]:
+                            - link "05、RocketMQ源码分析：Broker与NameServer的心跳服务源码" [ref=e38] [cursor=pointer]:
+                                - /url: /article/1739713330/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-02-16
+                            - generic: 置顶
+                - article [ref=e39]:
+                    - link "打开 06、RocketMQ源码分析：Producer生产者启动源码【一万字】" [ref=e40] [cursor=pointer]:
+                        - /url: /article/1739713331/
+                    - generic:
+                        - heading "06、RocketMQ源码分析：Producer生产者启动源码【一万字】" [level=3]:
+                            - link "06、RocketMQ源码分析：Producer生产者启动源码【一万字】" [ref=e41] [cursor=pointer]:
+                                - /url: /article/1739713331/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-02-16
+                            - generic: 置顶
+                - article [ref=e42]:
+                    - link "打开 07、RocketMQ源码分析：Producer发送消息的总体流程【一万字】" [ref=e43] [cursor=pointer]:
+                        - /url: /article/1739713332/
+                    - generic:
+                        - heading "07、RocketMQ源码分析：Producer发送消息的总体流程【一万字】" [level=3]:
+                            - link "07、RocketMQ源码分析：Producer发送消息的总体流程【一万字】" [ref=e44] [cursor=pointer]:
+                                - /url: /article/1739713332/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-02-16
+                            - generic: 置顶
+                - article [ref=e45]:
+                    - link "打开 09、RocketMQ源码分析：Broker接收消息入口源码" [ref=e46] [cursor=pointer]:
+                        - /url: /article/1739713334/
+                    - generic:
+                        - heading "09、RocketMQ源码分析：Broker接收消息入口源码" [level=3]:
+                            - link "09、RocketMQ源码分析：Broker接收消息入口源码" [ref=e47] [cursor=pointer]:
+                                - /url: /article/1739713334/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-02-16
+                            - generic: 置顶
+                - article [ref=e48]:
+                    - link "打开 08、RocketMQ源码分析：Producer发送单向、同步、异步消息源码【一万字】" [ref=e49] [cursor=pointer]:
+                        - /url: /article/1739713333/
+                    - generic:
+                        - heading "08、RocketMQ源码分析：Producer发送单向、同步、异步消息源码【一万字】" [level=3]:
+                            - link "08、RocketMQ源码分析：Producer发送单向、同步、异步消息源码【一万字】" [ref=e50] [cursor=pointer]:
+                                - /url: /article/1739713333/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-02-16
+                            - generic: 置顶
+                - article [ref=e51]:
+                    - link "打开 10、RocketMQ源码分析：BrokerasyncSendMessage处理消息以及自动创建Topic" [ref=e52] [cursor=pointer]:
+                        - /url: /article/1739713335/
+                    - generic:
+                        - heading "10、RocketMQ源码分析：BrokerasyncSendMessage处理消息以及自动创建Topic" [level=3]:
+                            - link "10、RocketMQ源码分析：BrokerasyncSendMessage处理消息以及自动创建Topic" [ref=e53] [cursor=pointer]:
+                                - /url: /article/1739713335/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-02-16
+                            - generic: 置顶
+                - article [ref=e54]:
+                    - link "打开 12、RocketMQ源码分析：Broker消息刷盘服务GroupCommitService、FlushRealTimeService、CommitRealTimeService源码深度解析【一万字】" [ref=e55] [cursor=pointer]:
+                        - /url: /article/1739713337/
+                    - generic:
+                        - heading "12、RocketMQ源码分析：Broker消息刷盘服务GroupCommitService、FlushRealTimeService、CommitRealTimeService源码深度解析【一万字】" [level=3]:
+                            - link "12、RocketMQ源码分析：Broker消息刷盘服务GroupCommitService、FlushRealTimeService、CommitRealTimeService源码深度解析【一万字】" [ref=e56] [cursor=pointer]:
+                                - /url: /article/1739713337/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-02-16
+                            - generic: 置顶
+                - article [ref=e57]:
+                    - link "打开 11、RocketMQ源码分析：BrokerasyncPutMessage处理消息以及存储的高性能设计【一万字】" [ref=e58] [cursor=pointer]:
+                        - /url: /article/1739713336/
+                    - generic:
+                        - heading "11、RocketMQ源码分析：BrokerasyncPutMessage处理消息以及存储的高性能设计【一万字】" [level=3]:
+                            - link "11、RocketMQ源码分析：BrokerasyncPutMessage处理消息以及存储的高性能设计【一万字】" [ref=e59] [cursor=pointer]:
+                                - /url: /article/1739713336/
+                        - generic:
+                            - generic:
+                                - generic: 
+                                - text: 2025-02-16
+                            - generic: 置顶
+        - generic [ref=e61]:
+            - text: "1"
+            - link "2" [ref=e62] [cursor=pointer]:
+                - /url: /page/2/
+            - link "3" [ref=e63] [cursor=pointer]:
+                - /url: /page/3/
+            - text: …
+            - link "8" [ref=e64] [cursor=pointer]:
+                - /url: /page/8/
+            - link "下一页" [ref=e65] [cursor=pointer]:
+                - /url: /page/2/
+    - generic [ref=e66]:
+        - contentinfo:
+            - generic [ref=e67]:
+                - figure [ref=e68]
+                - figure [ref=e69]
+                - figure [ref=e70]
+        - generic [ref=e72]: ღゝ◡╹)ノ♡
+        - generic [ref=e73]:
+            - text: 【人生若只如初见
+            - generic [ref=e75]: 
+            - text: 何事秋风悲画扇】
+        - generic [ref=e76]: © 2020-2022 WorstOne. All Rights Reserved.
+    - generic:
+        - text:               
+        - button "MENU" [ref=e77] [cursor=pointer]
+    - generic:
+        - text: 
+        - generic [ref=e79]:
+            - list [ref=e81]:
+                - listitem [ref=e82] [cursor=pointer]:
+                    - text: 1 知我
+                    - generic [ref=e84]: 国风堂 / 哦漏
+                - listitem [ref=e85] [cursor=pointer]:
+                    - text: 2 Endless Tears
+                    - generic [ref=e86]: CLIFF EDGE
+            - generic [ref=e87]:
+                - img [ref=e90] [cursor=pointer]
+                - generic: An audio error has occurred, player will skip forward in 2 seconds.
+                - button [ref=e93] [cursor=pointer]:
+                    - img [ref=e94]
+        - generic [ref=e96]:
+            - text:   
+            - generic [ref=e99] [cursor=pointer]: 
+            - generic [ref=e101] [cursor=pointer]: 

@@ -900,3 +900,22 @@
 [color-scheme=dark] .aplayer .aplayer-lrc p {
 	color: #999999
 }
+
+@media only screen and (min-width: 1201px) {
+
+    .aplayer.aplayer-fixed {
+        left: 300px
+    }
+
+    .aplayer.aplayer-fixed .aplayer-body {
+        left: 300px
+    }
+
+    .aplayer.aplayer-fixed .aplayer-lrc {
+        left: 300px
+    }
+
+    .aplayer.aplayer-fixed.aplayer-narrow .aplayer-body {
+        left: 300px !important
+    }
+}
