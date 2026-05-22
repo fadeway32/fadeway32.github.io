@@ -7,8 +7,9 @@ const ROOT = path.resolve(__dirname, '..');
 const POSTS_DIR = path.join(ROOT, 'source', '_posts');
 const THEME_COVERS_DIR = path.join(ROOT, 'themes', 'LiveForCode', 'source', 'image', 'home-covers');
 const PUBLIC_COVERS_DIR = path.join(ROOT, 'public', 'image', 'home-covers');
+const ROOT_COVERS_DIR = path.join(ROOT, 'image', 'home-covers');
 const FALLBACK_FILE = path.join(ROOT, 'themes', 'LiveForCode', 'source', 'image', 'header', 'home.jpg');
-const PER_PAGE = 15;
+const PER_PAGE = 20;
 const CONCURRENCY = 4;
 const REQUEST_TIMEOUT = 20000;
 const REFRESH_MODE = (process.env.HOME_COVER_REFRESH_MODE || 'all').toLowerCase();
@@ -164,9 +165,14 @@ function writeManifest(totalPages) {
     return manifest;
 }
 
-function mirrorToPublic() {
-    fs.rmSync(PUBLIC_COVERS_DIR, {recursive: true, force: true});
-    copyDir(THEME_COVERS_DIR, PUBLIC_COVERS_DIR);
+function mirrorToTarget(targetDir) {
+    fs.rmSync(targetDir, {recursive: true, force: true});
+    copyDir(THEME_COVERS_DIR, targetDir);
+}
+
+function mirrorToTargets() {
+    mirrorToTarget(PUBLIC_COVERS_DIR);
+    mirrorToTarget(ROOT_COVERS_DIR);
 }
 
 async function main() {
@@ -185,7 +191,7 @@ async function main() {
     const startedAt = Date.now();
     const results = await runQueue(tasks);
     const manifest = writeManifest(totalPages);
-    mirrorToPublic();
+    mirrorToTargets();
 
     const downloaded = results.filter((item) => item.downloaded).length;
     const fallback = results.filter((item) => item.fallback).length;

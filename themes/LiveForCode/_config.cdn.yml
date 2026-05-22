@@ -319,26 +319,31 @@ Require:
 
 
 # ---- Music配置 ----
-# 默认为Meting, 值包含APlayer, Meting
-Music: 
-  type: "Meting"
+# 默认为APlayer, 值包含APlayer, Meting
+Music:
+  type: "APlayer"
 # APlayer
 APlayer:
   container: ".aplayer"
   fixed: true 
   autoplay: true
   loop: "all"
-  order: "random"
+  order: "list"
   preload: "auto" 
   volume: 0.67 
   mutex: true
   lrcType: 2
   audio:
+    - name: "知我"
+      artist: "国风堂 / 哦漏"
+      cover: "/image/header/home.jpg"
+      url: "/music/song/知我.mp3"
+      lrc: "/music/lrc/知我.lrc"
     - name: "Endless Tears"
       artist: "CLIFF EDGE"
-      cover: "https://cdn.jsdelivr.net/gh/first19326/cdn@master/static/music/cover/Endless Tears.jpg"
-      url: "https://cdn.jsdelivr.net/gh/first19326/cdn@master/static/music/song/Endless Tears.mp3"
-      lrc: "https://cdn.jsdelivr.net/gh/first19326/cdn@master/static/music/lrc/Endless Tears.lrc"
+      cover: "/music/cover/Endless Tears.jpg"
+      url: "/music/song/Endless Tears.mp3"
+      lrc: "/music/lrc/Endless Tears.lrc"
 # Meting
 Meting:
   id: "3778678"
@@ -391,6 +396,7 @@ Style:
 Script:
   aplayer: "https://cdn.jsdelivr.net/gh/first19326/cdn@master/static/js/APlayer.min.js"
   config: "https://cdn.jsdelivr.net/gh/first19326/cdn@master/static/js/require.config.min.js"
+  homeDocs: "/js/home-docs.js"
   index: "https://cdn.jsdelivr.net/gh/first19326/cdn@master/static/js/index.min.js"
   instantSearch: "https://cdn.jsdelivr.net/gh/first19326/cdn@master/static/js/instantsearch.min.js"
   iscroll: "https://cdn.jsdelivr.net/gh/first19326/cdn@master/static/js/iscroll.min.js"

@@ -46,6 +46,9 @@
     <%- partial('_partial/search') %>
     <%- partial('_partial/tools') %>
     <%- partial('_partial/config') %>
+    <% if (is_home()) { %>
+        <script type="text/javascript" src="<%- theme.Script.homeDocs %>"></script>
+    <% } %>
     <script type="text/javascript" src="<%- theme.Script.index %>"></script>
 </body>
 </html>

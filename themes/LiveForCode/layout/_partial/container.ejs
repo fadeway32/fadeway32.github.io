@@ -95,7 +95,7 @@
                 return String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             } %>
             <div class="home-portal" data-current-page="<%- page.current %>" data-total-page="<%- page.total %>"
-                 data-per-page="15">
+                 data-per-page="<%- page.posts.length %>">
                 <section class="home-docs" aria-label="首页文档流">
                     <div class="home-docs-head">
                         <div>

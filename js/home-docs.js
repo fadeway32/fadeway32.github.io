@@ -17,7 +17,7 @@
         return {
             current: parseInt(portal.getAttribute('data-current-page'), 10) || 1,
             total: parseInt(portal.getAttribute('data-total-page'), 10) || 1,
-            perPage: parseInt(portal.getAttribute('data-per-page'), 10) || 15
+            perPage: parseInt(portal.getAttribute('data-per-page'), 10) || 20
         };
     }
 
@@ -56,7 +56,7 @@
 
     function getPageCovers(page) {
         var state = getState();
-        var perPage = state ? state.perPage : 15;
+        var perPage = state ? state.perPage : 20;
         var covers = [];
         var pageMap = manifest && manifest.pages ? manifest.pages : null;
         var pageCovers = pageMap && Array.isArray(pageMap[String(page)]) ? pageMap[String(page)] : [];

@@ -339,21 +339,26 @@ Require:
 
 
 # ---- Music配置 ----
-# 默认为Meting, 值包含APlayer, Meting
-Music: 
-  type: "Meting"
+# 默认为APlayer, 值包含APlayer, Meting
+Music:
+  type: "APlayer"
 # APlayer
 APlayer:
   container: ".aplayer"
   fixed: true 
   autoplay: true
   loop: "all"
-  order: "random"
+  order: "list"
   preload: "auto" 
   volume: 0.67 
   mutex: true
   lrcType: 2
   audio:
+    - name: "知我"
+      artist: "国风堂 / 哦漏"
+      cover: "/image/header/home.jpg"
+      url: "/music/song/知我.mp3"
+      lrc: "/music/lrc/知我.lrc"
     - name: "Endless Tears"
       artist: "CLIFF EDGE"
       cover: "/music/cover/Endless Tears.jpg"
@@ -411,6 +416,7 @@ Style:
 Script:
   aplayer: "/js/APlayer.min.js"
   config: "/js/require.config.js"
+  homeDocs: "/js/home-docs.js"
   index: "/js/index.js"
   instantSearch: "/js/instantsearch.min.js"
   iscroll: "/js/iscroll.js"

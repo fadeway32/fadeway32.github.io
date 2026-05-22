@@ -221,6 +221,7 @@
         Script: {
             aplayer: '/js/APlayer.min.js',
             config: '/js/require.config.js',
+            homeDocs: '/js/home-docs.js',
             index: '/js/index.js',
             instantSearch: '/js/instantsearch.min.js',
             iscroll: '/js/iscroll.js',

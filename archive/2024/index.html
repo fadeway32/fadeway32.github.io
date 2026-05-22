@@ -277,11 +277,11 @@
         
     <div class="pagination-bottom">
         <div class="pagination">
-            
-                <a href="/archive/2024/page/2/">下一页</a>
-            
+            <span class="page-number current">1</span><a class="page-number" href="/archive/2024/page/2/">2</a><a
+                class="extend next" rel="next" href="/archive/2024/page/2/">下一页</a>
         </div>
     </div>
+
 
     
 </div>
@@ -384,15 +384,88 @@
     <div id="tools">
     <div class="progressbar-top"></div>
 
-    
+
+        <div class="aplayer"></div>
         <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
         <script type="text/javascript" src="/js/APlayer.min.js"></script>
-        <script type="text/javascript" src="/js/Meting.min.js"></script>
-        <meting-js id="3778678" lrcshow="false" server="netease"
-                   type="playlist" fixed="true"
-                   autoplay="false" loop="all"
-                   order="random" preload="auto"
-                   volume="0.67" mutex="true"></meting-js>
+        <script type="text/javascript">
+            (function () {
+                const baseAudio = [{
+                    "name": "知我",
+                    "artist": "国风堂 / 哦漏",
+                    "cover": "/image/header/home.jpg",
+                    "url": "/music/song/知我.mp3",
+                    "lrc": "/music/lrc/知我.lrc"
+                }, {
+                    "name": "Endless Tears",
+                    "artist": "CLIFF EDGE",
+                    "cover": "/music/cover/Endless Tears.jpg",
+                    "url": "/music/song/Endless Tears.mp3",
+                    "lrc": "/music/lrc/Endless Tears.lrc"
+                }];
+                const aplayer = new APlayer({
+                    container: document.querySelector(".aplayer"),
+                    fixed: true,
+                    autoplay: true,
+                    loop: "all",
+                    order: "list",
+                    preload: "auto",
+                    volume: 0.67,
+                    mutex: true,
+                    lrcType: 2,
+                    audio: baseAudio
+                });
+
+                const metingType = "playlist";
+                const metingId = "3778678";
+                const metingServer = "netease";
+                if (metingType === 'playlist' && metingId && typeof fetch === 'function') {
+                    const api = 'https://api.i-meto.com/meting/api?server=' +
+                        encodeURIComponent(metingServer) +
+                        '&type=' + encodeURIComponent(metingType) +
+                        '&id=' + encodeURIComponent(metingId) +
+                        '&r=' + Date.now();
+
+                    fetch(api, {cache: 'no-store'})
+                        .then(function (response) {
+                            if (!response.ok) throw new Error('playlist fetch failed');
+                            return response.json();
+                        })
+                        .then(function (tracks) {
+                            if (!Array.isArray(tracks) || !tracks.length || typeof aplayer.addAudio !== 'function') return;
+
+                            const existing = {};
+                            baseAudio.forEach(function (audio) {
+                                if (audio && audio.url) existing[audio.url] = true;
+                                if (audio && audio.name) existing[audio.name] = true;
+                            });
+
+                            const extraAudio = [];
+                            tracks.forEach(function (track) {
+                                const audio = {
+                                    name: track.name || track.title || 'Audio name',
+                                    artist: track.artist || track.author || 'Audio artist',
+                                    cover: track.cover || track.pic || '',
+                                    url: track.url,
+                                    lrc: track.lrc || track.lyric || '',
+                                    type: track.type || 'normal'
+                                };
+
+                                if (!audio.url || existing[audio.url] || existing[audio.name]) return;
+                                existing[audio.url] = true;
+                                existing[audio.name] = true;
+                                extraAudio.push(audio);
+                            });
+
+                            if (extraAudio.length) {
+                                aplayer.addAudio(extraAudio);
+                            }
+                        })
+                        .catch(function () {
+                        });
+                }
+            })();
+        </script>
     
     
     <div class="wrap-right">
@@ -437,6 +510,7 @@
     </div>
     <div class="loading"></div>
 </div>
+
     <script>
     window.config = {
         GitHubUserName     : "first19326",
@@ -813,19 +887,27 @@
         },
 
         Music : {
-            type : "Meting"
+            type: "APlayer"
         },
         APlayer : {
             container : ".aplayer",
             fixed     : true,
             autoplay  : true,
             loop      : "all",
-            order     : "random",
+            order: "list",
             preload   : "auto",
             volume    : 0.67,
             mutex     : true,
             lrcType   : 2,
             audio     : [
+
+                {
+                    name: "知我",
+                    artist: "国风堂 / 哦漏",
+                    cover: "/image/header/home.jpg",
+                    url: "/music/song/知我.mp3",
+                    lrc: "/music/lrc/知我.lrc"
+                },
                 
                     {
                         name   : "Endless Tears",
@@ -918,6 +1000,7 @@
         }  
     };
 </script>
+
     <script type="text/javascript" src="/js/index.js"></script>
 </body>
 </html>
