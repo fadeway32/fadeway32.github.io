@@ -32,6 +32,7 @@ function Base() {
     
     let temScroll      = 0,                // 上一次页面滚动位置
         timers         = {                 // 定时器
+            setSearchTimer: null, // 搜索设置定时器ID
             setTocTimer            : null, // 文章目录设置定时器ID
             setLazyLoadTimer       : null, // 图片懒加载定时器ID
             setDonateTimer         : null, // 赞赏模块定时器ID
@@ -135,6 +136,9 @@ function Base() {
 
         // 归档页面动画
         timers.setArchiveMotionTimer = window.setInterval( script.setArchiveMotion, 1000 );
+
+        // 设置搜索功能
+        timers.setSearchTimer = window.setInterval(script.setSearch, 1000);
 
         // 图片懒加载
         timers.setLazyLoadTimer = window.setInterval( script.imageLazyLoad, 1000 );
@@ -374,12 +378,35 @@ function Base() {
     };
 
     /**
+     * 添加搜索
+     */
+    this.setSearch = function () {
+        if ($('.search-window').length > 0) {
+            require(['Search']);
+        }
+        script.clearIntervalTimer(timers.setSearchTimer);
+    }
+
+    /**
      * 设置右下角菜单事件
      */
     this.setWrapRightEvent = function() {
         const wrapRight = $('.wrap-right');
 
         if (wrapRight.length > 0) {
+
+            // 关注
+            $('.wrap-right .favorites').on('click', function () {
+                if ($(this).attr('switch') == 'false') {
+                    $(this).attr('switch', 'true');
+                    $(this).find('.iconfont').removeClass('icon-favorites').addClass('icon-favorites-fill');
+                    $(this).find('.icontext').text('已关注');
+                } else {
+                    $(this).attr('switch', 'false');
+                    $(this).find('.iconfont').removeClass('icon-favorites-fill').addClass('icon-favorites');
+                    $(this).find('.icontext').text('关注');
+                }
+            });
 
             // 浅色/深色模式切换
             $('.wrap-right .mode').on('click', function() {
@@ -738,33 +765,17 @@ function Base() {
     this.setOtherHeaderImage = function() {
 
         let articleHeaderImage = window.config.ArticleHeaderImage,
-            backImage = script.getSessionDocCover();
+            backImage;
 
-        if (!backImage) {
-            articleHeaderImage.length > 0 ?
+        articleHeaderImage.length > 0 ?
             (articleHeaderImage.length > 1 ? backImage = articleHeaderImage[tools.randomNum(0, articleHeaderImage.length - 1)] : backImage = articleHeaderImage[0])
             : backImage = '';
-        }
 
 
         $('#header').css({
             'background': '#222 url(' + backImage + ')  center center no-repeat',
             'background-size': 'cover'
         });
-    };
-
-    /**
-     * 从会话中读取文档封面
-     */
-    this.getSessionDocCover = function () {
-        try {
-            let seed = JSON.parse(sessionStorage.getItem('liveforcode.home.lastDoc') || 'null');
-            if (seed && seed.cover && seed.path && seed.path === window.location.pathname) {
-                return seed.cover;
-            }
-        } catch (error) {
-        }
-        return '';
     };
 
     /**

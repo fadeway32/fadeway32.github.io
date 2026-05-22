@@ -839,82 +839,6 @@ mjx-container {
 	z-index: 998
 }
 
-.music-switcher {
-    position: fixed;
-    left: 300px;
-    bottom: 78px;
-    z-index: 1006;
-    display: flex;
-    gap: 8px;
-    pointer-events: auto
-}
-
-.music-switcher-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 0;
-    padding: 6px 10px;
-    color: #EDEFF2;
-    background: rgba(17, 23, 31, 0.84);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 4px;
-    font-size: 12px;
-    line-height: 1;
-    cursor: pointer;
-    outline: none;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.16);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    transition: background-color .2s ease, border-color .2s ease, color .2s ease, opacity .2s ease, transform .2s ease
-}
-
-.music-switcher-btn:hover {
-    transform: translateY(-1px);
-    border-color: rgba(255, 255, 255, 0.28)
-}
-
-.music-switcher-btn.is-active {
-    color: #FFFFFF;
-    background: rgba(47, 124, 246, 0.94);
-    border-color: rgba(47, 124, 246, 1)
-}
-
-.music-switcher-dot {
-    flex: 0 0 auto;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: currentColor
-}
-
-.music-stage-local,
-.music-stage-legacy {
-    position: relative;
-    z-index: 990;
-    transition: opacity .2s ease, visibility .2s ease
-}
-
-#tools[data-music-mode="local"] .music-stage-local,
-#tools[data-music-mode="legacy"] .music-stage-legacy {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto
-}
-
-#tools[data-music-mode="local"] .music-stage-legacy,
-#tools[data-music-mode="legacy"] .music-stage-local {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none
-}
-
-.music-stage-legacy {
-    position: fixed;
-    left: 300px;
-    bottom: 0
-}
-
 .wrap-right {
 	position: fixed;
 	display: flex;
@@ -924,7 +848,7 @@ mjx-container {
 	bottom: -2px;
 	right: 5px;
 	width: 28px;
-    z-index: 1004
+    z-index: 900
 }
 
 .wrap-right .setting {
@@ -1010,15 +934,6 @@ mjx-container {
 
 @media only screen and (max-width:1200px) {
 
-    .music-switcher {
-        left: 12px;
-        bottom: 78px
-    }
-
-    .music-stage-legacy {
-        left: 0
-    }
-
     #header {
 		-webkit-box-sizing: border-box;
 		-moz-box-sizing: border-box;
@@ -1102,15 +1017,6 @@ mjx-container {
 }
 
 @media only screen and (max-width:720px) {
-
-    .music-switcher {
-        left: 12px;
-        bottom: 78px
-    }
-
-    .music-stage-legacy {
-        left: 0
-    }
 
 	h1 {
 		font-size: 2.4rem

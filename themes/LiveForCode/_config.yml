@@ -190,6 +190,12 @@ MenuList:
     type: ""
     class: ""
     target: "_blank"
+  - name: "搜索"
+    icon: "icon-search-menu"
+    href: "javascript:;"
+    type: ""
+    class: "search"
+    target: "_self"
   -
     name: "留言板"
     icon: "icon-comments-fill"
@@ -342,17 +348,17 @@ APlayer:
   fixed: true 
   autoplay: true
   loop: "all"
-  order: "list"
+  order: "random"
   preload: "auto" 
   volume: 0.67 
   mutex: true
-  lrcType: 0
+  lrcType: 2
   audio:
-    - name: "知我"
-      artist: "国风堂 / 哦漏"
-      cover: "/image/header/home.jpg"
-      url: "/music/song/知我.mp3"
-      lrc: ""
+    - name: "Endless Tears"
+      artist: "CLIFF EDGE"
+      cover: "/music/cover/Endless Tears.jpg"
+      url: "/music/song/Endless Tears.mp3"
+      lrc: "/music/lrc/Endless Tears.lrc"
 # Meting
 Meting:
   id: "3778678" 
@@ -360,7 +366,7 @@ Meting:
   server: "netease" 
   type: "playlist"
   fixed: true
-  autoplay: true
+  autoplay: false
   loop: "all"
   order: "random"
   preload: "auto" 
