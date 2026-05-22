@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <!--    <meta name="referrer" content="origin">-->
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>
+        
+            二分查找模版
+        
+    </title>
+    <link rel="shortcut icon" href="#"/>
+
+    <link type="text/css" rel="stylesheet" href="/font/LongCang.css">
+    <link type="text/css" rel="stylesheet" href="/font/Monda.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSansSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSerifSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/Playball.css">
+    <link type="text/css" rel="stylesheet" href="/font/PTMono.css">
+    <link type="text/css" rel="stylesheet" href="/font/Roboto.css">
+    <link type="text/css" rel="stylesheet" href="/font/RobotoSlab.css">
+    <link type="text/css" rel="stylesheet" href="/font/Rosario.css">
+    <link type="text/css" rel="stylesheet" href="/font/UbuntuMono.css">
+
+    <link type="text/css" rel="stylesheet" href="/css/base.css">
+    <link type="text/css" rel="stylesheet" href="/css/code.css">
+
+    <script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
+<meta name="generator" content="Hexo 6.2.0"></head>
+<body>
+    <a id="cover"></a>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
+<header>
+    <meta name="referrer" content="no-referrer">
+</header>
+<div id="header" class="header">
+    <div class="vertical">
+        <div class="inner">
+            
+                <h1 class="header-subtitle">二分查找模版</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2024-06-20
+                        </span>
+                        
+                            <span id="/article/1718893281/" class="leancloud_visitors" data-flag-title="二分查找模版">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1718893281/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">WEB</span>
+                        
+                    
+                </div>
+            
+        </div>
+    </div>
+    
+</div>
+<div id="container"
+
+>
+    
+        <!-- 文章页面 -->
+        
+        <div id="article" data-doc-title="二分查找模版" data-doc-path="/article/1718893281/"
+             data-doc-url="/article/1718893281/" data-doc-date="2024-06-20">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="二分查找"><a href="#二分查找" class="headerlink" title="二分查找"></a>二分查找</h1><h3 id="1-说明"><a href="#1-说明" class="headerlink" title="1.说明"></a>1.说明</h3><p>相信有很多读者都认为<a target="_blank" rel="noopener" href="https://so.csdn.net/so/search?q=%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE%E6%B3%95&spm=1001.2101.3001.7020">二分查找法</a><br>就是一个非常简单的算法，没有什么技术含量，博主想说的是二分查找本身的思想确实十分简单，当它奇妙的就是在它的边界确定条件上，相信大家在写二分查找的时候经常在边境确定的时候出现问题导致结果出现误差。</p>
+<h3 id="2-二分查找的模板"><a href="#2-二分查找的模板" class="headerlink" title="2.二分查找的模板"></a>2.二分查找的模板</h3><p>此外，目前二分查找主流的有<strong>六套模板。博主把它们归纳总结了一下</strong></p>
+<h4 id="1-普通二分查找模板："><a href="#1-普通二分查找模板：" class="headerlink" title="**1.**普通二分查找模板："></a>**1.**普通二分查找模板：</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">public int binarySearch(int[] nums, int target) &#123;</span><br><span class="line">    int left = 0, right = nums.length - 1;</span><br><span class="line">    while (left &lt;= right) &#123;</span><br><span class="line">        int mid = left + (right - left) / 2;</span><br><span class="line">        if (nums[mid] == target) &#123;</span><br><span class="line">            return mid;  // 找到目标值，返回索引</span><br><span class="line">        &#125; else if (nums[mid] &lt; target) &#123;</span><br><span class="line">            left = mid + 1;  // 目标值在右半部分</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            right = mid - 1;  // 目标值在左半部分</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    return -1;  // 未找到目标值</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-寻找左边界的二分查找模板"><a href="#2-寻找左边界的二分查找模板" class="headerlink" title="2.寻找左边界的二分查找模板"></a>2.寻找左边界的二分查找模板</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">public int leftBound(int[] nums, int target) &#123;</span><br><span class="line">    int left = 0, right = nums.length;</span><br><span class="line">    while (left &lt; right) &#123;</span><br><span class="line">        int mid = left + (right - left) / 2;</span><br><span class="line">        if (nums[mid] &lt; target) &#123;</span><br><span class="line">            left = mid + 1;  // 目标值在右半部分</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            right = mid;  // 目标值在左半部分</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    return left;  // 返回左边界索引</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="3-寻找右边界的二分查找模板"><a href="#3-寻找右边界的二分查找模板" class="headerlink" title="3. 寻找右边界的二分查找模板"></a>3. 寻找右边界的二分查找模板</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">public int rightBound(int[] nums, int target) &#123;</span><br><span class="line">    int left = 0, right = nums.length;</span><br><span class="line">    while (left &lt; right) &#123;</span><br><span class="line">        int mid = left + (right - left) / 2;</span><br><span class="line">        if (nums[mid] &lt;= target) &#123;</span><br><span class="line">            left = mid + 1;  // 目标值在右半部分</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            right = mid;  // 目标值在左半部分</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    return left - 1;  // 返回右边界索引</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="4-二分查找变体模板1（寻找第一个满足条件的值）："><a href="#4-二分查找变体模板1（寻找第一个满足条件的值）：" class="headerlink" title="4. 二分查找变体模板1（寻找第一个满足条件的值）："></a>4. 二分查找变体模板1（寻找第一个满足条件的值）：</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">public int firstPosition(int[] nums, int target) &#123;</span><br><span class="line">    int left = 0, right = nums.length - 1;</span><br><span class="line">    while (left &lt; right) &#123;</span><br><span class="line">        int mid = left + (right - left) / 2;</span><br><span class="line">        if (nums[mid] &lt; target) &#123;</span><br><span class="line">            left = mid + 1;  // 目标值在右半部分</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            right = mid;  // 目标值在左半部分</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    return nums[left] == target ? left : -1;  // 返回第一个满足条件的值的索引</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="5-二分查找变体模板2（寻找最后一个满足条件的值）："><a href="#5-二分查找变体模板2（寻找最后一个满足条件的值）：" class="headerlink" title="5. 二分查找变体模板2（寻找最后一个满足条件的值）："></a>5. 二分查找变体模板2（寻找最后一个满足条件的值）：</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">public int lastPosition(int[] nums, int target) &#123;</span><br><span class="line">    int left = 0, right = nums.length - 1;</span><br><span class="line">    while (left &lt; right) &#123;</span><br><span class="line">        int mid = left + (right - left + 1) / 2;</span><br><span class="line">        if (nums[mid] &gt; target) &#123;</span><br><span class="line">            right = mid - 1;  // 目标值在左半部分</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            left = mid;  // 目标值在右半部分</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    return nums[left] == target ? left : -1;  // 返回最后一个满足条件的值的索引</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="6-旋转数组的二分查找模板："><a href="#6-旋转数组的二分查找模板：" class="headerlink" title="6. 旋转数组的二分查找模板："></a>6. 旋转数组的二分查找模板：</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">public int searchRotated(int[] nums, int target) &#123;</span><br><span class="line">    int left = 0, right = nums.length - 1;</span><br><span class="line">    while (left &lt;= right) &#123;</span><br><span class="line">        int mid = left + (right - left) / 2;</span><br><span class="line">        if (nums[mid] == target) &#123;</span><br><span class="line">            return mid;  // 找到目标值，返回索引</span><br><span class="line">        &#125;</span><br><span class="line">        if (nums[left] &lt;= nums[mid]) &#123;</span><br><span class="line">            if (nums[left] &lt;= target &amp;&amp; target &lt; nums[mid]) &#123;</span><br><span class="line">                right = mid - 1;  // 目标值在左半部分</span><br><span class="line">            &#125; else &#123;</span><br><span class="line">                left = mid + 1;  // 目标值在右半部分</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            if (nums[mid] &lt; target &amp;&amp; target &lt;= nums[right]) &#123;</span><br><span class="line">                left = mid + 1;  // 目标值在右半部分</span><br><span class="line">            &#125; else &#123;</span><br><span class="line">                right = mid - 1;  // 目标值在左半部分</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    return -1;  // 未找到目标值</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>以上就是目前主流的一些二分查找的模板，当然如果大家对二分查找有着深刻了解，也可以自己创建出一些二分查找的模板，只有你能理解<a target="_blank" rel="noopener" href="https://so.csdn.net/so/search?q=%E4%BA%8C%E5%88%86%E6%B3%95&spm=1001.2101.3001.7020">二分法</a><br>这一思想，再加上对边界的判断我相信你对二分查找法应该没什么问题</p>
+<h3 id="3-红蓝二分查找法"><a href="#3-红蓝二分查找法" class="headerlink" title="3.红蓝二分查找法"></a>3.红蓝二分查找法</h3><h4 id="1-说明-1"><a href="#1-说明-1" class="headerlink" title="1. 说明"></a>1. 说明</h4><p>博主介绍的红蓝二分查找法和普通二分查找法不同的是</p>
+<p>这套模板和常规的模板存在不一样： 主体思路：L 指针掌管左边蓝色区域， R指针掌管右边红色区域，两者互不冲突，通过不断向目标元素靠近扩大掌管区域，直到两者掌管区域接壤，即<br>l+1&#x3D;&#x3D;r 时终止。</p>
+<p><img src="https://gitee.com/fadeway32/fadeway32/raw/master/img/202407082027169.png" alt="image"></p>
+<h4 id="2-模板"><a href="#2-模板" class="headerlink" title="2.模板"></a>2.模板</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">//简代码</span><br><span class="line">int L = 0;</span><br><span class="line">int R = nums.length;</span><br><span class="line">while(L+1 &lt; R) &#123;</span><br><span class="line"> int M = (L+R)/2//如果数字大时可以使用 M = L +(R-L)/2;</span><br><span class="line"> if (isblue(m)) &#123;</span><br><span class="line">   L = M;</span><br><span class="line">  &#125; else &#123;</span><br><span class="line">   R = M ;</span><br><span class="line">   &#125;</span><br><span class="line">&#125; return L/R //根据实际情况情况选择 </span><br></pre></td></tr></table></figure>
+
+<h4 id="3-详细讲解"><a href="#3-详细讲解" class="headerlink" title="3.详细讲解"></a>3.详细讲解</h4><p>开始时，L指针和 R指针取在搜索区间界外，L&#x3D;首个元素下标−1，R&#x3D;末尾元素下标+1，此时所有元素均未着色；</p>
+<p>循环条件始终为 L+1 &lt; R，当 L&#x3D;R 时跳出循环，此时蓝红区域划分完成，所有元素均已着色；</p>
+<p>M指针取值始终为 M &#x3D;(L+R)&#x2F;2</p>
+<p>L指针和 R指针变化的时候直接变为 M指针，即对 M 指针所指向元素进行染色，无需 +1 或者−1；</p>
+<p>本模板唯一变化的地方是判断目标元素最终落在左边蓝色区域还是右边红色区域。以不变应万变，根据情况的不同，变换判断条件，大大的降低了出错的可能。以下还有一些我们需要注意到的说明</p>
+<p>1.根据target的情况 ＜ 、≤在左边蓝色区域找，≥ 、＞在右边红色区域找</p>
+<p>2.染色完成后的特殊情况：如果遍历完成后都为蓝色区域的话左边红色区域长度为 0 ，如果搜索目标位于左边红色区域，则搜索结果不存在，同理都为红色区域右边蓝色区域长度为<br>0 ，如果搜索目标位于右边蓝色区域，则搜索结果不存在一般需要后期处理。</p>
+<p>3.普通技巧： 以下技巧必须掌握： 排序 二分查找的运用是建立在数组有序的基础上的，如果数组无序，我们要先对数组进行排序，如果数组有多个维度，我们针对需要二分查找的维度进行排序。<br>构造二分查找区间 当问题能够转化为区间内二分判定问题的时候，构造搜索区间，在蓝红二分法中设L指针初始为L0;R指针设为二分查找结束后L指针始终为Lt,R指针始终为Rt,target在（Lt–Rt）之间双指针<br>L 和 R 始终对目标元素 targettargettarget 进行夹逼，这是一条非常重要的性质。<br>如果开始构造搜索区间没有思路的时候，直接用题目提示中的数值区间！如果开始构造搜索区间没有思路的时候，直接用**题目提示中的数值区间<br>**！</p>
+<ol start="4">
+<li>高阶技巧： <strong>缩进边界构造区间</strong> 在第④条中，我们讨论了全蓝或者全红的特殊状态，其实我们可以提前判断，根据题意：</li>
+</ol>
+<p>搜索区间第一个元素颜色待定，搜索区间最后一个元素颜色待定，L&#x3D;首个元素下标−1，R&#x3D;末尾元素下标+1，如区间为[0, n−1]则L&#x3D;-1，R&#x3D;N；</p>
+<p>搜索区间第一个元素最终一定为蓝色，搜索区间最后一个元素颜色待定,L&#x3D;首个元素下标，R&#x3D;末尾元素下标+1，如区间为[0, n−1]则L&#x3D;0，R&#x3D;N；</p>
+<p>搜索区间第一个元素颜色待定，搜索区间最后一个元素最终一定为红色L&#x3D;首个元素下标−1，R&#x3D;末尾元素下标，如区间为[0, n−1]<br>则L&#x3D;-1，R&#x3D;N-1；</p>
+<p>搜索区间第一个元素最终一定为蓝色，搜索区间最后一个元素一定为红色L&#x3D;首个元素下标−1，R&#x3D;末尾元素下标+1，如区间为[0, n−1]<br>则L&#x3D;-1，R&#x3D;N；</p>
+<h4 id="4-实战演示"><a href="#4-实战演示" class="headerlink" title="4.实战演示"></a>4.实战演示</h4><p>如<a target="_blank" rel="noopener" href="https://leetcode.cn/problems/find-first-and-last-position-of-element-in-sorted-array/">力扣（LeetCode）官网 - 全球极客挚爱的技术成长平台</a></p>
+<h4 id=""><a href="#" class="headerlink" title=""></a><img src="https://ucc.alicdn.com/pic/developer-ecology/xp3qx5e7fvpro_50309294587b4b3a810621ce531c954c.png" alt="image"></h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">class Solution &#123;</span><br><span class="line">    public int searchRangeLeft(int[] nums, int target) &#123;</span><br><span class="line">        int left = -1;</span><br><span class="line">        int right =nums.length;</span><br><span class="line">        while (left+1 != right) &#123;</span><br><span class="line">            int mid = (left + right) / 2;</span><br><span class="line">            if(nums[mid] &lt;= target) &#123;</span><br><span class="line">                left = mid;</span><br><span class="line">            &#125;else &#123;</span><br><span class="line">                right = mid;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        return left;</span><br><span class="line">    &#125;</span><br><span class="line">    public int searchRangeRight(int[] nums, int target) &#123;</span><br><span class="line">        int left = -1;</span><br><span class="line">        int right =nums.length;</span><br><span class="line">        while (left+1 != right) &#123;</span><br><span class="line">            int mid = (left + right) / 2;</span><br><span class="line">            if(nums[mid] &lt; target) &#123;</span><br><span class="line">                left = mid;</span><br><span class="line">            &#125;else &#123;</span><br><span class="line">                right = mid;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        return right;</span><br><span class="line">    &#125;</span><br><span class="line">    public int[] searchRange(int[] nums, int target) &#123;</span><br><span class="line">        int leftIndex = searchRangeLeft(nums,target);</span><br><span class="line">        int rightIndex = searchRangeRight(nums,target);</span><br><span class="line">        if(leftIndex &gt;= rightIndex &amp;&amp; leftIndex &lt; nums.length &amp;&amp; nums[leftIndex] == target &amp;&amp; nums[rightIndex] == target) &#123;</span><br><span class="line">            return new int[] &#123;rightIndex,leftIndex&#125;;</span><br><span class="line">        &#125;</span><br><span class="line">        return new int[] &#123;-1,-1&#125;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>以上就是我使用该模板的解决的一道题，读者有兴趣也可以去尝试一下，链接如下</p>
+<p><a target="_blank" rel="noopener" href="https://leetcode.cn/problems/find-first-and-last-position-of-element-in-sorted-array/description/">34. 在排序数组中查找元素的第一个和最后一个位置</a></p>
+<p>以上就是关于蓝红二分查找法的模板和内容了，当然如果你比较熟悉二分查找法的思想也可以自己做一个模板。</p>
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1718893281/" target="_blank">二分查找模版</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
+                        
+                            <a href="/category/Web/">Web</a>
+                        
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
+                        
+                            <a href="/tag/WEB/">WEB</a>
+                        
+                    </div>
+                
+                <div class="article-prev-next">
+                    
+                        <a href="/article/1718893282/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1718893282/" title="发布于 2024-06-20 10:21">Nacos服务注册源码分析</a>
+                        <br>
+                    
+                    
+                        <a href="/article/1717260887683/" class="next-prefix">» </a> 下一篇：    <a href="/article/1717260887683/" title="发布于 2024-06-09 11:21">动态规划-背包问题</a>
+                    
+                </div>
+            </div>
+            
+    <div class="article-comments">
+        
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
+    
+</div>
+
+    <div id="footer"></div>
+    <div id="sidebar">
+    <div class="menu-wrap" style="display:none;">
+        
+            <div class="menu-notice">
+                <span class="iconfont icon-notice"></span>
+                <div class="notice">
+                    <span>简单地活着，肆意而又精彩！</span>
+                </div>
+            </div>
+        
+        <nav class="menu">
+            <div class="menu-introduce"> 
+                <div class="introduce-avatar">
+                    <img src="/image/sidebar/avatar.jpg">
+                </div> 
+                <div class="introduce-info"> 
+                    <div class="introduce-user"><span>Live For Code</span></div>
+                </div> 
+            </div> 
+            <div class="menu-list">
+                <ul>
+                    
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                    
+                        <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
+                    
+                        <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
+                    
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                    
+                        <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
+                    
+                        <li class=""><a href="/about" class="" target="_self"><span class="iconfont icon-about-fill"></span>关于</a></li>
+                    
+                        <li class=""><a href="/atom.xml" class="" target="_blank"><span class="iconfont icon-rss"></span>订阅</a></li>
+                    
+                        <li class=""><a href="/comment" class="" target="_self"><span class="iconfont icon-comments-fill"></span>留言板</a></li>
+                    
+                        <li class=""><a href="/friend" class="" target="_self"><span class="iconfont icon-link"></span>友情链接</a></li>
+                    
+                </ul> 
+            </div> 
+            <div class="menu-link">
+                <div class="box">
+                    <div class="image-box"></div>
+                </div>
+                
+                    <a name="知乎" href="https://www.zhihu.com/people/wo-xin-de-love" class="" target="_blank" data=""><span class="iconfont icon-zhihu"></span></a>
+                
+                    <a name="微博" href="https://weibo.com/u/3939432776" class="" target="_blank" data=""><span class="iconfont icon-weibo"></span></a>
+                
+                    <a name="QQ" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"><span class="iconfont icon-qq"></span></a>
+                
+                    <a name="微信" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"><span class="iconfont icon-wechat"></span></a>
+                
+                    <a name="GitHub" href="https://github.com/first19326" class="" target="_blank" data=""><span class="iconfont icon-github"></span></a>
+                
+            </div> 
+        </nav>
+        <button class="menu-button-close"></button>
+        <div class="morph-shape" id="morph-shape" data-morph-open="M-7.312,0H15c0,0,66,113.339,66,399.5C81,664.006,15,800,15,800H-7.312V0z;M-7.312,0H100c0,0,0,113.839,0,400c0,264.506,0,400,0,400H-7.312V0z">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 800" preserveAspectRatio="none">
+                <path d="M-7.312,0H0c0,0,0,113.839,0,400c0,264.506,0,400,0,400h-7.312V0z"/>
+            </svg>
+        </div>
+    </div>
+    <button class="menu-button-open">MENU</button>
+    <div class="menu-cover"></div>
+</div>
+    
+<div id="tools">
+    <div class="progressbar-top"></div>
+
+    <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
+    <script type="text/javascript" src="/js/APlayer.min.js"></script>
+    <script type="text/javascript" src="/js/Meting.min.js"></script>
+    <meting-js id="3778678" lrcshow="false" server="netease"
+               type="playlist" fixed="true" autoplay="false"
+               loop="all" order="random" preload="auto"
+               volume="0.67" mutex="true"></meting-js>
+
+    <script type="text/javascript">
+        (function () {
+            var toolsRoot = document.getElementById('tools');
+            if (!toolsRoot || typeof APlayer === 'undefined') {
+                return;
+            }
+
+            var metingElement = toolsRoot.querySelector('meting-js');
+            var targetVolume = 0.67;
+            var autoplayEnabled = true;
+            var introAudio = {
+                name: "知我",
+                artist: "国风堂 / 哦漏",
+                cover: "/image/header/home.jpg",
+                url: "/music/song/知我.mp3",
+                lrc: ""
+            };
+            var introIndex = -1;
+            var introRemoved = false;
+            var metingPlayer = null;
+            var initTimer = null;
+
+            function restoreAudio(audio) {
+                if (!audio) {
+                    return;
+                }
+
+                audio.muted = false;
+                audio.defaultMuted = false;
+                audio.removeAttribute('muted');
+                audio.removeAttribute('autoplay');
+                audio.volume = targetVolume;
+            }
+
+            function attemptPlay(player, muted) {
+                if (!player || !player.audio) {
+                    return;
+                }
+
+                var audio = player.audio;
+                if (typeof muted === 'boolean') {
+                    audio.muted = muted;
+                    audio.defaultMuted = muted;
+                    if (muted) {
+                        audio.setAttribute('muted', 'muted');
+                        audio.setAttribute('autoplay', 'autoplay');
+                        audio.volume = 0;
+                    }
+                }
+
+                var result = audio.play();
+                if (result && typeof result.catch === 'function') {
+                    result.catch(function () {
+                        if (player && player.setUIPaused) {
+                            player.setUIPaused();
+                        }
+                    });
+                }
+            }
+
+            function startMutedAutoplay(player) {
+                if (!player || !player.audio) {
+                    return;
+                }
+
+                var audio = player.audio;
+                audio.muted = true;
+                audio.defaultMuted = true;
+                audio.setAttribute('muted', 'muted');
+                audio.setAttribute('autoplay', 'autoplay');
+                audio.volume = 0;
+
+                var clearMute = function () {
+                    restoreAudio(audio);
+                };
+
+                audio.addEventListener('playing', function () {
+                    window.setTimeout(clearMute, 120);
+                }, {once: true});
+
+                ['loadedmetadata', 'canplay', 'canplaythrough'].forEach(function (eventName) {
+                    audio.addEventListener(eventName, function resumeOnReady() {
+                        if (audio.paused) {
+                            attemptPlay(player, true);
+                        }
+                    }, {once: true});
+                });
+
+                [0, 250, 1200, 2500].forEach(function (delay) {
+                    window.setTimeout(function () {
+                        if (audio.paused) {
+                            attemptPlay(player, true);
+                        }
+                    }, delay);
+                });
+
+                attemptPlay(player, true);
+            }
+
+            function showPlayerControls(player) {
+                if (player && player.setMode) {
+                    player.setMode('normal');
+                }
+                if (player && player.template && player.template.info) {
+                    player.template.info.style.display = 'block';
+                }
+            }
+
+            function resetRandomOrder(player) {
+                if (!player || !player.list || !player.list.audios) {
+                    return;
+                }
+
+                var order = [];
+                for (var i = 0; i < player.list.audios.length; i++) {
+                    order.push(i);
+                }
+                for (var j = order.length - 1; j > 0; j--) {
+                    var randomIndex = Math.floor(Math.random() * (j + 1));
+                    var item = order[j];
+                    order[j] = order[randomIndex];
+                    order[randomIndex] = item;
+                }
+                player.randomOrder = order;
+            }
+
+            function removeIntroAfterLeaving(player) {
+                if (introRemoved || introIndex < 0 || !player || !player.list || player.list.index === introIndex) {
+                    return;
+                }
+
+                player.removeAudio(introIndex);
+                introRemoved = true;
+                introIndex = -1;
+
+                if (player.options && player.options.order === 'random') {
+                    resetRandomOrder(player);
+                }
+            }
+
+            function initIntro(player) {
+                if (!player || !player.list || !player.list.audios || !player.addAudio || !introAudio.url) {
+                    return;
+                }
+
+                metingPlayer = player;
+                showPlayerControls(player);
+
+                player.addAudio(introAudio);
+                introIndex = player.list.audios.length - 1;
+                player.list.switch(introIndex);
+                showPlayerControls(player);
+
+                player.on('listswitch', function () {
+                    window.setTimeout(function () {
+                        removeIntroAfterLeaving(player);
+                    }, 0);
+                });
+                player.on('ended', function () {
+                    window.setTimeout(function () {
+                        removeIntroAfterLeaving(player);
+                    }, 0);
+                });
+
+                if (autoplayEnabled) {
+                    startMutedAutoplay(player);
+                }
+
+                document.addEventListener('click', function resumeMusic() {
+                    if (player && player.audio && player.audio.paused) {
+                        restoreAudio(player.audio);
+                        attemptPlay(player, false);
+                    }
+                    document.removeEventListener('click', resumeMusic);
+                });
+
+                window.__liveForCodeMusic = {
+                    player: player,
+                    meting: metingElement
+                };
+            }
+
+            initTimer = window.setInterval(function () {
+                if (metingElement && metingElement.aplayer) {
+                    window.clearInterval(initTimer);
+                    initIntro(metingElement.aplayer);
+                }
+            }, 100);
+        })();
+    </script>
+    
+    <div class="wrap-right">
+        <div class="setting">
+            <div class="iconbox mode">
+                <div class="light">
+                    <span class="iconfont icon-daymode"></span>
+                    <span class="icontext">浅色模式</span>
+                </div>
+                <div class="dark">
+                    <span class="iconfont icon-nightmode-fill"></span>
+                    <span class="icontext">深色模式</span>
+                </div>
+            </div>
+            <div class="iconbox bottom">
+                <div style="display: inline-block; transform: rotate(180deg);">
+                    <span class="iconfont icon-top"></span>
+                </div>
+                <span class="icontext">跳至底部</span>
+            </div>
+        </div>
+        <div class="iconbox set">
+            <div style="display: inline-block;">
+                <span class="iconfont icon-setting"></span>
+            </div>
+            <span class="icontext">设置</span>
+        </div>
+        <div class="iconbox top">
+            <span class="iconfont icon-top"></span>
+            <span class="icontext">返回顶部</span>
+        </div>
+    </div>
+    <div class="loading"></div>
+</div>
+
+    <script>
+    window.config = {
+        GitHubUserName     : "first19326",
+        GitHubRepositories : "Hexo-LiveForCode",
+
+        User             : "Live For Code",
+        UserAvatar       : "/image/sidebar/avatar.jpg",
+        WebsiteStartDate : "2020-01-01",
+
+        WebsiteTitleBlur         : "(◍´꒳`◍) Hi, Live For Code",
+        WebsiteTitleBlurTimeOut  : 500,
+        WebsiteTitleFocus        : "(*´∇｀*) 欢迎回来!",
+        WebsiteTitleFocusTimeOut : 1000,
+        WebsiteFavicon           : "/image/website/logo.png",
+
+        ProgressBar : {
+            id       : "topProgressBar",
+            color    : "#77B6FF",
+            height   : "2px",
+            duration : 0.2
+        },
+
+        Loading: {
+            rebound : {
+                tension  : 16,
+                friction : 5
+            },
+            spinner : {
+                id     : "spinner",
+                radius : 90,
+                sides  : 3,
+                depth  : 4,
+                colors : {
+                    background : "#F0F0F0",
+                    stroke     : "#272633",
+                    base       : "",
+                    child      : "#272633"
+                },
+                alwaysForward : true,
+                restAt        : 0.5,
+                renderBase    : false
+            }
+        },
+
+        HomeHeaderAnimationRendered : true,
+        HomeHeaderAnimation         : {
+            radius      : 15,
+            density     : 0.2,
+            color       : "rgba(255, 255, 255, .2)",
+            clearOffset : 0.3
+        },
+
+        BackAnimationRendered          : true,
+        IEBrowserBackAnimationRendered : false,
+        BackAnimation                  : {
+            colorSaturation  : "60%",
+            colorBrightness  : "50%",
+            colorAlpha       : 0.5,
+            colorCycleSpeed  : 5,
+            verticalPosition : "random",
+            horizontalSpeed  : 200,
+            ribbonCount      : 3,
+            strokeSize       : 0,
+            parallaxAmount   : -0.2,
+            animateSections  : true
+        },
+
+        HomeHeaderImage : [
+            
+                "/image/header/home.jpg",
+            
+                "/image/header/home.jpeg",
+            
+                "/image/header/2023-04-17-20-51-03.jpg",
+            
+                "/image/header/2023-04-17-20-54-07.jpg",
+            
+                "/image/header/2023-04-17-20-54-22.jpg",
+            
+                "/image/header/2023-04-17-20-55-25.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+        HomeBannerText  : "",
+
+        ArticleHeaderImage : [
+            
+                "/image/header/article.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+
+        OtherBannerText : "",
+
+        Error : {
+            icon    : "icon-swimming",
+            title   : "PAGE NOT FOUND",
+            content : [
+                
+                    "很抱歉，您访问的页面不存在！",
+                
+                    "可能是输入地址有误或该地址已变更。",
+                
+            ],
+            buttons : [
+                
+                    {
+                        icon  : "icon-home",
+                        text  : "返回首页",
+                        href  : "https://fadeway32.gitee.io/",
+                        class : ""
+                    },
+                
+            ]
+        },
+
+        MenuNotice : {
+            enable : true,
+            notice : "简单地活着，肆意而又精彩！",
+            speed  : 20
+        },
+        MenuList : [
+            
+                {
+                    name   : "首页",
+                    icon   : "icon-home-fill",
+                    href   : "/",
+                    type   : "index",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "分类",
+                    icon   : "icon-folder-fill",
+                    href   : "/category",
+                    type   : "category",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "标签",
+                    icon   : "icon-discount-fill",
+                    href   : "/tag",
+                    type   : "tag",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "归档",
+                    icon   : "icon-calendar-fill",
+                    href   : "/archive",
+                    type   : "archive",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "赞赏",
+                    icon   : "icon-heart-fill",
+                    href   : "/donate",
+                    type   : "donate",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "关于",
+                    icon   : "icon-about-fill",
+                    href   : "/about",
+                    type   : "about",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "订阅",
+                    icon   : "icon-rss",
+                    href   : "/atom.xml",
+                    type   : "",
+                    class  : "",
+                    target : "_blank"
+                },
+            
+                {
+                    name   : "留言板",
+                    icon   : "icon-comments-fill",
+                    href   : "/comment",
+                    type   : "comment",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "友情链接",
+                    icon   : "icon-link",
+                    href   : "/friend",
+                    type   : "friend",
+                    class  : "",
+                    target : "_self"
+                },
+            
+        ],
+        MenuLink : [
+            
+                
+                    {
+                        name   : "知乎",
+                        icon   : "icon-zhihu",
+                        href   : "https://www.zhihu.com/people/wo-xin-de-love",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "微博",
+                        icon   : "icon-weibo",
+                        href   : "https://weibo.com/u/3939432776",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "QQ",
+                        icon   : "icon-qq",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"
+                    },
+                
+                    {
+                        name   : "微信",
+                        icon   : "icon-wechat",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"
+                    },
+                
+                    {
+                        name   : "GitHub",
+                        icon   : "icon-github",
+                        href   : "https://github.com/first19326",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+            
+        ],
+
+        FooterStyle : 2,
+        BottomText  : "<div><span class='face'>ღゝ◡╹)ノ♡</span></div><div>【人生若只如初见<span><i class='iconfont icon-like-fill'></i></span>何事秋风悲画扇】</div><div>&copy; 2020-2022 WorstOne. All Rights Reserved.</div>",
+
+        ConsoleList : [
+            
+                
+                    [
+                        
+                            
+                                "Based on cnblogs theme SimpleMemory.",
+                            
+                                "",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "SimpleMemory Author:",
+                            
+                                "BNDong",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "Theme:",
+                            
+                                "LiveForCode",
+                            
+                        
+                    ],
+                
+            
+        ],
+
+        FontIconExtend : "",
+
+        Donate : {
+            paypal  : "",
+            bitcoin : "",
+            alipay  : "/image/donate/alipay.png",
+            wechat  : "/image/donate/wechat.png"
+        },
+
+        Search : {
+            applicationID : "854JXVO35S",
+            apiKey        : "1945575867b066df2d460a4a97e23421",
+            indexName     : "hexo2",
+            hits          : {
+                page : 30
+            },
+            labels        : {
+                placeholder : "搜索",
+                empty       : "未发现与 「${query}」 相关的内容",
+                stats       : "${hits} 条相关条目，使用了 ${time} 毫秒",
+            }
+        }, 
+
+        Valine : {
+            switch         : true,
+            el             : ".comments-content",
+            appId          : "srhKtvWPQTWYKh3qX8G8M7v0-gzGzoHsz",
+            appKey         : "8uVSP1q6UlALVC5igYfIfv2h",
+            serverURLs     : "",
+            placeholder    : "你是我一生只会遇见一次的惊喜...",
+            avatar         : "mm",
+            meta           : "nick,mail,link",
+            requiredFields : "nick,mail",
+            pageSize       : 5,
+            lang           : "zh-cn",
+            visitor        : true,
+            enableQQ       : true
+        },
+
+        Tocbot : {
+            switch                : true,
+            tocSelector           : ".toc",
+            contentSelector       : ".article-body",
+            headingSelector       : "h1, h2, h3, h4, h5",
+            headingsOffset        : 0,
+            scrollSmooth          : true,
+            scrollSmoothOffset    : -5,
+            positionFixedSelector : ".toc",
+            positionFixedClass    : "toc-fixed",
+            fixedSidebarOffset    : "",
+        },
+
+        Require : {
+            baseUrl     : "/js/",
+            waitSeconds : 100
+        },
+
+        Music : {
+            type : "Meting"
+        },
+        APlayer : {
+            container : ".aplayer",
+            fixed     : true,
+            autoplay  : true,
+            loop      : "all",
+            order     : "list",
+            preload   : "auto",
+            volume    : 0.67,
+            mutex     : true,
+            lrcType   : 0,
+            audio     : [
+                
+                    {
+                        name   : "知我",
+                        artist : "国风堂 / 哦漏",
+                        cover  : "/image/header/home.jpg",
+                        url    : "/music/song/知我.mp3",
+                        lrc    : ""
+                    },
+                
+            ]
+        },
+        Meting : {
+            id       : "3778678", 
+            lrcshow  : false, 
+            server   : "netease", 
+            type     : "playlist", 
+            fixed    : true, 
+            autoplay : true, 
+            loop     : "all", 
+            order    : "random", 
+            preload  : "auto", 
+            volume   : 0.67, 
+            mutex    : true
+        },
+
+        Mouse : {
+            enable  : true,
+            options : {
+                size  : 6,
+                sizeF : 24
+            }
+        },
+
+        LazyLoad : {
+            default : "/image/website/lazyload.svg"
+        },
+  
+        Style : {
+            aplayer          : "/css/APlayer.css",
+            archive          : "/css/archive.css",
+            base             : "/css/base.css",
+            clipboard        : "/css/clipboard.css",
+            code             : "/css/code.css",
+            donate           : "/css/donate.css",
+            fancybox         : "/css/jquery.fancybox.css",
+            footer           : "/css/footer.css",
+            iconfont         : "/iconfont/iconfont.css",
+            index            : "/css/index.css",
+            menuBubble       : "/css/menu-bubble.css",
+            mouse            : "/css/mouse.css",
+            page             : "/css/page.css",
+            post             : "/css/post.css",
+            search           : "/css/search.css",
+            tocbot           : "/css/tocbot.css",
+            valine           : "/css/valine.css"
+        },
+
+        Script: {
+            aplayer          : "/js/APlayer.min.js",
+            config           : "/js/require.config.js",
+            index            : "/js/index.js",
+            instantSearch    : "/js/instantsearch.min.js",
+            iscroll          : "/js/iscroll.js",
+            jQuery           : "/js/jquery-3.4.1.min.js",
+            loading          : "/js/loading.js",
+            meting           : "/js/Meting.min.js",
+            require          : "/js/require.min.js"
+        },
+
+        Font: {
+            LongCang    : "/font/LongCang.css",
+            Monda       : "/font/Monda.css",
+            NotoSansSC  : "/font/NotoSansSC.css",
+            NotoSerifSC : "/font/NotoSerifSC.css",
+            Playball    : "/font/Playball.css",
+            PTMono      : "/font/PTMono.css",
+            Roboto      : "/font/Roboto.css",
+            RobotoSlab  : "/font/RobotoSlab.css",
+            Rosario     : "/font/Rosario.css",
+            UbuntuMono  : "/font/UbuntuMono.css"
+        },
+
+        Suffix : {
+            about : "你知道的越多,你不知道的越多"
+        },
+            
+        Theme : {
+            url  : "https://fadeway32.gitee.io/",
+            name : "fadeway32"
+        }  
+    };
+</script>
+    <script type="text/javascript" src="/js/home-docs.js"></script>
+    <script type="text/javascript" src="/js/index.js"></script>
+</body>
+</html>
