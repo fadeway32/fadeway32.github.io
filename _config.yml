@@ -89,11 +89,11 @@ pagination_dir: page
 # Extensions
 ## Plugins: https://hexo.io/plugins/
 plugins:
-  hexo-abbrlink
-  hexo-algolia
-  hexo-deployer-git
-  hexo-generator-feed
-  hexo-math
+  - hexo-abbrlink
+  - hexo-algolia
+  - hexo-deployer-git
+  - hexo-generator-feed
+  - hexo-math
 ## Themes: https://hexo.io/themes/
 theme: LiveForCode
 

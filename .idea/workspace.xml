@@ -1,0 +1,569 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="2c058f76-f18a-4066-8543-2e7e89e666bc" name="Changes" comment="feat(fadeway32)： 配置文件兼容">
+      <change beforePath="$PROJECT_DIR$/_config.yml" beforeDir="false" afterPath="$PROJECT_DIR$/_config.yml" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="PUSH_AUTO_UPDATE" value="true" />
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="efd635fd9747b2c79b758c156fcb37f9d01aff8f" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RESET_MODE" value="HARD" />
+    <option name="UPDATE_TYPE" value="REBASE" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/fadeway32/fadeway32.github.io.git",
+    "accountId": "130f1c0e-57bd-4fe7-a03e-da1210a10f98"
+  }
+}]]></component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 1
+}</component>
+  <component name="ProjectId" id="2gdX5W8L2qmlVgKFiCzbeq7UCTC" />
+  <component name="ProjectLevelVcsManager">
+    <OptionsSetting value="false" id="Update" />
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_ADD_EXTERNAL_FILES": "true",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "main",
+    "javascript.preferred.runtime.type.id": "node",
+    "junie.onboarding.icon.badge.shown": "true",
+    "last_opened_file_path": "D:/code/fadeway32.github.io/music/song",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_interpreter_path": "node",
+    "nodejs_package_manager_path": "D:\\Program Files\\nodejs\\npm.cmd",
+    "settings.editor.selected.configurable": "vcs.Git",
+    "to.speed.mode.migration.done": "true",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="Push.Settings">
+    <force-push-targets>
+      <force-push-target remote-path="origin" branch="main" />
+    </force-push-targets>
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\code\fadeway32.github.io\music\song" />
+      <recent name="D:\code\fadeway32.github.io\themes\LiveForCode\source\music\song" />
+      <recent name="D:\code\fadeway32.github.io\source\_posts" />
+      <recent name="D:\code\fadeway32.github.io" />
+    </key>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-31caf2ab9e3c-JavaScript-WS-261.23567.141" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="2c058f76-f18a-4066-8543-2e7e89e666bc" name="Changes" comment="" />
+      <created>1716028244324</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1716028244324</updated>
+      <workItem from="1716028245465" duration="14000" />
+      <workItem from="1716028278497" duration="1226000" />
+      <workItem from="1716029590634" duration="81000" />
+      <workItem from="1716029993525" duration="547000" />
+      <workItem from="1716030573891" duration="307000" />
+      <workItem from="1716124834005" duration="471000" />
+      <workItem from="1716209611739" duration="6975000" />
+      <workItem from="1716817697184" duration="2640000" />
+      <workItem from="1716904929596" duration="1860000" />
+      <workItem from="1716989666065" duration="1008000" />
+      <workItem from="1717340238958" duration="210000" />
+      <workItem from="1717418767819" duration="989000" />
+      <workItem from="1717512650608" duration="2114000" />
+      <workItem from="1717685191803" duration="1342000" />
+      <workItem from="1717852056171" duration="2860000" />
+      <workItem from="1718118663906" duration="3730000" />
+      <workItem from="1718544505033" duration="2435000" />
+      <workItem from="1718710160685" duration="1428000" />
+      <workItem from="1719394914764" duration="5621000" />
+      <workItem from="1719819891565" duration="1008000" />
+      <workItem from="1719820944103" duration="65000" />
+      <workItem from="1719821022091" duration="69000" />
+      <workItem from="1719821100994" duration="1245000" />
+      <workItem from="1720170883149" duration="1407000" />
+      <workItem from="1720441741061" duration="1538000" />
+      <workItem from="1720528120802" duration="867000" />
+      <workItem from="1720597284754" duration="4754000" />
+      <workItem from="1720684929331" duration="1362000" />
+      <workItem from="1720864357658" duration="1215000" />
+      <workItem from="1720945076588" duration="2876000" />
+      <workItem from="1723471326561" duration="674000" />
+      <workItem from="1732438499890" duration="203000" />
+      <workItem from="1739525011967" duration="5191000" />
+      <workItem from="1739546206720" duration="6963000" />
+      <workItem from="1740388565428" duration="2284000" />
+      <workItem from="1740459109834" duration="3367000" />
+      <workItem from="1740624370155" duration="3787000" />
+      <workItem from="1740827768809" duration="2127000" />
+      <workItem from="1741000833075" duration="1139000" />
+      <workItem from="1741088854825" duration="3186000" />
+      <workItem from="1741248072558" duration="12740000" />
+      <workItem from="1741410994930" duration="2333000" />
+      <workItem from="1741595864865" duration="7315000" />
+      <workItem from="1742288729431" duration="607000" />
+      <workItem from="1743232879544" duration="598000" />
+      <workItem from="1743235324514" duration="649000" />
+      <workItem from="1743236008786" duration="1000" />
+      <workItem from="1743236027363" duration="599000" />
+      <workItem from="1743237147443" duration="128000" />
+      <workItem from="1743237285395" duration="33000" />
+      <workItem from="1743237327314" duration="4000" />
+      <workItem from="1743237364783" duration="176000" />
+      <workItem from="1743237574744" duration="140000" />
+      <workItem from="1779359230129" duration="26217000" />
+    </task>
+    <task id="LOCAL-00001" summary="feat(fadeway32)-代码提交">
+      <created>1716028716443</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1716028716443</updated>
+    </task>
+    <task id="LOCAL-00002" summary="feat(fadeway32)-代码提交">
+      <created>1716028764943</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1716028764943</updated>
+    </task>
+    <task id="LOCAL-00003" summary="feat(fadeway32)-代码提交">
+      <created>1716124930935</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1716124930935</updated>
+    </task>
+    <task id="LOCAL-00004" summary="feat(fadeway32)-代码提交最新">
+      <created>1716212486968</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1716212486968</updated>
+    </task>
+    <task id="LOCAL-00005" summary="feat(fadeway32)-代码提交最新2">
+      <created>1716214947111</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1716214947111</updated>
+    </task>
+    <task id="LOCAL-00006" summary="feat(fadeway32)-修改搜索结果失败的问题">
+      <created>1716217059073</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1716217059073</updated>
+    </task>
+    <task id="LOCAL-00007" summary="feat(fadeway32)-添加约瑟夫问题">
+      <created>1716820722218</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1716820722218</updated>
+    </task>
+    <task id="LOCAL-00008" summary="feat(fadeway32)-更新提交">
+      <created>1716821191896</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1716821191896</updated>
+    </task>
+    <task id="LOCAL-00009" summary="feat(fadeway32)-更新提交">
+      <created>1716821471495</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1716821471495</updated>
+    </task>
+    <task id="LOCAL-00010" summary="feat(fadeway32)-更新提交">
+      <created>1716905237954</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1716905237954</updated>
+    </task>
+    <task id="LOCAL-00011" summary="feat(fadeway32)-add article">
+      <created>1716990324777</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1716990324777</updated>
+    </task>
+    <task id="LOCAL-00012" summary="feat(fadeway32)-add article">
+      <created>1717340336255</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1717340336255</updated>
+    </task>
+    <task id="LOCAL-00013" summary="feat(fadeway32)-add article1">
+      <created>1717419780349</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1717419780349</updated>
+    </task>
+    <task id="LOCAL-00014" summary="feat(fadeway32)-add article2">
+      <created>1717514782156</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1717514782156</updated>
+    </task>
+    <task id="LOCAL-00015" summary="feat(fadeway32)-add article2">
+      <created>1717515039001</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1717515039001</updated>
+    </task>
+    <task id="LOCAL-00016" summary="feat(fadeway32)-add article2">
+      <created>1717515087437</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1717515087437</updated>
+    </task>
+    <task id="LOCAL-00017" summary="feat(fadeway32)-add article2">
+      <created>1717686019089</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1717686019089</updated>
+    </task>
+    <task id="LOCAL-00018" summary="feat(fadeway32)-add article2">
+      <created>1717852140124</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1717852140124</updated>
+    </task>
+    <task id="LOCAL-00019" summary="feat(fadeway32)-add article2J">
+      <created>1718118889875</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1718118889875</updated>
+    </task>
+    <task id="LOCAL-00020" summary="feat(fadeway32)-add article2J">
+      <created>1718119201675</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1718119201675</updated>
+    </task>
+    <task id="LOCAL-00021" summary="feat(fadeway32)-add article2J">
+      <created>1718200921586</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1718200921586</updated>
+    </task>
+    <task id="LOCAL-00022" summary="feat(fadeway32)-add article2J">
+      <created>1718202481571</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1718202481571</updated>
+    </task>
+    <task id="LOCAL-00023" summary="feat(fadeway32)-add article2J">
+      <created>1718550128695</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1718550128695</updated>
+    </task>
+    <task id="LOCAL-00024" summary="feat(fadeway32)-add article2J">
+      <created>1719395072322</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1719395072322</updated>
+    </task>
+    <task id="LOCAL-00025" summary="feat(fadeway32)-add article2J">
+      <created>1719405274573</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1719405274573</updated>
+    </task>
+    <task id="LOCAL-00026" summary="feat(fadeway32)-add article45">
+      <created>1720170895746</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1720170895746</updated>
+    </task>
+    <task id="LOCAL-00027" summary="feat(fadeway32)-add article45">
+      <created>1720443108945</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1720443108945</updated>
+    </task>
+    <task id="LOCAL-00028" summary="feat(fadeway32)-add article46">
+      <created>1720528275571</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1720528275571</updated>
+    </task>
+    <task id="LOCAL-00029" summary="feat(fadeway32)-add article47">
+      <created>1720967873592</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1720967873592</updated>
+    </task>
+    <task id="LOCAL-00030" summary="feat(fadeway32)-add article48">
+      <created>1739525205621</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1739525205621</updated>
+    </task>
+    <task id="LOCAL-00031" summary="feat(fadeway32)-add hexo2">
+      <created>1739545632565</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1739545632565</updated>
+    </task>
+    <task id="LOCAL-00032" summary="feat(fadeway32)-add article49">
+      <created>1739608347847</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1739608347847</updated>
+    </task>
+    <task id="LOCAL-00033" summary="feat(fadeway32)-add article50">
+      <created>1739696064913</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1739696064913</updated>
+    </task>
+    <task id="LOCAL-00034" summary="feat(fadeway32)-add article50">
+      <created>1739713881994</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1739713881994</updated>
+    </task>
+    <task id="LOCAL-00035" summary="feat(fadeway32)-add article50">
+      <created>1740388779284</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1740388779284</updated>
+    </task>
+    <task id="LOCAL-00036" summary="feat(fadeway32)-add article50">
+      <created>1741014056089</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1741014056089</updated>
+    </task>
+    <task id="LOCAL-00037" summary="feat(fadeway32)-add article51">
+      <created>1741089728277</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1741089728277</updated>
+    </task>
+    <task id="LOCAL-00038" summary="feat(fadeway32)-add article51">
+      <created>1741091045428</created>
+      <option name="number" value="00038" />
+      <option name="presentableId" value="LOCAL-00038" />
+      <option name="project" value="LOCAL" />
+      <updated>1741091045428</updated>
+    </task>
+    <task id="LOCAL-00039" summary="feat(fadeway32)-面试">
+      <created>1741616866346</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1741616866346</updated>
+    </task>
+    <task id="LOCAL-00040" summary="feat(fadeway32)： 博客改版及音乐播放器调整">
+      <option name="closed" value="true" />
+      <created>1779420514478</created>
+      <option name="number" value="00040" />
+      <option name="presentableId" value="LOCAL-00040" />
+      <option name="project" value="LOCAL" />
+      <updated>1779420514478</updated>
+    </task>
+    <task id="LOCAL-00041" summary="feat(fadeway32)： 博客改版及音乐播放器调整">
+      <option name="closed" value="true" />
+      <created>1779435446590</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
+      <option name="project" value="LOCAL" />
+      <updated>1779435446590</updated>
+    </task>
+    <task id="LOCAL-00042" summary="feat(fadeway32)： 博客改版及音乐播放器调整">
+      <option name="closed" value="true" />
+      <created>1779435479916</created>
+      <option name="number" value="00042" />
+      <option name="presentableId" value="LOCAL-00042" />
+      <option name="project" value="LOCAL" />
+      <updated>1779435479916</updated>
+    </task>
+    <task id="LOCAL-00043" summary="feat(fadeway32)： 配置文件兼容">
+      <option name="closed" value="true" />
+      <created>1779446182163</created>
+      <option name="number" value="00043" />
+      <option name="presentableId" value="LOCAL-00043" />
+      <option name="project" value="LOCAL" />
+      <updated>1779446182163</updated>
+    </task>
+    <option name="localTasksCounter" value="44" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="UnknownFeatures">
+    <option featureType="com.intellij.fileTypeFactory" implementationName="_config.yml" />
+  </component>
+  <component name="Vcs.Log.History.Properties">
+    <option name="COLUMN_ID_ORDER">
+      <list>
+        <option value="Default.Root" />
+        <option value="Default.Author" />
+        <option value="Default.Date" />
+        <option value="Default.Subject" />
+        <option value="Space.CommitStatus" />
+      </list>
+    </option>
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="RECENT_FILTERS">
+      <map>
+        <entry key="Branch">
+          <value>
+            <list>
+              <RecentGroup>
+                <option name="FILTER_VALUES">
+                  <option value="main20260522" />
+                </option>
+              </RecentGroup>
+              <RecentGroup>
+                <option name="FILTER_VALUES">
+                  <option value="HEAD" />
+                </option>
+              </RecentGroup>
+              <RecentGroup>
+                <option name="FILTER_VALUES">
+                  <option value="main" />
+                </option>
+              </RecentGroup>
+            </list>
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="COLUMN_ID_WIDTH">
+                <map>
+                  <entry key="Table.Default.Author.ColumnIdWidth" value="222" />
+                  <entry key="Table.Default.Date.ColumnIdWidth" value="279" />
+                  <entry key="Table.GitHub.CommitStatus.ColumnIdWidth" value="197" />
+                </map>
+              </option>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="main20260522" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
+    <option name="CHECK_NEW_TODO" value="false" />
+    <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
+    <MESSAGE value="feat(fadeway32)-代码提交" />
+    <MESSAGE value="feat(fadeway32)-代码提交最新" />
+    <MESSAGE value="feat(fadeway32)-代码提交最新2" />
+    <MESSAGE value="feat(fadeway32)-修改搜索结果失败的问题" />
+    <MESSAGE value="feat(fadeway32)-添加约瑟夫问题" />
+    <MESSAGE value="feat(fadeway32)-更新提交" />
+    <MESSAGE value="feat(fadeway32)-add article" />
+    <MESSAGE value="feat(fadeway32)-add article1" />
+    <MESSAGE value="feat(fadeway32)-add article2" />
+    <MESSAGE value="feat(fadeway32)-add article2J" />
+    <MESSAGE value="feat(fadeway32)-add article45" />
+    <MESSAGE value="feat(fadeway32)-add article46" />
+    <MESSAGE value="feat(fadeway32)-add article47" />
+    <MESSAGE value="feat(fadeway32)-add article48" />
+    <MESSAGE value="feat(fadeway32)-add hexo2" />
+    <MESSAGE value="feat(fadeway32)-add article49" />
+    <MESSAGE value="feat(fadeway32)-add article50" />
+    <MESSAGE value="feat(fadeway32)-add article51" />
+    <MESSAGE value="feat(fadeway32)-面试" />
+    <MESSAGE value="feat(fadeway32)： 博客改版及音乐播放器调整" />
+    <MESSAGE value="feat(fadeway32)： 配置文件兼容" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat(fadeway32)： 配置文件兼容" />
+    <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
+  </component>
+</project>
