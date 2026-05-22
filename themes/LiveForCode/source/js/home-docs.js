@@ -34,6 +34,26 @@
         return '/image/home-covers/page-' + page + '/' + padSlot(slot) + '.jpg';
     }
 
+    function setCardLoadingState(card, state) {
+        if (!card) return;
+        card.classList.remove('is-loading', 'is-loaded', 'is-error');
+        card.classList.add(state);
+    }
+
+    function finishCardLoading(card, state) {
+        if (!card) return;
+        card.classList.remove('is-loading');
+        card.classList.add('is-loaded');
+        if (state) card.classList.add(state);
+    }
+
+    function failCardLoading(card) {
+        if (!card) return;
+        card.classList.remove('is-loading');
+        card.classList.remove('is-loaded');
+        card.classList.add('is-error');
+    }
+
     function getPageCovers(page) {
         var state = getState();
         var perPage = state ? state.perPage : 15;
@@ -50,18 +70,48 @@
 
     function setImage(card, image, rawUrl) {
         var url = addVersion(rawUrl);
+        if (!card || !image) return;
+
+        if (image.getAttribute('data-local-cover') === rawUrl && image.getAttribute('data-current-cover') === url) {
+            card.setAttribute('data-doc-cover', url);
+            if (image.complete && image.naturalWidth > 0) {
+                finishCardLoading(card);
+            }
+            return;
+        }
+
+        setCardLoadingState(card, 'is-loading');
         card.setAttribute('data-doc-cover', url);
         image.setAttribute('data-local-cover', rawUrl);
+        image.setAttribute('data-current-cover', url);
         image.removeAttribute('data-fallback-used');
+        image.removeAttribute('data-load-state');
+
+        image.onload = function () {
+            if (image.getAttribute('data-load-state') === 'done') return;
+            image.setAttribute('data-load-state', 'done');
+            finishCardLoading(card);
+        };
 
         image.onerror = function () {
-            if (image.getAttribute('data-fallback-used') === 'true') return;
+            if (image.getAttribute('data-fallback-used') === 'true') {
+                failCardLoading(card);
+                return;
+            }
+
             image.setAttribute('data-fallback-used', 'true');
-            image.src = image.getAttribute('data-fallback') || FALLBACK_COVER;
-            card.setAttribute('data-doc-cover', image.src);
+            var fallback = image.getAttribute('data-fallback') || FALLBACK_COVER;
+            image.setAttribute('data-current-cover', fallback);
+            card.setAttribute('data-doc-cover', fallback);
+            image.src = fallback;
         };
 
         image.src = url;
+
+        if (image.complete && image.naturalWidth > 0) {
+            image.setAttribute('data-load-state', 'done');
+            finishCardLoading(card);
+        }
     }
 
     function applyCurrentPageCovers() {

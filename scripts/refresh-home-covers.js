@@ -32,6 +32,20 @@ function ensureDir(dir) {
     fs.mkdirSync(dir, {recursive: true});
 }
 
+function cleanupStaleCoverPages(maxPage) {
+    if (!fs.existsSync(THEME_COVERS_DIR)) return;
+
+    for (const entry of fs.readdirSync(THEME_COVERS_DIR, {withFileTypes: true})) {
+        if (!entry.isDirectory()) continue;
+        const match = /^page-(\d+)$/.exec(entry.name);
+        if (!match) continue;
+        const page = parseInt(match[1], 10);
+        if (page > maxPage) {
+            fs.rmSync(path.join(THEME_COVERS_DIR, entry.name), {recursive: true, force: true});
+        }
+    }
+}
+
 function copyDir(source, target) {
     ensureDir(target);
     for (const entry of fs.readdirSync(source, {withFileTypes: true})) {
@@ -161,6 +175,7 @@ async function main() {
     const tasks = [];
 
     ensureDir(THEME_COVERS_DIR);
+    cleanupStaleCoverPages(totalPages);
     for (let page = 1; page <= totalPages; page++) {
         for (let slot = 1; slot <= PER_PAGE; slot++) {
             tasks.push(() => refreshCover(page, slot));

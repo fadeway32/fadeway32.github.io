@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "build": "hexo generate",
+    "build": "hexo clean && hexo generate",
     "clean": "hexo clean",
-    "deploy": "hexo deploy",
+    "deploy": "hexo clean && hexo deploy --generate",
     "refresh:covers": "node scripts/refresh-home-covers.js",
     "task:covers": "powershell -ExecutionPolicy Bypass -File tools/refresh-home-covers-task.ps1",
     "server": "hexo server"

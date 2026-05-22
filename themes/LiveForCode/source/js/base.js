@@ -669,9 +669,9 @@ function Base() {
                     scrollSmooth          : window.config.Tocbot.scrollSmooth,
                     scrollSmoothOffset    : window.config.Tocbot.scrollSmoothOffset,
                 });
+                script.resizeMonitor();
+                script.scrollMonitor();
             });
-            
-            script.resizeMonitor();
         }
 
         script.clearIntervalTimer(timers.setTocTimer);
@@ -682,11 +682,17 @@ function Base() {
      */
     this.setTocStatus = function() {
         if (window.config.Tocbot.switch && $('.toc').length > 0) {
-            let bodyWidth       = parseFloat(document.body.clientWidth),
+            let bodyWidth = parseFloat(document.documentElement.clientWidth || document.body.clientWidth),
+                sidebarOffset = $('#sidebar').offset(),
+                sidebarLeft = sidebarOffset ? sidebarOffset.left : 0,
+                mainWidth = bodyWidth - sidebarLeft,
+                containerWidth = $('#container').outerWidth() || 0,
+                tocWidth = $('.toc').outerWidth() || 0,
                 docScroll       = $(document).scrollTop(),
-                endScroll = $('.end').offset().top;
-                
-            if (docScroll < endScroll && bodyWidth > 1360) {
+                endScroll = $('.end').offset().top,
+                minWidth = containerWidth + tocWidth * 2 + 40;
+
+            if (docScroll < endScroll && mainWidth >= minWidth) {
                 $('.toc').fadeIn(300);
             } else {
                 $('.toc').fadeOut(300);
@@ -699,15 +705,14 @@ function Base() {
      */
     this.setTocPosition = function() {
         if(window.config.Tocbot.switch && $('.toc').length > 0) {
-            let bodyWidth      = parseFloat(document.body.clientWidth),
-                headerHeight   = $('#header').outerHeight(),
-                containerWidth = $('#container').outerWidth(), 
+            let headerHeight = $('#header').outerHeight(),
+                containerRect = $('#container')[0].getBoundingClientRect(),
+                viewportWidth = parseFloat(document.documentElement.clientWidth || document.body.clientWidth),
                 tocWidth       = $('.toc').outerWidth(),
-                bothWidth      = (bodyWidth - containerWidth) / 2,
-                right          = bothWidth - tocWidth + 2;
+                right = viewportWidth - containerRect.right - tocWidth - 20;
 
             $('.toc').css('top', headerHeight + 'px');
-            $('.toc').css('right', (right > 0 ? right : 0) + 'px');
+            $('.toc').css('right', (right > 0 ? right : 20) + 'px');
         }
     }
  
