@@ -4,8 +4,21 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2c058f76-f18a-4066-8543-2e7e89e666bc" name="Changes" comment="feat(fadeway32)： 配置文件兼容">
-      <change beforePath="$PROJECT_DIR$/_config.yml" beforeDir="false" afterPath="$PROJECT_DIR$/_config.yml" afterDir="false" />
+    <list default="true" id="2c058f76-f18a-4066-8543-2e7e89e666bc" name="Changes" comment="Revert &quot;feat(fadeway32)： 博客改版及音乐播放器调整&quot;&#10;&#10;This reverts commit b8906e2a">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.playwright-mcp/page-2026-05-22T06-42-15-855Z.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.playwright-mcp/page-2026-05-22T07-04-21-663Z.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.playwright-mcp/page-2026-05-22T07-04-53-335Z.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.playwright-mcp/page-2026-05-22T07-07-47-353Z.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.playwright-mcp/page-2026-05-22T07-13-03-752Z.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.playwright-mcp/page-2026-05-22T07-13-39-728Z.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.playwright-mcp/page-2026-05-22T07-14-42-724Z.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.playwright-mcp/page-2026-05-22T07-17-30-609Z.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.playwright-mcp/page-2026-05-22T07-17-57-032Z.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.playwright-mcp/page-2026-05-22T07-20-29-289Z.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.playwright-mcp/page-2026-05-22T07-21-30-173Z.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.playwright-mcp/page-2026-05-22T07-28-35-094Z.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.playwright-mcp/page-2026-05-22T07-31-32-842Z.yml" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -23,17 +36,15 @@
     <option name="RESET_MODE" value="HARD" />
     <option name="UPDATE_TYPE" value="REBASE" />
   </component>
-  <component name="GitHubPullRequestSearchHistory">{
-  &quot;lastFilter&quot;: {
-    &quot;state&quot;: &quot;OPEN&quot;
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {}
+}]]></component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/fadeway32/fadeway32.github.io.git&quot;,
+    &quot;accountId&quot;: &quot;130f1c0e-57bd-4fe7-a03e-da1210a10f98&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/fadeway32/fadeway32.github.io.git",
-    "accountId": "130f1c0e-57bd-4fe7-a03e-da1210a10f98"
-  }
-}]]></component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
   </component>
@@ -49,32 +60,32 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ASKED_ADD_EXTERNAL_FILES": "true",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "main",
-    "javascript.preferred.runtime.type.id": "node",
-    "junie.onboarding.icon.badge.shown": "true",
-    "last_opened_file_path": "D:/code/fadeway32.github.io/music/song",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_interpreter_path": "node",
-    "nodejs_package_manager_path": "D:\\Program Files\\nodejs\\npm.cmd",
-    "settings.editor.selected.configurable": "vcs.Git",
-    "to.speed.mode.migration.done": "true",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;javascript.preferred.runtime.type.id&quot;: &quot;node&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/code/fadeway32.github.io/music/song&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_interpreter_path&quot;: &quot;node&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;D:\\Program Files\\nodejs\\npm.cmd&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;vcs.Git&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="Push.Settings">
     <force-push-targets>
       <force-push-target remote-path="origin" branch="main" />
@@ -156,7 +167,7 @@
       <workItem from="1743237327314" duration="4000" />
       <workItem from="1743237364783" duration="176000" />
       <workItem from="1743237574744" duration="140000" />
-      <workItem from="1779359230129" duration="26217000" />
+      <workItem from="1779359230129" duration="32258000" />
     </task>
     <task id="LOCAL-00001" summary="feat(fadeway32)-代码提交">
       <created>1716028716443</created>
@@ -463,7 +474,31 @@
       <option name="project" value="LOCAL" />
       <updated>1779446182163</updated>
     </task>
-    <option name="localTasksCounter" value="44" />
+    <task id="LOCAL-00044" summary="feat(fadeway32)： 配置文件兼容">
+      <option name="closed" value="true" />
+      <created>1779446328599</created>
+      <option name="number" value="00044" />
+      <option name="presentableId" value="LOCAL-00044" />
+      <option name="project" value="LOCAL" />
+      <updated>1779446328599</updated>
+    </task>
+    <task id="LOCAL-00045" summary="Revert &quot;feat(fadeway32)： 博客改版及音乐播放器调整&quot;&#10;&#10;This reverts commit b8906e2a">
+      <option name="closed" value="true" />
+      <created>1779450762513</created>
+      <option name="number" value="00045" />
+      <option name="presentableId" value="LOCAL-00045" />
+      <option name="project" value="LOCAL" />
+      <updated>1779450762513</updated>
+    </task>
+    <task id="LOCAL-00046" summary="Revert &quot;feat(fadeway32)： 博客改版及音乐播放器调整&quot;&#10;&#10;This reverts commit b8906e2a">
+      <option name="closed" value="true" />
+      <created>1779450771319</created>
+      <option name="number" value="00046" />
+      <option name="presentableId" value="LOCAL-00046" />
+      <option name="project" value="LOCAL" />
+      <updated>1779450771319</updated>
+    </task>
+    <option name="localTasksCounter" value="47" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -491,12 +526,17 @@
             <list>
               <RecentGroup>
                 <option name="FILTER_VALUES">
-                  <option value="main20260522" />
+                  <option value="HEAD" />
                 </option>
               </RecentGroup>
               <RecentGroup>
                 <option name="FILTER_VALUES">
-                  <option value="HEAD" />
+                  <option value="origin/mainBak" />
+                </option>
+              </RecentGroup>
+              <RecentGroup>
+                <option name="FILTER_VALUES">
+                  <option value="main20260522" />
                 </option>
               </RecentGroup>
               <RecentGroup>
@@ -526,7 +566,7 @@
                   <entry key="branch">
                     <value>
                       <list>
-                        <option value="main20260522" />
+                        <option value="origin/mainBak" />
                       </list>
                     </value>
                   </entry>
@@ -563,7 +603,8 @@
     <MESSAGE value="feat(fadeway32)-面试" />
     <MESSAGE value="feat(fadeway32)： 博客改版及音乐播放器调整" />
     <MESSAGE value="feat(fadeway32)： 配置文件兼容" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat(fadeway32)： 配置文件兼容" />
+    <MESSAGE value="Revert &quot;feat(fadeway32)： 博客改版及音乐播放器调整&quot;&#10;&#10;This reverts commit b8906e2a" />
+    <option name="LAST_COMMIT_MESSAGE" value="Revert &quot;feat(fadeway32)： 博客改版及音乐播放器调整&quot;&#10;&#10;This reverts commit b8906e2a" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
 </project>
