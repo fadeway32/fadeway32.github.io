@@ -6,6 +6,8 @@
     "build": "hexo generate",
     "clean": "hexo clean",
     "deploy": "hexo deploy",
+    "refresh:covers": "node scripts/refresh-home-covers.js",
+    "task:covers": "powershell -ExecutionPolicy Bypass -File tools/refresh-home-covers-task.ps1",
     "server": "hexo server"
   },
   "hexo": {

@@ -1,47 +1,212 @@
+<%
+const introAudio = theme.APlayer && theme.APlayer.audio && theme.APlayer.audio.length ? theme.APlayer.audio[0] : {};
+const autoplayEnabled = theme.APlayer && theme.APlayer.autoplay;
+const targetVolume = theme.Meting ? theme.Meting.volume : 0.67;
+%>
 <div id="tools">
     <div class="progressbar-top"></div>
 
-    <% if (theme.Music.type == 'APlayer') { %>
-        <div class="aplayer"></div>
-        <link type="text/css" rel="stylesheet" href="<%- theme.Style.aplayer %>">
-        <script type="text/javascript" src="<%- theme.Script.aplayer %>"></script>
-        <script type="text/javascript">
-            const aplayer = new APlayer({
-                container: document.querySelector("<%- theme.APlayer.container %>"),
-                fixed: <%- theme.APlayer.fixed %>,
-                autoplay: <%- theme.APlayer.autoplay %>,
-                loop: "<%- theme.APlayer.loop %>",
-                order: "<%- theme.APlayer.order %>",
-                preload: "<%- theme.APlayer.preload %>",
-                volume: <%- theme.APlayer.volume %>,
-                mutex: <%- theme.APlayer.mutex %>,
-                lrcType: <%- theme.APlayer.lrcType %>,
-                audio: [
-                    <% theme.APlayer.audio.forEach(function(audio) { %>
-                        {
-                            name: "<%- audio.name %>",
-                            artist: "<%- audio.artist %>",
-                            cover: "<%- audio.cover %>",
-                            url: "<%- audio.url %>",
-                            lrc: "<%- audio.lrc %>"
-                        },
-                    <% }) %>
-                ]
-            });
-        </script>
-    <% } else { %>
-        <link type="text/css" rel="stylesheet" href="<%- theme.Style.aplayer %>">
-        <script type="text/javascript" src="<%- theme.Script.aplayer %>"></script>
-        <script type="text/javascript" src="<%- theme.Script.meting %>"></script>
-        <meting-js id="<%- theme.Meting.id %>" lrcshow="<%- theme.Meting.lrcshow %>" server="<%- theme.Meting.server %>" type="<%- theme.Meting.type %>" fixed="<%- theme.Meting.fixed %>" autoplay="<%- theme.Meting.autoplay %>" loop="<%- theme.Meting.loop %>" order="<%- theme.Meting.order %>" preload="<%- theme.Meting.preload %>" volume="<%- theme.Meting.volume %>" mutex="<%- theme.Meting.mutex %>"></meting-js>
-    <% } %>
+    <link type="text/css" rel="stylesheet" href="<%- theme.Style.aplayer %>">
+    <script type="text/javascript" src="<%- theme.Script.aplayer %>"></script>
+    <script type="text/javascript" src="<%- theme.Script.meting %>"></script>
+    <meting-js id="<%- theme.Meting.id %>" lrcshow="<%- theme.Meting.lrcshow %>" server="<%- theme.Meting.server %>"
+               type="<%- theme.Meting.type %>" fixed="<%- theme.Meting.fixed %>" autoplay="false"
+               loop="<%- theme.Meting.loop %>" order="<%- theme.Meting.order %>" preload="<%- theme.Meting.preload %>"
+               volume="<%- theme.Meting.volume %>" mutex="<%- theme.Meting.mutex %>"></meting-js>
+
+    <script type="text/javascript">
+        (function () {
+            var toolsRoot = document.getElementById('tools');
+            if (!toolsRoot || typeof APlayer === 'undefined') {
+                return;
+            }
+
+            var metingElement = toolsRoot.querySelector('meting-js');
+            var targetVolume = <%- targetVolume %>;
+            var autoplayEnabled = <%- autoplayEnabled %>;
+            var introAudio = {
+                name: "<%- introAudio.name || '知我' %>",
+                artist: "<%- introAudio.artist || '' %>",
+                cover: "<%- introAudio.cover || '' %>",
+                url: "<%- introAudio.url || '' %>",
+                lrc: "<%- introAudio.lrc || '' %>"
+            };
+            var introIndex = -1;
+            var introRemoved = false;
+            var metingPlayer = null;
+            var initTimer = null;
+
+            function restoreAudio(audio) {
+                if (!audio) {
+                    return;
+                }
+
+                audio.muted = false;
+                audio.defaultMuted = false;
+                audio.removeAttribute('muted');
+                audio.removeAttribute('autoplay');
+                audio.volume = targetVolume;
+            }
+
+            function attemptPlay(player, muted) {
+                if (!player || !player.audio) {
+                    return;
+                }
+
+                var audio = player.audio;
+                if (typeof muted === 'boolean') {
+                    audio.muted = muted;
+                    audio.defaultMuted = muted;
+                    if (muted) {
+                        audio.setAttribute('muted', 'muted');
+                        audio.setAttribute('autoplay', 'autoplay');
+                        audio.volume = 0;
+                    }
+                }
+
+                var result = audio.play();
+                if (result && typeof result.catch === 'function') {
+                    result.catch(function () {
+                        if (player && player.setUIPaused) {
+                            player.setUIPaused();
+                        }
+                    });
+                }
+            }
+
+            function startMutedAutoplay(player) {
+                if (!player || !player.audio) {
+                    return;
+                }
+
+                var audio = player.audio;
+                audio.muted = true;
+                audio.defaultMuted = true;
+                audio.setAttribute('muted', 'muted');
+                audio.setAttribute('autoplay', 'autoplay');
+                audio.volume = 0;
+
+                var clearMute = function () {
+                    restoreAudio(audio);
+                };
+
+                audio.addEventListener('playing', function () {
+                    window.setTimeout(clearMute, 120);
+                }, {once: true});
+
+                ['loadedmetadata', 'canplay', 'canplaythrough'].forEach(function (eventName) {
+                    audio.addEventListener(eventName, function resumeOnReady() {
+                        if (audio.paused) {
+                            attemptPlay(player, true);
+                        }
+                    }, {once: true});
+                });
+
+                [0, 250, 1200, 2500].forEach(function (delay) {
+                    window.setTimeout(function () {
+                        if (audio.paused) {
+                            attemptPlay(player, true);
+                        }
+                    }, delay);
+                });
+
+                attemptPlay(player, true);
+            }
+
+            function showPlayerControls(player) {
+                if (player && player.setMode) {
+                    player.setMode('normal');
+                }
+                if (player && player.template && player.template.info) {
+                    player.template.info.style.display = 'block';
+                }
+            }
+
+            function resetRandomOrder(player) {
+                if (!player || !player.list || !player.list.audios) {
+                    return;
+                }
+
+                var order = [];
+                for (var i = 0; i < player.list.audios.length; i++) {
+                    order.push(i);
+                }
+                for (var j = order.length - 1; j > 0; j--) {
+                    var randomIndex = Math.floor(Math.random() * (j + 1));
+                    var item = order[j];
+                    order[j] = order[randomIndex];
+                    order[randomIndex] = item;
+                }
+                player.randomOrder = order;
+            }
+
+            function removeIntroAfterLeaving(player) {
+                if (introRemoved || introIndex < 0 || !player || !player.list || player.list.index === introIndex) {
+                    return;
+                }
+
+                player.removeAudio(introIndex);
+                introRemoved = true;
+                introIndex = -1;
+
+                if (player.options && player.options.order === 'random') {
+                    resetRandomOrder(player);
+                }
+            }
+
+            function initIntro(player) {
+                if (!player || !player.list || !player.list.audios || !player.addAudio || !introAudio.url) {
+                    return;
+                }
+
+                metingPlayer = player;
+                showPlayerControls(player);
+
+                player.addAudio(introAudio);
+                introIndex = player.list.audios.length - 1;
+                player.list.switch(introIndex);
+                showPlayerControls(player);
+
+                player.on('listswitch', function () {
+                    window.setTimeout(function () {
+                        removeIntroAfterLeaving(player);
+                    }, 0);
+                });
+                player.on('ended', function () {
+                    window.setTimeout(function () {
+                        removeIntroAfterLeaving(player);
+                    }, 0);
+                });
+
+                if (autoplayEnabled) {
+                    startMutedAutoplay(player);
+                }
+
+                document.addEventListener('click', function resumeMusic() {
+                    if (player && player.audio && player.audio.paused) {
+                        restoreAudio(player.audio);
+                        attemptPlay(player, false);
+                    }
+                    document.removeEventListener('click', resumeMusic);
+                });
+
+                window.__liveForCodeMusic = {
+                    player: player,
+                    meting: metingElement
+                };
+            }
+
+            initTimer = window.setInterval(function () {
+                if (metingElement && metingElement.aplayer) {
+                    window.clearInterval(initTimer);
+                    initIntro(metingElement.aplayer);
+                }
+            }, 100);
+        })();
+    </script>
     
     <div class="wrap-right">
         <div class="setting">
-            <div class="iconbox favorites" switch="false">
-                <span class="iconfont icon-favorites"></span>
-                <span class="icontext">关注</span>
-            </div>
             <div class="iconbox mode">
                 <div class="light">
                     <span class="iconfont icon-daymode"></span>
@@ -52,12 +217,6 @@
                     <span class="icontext">深色模式</span>
                 </div>
             </div>
-            <a href="javascript:;" target="_self" class="search">
-                <div class="iconbox">
-                    <span class="iconfont icon-search-menu"></span>
-                    <span class="icontext">搜索</span>
-                </div>
-            </a>
             <div class="iconbox bottom">
                 <div style="display: inline-block; transform: rotate(180deg);">
                     <span class="iconfont icon-top"></span>

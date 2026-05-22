@@ -1,7 +1,9 @@
 <% if (page.total > 1) { %>
     <div class="pagination-bottom">
         <div class="pagination">
-            <% if (page.current == 1) { %>
+            <% if (is_home()) { %>
+                <%- paginator({prev_text: __('pagination.prev'), next_text: __('pagination.next')}) %>
+            <% } else if (page.current == 1) { %>
                 <a href="<%- url_for(page.next_link) %>"><%- __('pagination.next') %></a>
             <% } else { %>
                 <%- paginator({prev_text: __('pagination.prev'), next_text: __('pagination.next')}) %>

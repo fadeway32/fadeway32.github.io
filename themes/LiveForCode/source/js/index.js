@@ -152,19 +152,26 @@
             waitSeconds: 100
         },
         Music: {
-            type: 'Meting'
+            type: 'APlayer'
         },
         APlayer: {
             container: '.aplayer',
             fixed: true,
-            autoplay: false, 
+            autoplay: true, 
             loop: 'all',
-            order: 'random', 
+            order: 'list', 
             preload: 'auto',
             volume: 0.67,
             mutex: true,
-            lrcType: 3,
+            lrcType: 0,
             audio: [
+                {
+                    name: '知我',
+                    artist: '国风堂 / 哦漏',
+                    cover: '/image/header/home.jpg',
+                    url: '/music/song/知我.mp3',
+                    lrc: ''
+                },
                 {
                     name: 'Endless Tears',
                     artist: 'CLIFF EDGE',
@@ -180,8 +187,8 @@
                 lrcshow: false, 
                 server: 'netease', 
                 type: 'playlist', 
-                fixed: true, 
-                autoplay: false, 
+                fixed: true,
+                autoplay: true, 
                 loop: 'all', 
                 order: 'random', 
                 preload: 'auto', 
