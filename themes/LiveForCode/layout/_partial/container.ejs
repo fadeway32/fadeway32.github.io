@@ -114,7 +114,7 @@
                                 const coverSlot = String(i + 1).padStart(2, '0');
                                 const postCover = `/image/home-covers/page-${coverPage}/${coverSlot}.jpg`;
                             %>
-                            <article class="home-doc-card" data-doc-title="<%- homeAttr(post.title) %>"
+                            <article class="home-doc-card is-loading" data-doc-title="<%- homeAttr(post.title) %>"
                                      data-doc-path="<%- postUrl %>" data-doc-url="<%- postUrl %>"
                                      data-doc-date="<%- postDate %>" data-doc-cover="<%- postCover %>"
                                      data-cover-page="<%- coverPage %>" data-cover-slot="<%- coverSlot %>">
@@ -130,7 +130,7 @@
                                     </h3>
                                     <div class="home-doc-meta">
                                         <span><i class="iconfont icon-time"></i><%- postDate %></span>
-                                        <% if (post.sticky || post.top) { %>
+                                        <% if (post.sticky) { %>
                                             <span class="home-doc-badge"><%- __('post.sticky') %></span>
                                         <% } %>
                                     </div>
