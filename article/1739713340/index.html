@@ -71,10 +71,14 @@
     </div>
     
 </div>
-<div id="container">
+<div id="container"
+
+>
     
         <!-- 文章页面 -->
-        <div id="article">
+        
+        <div id="article" data-doc-title="15、RocketMQ源码分析：消费者DefaultMQPushConsumer启动主要流程源码" data-doc-path="/article/1739713340/"
+             data-doc-url="/article/1739713340/" data-doc-date="2025-02-16">
             <div class="toc"></div>
             <div class="article-body">
                 <h1 id="15、RocketMQ源码分析：消费者DefaultMQPushConsumer启动主要流程源码"><a href="#15、RocketMQ源码分析：消费者DefaultMQPushConsumer启动主要流程源码" class="headerlink" title="15、RocketMQ源码分析：消费者DefaultMQPushConsumer启动主要流程源码"></a>15、RocketMQ源码分析：消费者DefaultMQPushConsumer启动主要流程源码</h1><p>此前我们学习了Producer和Broker的启动源码，以及Producer发送消息源码和Broker接收存储消息的源码，现在，我们来学习Consumer的启动以及消费消息的源码。Consumer的启动源码和Producer的启动源码还是有很多相似的地方的。</p>
@@ -165,11 +169,11 @@
                 
                 <div class="article-prev-next">
                     
-                        <a href="/article/1739713337/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1739713337/" title="发布于 2025-02-16 09:42">12、RocketMQ源码分析：Broker消息刷盘服务GroupCommitService、FlushRealTimeService、CommitRealTimeService源码深度解析【一万字】</a>
+                        <a href="/article/1739713339/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1739713339/" title="发布于 2025-02-16 09:42">14、RocketMQ源码分析：BrokerCommitLogDispatcher异步构建ConsumeQueue和IndexFile源码解析</a>
                         <br>
                     
                     
-                        <a href="/article/1739713339/" class="next-prefix">» </a> 下一篇：    <a href="/article/1739713339/" title="发布于 2025-02-16 09:42">14、RocketMQ源码分析：BrokerCommitLogDispatcher异步构建ConsumeQueue和IndexFile源码解析</a>
+                        <a href="/article/1739713341/" class="next-prefix">» </a> 下一篇：    <a href="/article/1739713341/" title="发布于 2025-02-16 09:42">16、RocketMQ源码分析：消费者负载均衡服务RebalanceService入口源码</a>
                     
                 </div>
             </div>
@@ -186,6 +190,7 @@
         </div>
     
 </div>
+
     <div id="footer"></div>
     <div id="sidebar">
     <div class="menu-wrap" style="display:none;">
@@ -288,7 +293,11 @@
         <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
         <script type="text/javascript" src="/js/APlayer.min.js"></script>
         <script type="text/javascript" src="/js/Meting.min.js"></script>
-        <meting-js id="3778678" lrcshow="false" server="netease" type="playlist" fixed="true" autoplay="false" loop="all" order="random" preload="auto" volume="0.67" mutex="true"></meting-js>
+        <meting-js id="3778678" lrcshow="false" server="netease"
+                   type="playlist" fixed="true"
+                   autoplay="false" loop="all"
+                   order="random" preload="auto"
+                   volume="0.67" mutex="true"></meting-js>
     
     
     <div class="wrap-right">

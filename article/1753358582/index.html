@@ -71,10 +71,14 @@
     </div>
     
 </div>
-<div id="container">
+<div id="container"
+
+>
     
         <!-- 文章页面 -->
-        <div id="article">
+        
+        <div id="article" data-doc-title="Kubernetes-Pod升级与回滚" data-doc-path="/article/1753358582/"
+             data-doc-url="/article/1753358582/" data-doc-date="2023-04-29">
             <div class="toc"></div>
             <div class="article-body">
                 <h1 id="Kubernetes-Pod升级与回滚"><a href="#Kubernetes-Pod升级与回滚" class="headerlink" title="Kubernetes Pod升级与回滚"></a>Kubernetes Pod升级与回滚</h1><p>当集群中的某个服务需要升级时，我们需要停止目前与该服务相关的所有Pod，然后下载新版本镜像并创建新的Pod。如果集群规模比较大，则这个工作变成了一个挑战，而且先全部停止然后逐步升级的方式会导致较长时间的服务不可用。Kubernetes提供了滚动升级功能来解决上述问题。如果在更新过程中发生了错误，则还可以通过回滚操作恢复Pod的版本。</p>
@@ -199,6 +203,7 @@
         </div>
     
 </div>
+
     <div id="footer"></div>
     <div id="sidebar">
     <div class="menu-wrap" style="display:none;">
@@ -301,7 +306,11 @@
         <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
         <script type="text/javascript" src="/js/APlayer.min.js"></script>
         <script type="text/javascript" src="/js/Meting.min.js"></script>
-        <meting-js id="3778678" lrcshow="false" server="netease" type="playlist" fixed="true" autoplay="false" loop="all" order="random" preload="auto" volume="0.67" mutex="true"></meting-js>
+        <meting-js id="3778678" lrcshow="false" server="netease"
+                   type="playlist" fixed="true"
+                   autoplay="false" loop="all"
+                   order="random" preload="auto"
+                   volume="0.67" mutex="true"></meting-js>
     
     
     <div class="wrap-right">

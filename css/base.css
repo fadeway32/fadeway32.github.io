@@ -848,7 +848,7 @@ mjx-container {
 	bottom: -2px;
 	right: 5px;
 	width: 28px;
-	z-index: 900
+    z-index: 900
 }
 
 .wrap-right .setting {

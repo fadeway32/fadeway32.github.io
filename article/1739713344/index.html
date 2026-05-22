@@ -71,10 +71,14 @@
     </div>
     
 </div>
-<div id="container">
+<div id="container"
+
+>
     
         <!-- 文章页面 -->
-        <div id="article">
+        
+        <div id="article" data-doc-title="19、RocketMQ源码分析：Broker处理DefaultMQPushConsumer发起的拉取消息请求源码【一万字】" data-doc-path="/article/1739713344/"
+             data-doc-url="/article/1739713344/" data-doc-date="2025-02-16">
             <div class="toc"></div>
             <div class="article-body">
                 <h1 id="19、RocketMQ源码分析：Broker处理DefaultMQPushConsumer发起的拉取消息请求源码【一万字】"><a href="#19、RocketMQ源码分析：Broker处理DefaultMQPushConsumer发起的拉取消息请求源码【一万字】" class="headerlink" title="19、RocketMQ源码分析：Broker处理DefaultMQPushConsumer发起的拉取消息请求源码【一万字】"></a>19、RocketMQ源码分析：Broker处理DefaultMQPushConsumer发起的拉取消息请求源码【一万字】</h1><p><strong>前我们学习了<br><strong><a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_43767015/article/details/128563451">RocketMQ源码(18)—DefaultMQPushConsumer消费者发起拉取消息请求源码</a><br>。我们知道consumer在发送了拉取消息请求的时候，请求的Code为</strong>PULL_MESSAGE</strong>，broker端接收到请求之后，将会更根据不同的Code调用不同的处理器进行处理，而<br><strong>PULL_MESSAGE</strong>拉取消息的请求则是通过<strong>PullMessageProcessor</strong>处理的。</p>
@@ -262,11 +266,11 @@
                 
                 <div class="article-prev-next">
                     
-                        <a href="/article/1739713342/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1739713342/" title="发布于 2025-02-16 09:42">17、RocketMQ源码分析：RebalanceService消费者负载均衡过程源码</a>
+                        <a href="/article/1739713345/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1739713345/" title="发布于 2025-02-16 09:42">20、RocketMQ源码分析：DefaultMQPushConsumer处理Broker的拉取消息响应源码</a>
                         <br>
                     
                     
-                        <a href="/article/1739713345/" class="next-prefix">» </a> 下一篇：    <a href="/article/1739713345/" title="发布于 2025-02-16 09:42">20、RocketMQ源码分析：DefaultMQPushConsumer处理Broker的拉取消息响应源码</a>
+                        <a href="/article/1739713346/" class="next-prefix">» </a> 下一篇：    <a href="/article/1739713346/" title="发布于 2025-02-16 09:42">21、RocketMQ源码分析：ConsumeMessageConcurrentlyService并发消费消息源码</a>
                     
                 </div>
             </div>
@@ -283,6 +287,7 @@
         </div>
     
 </div>
+
     <div id="footer"></div>
     <div id="sidebar">
     <div class="menu-wrap" style="display:none;">
@@ -385,7 +390,11 @@
         <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
         <script type="text/javascript" src="/js/APlayer.min.js"></script>
         <script type="text/javascript" src="/js/Meting.min.js"></script>
-        <meting-js id="3778678" lrcshow="false" server="netease" type="playlist" fixed="true" autoplay="false" loop="all" order="random" preload="auto" volume="0.67" mutex="true"></meting-js>
+        <meting-js id="3778678" lrcshow="false" server="netease"
+                   type="playlist" fixed="true"
+                   autoplay="false" loop="all"
+                   order="random" preload="auto"
+                   volume="0.67" mutex="true"></meting-js>
     
     
     <div class="wrap-right">
@@ -913,5 +922,4 @@
 </script>
     <script type="text/javascript" src="/js/index.js"></script>
 </body>
-</html>dy>
 </html>
