@@ -1,0 +1,3120 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <!--    <meta name="referrer" content="origin">-->
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>
+        
+            网络高频面试题
+        
+    </title>
+    <link rel="shortcut icon" href="#"/>
+
+    <link type="text/css" rel="stylesheet" href="/font/LongCang.css">
+    <link type="text/css" rel="stylesheet" href="/font/Monda.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSansSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSerifSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/Playball.css">
+    <link type="text/css" rel="stylesheet" href="/font/PTMono.css">
+    <link type="text/css" rel="stylesheet" href="/font/Roboto.css">
+    <link type="text/css" rel="stylesheet" href="/font/RobotoSlab.css">
+    <link type="text/css" rel="stylesheet" href="/font/Rosario.css">
+    <link type="text/css" rel="stylesheet" href="/font/UbuntuMono.css">
+
+    <link type="text/css" rel="stylesheet" href="/css/base.css">
+    <link type="text/css" rel="stylesheet" href="/css/code.css">
+
+    <script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+    <a id="cover"></a>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
+<header>
+    <meta name="referrer" content="no-referrer">
+</header>
+<div id="header" class="header">
+    <div class="vertical">
+        <div class="inner">
+            
+                <h1 class="header-subtitle">网络高频面试题</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2025-05-24
+                        </span>
+                        
+                            <span id="/article/1757983019/" class="leancloud_visitors" data-flag-title="网络高频面试题">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1757983019/"></span>
+                        </span>
+                    </p>
+                    
+                    
+                </div>
+            
+        </div>
+    </div>
+    
+</div>
+<div id="container"
+
+>
+    
+        <!-- 文章页面 -->
+        
+        <div id="article" data-doc-title="网络高频面试题" data-doc-path="/article/1757983019/"
+             data-doc-url="/article/1757983019/" data-doc-date="2025-05-24">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="网络高频面试题"><a href="#网络高频面试题" class="headerlink" title="网络高频面试题"></a>网络高频面试题</h1><h2 id="Summary"><a href="#Summary" class="headerlink" title="Summary"></a>Summary</h2><p>把网络面试题拆成 <strong>6 轮对话</strong> 完成，每轮聚焦一个主题，避免一次性信息过载。每道题按统一结构讲：<strong>一句话结论、核心原理、图示&#x2F;流程、常见追问、面试表达</strong>。</p>
+<h2 id="Dialogue-Plan"><a href="#Dialogue-Plan" class="headerlink" title="Dialogue Plan"></a>Dialogue Plan</h2><ol>
+<li><strong>第一轮：TCP&#x2F;UDP 核心</strong><ul>
+<li>TCP 和 UDP 区别</li>
+<li>TCP 为什么可靠</li>
+<li>三次握手、四次挥手</li>
+<li>TIME_WAIT、CLOSE_WAIT</li>
+<li>粘包&#x2F;拆包</li>
+</ul>
+</li>
+<li><strong>第二轮：TCP 进阶</strong><ul>
+<li>滑动窗口</li>
+<li>拥塞控制</li>
+<li>半连接队列&#x2F;全连接队列</li>
+<li>SYN Flood</li>
+<li>TCP 参数调优思路</li>
+</ul>
+</li>
+<li><strong>第三轮：HTTP&#x2F;HTTPS</strong><ul>
+<li>HTTP 和 HTTPS 区别</li>
+<li>HTTPS 握手</li>
+<li>对称加密、非对称加密、证书</li>
+<li>HTTP 1.0&#x2F;1.1&#x2F;2&#x2F;3 区别</li>
+<li>GET&#x2F;POST、状态码、长连接</li>
+</ul>
+</li>
+<li><strong>第四轮：DNS&#x2F;CDN&#x2F;代理&#x2F;网关</strong><ul>
+<li>DNS 解析过程</li>
+<li>DNS 劫持、污染</li>
+<li>CDN 原理和回源</li>
+<li>正向代理、反向代理</li>
+<li>网关、负载均衡、反向代理区别</li>
+</ul>
+</li>
+<li><strong>第五轮：Socket、IO 模型、Netty</strong><ul>
+<li>Socket 是什么</li>
+<li>BIO&#x2F;NIO&#x2F;AIO</li>
+<li>select&#x2F;poll&#x2F;epoll</li>
+<li>Reactor 模型</li>
+<li>Netty 为什么高性能</li>
+<li>零拷贝和网络 IO 的关系</li>
+</ul>
+</li>
+<li><strong>第六轮：网络排查与架构场景</strong><ul>
+<li>接口超时怎么排查</li>
+<li>TIME_WAIT&#x2F;CLOSE_WAIT 过多怎么处理</li>
+<li>QPS 上不去的网络原因</li>
+<li>浏览器输入 URL 到页面展示</li>
+<li>高并发网关设计</li>
+<li>百万 WebSocket 连接设计</li>
+</ul>
+</li>
+</ol>
+<h2 id="Answer-Format"><a href="#Answer-Format" class="headerlink" title="Answer Format"></a>Answer Format</h2><p>每一轮都采用这个格式：</p>
+<ul>
+<li><strong>先给面试结论</strong>：30 秒内能说清楚。</li>
+<li><strong>再讲底层机制</strong>：说明为什么是这样。</li>
+<li><strong>配图或流程图</strong>：用文本图画清链路。</li>
+<li><strong>补充常见追问</strong>：面试官可能继续问什么。</li>
+<li><strong>给标准表达</strong>：可以直接背诵但不生硬。</li>
+</ul>
+<h2 id="Acceptance-Criteria"><a href="#Acceptance-Criteria" class="headerlink" title="Acceptance Criteria"></a>Acceptance Criteria</h2><p>完成后你会得到一套完整网络面试资料，覆盖：</p>
+<ul>
+<li>八股基础题</li>
+<li>原理深入题</li>
+<li>架构场景题</li>
+<li>线上排查题</li>
+<li>高级工程表达方式</li>
+</ul>
+<h2 id="Assumptions"><a href="#Assumptions" class="headerlink" title="Assumptions"></a>Assumptions</h2><p>默认面向 <strong>Java 后端 &#x2F; 高级后端 &#x2F; 架构岗</strong> 面试准备，回答深度按中高级标准组织。每轮内容控制在一个对话内，讲透但不堆太多无关细节。</p>
+<p><strong>第一轮：TCP&#x2F;UDP 核心</strong>。这一轮重点是网络面试里命中率最高的一组题。</p>
+<p><strong>1. TCP 和 UDP 区别</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>TCP 是面向连接、可靠、有序、面向字节流的传输协议；UDP 是无连接、不保证可靠、不保证顺序、面向报文的传输协议。TCP 适合可靠传输场景，UDP 适合低延迟、可容忍丢包的场景。</p>
+</blockquote>
+<p><strong>核心对比：</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">对比项</th>
+<th align="left">TCP</th>
+<th align="left">UDP</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">连接</td>
+<td align="left">面向连接</td>
+<td align="left">无连接</td>
+</tr>
+<tr>
+<td align="left">可靠性</td>
+<td align="left">可靠传输</td>
+<td align="left">不保证可靠</td>
+</tr>
+<tr>
+<td align="left">顺序</td>
+<td align="left">保证有序</td>
+<td align="left">不保证有序</td>
+</tr>
+<tr>
+<td align="left">数据边界</td>
+<td align="left">字节流，无消息边界</td>
+<td align="left">报文，有消息边界</td>
+</tr>
+<tr>
+<td align="left">开销</td>
+<td align="left">较大</td>
+<td align="left">较小</td>
+</tr>
+<tr>
+<td align="left">速度</td>
+<td align="left">相对慢</td>
+<td align="left">相对快</td>
+</tr>
+<tr>
+<td align="left">典型场景</td>
+<td align="left">HTTP、HTTPS、MySQL、Redis</td>
+<td align="left">DNS、直播、游戏、语音视频</td>
+</tr>
+</tbody></table>
+<p><strong>图示：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TCP: 客户端 ── 建立连接 ──&gt; 服务端 客户端 ── 可靠传输 ──&gt; 服务端 客户端 ── 断开连接 ──&gt; 服务端 UDP: 客户端 ── 直接发包 ──&gt; 服务端 不关心连接、不关心是否一定送达 </span><br></pre></td></tr></table></figure>
+
+<p><strong>常见追问：UDP 一定不可靠吗？</strong></p>
+<p>不是。UDP 协议层不保证可靠，但应用层可以自己实现可靠性，比如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">序列号 ACK 确认 超时重传 滑动窗口 丢包检测 </span><br></pre></td></tr></table></figure>
+
+<p>比如 QUIC 就是基于 UDP 实现了可靠传输、拥塞控制和加密能力。</p>
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>TCP 把可靠性交给传输层，应用开发简单，但协议开销更大；UDP 把可靠性选择权交给应用层，延迟低、灵活性高，所以适合实时通信、音视频、游戏、DNS 这类场景。</p>
+</blockquote>
+<hr>
+<p><strong>2. TCP 为什么可靠？</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>TCP 的可靠性来自序列号、确认应答、超时重传、滑动窗口、流量控制、拥塞控制和校验和。</p>
+</blockquote>
+<p><strong>核心机制：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 序列号：保证数据可以按顺序重组 2. ACK 确认：接收方告诉发送方收到哪些数据 3. 超时重传：数据丢了会重新发送 4. 滑动窗口：提高传输效率 5. 流量控制：防止把接收方打爆 6. 拥塞控制：防止把网络打爆 7. 校验和：检测数据是否损坏 </span><br></pre></td></tr></table></figure>
+
+<p><strong>图示：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">发送方                         接收方 Seq=100, Len=50  ────────────&gt;                  &lt;──────────── ACK=150 含义：100 到 149 的数据我收到了，下次从 150 开始发 </span><br></pre></td></tr></table></figure>
+
+<p><strong>常见追问：ACK&#x3D;150 是什么意思？</strong></p>
+<p>表示接收方已经收到 150 之前的所有字节，下一次希望收到从 150 开始的数据。</p>
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>TCP 的可靠不是靠单一机制，而是一组机制配合实现的。序列号解决顺序问题，ACK 和重传解决丢包问题，滑动窗口提升吞吐，流量控制保护接收端，拥塞控制保护网络。</p>
+</blockquote>
+<hr>
+<p><strong>3. TCP 三次握手</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>三次握手的核心目的是确认客户端和服务端的发送、接收能力都正常，并同步双方的初始序列号。</p>
+</blockquote>
+<p><strong>流程图：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">客户端                                服务端 SYN, seq=x        ────────────────&gt;                  服务端知道：客户端能发                   &lt;───────────────  SYN+ACK, seq=y, ack=x+1 客户端知道：服务端能收、能发 ACK, ack=y+1      ────────────────&gt; 服务端知道：客户端能收 </span><br></pre></td></tr></table></figure>
+
+<p><strong>为什么不是两次？</strong></p>
+<p>如果只有两次，服务端无法确认客户端是否具备接收能力。</p>
+<p>更关键的是，历史失效连接请求可能导致服务端误建立连接。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">旧 SYN 延迟到达服务端 服务端回复 SYN+ACK 如果两次就建立连接，服务端会创建一个无效连接 </span><br></pre></td></tr></table></figure>
+
+<p>第三次 ACK 可以让客户端确认这个连接是否真实有效。</p>
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>三次握手不是为了形式上多一次，而是为了让双方都确认彼此的收发能力，并交换初始序列号。两次握手服务端无法确认客户端的接收能力，也更容易受到历史重复 SYN 的影响。</p>
+</blockquote>
+<hr>
+<p><strong>4. TCP 四次挥手</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>四次挥手是因为 TCP 是全双工协议，客户端和服务端两个方向的数据通道需要分别关闭。</p>
+</blockquote>
+<p><strong>流程图：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">主动关闭方                              被动关闭方 FIN                  ────────────────&gt;                     &lt;───────────────  ACK                      &lt;───────────────  FIN ACK                  ────────────────&gt; </span><br></pre></td></tr></table></figure>
+
+<p><strong>为什么握手是三次，挥手是四次？</strong></p>
+<p>因为连接建立时，服务端可以把 SYN 和 ACK 合并发送。</p>
+<p>断开连接时，被动关闭方收到 FIN 后，可能还有数据没发完，所以通常先回 ACK，等数据发送完后再发 FIN。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">建立连接：SYN + ACK 可以合并 断开连接：ACK 和 FIN 通常不能立刻合并 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>TCP 是双向通信，关闭一个方向不代表另一个方向也关闭。主动方发 FIN 只是表示自己不再发送数据，但仍然可以接收数据；被动方处理完剩余数据后，再发送 FIN，所以通常需要四次挥手。</p>
+</blockquote>
+<hr>
+<p><strong>5. TIME_WAIT 是什么？为什么需要？</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>TIME_WAIT 是主动关闭方在发送最后一个 ACK 后进入的等待状态，主要作用是保证最后一个 ACK 能被对方收到，并让旧连接中的报文在网络中自然过期。</p>
+</blockquote>
+<p><strong>流程位置：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">主动关闭方发送最后一个 ACK        |        v 进入 TIME_WAIT 等待 2MSL        |        v 真正关闭连接 </span><br></pre></td></tr></table></figure>
+
+<p><strong>为什么要等 2MSL？</strong></p>
+<p>MSL 是报文最大生存时间。</p>
+<p>等待 2MSL 有两个目的：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 如果最后一个 ACK 丢了，对方会重发 FIN，主动关闭方可以再次 ACK 2. 防止旧连接残留报文影响后续相同四元组的新连接 </span><br></pre></td></tr></table></figure>
+
+<p>四元组是：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">源 IP + 源端口 + 目标 IP + 目标端口 </span><br></pre></td></tr></table></figure>
+
+<p><strong>TIME_WAIT 过多怎么办？</strong></p>
+<p>常见处理：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 客户端侧 TIME_WAIT 多通常正常 2. 服务端避免主动关闭连接 3. 开启连接复用、长连接 4. 调整内核参数，但要谨慎 5. 排查是否短连接过多 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>TIME_WAIT 不是异常，它是 TCP 为可靠关闭连接设计的保护机制。它的核心价值是处理最后 ACK 丢失和旧报文残留问题。真正要关注的是为什么出现大量短连接，而不是简单粗暴地消灭 TIME_WAIT。</p>
+</blockquote>
+<hr>
+<p><strong>6. CLOSE_WAIT 是什么？为什么危险？</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>CLOSE_WAIT 表示对端已经关闭连接，本端也收到了 FIN 并回复了 ACK，但本端应用程序还没有主动 close 连接。</p>
+</blockquote>
+<p><strong>状态图：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">对端发送 FIN    |    v 本端内核回复 ACK    |    v 连接进入 CLOSE_WAIT    |    v 等待应用程序调用 close() </span><br></pre></td></tr></table></figure>
+
+<p><strong>CLOSE_WAIT 多说明什么？</strong></p>
+<p>通常说明应用程序有问题：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. socket 没有关闭 2. 连接池连接泄漏 3. IO 线程阻塞，没走到 close 4. 代码异常分支没有释放连接 5. 第三方客户端使用不当 </span><br></pre></td></tr></table></figure>
+
+<p><strong>TIME_WAIT 和 CLOSE_WAIT 区别：</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">状态</th>
+<th align="left">常见位置</th>
+<th align="left">原因</th>
+<th align="left">是否危险</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">TIME_WAIT</td>
+<td align="left">主动关闭方</td>
+<td align="left">TCP 正常保护机制</td>
+<td align="left">通常不危险</td>
+</tr>
+<tr>
+<td align="left">CLOSE_WAIT</td>
+<td align="left">被动关闭方</td>
+<td align="left">应用未关闭连接</td>
+<td align="left">危险，常表示泄漏</td>
+</tr>
+</tbody></table>
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>TIME_WAIT 多不一定是问题，但 CLOSE_WAIT 多通常是应用层 bug。它说明对方已经关闭连接，本机也知道该关闭了，但应用程序没有调用 close，长期堆积会耗尽文件描述符和连接资源。</p>
+</blockquote>
+<hr>
+<p><strong>7. TCP 粘包和拆包</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>TCP 是面向字节流的协议，没有消息边界，所以应用层发送的多条消息，接收方可能一次读到多条，也可能一条消息被分多次读到，这就是粘包和拆包。</p>
+</blockquote>
+<p><strong>图示：</strong></p>
+<p>应用层发送：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">消息1: Hello 消息2: World </span><br></pre></td></tr></table></figure>
+
+<p>接收方可能读到：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">情况一：HelloWorld     粘包 情况二：Hel / loWorld  拆包 情况三：Hello / World  正常 </span><br></pre></td></tr></table></figure>
+
+<p><strong>为什么 UDP 没有这个问题？</strong></p>
+<p>UDP 是面向报文的：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">发送一次 UDP 报文，接收方按报文接收 </span><br></pre></td></tr></table></figure>
+
+<p>TCP 是字节流：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TCP 只保证字节顺序，不保证应用层消息边界 </span><br></pre></td></tr></table></figure>
+
+<p><strong>怎么解决？</strong></p>
+<p>应用层协议自己定义边界：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 固定长度 2. 分隔符，例如 \n 3. 消息头 + 消息体，头里放 length 4. TLV 格式：Type + Length + Value </span><br></pre></td></tr></table></figure>
+
+<p>最常见的是：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Length + Body </span><br></pre></td></tr></table></figure>
+
+<p>例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[消息长度 4 字节][消息内容 N 字节] </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>粘包不是 TCP 的 bug，而是 TCP 字节流模型的自然结果。TCP 只负责可靠有序地传输字节，不理解应用层消息边界，所以需要应用层协议自己做拆包，比如固定长度、分隔符或者 length-based framing。</p>
+</blockquote>
+<hr>
+<p><strong>第一轮总结</strong></p>
+<p>这一轮你可以抓住这几句主线：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TCP 和 UDP 的区别：可靠连接 vs 轻量无连接 TCP 可靠性：序列号、ACK、重传、窗口、拥塞控制 三次握手：确认双方收发能力，交换初始序列号 四次挥手：TCP 全双工，两个方向分别关闭 TIME_WAIT：主动关闭方的保护状态 CLOSE_WAIT：应用没 close，通常是 bug 粘包拆包：TCP 是字节流，没有消息边界 </span><br></pre></td></tr></table></figure>
+
+<p>面试官如果继续追问，通常会往这几个方向打：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">为什么三次不是两次？ TIME_WAIT 为什么是 2MSL？ CLOSE_WAIT 多怎么排查？ 粘包怎么设计协议解决？ TCP 为什么可靠但仍然可能传输慢？ </span><br></pre></td></tr></table></figure>
+
+<p>下一轮建议继续讲：<strong>TCP 进阶：滑动窗口、拥塞控制、半连接队列、SYN Flood、TCP 参数调优</strong>。</p>
+<p>15:17</p>
+<p>继续，下面是 <strong>第二轮：TCP 进阶</strong>。这一轮偏原理和线上问题，架构岗、高级后端很爱追问。</p>
+<p><strong>1. TCP 滑动窗口是什么？</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>滑动窗口是 TCP 用来提升传输效率和做流量控制的机制。它允许发送方在没有收到 ACK 前连续发送多段数据，而不是发一段等一段。</p>
+</blockquote>
+<p>如果没有滑动窗口：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">发送 1 个包 -&gt; 等 ACK -&gt; 再发下一个包 效率很低 </span><br></pre></td></tr></table></figure>
+
+<p>有滑动窗口后：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">发送方可以连续发送窗口范围内的数据 接收方通过 ACK 告诉发送方哪些数据已收到 窗口继续向前滑动 </span><br></pre></td></tr></table></figure>
+
+<p><strong>图示：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">发送缓冲区： [已确认][已发送未确认][可发送][不可发送]        ↑             ↑      窗口左边界      窗口右边界 </span><br></pre></td></tr></table></figure>
+
+<p>窗口滑动过程：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">发送方发送：1 2 3 4 5 接收方 ACK=4 表示： 1、2、3 已经收到 下一次希望收到 4 窗口向右移动 </span><br></pre></td></tr></table></figure>
+
+<p><strong>它解决什么问题？</strong></p>
+<p>主要两个：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 提高吞吐量：不用每发一个包都等 ACK 2. 流量控制：根据接收方处理能力控制发送速度 </span><br></pre></td></tr></table></figure>
+
+<p><strong>常见追问：滑动窗口和流量控制什么关系？</strong></p>
+<p>TCP 头里有一个 Window Size 字段，接收方通过它告诉发送方：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">我现在还能接收多少数据 </span><br></pre></td></tr></table></figure>
+
+<p>如果接收方处理不过来，就把窗口调小；如果缓冲区满了，甚至可以通知窗口为 0。</p>
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>滑动窗口让 TCP 可以批量发送数据，提高链路利用率；同时接收方通过通告窗口控制发送方速度，避免发送太快导致接收缓冲区被打满。</p>
+</blockquote>
+<hr>
+<p><strong>2. TCP 拥塞控制是什么？</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>流量控制是保护接收方，拥塞控制是保护网络。拥塞控制通过动态调整拥塞窗口，避免发送方把网络链路打爆。</p>
+</blockquote>
+<p>TCP 发送量受两个窗口共同限制：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">实际可发送数据量 = min(接收窗口 rwnd, 拥塞窗口 cwnd) </span><br></pre></td></tr></table></figure>
+
+<p>其中：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rwnd：接收方告诉我的能力 cwnd：发送方根据网络拥塞情况估算的能力 </span><br></pre></td></tr></table></figure>
+
+<p><strong>拥塞控制四个核心阶段：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">慢启动 拥塞避免 快速重传 快速恢复 </span><br></pre></td></tr></table></figure>
+
+<p><strong>慢启动：</strong></p>
+<p>刚开始不知道网络承载能力，所以从小窗口开始指数增长。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cwnd: 1 -&gt; 2 -&gt; 4 -&gt; 8 -&gt; 16 </span><br></pre></td></tr></table></figure>
+
+<p>虽然叫慢启动，但增长其实是指数级，只是起点小。</p>
+<p><strong>拥塞避免：</strong></p>
+<p>当 cwnd 达到阈值 ssthresh 后，不再指数增长，而是线性增长。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cwnd: 16 -&gt; 17 -&gt; 18 -&gt; 19 </span><br></pre></td></tr></table></figure>
+
+<p><strong>快速重传：</strong></p>
+<p>如果发送方连续收到 3 个重复 ACK，认为某个包丢了，不等超时，立即重传。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">接收方收到 1、2、4、5、6 发现 3 没到 持续 ACK=3 发送方收到 3 个重复 ACK 立即重传 3 </span><br></pre></td></tr></table></figure>
+
+<p><strong>快速恢复：</strong></p>
+<p>发生快速重传后，不直接把窗口降到 1，而是降低到一定值继续传输，避免吞吐量骤降。</p>
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>TCP 拥塞控制的核心是根据丢包、延迟、ACK 等信号判断网络是否拥塞，然后调整拥塞窗口。慢启动负责探测带宽，拥塞避免负责平稳增长，快速重传和快速恢复负责在丢包时尽快恢复传输。</p>
+</blockquote>
+<hr>
+<p><strong>3. 流量控制和拥塞控制区别</strong></p>
+<p>这个特别高频，别混。</p>
+<table>
+<thead>
+<tr>
+<th align="left">对比项</th>
+<th align="left">流量控制</th>
+<th align="left">拥塞控制</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">保护对象</td>
+<td align="left">接收方</td>
+<td align="left">网络链路</td>
+</tr>
+<tr>
+<td align="left">核心窗口</td>
+<td align="left">接收窗口 rwnd</td>
+<td align="left">拥塞窗口 cwnd</td>
+</tr>
+<tr>
+<td align="left">控制依据</td>
+<td align="left">接收缓冲区剩余大小</td>
+<td align="left">网络拥塞情况</td>
+</tr>
+<tr>
+<td align="left">目的</td>
+<td align="left">防止接收方处理不过来</td>
+<td align="left">防止网络被打爆</td>
+</tr>
+</tbody></table>
+<p><strong>图示：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">流量控制： 发送方 =======&gt; 接收方             接收方说：慢点，我缓冲区快满了 拥塞控制： 发送方 === 网络链路 ===&gt; 接收方        网络说：慢点，中间链路堵了 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>流量控制是端到端的接收能力控制，拥塞控制是整个网络链路的承载能力控制。TCP 最终发送多少数据，要同时受 rwnd 和 cwnd 限制。</p>
+</blockquote>
+<hr>
+<p><strong>4. 半连接队列和全连接队列</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>TCP 服务端维护两个队列：半连接队列保存收到 SYN 但还没完成三次握手的连接；全连接队列保存已经完成三次握手、等待应用 accept 的连接。</p>
+</blockquote>
+<p>三次握手和队列关系：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">客户端                          服务端 SYN             ─────────────&gt;                              放入半连接队列 SYN Queue SYN+ACK         &lt;───────────── ACK             ─────────────&gt;                              从半连接队列移到全连接队列 Accept Queue 应用 accept()                              从全连接队列取出连接 </span><br></pre></td></tr></table></figure>
+
+<p><strong>半连接队列满会怎样？</strong></p>
+<p>新来的 SYN 可能被丢弃，客户端连接超时或重试。</p>
+<p><strong>全连接队列满会怎样？</strong></p>
+<p>握手已经完成，但应用来不及 accept()，新连接可能被丢弃或重置，表现为连接失败、超时、服务端连接建立慢。</p>
+<p><strong>常见原因：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 服务端 accept 太慢 2. 应用线程阻塞 3. 瞬时连接洪峰 4. backlog 配置太小 5. SYN Flood 攻击 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>半连接队列对应三次握手未完成的连接，全连接队列对应握手完成但还没被应用 accept 的连接。线上连接失败不一定是网络问题，也可能是这两个队列被打满。</p>
+</blockquote>
+<hr>
+<p><strong>5. SYN Flood 是什么？怎么防？</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>SYN Flood 是攻击者大量发送 SYN 包但不完成三次握手，导致服务端半连接队列被占满，正常用户无法建立连接。</p>
+</blockquote>
+<p>攻击过程：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">攻击者 -&gt; SYN -&gt; 服务端 服务端 -&gt; SYN+ACK -&gt; 攻击者 攻击者不回 ACK 半连接一直占着队列 </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">正常连接： SYN -&gt; SYN+ACK -&gt; ACK -&gt; 建立连接 SYN Flood： SYN -&gt; SYN+ACK -&gt; 不回 ACK SYN -&gt; SYN+ACK -&gt; 不回 ACK SYN -&gt; SYN+ACK -&gt; 不回 ACK 半连接队列被占满 </span><br></pre></td></tr></table></figure>
+
+<p><strong>解决方案：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 开启 SYN Cookies 2. 调大半连接队列 3. 缩短 SYN+ACK 重试次数 4. 接入高防、WAF、DDoS 清洗 5. 限制单 IP 连接速率 6. 使用负载均衡分摊连接压力 </span><br></pre></td></tr></table></figure>
+
+<p><strong>SYN Cookies 是什么？</strong></p>
+<p>正常情况下服务端收到 SYN 后要保存半连接状态。</p>
+<p>SYN Cookies 的思路是：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">服务端不立即保存连接状态 而是把连接信息编码进 SYN+ACK 的序列号里 等客户端真的回 ACK 后，再还原连接 </span><br></pre></td></tr></table></figure>
+
+<p>这样可以减少半连接队列被打爆的风险。</p>
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>SYN Flood 利用的是 TCP 三次握手过程中服务端需要保存半连接状态这一点。防护核心是减少半连接状态占用，比如开启 SYN Cookies，同时结合队列参数调优和入口层限流清洗。</p>
+</blockquote>
+<hr>
+<p><strong>6. TCP 参数调优思路</strong></p>
+<p>面试一般不会要求背具体值，更看你有没有思路。</p>
+<p><strong>核心方向：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 连接队列 2. TIME_WAIT 处理 3. 端口范围 4. KeepAlive 5. 缓冲区大小 6. 重传和超时参数 </span><br></pre></td></tr></table></figure>
+
+<p><strong>常见参数：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">net.core.somaxconn 全连接队列上限 net.ipv4.tcp_max_syn_backlog 半连接队列上限 net.ipv4.tcp_syncookies 是否开启 SYN Cookies net.ipv4.ip_local_port_range 本地临时端口范围 net.ipv4.tcp_tw_reuse 是否允许复用 TIME_WAIT 连接 net.ipv4.tcp_fin_timeout FIN_WAIT 状态超时时间 net.ipv4.tcp_keepalive_time TCP KeepAlive 探测时间 </span><br></pre></td></tr></table></figure>
+
+<p><strong>注意点：</strong></p>
+<p>不要一上来就说“调内核参数”。高级一点的表达是：</p>
+<blockquote>
+<p>先定位瓶颈，再决定是否调参。</p>
+</blockquote>
+<p>排查顺序：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 看连接状态分布 2. 看半连接/全连接队列是否溢出 3. 看应用 accept 是否及时 4. 看是否短连接过多 5. 看是否有异常客户端或攻击流量 6. 最后再调整内核参数和应用 backlog </span><br></pre></td></tr></table></figure>
+
+<p>常用命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ss -ant netstat -s ss -lnt cat /proc/sys/net/core/somaxconn cat /proc/sys/net/ipv4/tcp_max_syn_backlog </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>TCP 调优不能脱离现象。比如连接建立慢，要看半连接和全连接队列；TIME_WAIT 多，要看是否短连接过多；CLOSE_WAIT 多，要查应用是否关闭连接。内核参数是手段，不是第一反应。</p>
+</blockquote>
+<hr>
+<p><strong>第二轮总结</strong></p>
+<p>这一轮你抓住这些主线就够硬了：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">滑动窗口：提高吞吐 + 流量控制 流量控制：保护接收方，看 rwnd 拥塞控制：保护网络，看 cwnd 最终发送窗口：min(rwnd, cwnd) 半连接队列：收到 SYN，未完成握手 全连接队列：完成握手，等待 accept SYN Flood：占满半连接队列 TCP 调优：先定位瓶颈，再调参数 </span><br></pre></td></tr></table></figure>
+
+<p>面试官常见追问：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">滑动窗口和拥塞窗口有什么区别？ 慢启动为什么不是线性增长？ 为什么收到 3 个重复 ACK 才快速重传？ 半连接队列和全连接队列分别在哪一步？ SYN Cookies 为什么能防 SYN Flood？ 连接数上不去你怎么排查？ </span><br></pre></td></tr></table></figure>
+
+<p>下一轮继续讲：<strong>HTTP&#x2F;HTTPS：HTTPS 握手、证书、HTTP&#x2F;1.1&#x2F;2&#x2F;3、GET&#x2F;POST、状态码、长连接</strong>。</p>
+<p>15:32</p>
+<p>继续深入回答</p>
+<p>15:39</p>
+<p><strong>1. HTTP 和 HTTPS 区别</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>HTTP 是明文传输协议，HTTPS 是在 HTTP 和 TCP 之间加入 TLS&#x2F;SSL 安全层，解决数据加密、身份认证和完整性校验问题。</p>
+</blockquote>
+<p><strong>核心区别：</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">对比项</th>
+<th align="left">HTTP</th>
+<th align="left">HTTPS</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">安全性</td>
+<td align="left">明文传输</td>
+<td align="left">加密传输</td>
+</tr>
+<tr>
+<td align="left">默认端口</td>
+<td align="left">80</td>
+<td align="left">443</td>
+</tr>
+<tr>
+<td align="left">证书</td>
+<td align="left">不需要</td>
+<td align="left">需要 CA 证书</td>
+</tr>
+<tr>
+<td align="left">身份认证</td>
+<td align="left">无</td>
+<td align="left">可验证服务端身份</td>
+</tr>
+<tr>
+<td align="left">数据完整性</td>
+<td align="left">弱</td>
+<td align="left">防篡改</td>
+</tr>
+<tr>
+<td align="left">性能</td>
+<td align="left">握手简单</td>
+<td align="left">多 TLS 握手和加解密开销</td>
+</tr>
+</tbody></table>
+<p><strong>HTTPS 解决的三个问题：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 加密：防止内容被窃听 2. 认证：确认访问的是真实服务器 3. 完整性：防止数据被篡改 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>HTTPS 不是一种新的应用层协议，它本质上还是 HTTP，只是在 HTTP 和 TCP 之间增加 TLS 层。TLS 提供加密、证书认证和完整性校验，所以可以防窃听、防冒充、防篡改。</p>
+</blockquote>
+<hr>
+<p><strong>2. HTTPS 为什么既用非对称加密又用对称加密？</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>非对称加密用于身份认证和密钥协商，对称加密用于后续数据传输。因为非对称加密安全但慢，对称加密快但需要先安全交换密钥。</p>
+</blockquote>
+<p><strong>两者区别：</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">类型</th>
+<th align="left">特点</th>
+<th align="left">用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">对称加密</td>
+<td align="left">同一个密钥加密解密，速度快</td>
+<td align="left">加密业务数据</td>
+</tr>
+<tr>
+<td align="left">非对称加密</td>
+<td align="left">公钥加密、私钥解密，速度慢</td>
+<td align="left">身份认证、交换密钥</td>
+</tr>
+<tr>
+<td align="left">哈希&#x2F;摘要</td>
+<td align="left">不可逆，验证完整性</td>
+<td align="left">防篡改</td>
+</tr>
+</tbody></table>
+<p><strong>直观流程：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">非对称加密： 客户端用服务器公钥安全协商出会话密钥 对称加密： 双方使用会话密钥加密后续 HTTP 数据 </span><br></pre></td></tr></table></figure>
+
+<p><strong>为什么不全程用非对称加密？</strong></p>
+<p>因为太慢，计算成本高，不适合大量业务数据传输。</p>
+<p><strong>为什么不直接用对称加密？</strong></p>
+<p>因为一开始客户端和服务端没有共享密钥，密钥怎么安全传过去是问题。</p>
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>HTTPS 是组合拳。非对称加密解决“如何安全地协商密钥”和“如何证明服务器身份”，对称加密解决“高效传输大量数据”。这就是安全性和性能的平衡。</p>
+</blockquote>
+<hr>
+<p><strong>3. HTTPS TLS 握手过程</strong></p>
+<p>这里要区分 TLS 1.2 和 TLS 1.3。面试大多数讲 TLS 1.2 足够，再补一句 TLS 1.3 优化。</p>
+<p><strong>TLS 1.2 简化流程：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">客户端                                      服务端 ClientHello 支持的 TLS 版本、随机数、加密套件  ───────&gt;                                       ServerHello                         选择 TLS 版本、加密套件、随机数                                      Certificate 证书                         &lt;──────────── ServerKeyExchange                                      ServerHelloDone 校验证书 生成 Pre-Master Secret 用服务端公钥加密后发送       ────────────&gt; ClientKeyExchange ChangeCipherSpec Finished                    ────────────&gt;                          &lt;──────────── ChangeCipherSpec                                      Finished 开始加密传输 HTTP 数据 </span><br></pre></td></tr></table></figure>
+
+<p><strong>更好记的版本：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 客户端发 ClientHello：我支持这些算法，这是我的随机数 2. 服务端发 ServerHello：我选这个算法，这是我的随机数，这是我的证书 3. 客户端校验证书 4. 双方协商出会话密钥 5. 后续用会话密钥对称加密通信 </span><br></pre></td></tr></table></figure>
+
+<p><strong>关键点：三个随机数</strong></p>
+<p>TLS 1.2 中会话密钥通常由这些材料生成：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">客户端随机数 服务端随机数 Pre-Master Secret </span><br></pre></td></tr></table></figure>
+
+<p>双方基于这些信息计算出相同的会话密钥。</p>
+<p><strong>证书校验做什么？</strong></p>
+<p>客户端校验证书时会看：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 证书是否过期 2. 域名是否匹配 3. 证书链是否可信 4. 是否被吊销 5. 签名是否合法 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>HTTPS 握手阶段主要做两件事：第一，客户端通过证书验证服务端身份；第二，双方协商出后续对称加密使用的会话密钥。握手完成后，HTTP 数据才开始通过对称加密传输。</p>
+</blockquote>
+<hr>
+<p><strong>4. HTTPS 能防中间人攻击吗？</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>正常证书校验完整的 HTTPS 可以防中间人攻击，关键在于客户端必须验证服务端证书是否合法。</p>
+</blockquote>
+<p>中间人攻击大概是：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">客户端  &lt;----&gt;  中间人  &lt;----&gt;  服务端 </span><br></pre></td></tr></table></figure>
+
+<p>如果没有证书验证，中间人可以把自己的公钥发给客户端：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">客户端以为这是服务端公钥 实际加密数据都被中间人解开了 </span><br></pre></td></tr></table></figure>
+
+<p>证书的作用是证明：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">这个公钥确实属于目标域名 并且由可信 CA 签发 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>HTTPS 防中间人攻击的关键不是“用了加密”这么简单，而是证书体系保证了公钥和域名之间的可信绑定。如果客户端跳过证书校验，HTTPS 的安全性会大幅下降。</p>
+</blockquote>
+<hr>
+<p><strong>5. HTTP 1.0、1.1、2.0、3.0 区别</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>HTTP 的演进主线是：从短连接到长连接，从文本协议到二进制分帧，从串行请求到多路复用，再到基于 QUIC 解决 TCP 队头阻塞。</p>
+</blockquote>
+<p><strong>HTTP&#x2F;1.0：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 默认短连接 2. 每个请求通常新建一个 TCP 连接 3. 性能差，连接成本高 </span><br></pre></td></tr></table></figure>
+
+<p><strong>HTTP&#x2F;1.1：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 默认长连接 Keep-Alive 2. 支持管道化 Pipeline，但实际使用少 3. 支持 Host 头，方便虚拟主机 4. 支持断点续传、缓存控制增强 </span><br></pre></td></tr></table></figure>
+
+<p>问题：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">同一个 TCP 连接上，请求响应基本还是有顺序约束 容易出现队头阻塞 </span><br></pre></td></tr></table></figure>
+
+<p><strong>HTTP&#x2F;2：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 二进制分帧 2. 多路复用 3. Header 压缩 HPACK 4. 支持服务端推送，实际使用减少 </span><br></pre></td></tr></table></figure>
+
+<p>HTTP&#x2F;2 多路复用：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">一个 TCP 连接里可以并发多个 Stream 不同请求响应被拆成 Frame 交错传输 </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1: 请求1 -&gt; 响应1 -&gt; 请求2 -&gt; 响应2 HTTP/2: 连接中同时传： Stream1 Frame Stream2 Frame Stream3 Frame </span><br></pre></td></tr></table></figure>
+
+<p>但 HTTP&#x2F;2 仍然有 TCP 层队头阻塞：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">如果 TCP 丢了一个包 后面的所有 Stream 都要等这个包重传 </span><br></pre></td></tr></table></figure>
+
+<p><strong>HTTP&#x2F;3：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 基于 QUIC 2. QUIC 基于 UDP 3. 内置 TLS 1.3 4. 减少连接建立延迟 5. 解决 TCP 层队头阻塞 6. 支持连接迁移 </span><br></pre></td></tr></table></figure>
+
+<p>HTTP&#x2F;3 为什么用 UDP？</p>
+<p>不是因为 UDP 天然可靠，而是 QUIC 在 UDP 之上自己实现了：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">可靠传输 拥塞控制 流量控制 多路复用 TLS 1.3 连接迁移 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>HTTP&#x2F;1.1 通过长连接减少建连成本，HTTP&#x2F;2 通过二进制分帧和多路复用提升并发能力，但仍受 TCP 队头阻塞影响。HTTP&#x2F;3 基于 QUIC，把可靠传输和 TLS 放到 UDP 之上，解决 TCP 层队头阻塞，并支持更快握手和连接迁移。</p>
+</blockquote>
+<hr>
+<p><strong>6. HTTP&#x2F;2 多路复用是什么？</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>HTTP&#x2F;2 多路复用是指在一个 TCP 连接上并发传输多个请求和响应，每个请求对应一个 Stream，数据被拆成 Frame 后交错发送。</p>
+</blockquote>
+<p><strong>结构关系：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TCP Connection  ├── Stream 1  │     ├── Frame  │     └── Frame  ├── Stream 2  │     ├── Frame  │     └── Frame  └── Stream 3        ├── Frame        └── Frame </span><br></pre></td></tr></table></figure>
+
+<p><strong>解决了什么？</strong></p>
+<p>HTTP&#x2F;1.1 下浏览器通常要开多个 TCP 连接来并发请求：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">连接1 请求 CSS 连接2 请求 JS 连接3 请求图片 </span><br></pre></td></tr></table></figure>
+
+<p>HTTP&#x2F;2 可以一个连接承载多个请求：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">一个 TCP 连接 多个 Stream 并发传输 </span><br></pre></td></tr></table></figure>
+
+<p><strong>注意：</strong></p>
+<p>HTTP&#x2F;2 解决的是 HTTP 应用层队头阻塞，但没有彻底解决 TCP 层队头阻塞。</p>
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>HTTP&#x2F;2 的多路复用让多个请求复用一个 TCP 连接，减少连接数量和握手开销。但底层还是 TCP，只要 TCP 某个包丢失，后续字节流仍要等待重传，所以 HTTP&#x2F;2 仍存在 TCP 层队头阻塞。</p>
+</blockquote>
+<hr>
+<p><strong>7. GET 和 POST 区别</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>GET 通常用于获取资源，参数放在 URL 中，语义上应该是安全且幂等的；POST 通常用于提交数据，参数放在请求体中，语义上可能改变服务端状态。</p>
+</blockquote>
+<p><strong>核心区别：</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">对比项</th>
+<th align="left">GET</th>
+<th align="left">POST</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">语义</td>
+<td align="left">获取资源</td>
+<td align="left">提交数据</td>
+</tr>
+<tr>
+<td align="left">参数位置</td>
+<td align="left">URL Query</td>
+<td align="left">Body</td>
+</tr>
+<tr>
+<td align="left">幂等性</td>
+<td align="left">应该幂等</td>
+<td align="left">不一定幂等</td>
+</tr>
+<tr>
+<td align="left">安全性语义</td>
+<td align="left">不应修改资源</td>
+<td align="left">可能修改资源</td>
+</tr>
+<tr>
+<td align="left">缓存</td>
+<td align="left">更容易被缓存</td>
+<td align="left">默认不易缓存</td>
+</tr>
+<tr>
+<td align="left">长度限制</td>
+<td align="left">受 URL 长度限制</td>
+<td align="left">理论上更大，受服务端配置限制</td>
+</tr>
+</tbody></table>
+<p><strong>注意纠偏：</strong></p>
+<p>不要说：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET 一定没有 body POST 一定更安全 POST 一定不会被缓存 </span><br></pre></td></tr></table></figure>
+
+<p>更准确是：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET 可以有 body，但不推荐，很多实现不兼容 POST 参数在 body，不代表安全，HTTP 明文下一样能被抓包 POST 也可以通过响应头控制缓存 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>GET 和 POST 最大区别不是参数放哪里，而是 HTTP 语义不同。GET 用于获取资源，应该安全幂等；POST 用于提交处理，可能产生副作用。安全传输要靠 HTTPS，不是靠 POST。</p>
+</blockquote>
+<hr>
+<p><strong>8. 常见 HTTP 状态码</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>HTTP 状态码按首位分五类：1xx 信息，2xx 成功，3xx 重定向，4xx 客户端错误，5xx 服务端错误。</p>
+</blockquote>
+<p>高频状态码：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">200 OK：请求成功 201 Created：资源创建成功 204 No Content：成功但无响应体 301 Moved Permanently：永久重定向 302 Found：临时重定向 304 Not Modified：缓存命中，资源未修改 400 Bad Request：请求参数错误 401 Unauthorized：未认证 403 Forbidden：无权限 404 Not Found：资源不存在 405 Method Not Allowed：方法不支持 409 Conflict：资源冲突 429 Too Many Requests：请求过多，被限流 500 Internal Server Error：服务端内部错误 502 Bad Gateway：网关收到上游异常响应 503 Service Unavailable：服务不可用 504 Gateway Timeout：网关等待上游超时 </span><br></pre></td></tr></table></figure>
+
+<p><strong>301 和 302 区别：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">301：永久重定向，浏览器和搜索引擎可能缓存 302：临时重定向，适合短链、临时跳转、登录跳转 </span><br></pre></td></tr></table></figure>
+
+<p><strong>502 和 504 区别：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">502：网关连到了上游，但上游返回了无效响应或异常断开 504：网关等上游响应超时 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>状态码不是只看数字，要结合调用链看。比如 502&#x2F;504 往往出现在网关或 Nginx 层，502 更偏上游异常响应，504 更偏上游超时。</p>
+</blockquote>
+<hr>
+<p><strong>9. HTTP 长连接和短连接</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>短连接是每次请求都新建 TCP 连接；长连接是多个 HTTP 请求复用同一个 TCP 连接，减少握手和挥手成本。</p>
+</blockquote>
+<p><strong>短连接：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TCP 建连 -&gt; HTTP 请求 -&gt; HTTP 响应 -&gt; TCP 断开 TCP 建连 -&gt; HTTP 请求 -&gt; HTTP 响应 -&gt; TCP 断开 </span><br></pre></td></tr></table></figure>
+
+<p><strong>长连接：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TCP 建连  -&gt; HTTP 请求1/响应1  -&gt; HTTP 请求2/响应2  -&gt; HTTP 请求3/响应3 TCP 断开 </span><br></pre></td></tr></table></figure>
+
+<p>HTTP&#x2F;1.1 默认长连接：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Connection: keep-alive </span><br></pre></td></tr></table></figure>
+
+<p>关闭则是：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Connection: close </span><br></pre></td></tr></table></figure>
+
+<p><strong>长连接的好处：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 减少 TCP 握手开销 2. 减少 TIME_WAIT 3. 降低延迟 4. 提高吞吐 </span><br></pre></td></tr></table></figure>
+
+<p><strong>长连接的风险：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 空闲连接占资源 2. 需要合理 idle timeout 3. 连接池配置不当会打爆下游 4. 服务端需要处理连接泄漏 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>长连接通过复用 TCP 连接降低建连成本，非常适合频繁请求场景。但它不是越多越好，需要配合连接池、空闲超时、最大连接数和服务端容量一起设计。</p>
+</blockquote>
+<hr>
+<p><strong>第三轮总结</strong></p>
+<p>这一轮主线可以这样记：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">HTTPS = HTTP + TLS TLS 解决加密、认证、完整性 非对称加密用于协商密钥和认证 对称加密用于高效传输数据 证书保证公钥属于目标域名 HTTP/1.1 长连接 HTTP/2 二进制分帧 + 多路复用 HTTP/3 QUIC + UDP + TLS1.3 GET/POST 主要区别是语义 状态码要结合网关和上游链路理解 </span><br></pre></td></tr></table></figure>
+
+<p>面试官常见追问：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">HTTPS 为什么安全？ 证书怎么防中间人攻击？ HTTP/2 为什么还有队头阻塞？ HTTP/3 为什么用 UDP？ GET 和 POST 本质区别是什么？ 502 和 504 怎么排查？ 长连接会带来什么问题？ </span><br></pre></td></tr></table></figure>
+
+<p>下一轮继续讲：<strong>DNS&#x2F;CDN&#x2F;代理&#x2F;网关：DNS 解析、CDN 回源、正向代理、反向代理、网关和负载均衡区别</strong>。</p>
+<p>15:39</p>
+<p>继续深入回答</p>
+<p>15:49</p>
+<p>继续，下面是 <strong>第四轮：DNS&#x2F;CDN&#x2F;代理&#x2F;网关深入版</strong>。这一轮更偏架构链路，面试官经常用它判断你是否理解“一个请求进系统前发生了什么”。</p>
+<p><strong>1. DNS 解析过程</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>DNS 的作用是把域名解析成 IP 地址。完整解析过程通常是：浏览器缓存、本机缓存、hosts、递归 DNS、根域名服务器、顶级域名服务器、权威 DNS，最后拿到目标 IP。</p>
+</blockquote>
+<p><strong>解析流程：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">用户访问：www.example.com        |        v 浏览器 DNS 缓存        |        v 操作系统 DNS 缓存 / hosts        |        v 本地 DNS 递归解析器        |        v 根 DNS 服务器：去问 .com        |        v .com 顶级域名服务器：去问 example.com        |        v example.com 权威 DNS：返回 www.example.com 的 IP        |        v 客户端拿到 IP，开始建立 TCP/QUIC 连接 </span><br></pre></td></tr></table></figure>
+
+<p><strong>递归查询和迭代查询区别：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">递归查询： 客户端问本地 DNS，本地 DNS 负责查到底，然后把结果返回客户端。 迭代查询： DNS 服务器不会直接给最终答案，而是告诉你下一步该问谁。 </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">客户端 -&gt; 本地 DNS：帮我查 www.example.com 本地 DNS -&gt; 根 DNS：.com 在哪？ 本地 DNS -&gt; .com DNS：example.com 在哪？ 本地 DNS -&gt; 权威 DNS：www 的 IP 是多少？ 本地 DNS -&gt; 客户端：结果是 x.x.x.x </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>DNS 不是一次请求就直接找到 IP，通常客户端把解析任务交给本地递归 DNS，本地 DNS 再通过根域、顶级域和权威 DNS 逐级查询。为了性能，各层都会有缓存，缓存时间由 TTL 控制。</p>
+</blockquote>
+<hr>
+<p><strong>2. DNS 缓存和 TTL</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>DNS TTL 控制解析结果可以缓存多久。TTL 越长，解析性能越好，但切流和故障恢复慢；TTL 越短，调度更灵活，但 DNS 查询压力更大。</p>
+</blockquote>
+<p><strong>缓存位置：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">浏览器缓存 操作系统缓存 本地 DNS 缓存 运营商 DNS 缓存 递归 DNS 缓存 </span><br></pre></td></tr></table></figure>
+
+<p><strong>TTL 的权衡：</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">TTL</th>
+<th align="left">优点</th>
+<th align="left">缺点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">长 TTL</td>
+<td align="left">解析快，DNS 压力小</td>
+<td align="left">IP 变更生效慢</td>
+</tr>
+<tr>
+<td align="left">短 TTL</td>
+<td align="left">切流快，容灾灵活</td>
+<td align="left">DNS 压力大，解析延迟增加</td>
+</tr>
+</tbody></table>
+<p><strong>面试表达：</strong></p>
+<blockquote>
+<p>如果是稳定业务，可以设置相对长的 TTL；如果要做故障切换、灰度流量或多地域调度，TTL 通常会设置短一些，但要接受更高 DNS 解析压力。</p>
+</blockquote>
+<hr>
+<p><strong>3. DNS 劫持和 DNS 污染</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>DNS 劫持是解析结果被恶意或异常篡改；DNS 污染是客户端收到错误的 DNS 响应，导致域名解析到错误 IP 或无法访问。</p>
+</blockquote>
+<p><strong>DNS 劫持：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">用户访问 www.a.com 正常应该返回：1.1.1.1 被劫持后返回：2.2.2.2 </span><br></pre></td></tr></table></figure>
+
+<p>可能后果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">跳广告页面 跳钓鱼网站 访问错误服务 业务不可用 </span><br></pre></td></tr></table></figure>
+
+<p><strong>常见防护：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 使用 HTTPS，避免被跳转后伪装服务 2. 使用 HTTPDNS 3. 使用 DoH / DoT 4. 客户端内置域名解析兜底 5. 多 DNS 解析源校验 </span><br></pre></td></tr></table></figure>
+
+<p><strong>HTTPDNS 是什么？</strong></p>
+<p>HTTPDNS 是绕过传统本地 DNS，通过 HTTP&#x2F;HTTPS 请求服务商的 DNS 解析接口。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">传统 DNS： 客户端 -&gt; 运营商 DNS -&gt; 解析 IP HTTPDNS： 客户端 -&gt; HTTPDNS 服务 -&gt; 返回 IP </span><br></pre></td></tr></table></figure>
+
+<p>优点：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">减少运营商 DNS 劫持 调度更精准 移动端常用 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>DNS 劫持的核心风险是域名到 IP 的映射被篡改。HTTPS 可以防止内容被伪造，但不能阻止 DNS 解析到错误 IP；HTTPDNS、DoH、DoT 可以降低传统 DNS 链路被污染或劫持的风险。</p>
+</blockquote>
+<hr>
+<p><strong>4. CDN 工作原理</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>CDN 的核心是把内容缓存到离用户更近的边缘节点，通过 DNS 调度让用户访问最近或最优的节点，从而降低延迟、减轻源站压力。</p>
+</blockquote>
+<p><strong>访问链路：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">用户访问 static.example.com        |        v DNS 解析到 CDN 调度系统        |        v 返回较优 CDN 边缘节点 IP        |        v 用户访问边缘节点        |        v 边缘节点有缓存：直接返回 边缘节点无缓存：回源拉取，再缓存后返回 </span><br></pre></td></tr></table></figure>
+
+<p><strong>图示：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">用户 | | 访问图片 v CDN 边缘节点 |   \ |    \ 缓存命中：直接返回 | \ 缓存未命中  \   v 源站服务器 </span><br></pre></td></tr></table></figure>
+
+<p><strong>CDN 适合什么？</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">图片 视频 CSS/JS 安装包 静态 HTML 部分可缓存接口 </span><br></pre></td></tr></table></figure>
+
+<p><strong>不适合什么？</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">强动态、强用户个性化内容 频繁变化且不可缓存的数据 涉及敏感权限且缓存策略复杂的接口 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>CDN 本质是边缘缓存加智能调度。它不是简单代理，而是通过 DNS 或 Anycast 把用户调度到合适节点，节点命中缓存就直接返回，未命中再回源。</p>
+</blockquote>
+<hr>
+<p><strong>5. CDN 回源是什么？</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>回源是 CDN 边缘节点没有命中缓存，或者缓存过期时，向源站请求最新内容的过程。</p>
+</blockquote>
+<p><strong>流程：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">用户请求 CDN    |    v CDN 查缓存    |    |-- 命中：直接返回    |    |-- 未命中/过期：请求源站                       |                       v                    源站返回内容                       |                       v             CDN 缓存内容并返回用户 </span><br></pre></td></tr></table></figure>
+
+<p><strong>回源过多的风险：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 源站压力变大 2. 接口延迟升高 3. CDN 命中率下降 4. 极端情况下打挂源站 </span><br></pre></td></tr></table></figure>
+
+<p><strong>如何优化回源？</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 设置合理 Cache-Control 2. 静态资源文件名带 hash 3. 提高热点资源缓存时间 4. 预热 CDN 缓存 5. 对大文件做分片缓存 6. 防止缓存击穿和回源风暴 </span><br></pre></td></tr></table></figure>
+
+<p><strong>缓存刷新和缓存预热区别：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">刷新： 让 CDN 删除旧缓存，下次请求重新回源。 预热： 提前让 CDN 节点拉取资源，用户访问时直接命中。 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>CDN 回源是正常机制，但回源率过高会把压力重新打回源站。生产上要关注缓存命中率、回源带宽、回源 QPS，热点资源通常要做预热和长缓存。</p>
+</blockquote>
+<hr>
+<p><strong>6. 正向代理和反向代理区别</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>正向代理代理客户端，服务端不知道真实客户端是谁；反向代理代理服务端，客户端不知道真实后端是谁。</p>
+</blockquote>
+<p><strong>正向代理：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">客户端 -&gt; 正向代理 -&gt; 目标服务器 </span><br></pre></td></tr></table></figure>
+
+<p>典型场景：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">访问外部网络 客户端隐藏真实 IP 公司内网统一出口 科学上网类代理 </span><br></pre></td></tr></table></figure>
+
+<p>站在服务端视角：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">它看到的是代理服务器 IP </span><br></pre></td></tr></table></figure>
+
+<p><strong>反向代理：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">客户端 -&gt; 反向代理 -&gt; 后端服务 </span><br></pre></td></tr></table></figure>
+
+<p>典型场景：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Nginx API Gateway 负载均衡 TLS 终止 统一鉴权 限流 灰度发布 </span><br></pre></td></tr></table></figure>
+
+<p>站在客户端视角：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">它只知道访问代理，不知道后面有多少服务 </span><br></pre></td></tr></table></figure>
+
+<p><strong>图示：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">正向代理：替客户端出门 客户端们 -&gt; 代理 -&gt; 外部网站 反向代理：替服务端接客 用户 -&gt; 代理 -&gt; 后端服务集群 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>判断正向还是反向，关键看代理站在哪一边。正向代理隐藏客户端，反向代理隐藏服务端。Nginx 在后端系统入口通常就是反向代理。</p>
+</blockquote>
+<hr>
+<p><strong>7. 网关、负载均衡、反向代理区别</strong></p>
+<p>这题面试特别爱问，因为很多人会混。</p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>反向代理强调请求转发，负载均衡强调流量分摊，网关强调统一入口和治理能力。三者能力有重叠，但关注点不同。</p>
+</blockquote>
+<p><strong>对比表：</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">类型</th>
+<th align="left">核心职责</th>
+<th align="left">常见能力</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">反向代理</td>
+<td align="left">代理后端服务，转发请求</td>
+<td align="left">转发、TLS、缓存、压缩</td>
+</tr>
+<tr>
+<td align="left">负载均衡</td>
+<td align="left">把请求分发到多个实例</td>
+<td align="left">轮询、权重、健康检查</td>
+</tr>
+<tr>
+<td align="left">API 网关</td>
+<td align="left">微服务统一入口和治理</td>
+<td align="left">鉴权、限流、路由、灰度、审计</td>
+</tr>
+</tbody></table>
+<p><strong>图示：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">客户端  |  v API 网关  |  鉴权 / 限流 / 路由 / 灰度  v 负载均衡  |  按策略选择实例  v 服务实例 A/B/C </span><br></pre></td></tr></table></figure>
+
+<p>实际部署中可能合并：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Nginx 既可以做反向代理，也可以做负载均衡 Spring Cloud Gateway 主要做 API 网关 LVS/ELB/NLB 更偏四层负载均衡 </span><br></pre></td></tr></table></figure>
+
+<p><strong>四层负载均衡和七层负载均衡：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">四层：基于 IP + 端口，工作在 TCP/UDP 层 七层：基于 HTTP 协议内容，能识别 URL、Header、Cookie </span><br></pre></td></tr></table></figure>
+
+<p>四层例子：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">LVS 云厂商 NLB F5 四层 </span><br></pre></td></tr></table></figure>
+
+<p>七层例子：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Nginx Envoy Spring Cloud Gateway Kong 云厂商 ALB </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>反向代理是请求入口代理，负载均衡是多实例分发策略，网关是面向服务治理的统一入口。实际系统里这些能力可能由同一个组件承载，但架构职责上要区分清楚。</p>
+</blockquote>
+<hr>
+<p><strong>8. CDN 和反向代理有什么区别？</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>CDN 更强调全球&#x2F;区域边缘缓存和就近访问，反向代理更强调源站入口转发和后端治理。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th align="left">对比项</th>
+<th align="left">CDN</th>
+<th align="left">反向代理</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">部署位置</td>
+<td align="left">边缘节点，靠近用户</td>
+<td align="left">源站入口，靠近后端</td>
+</tr>
+<tr>
+<td align="left">核心目标</td>
+<td align="left">加速访问，减少源站流量</td>
+<td align="left">请求转发，统一入口</td>
+</tr>
+<tr>
+<td align="left">典型内容</td>
+<td align="left">静态资源、大文件、视频</td>
+<td align="left">API、动态请求、服务入口</td>
+</tr>
+<tr>
+<td align="left">调度方式</td>
+<td align="left">DNS&#x2F;Anycast 调度</td>
+<td align="left">upstream&#x2F;路由规则</td>
+</tr>
+<tr>
+<td align="left">是否缓存</td>
+<td align="left">强缓存能力</td>
+<td align="left">可缓存但不是核心</td>
+</tr>
+</tbody></table>
+<p><strong>链路：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">用户 | v CDN 边缘节点 | v 源站反向代理 Nginx / 网关 | v 业务服务 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>CDN 和反向代理都可能转发请求，但 CDN 的核心是边缘缓存和就近调度，反向代理的核心是源站入口代理和后端服务治理。一个完整系统里通常两者都会存在。</p>
+</blockquote>
+<hr>
+<p><strong>9. 一次请求经过 DNS、CDN、网关的完整链路</strong></p>
+<p>这是场景题，可以这样串起来。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 用户访问 https://www.example.com/api/order 2. 浏览器查询 DNS 缓存 3. 缓存未命中，请求本地 DNS 4. DNS 返回 CDN 或负载均衡入口 IP 5. 客户端与入口建立 TCP/TLS 或 QUIC 连接 6. 如果是静态资源，CDN 命中后直接返回 7. 如果是动态接口，CDN/边缘节点回源 8. 请求进入源站反向代理或 API 网关 9. 网关做鉴权、限流、路由、灰度 10. 负载均衡选择具体服务实例 11. 服务处理请求，返回响应 12. 响应沿原链路返回客户端 </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">浏览器  |  | DNS 解析  v CDN / 边缘入口  |  | 动态请求回源  v 源站反向代理 / API 网关  |  | 路由、鉴权、限流  v 负载均衡  |  v 业务服务集群 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>一个请求进入后端系统前，通常先经历 DNS 解析和全局流量调度；静态内容可能在 CDN 边缘直接结束，动态请求才会回源进入网关。网关负责治理和路由，负载均衡负责选择具体实例，最终请求才到业务服务。</p>
+</blockquote>
+<hr>
+<p><strong>10. 线上访问慢，DNS&#x2F;CDN&#x2F;网关层怎么排查？</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>访问慢要先分段定位：DNS 慢、建连慢、TLS 慢、CDN 回源慢、网关慢，还是后端服务慢。</p>
+</blockquote>
+<p><strong>排查维度：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">DNS 阶段： 域名解析是否慢，是否解析到异常 IP 连接阶段： TCP 握手是否慢，丢包率是否高 TLS 阶段： 证书、握手耗时是否异常 CDN 阶段： 是否命中缓存，回源是否过多 网关阶段： 限流、鉴权、路由、上游超时是否异常 后端阶段： 业务服务、DB、缓存是否慢 </span><br></pre></td></tr></table></figure>
+
+<p>常用命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nslookup www.example.com dig www.example.com curl -w &quot;@curl-format.txt&quot; -o /dev/null -s https://www.example.com traceroute www.example.com mtr www.example.com tcpdump </span><br></pre></td></tr></table></figure>
+
+<p>curl 关键耗时：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">time_namelookup：DNS 解析耗时 time_connect：TCP 连接耗时 time_appconnect：TLS 握手耗时 time_starttransfer：首字节时间 time_total：总耗时 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>我不会直接猜是后端慢，而是先用 curl 分解 DNS、TCP、TLS、首字节和总耗时。如果 DNS 慢查解析链路，如果连接慢查网络和丢包，如果首字节慢再看 CDN 回源、网关和后端服务。</p>
+</blockquote>
+<hr>
+<p><strong>第四轮总结</strong></p>
+<p>这一轮的核心主线：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">DNS：域名到 IP 的解析系统 TTL：缓存效率和切流速度的权衡 DNS 劫持：解析结果被篡改 CDN：边缘缓存 + 就近调度 回源：CDN 未命中后访问源站 正向代理：代理客户端 反向代理：代理服务端 负载均衡：把流量分发到多个实例 网关：统一入口 + 服务治理 </span><br></pre></td></tr></table></figure>
+
+<p>面试高分表达可以压成一句：</p>
+<blockquote>
+<p>DNS 负责找到入口，CDN 负责让用户就近访问并缓存内容，反向代理和负载均衡负责把请求送到合适的后端实例，API 网关则在入口层做鉴权、限流、路由、灰度和审计。线上排查时要按 DNS、连接、TLS、CDN、网关、后端逐段拆解，而不是凭感觉定位。</p>
+</blockquote>
+<p>下一轮继续讲：<strong>Socket、IO 模型、select&#x2F;poll&#x2F;epoll、Reactor、Netty 高性能、零拷贝与网络 IO</strong>。</p>
+<p>15:49</p>
+<p>继续回答</p>
+<p>16:00</p>
+<p>继续，下面是 <strong>第五轮：Socket、IO 模型、Netty 深入版</strong>。这一轮是 Java 后端面试的硬菜，讲清楚它，你在网络编程这块就有“真的上过生产”的味道。</p>
+<p><strong>1. Socket 是什么？</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>Socket 是应用程序使用网络能力的编程接口，本质上是操作系统提供的一组抽象，用来表示一个网络连接或通信端点。</p>
+</blockquote>
+<p>对于 TCP，一个连接由四元组唯一标识：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">源 IP + 源端口 + 目标 IP + 目标端口 </span><br></pre></td></tr></table></figure>
+
+<p>服务端典型流程：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">socket() bind() listen() accept() read()/write() close() </span><br></pre></td></tr></table></figure>
+
+<p>客户端典型流程：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">socket() connect() write()/read() close() </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">客户端应用                     服务端应用   |                              | socket                         socket connect  ───── TCP 握手 ─────&gt;  listen/accept write    ───── 数据传输 ─────&gt;  read read     &lt;──── 响应数据 ──────  write </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>Socket 不是协议，而是操作系统暴露给应用层的网络编程接口。应用通过 Socket 读写数据，真正的 TCP&#x2F;IP 协议栈处理在内核中完成。</p>
+</blockquote>
+<hr>
+<p><strong>2. BIO、NIO、AIO 区别</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>BIO 是同步阻塞 IO，NIO 是同步非阻塞 IO，AIO 是异步 IO。Java 后端高并发网络编程主要使用 NIO&#x2F;Reactor 模型。</p>
+</blockquote>
+<p><strong>BIO：Blocking IO</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">一个连接一个线程 read 没数据时线程阻塞 </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">连接1 -&gt; 线程1 连接2 -&gt; 线程2 连接3 -&gt; 线程3 </span><br></pre></td></tr></table></figure>
+
+<p>问题：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">连接数多时线程数量膨胀 线程上下文切换开销大 内存占用高 </span><br></pre></td></tr></table></figure>
+
+<p>适合：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">连接数少、逻辑简单、并发不高 </span><br></pre></td></tr></table></figure>
+
+<p><strong>NIO：Non-blocking IO</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">一个线程可以管理多个连接 通过 Selector 监听多个 Channel 的事件 </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Selector        /    |     \   Channel Channel Channel </span><br></pre></td></tr></table></figure>
+
+<p>事件：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">OP_ACCEPT OP_CONNECT OP_READ OP_WRITE </span><br></pre></td></tr></table></figure>
+
+<p>优点：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">少量线程处理大量连接 适合高并发网络服务 </span><br></pre></td></tr></table></figure>
+
+<p><strong>AIO：Asynchronous IO</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">应用发起 IO 操作后立即返回 IO 完成后由系统通知回调 </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">应用提交读请求    |    v 立即返回    |    v 内核完成 IO 后回调通知 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>BIO 的问题是连接和线程强绑定，高并发下线程资源会成为瓶颈。NIO 通过非阻塞 Channel 和 Selector，让一个线程监听多个连接事件。AIO 更进一步，应用不等待 IO 完成，而是由系统完成后通知，但 Java 服务端主流还是 Netty 这类 NIO&#x2F;Reactor 框架。</p>
+</blockquote>
+<hr>
+<p><strong>3. 同步、异步、阻塞、非阻塞怎么区分？</strong></p>
+<p>这个非常容易绕，面试官喜欢钓鱼。</p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>同步&#x2F;异步关注的是调用结果由谁来通知，阻塞&#x2F;非阻塞关注的是线程在等待结果时是否挂起。</p>
+</blockquote>
+<p><strong>阻塞&#x2F;非阻塞：调用线程是否等待</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">阻塞： 调用 read，没有数据，线程挂起等待。 非阻塞： 调用 read，没有数据，立即返回 EAGAIN。 </span><br></pre></td></tr></table></figure>
+
+<p><strong>同步&#x2F;异步：结果获取方式</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">同步： 调用方主动等待或轮询结果。 异步： 调用方发起请求后返回，完成后由系统或回调通知。 </span><br></pre></td></tr></table></figure>
+
+<p><strong>组合理解：</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">类型</th>
+<th align="left">含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">同步阻塞</td>
+<td align="left">调用后一直等，线程挂起</td>
+</tr>
+<tr>
+<td align="left">同步非阻塞</td>
+<td align="left">调用后立即返回，但要自己轮询</td>
+</tr>
+<tr>
+<td align="left">IO 多路复用</td>
+<td align="left">一个线程阻塞在 selector&#x2F;epoll 上，管理多个 fd</td>
+</tr>
+<tr>
+<td align="left">异步非阻塞</td>
+<td align="left">发起后返回，完成后回调通知</td>
+</tr>
+</tbody></table>
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>阻塞和非阻塞描述线程等待时的状态，同步和异步描述结果通知机制。NIO 虽然叫非阻塞 IO，但 Selector 线程本身可以阻塞在 select&#x2F;epoll_wait 上，所以它通常属于 IO 多路复用模型。</p>
+</blockquote>
+<hr>
+<p><strong>4. select、poll、epoll 区别</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>select、poll、epoll 都是 IO 多路复用机制。select 和 poll 每次都要传入并遍历 fd 集合；epoll 把 fd 注册到内核，只返回就绪事件，更适合高并发连接场景。</p>
+</blockquote>
+<p><strong>select：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 使用 bitmap 表示 fd 集合 2. fd 数量有限制 3. 每次调用都要把 fd 集合从用户态拷贝到内核态 4. 返回后还要遍历所有 fd 找就绪事件 </span><br></pre></td></tr></table></figure>
+
+<p><strong>poll：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 使用 pollfd 数组/链表 2. 没有 select 那种固定 fd 数量限制 3. 仍然每次传入全部 fd 4. 仍然要线性遍历 </span><br></pre></td></tr></table></figure>
+
+<p><strong>epoll：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. epoll_create 创建 epoll 实例 2. epoll_ctl 注册 fd 和事件 3. epoll_wait 等待就绪事件 4. 内核维护 fd 集合 5. 只返回活跃 fd </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select/poll: 应用每次提交所有 fd -&gt; 内核扫描 -&gt; 应用再扫描 epoll: 应用先注册 fd -&gt; 内核维护集合 事件就绪 -&gt; epoll_wait 只返回就绪 fd </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>select 和 poll 的主要问题是重复拷贝和全量扫描，连接数越多成本越高。epoll 通过事件注册和就绪队列避免每次全量传递和遍历，因此适合大量连接但活跃连接较少的典型互联网场景。</p>
+</blockquote>
+<hr>
+<p><strong>5. epoll 的 LT 和 ET</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>LT 是水平触发，只要缓冲区还有数据就会持续通知；ET 是边缘触发，只有状态变化时通知一次，性能更高但更容易写错。</p>
+</blockquote>
+<p><strong>LT：Level Triggered</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">只要 socket 接收缓冲区还有数据 epoll_wait 就会反复返回这个事件 </span><br></pre></td></tr></table></figure>
+
+<p>优点：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">编程简单 不容易漏读 </span><br></pre></td></tr></table></figure>
+
+<p><strong>ET：Edge Triggered</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">只有从无数据变成有数据时通知一次 如果这次没读完，后面可能不再通知 </span><br></pre></td></tr></table></figure>
+
+<p>所以 ET 必须：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. fd 设置非阻塞 2. 循环 read，直到 EAGAIN </span><br></pre></td></tr></table></figure>
+
+<p>伪代码：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">while (true) &#123;    int n = read(fd, buffer);    if (n &gt; 0) &#123;        // process    &#125; else if (n == -1 &amp;&amp; errno == EAGAIN) &#123;        break;    &#125; else &#123;        close(fd);        break;    &#125; &#125; </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>LT 更稳，ET 更高效但要求一次把数据读到 EAGAIN。ET 如果只读一部分就返回，后续可能收不到通知，连接就会假死，所以必须配合非阻塞 IO。</p>
+</blockquote>
+<hr>
+<p><strong>6. Reactor 模型是什么？</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>Reactor 是一种事件驱动模型，由 Reactor 线程监听 IO 事件，再把事件分发给对应 Handler 处理。Netty 的核心就是 Reactor 模型的工程化实现。</p>
+</blockquote>
+<p><strong>基本结构：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Reactor  |  | 监听事件  v Acceptor / Handler  |  v 业务处理 </span><br></pre></td></tr></table></figure>
+
+<p><strong>单 Reactor 单线程：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">一个线程负责： accept read decode process encode write </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Reactor 线程  ├── accept 新连接  ├── read 数据  ├── 业务处理  └── write 响应 </span><br></pre></td></tr></table></figure>
+
+<p>问题：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">所有事情一个线程做，业务稍重就阻塞 IO </span><br></pre></td></tr></table></figure>
+
+<p><strong>单 Reactor 多线程：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Reactor 线程负责 IO 事件 业务处理丢给线程池 </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Reactor 线程  ├── accept  ├── read/write  └── 分发业务任务 -&gt; Worker 线程池 </span><br></pre></td></tr></table></figure>
+
+<p>问题：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">单个 Reactor 仍可能成为瓶颈 </span><br></pre></td></tr></table></figure>
+
+<p><strong>主从 Reactor 多线程：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Boss Reactor：负责 accept 新连接 Worker Reactor：负责已连接 socket 的 read/write 业务线程池：负责耗时业务 </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">客户端连接   |   v Boss Reactor   |   | accept   v Worker Reactor 1/2/3   |   | read/write   v 业务线程池 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>Reactor 模型的核心是事件驱动和 IO 线程复用。主 Reactor 负责接收连接，从 Reactor 负责读写事件，业务逻辑交给业务线程池，避免 IO 线程被耗时任务阻塞。</p>
+</blockquote>
+<hr>
+<p><strong>7. Netty 为什么性能高？</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>Netty 性能高不是靠某一个点，而是 NIO 多路复用、主从 Reactor 线程模型、零拷贝思想、内存池、Pipeline 编解码机制和减少锁竞争等工程优化共同作用。</p>
+</blockquote>
+<p><strong>核心原因：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 基于 NIO / epoll，少量线程支撑大量连接 2. 主从 Reactor 模型，accept 和 read/write 分离 3. ChannelPipeline 责任链，编解码和业务处理清晰 4. ByteBuf 比 Java 原生 ByteBuffer 更易用、更高效 5. PooledByteBufAllocator 内存池减少频繁分配和 GC 6. Direct Buffer 减少堆内和堆外拷贝 7. 支持零拷贝组合 Buffer，减少内存复制 8. EventLoop 单线程串行处理 Channel 事件，减少锁竞争 </span><br></pre></td></tr></table></figure>
+
+<p><strong>Netty 线程模型：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">BossGroup  |  | accept  v WorkerGroup  |  | read/write/decode/encode  v 业务 Handler / 业务线程池 </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">客户端  |  v Boss EventLoopGroup  |  v Worker EventLoopGroup  |  v ChannelPipeline  ├── Decoder  ├── Encoder  ├── BusinessHandler  └── ExceptionHandler </span><br></pre></td></tr></table></figure>
+
+<p><strong>关键提醒：</strong></p>
+<p>Netty IO 线程不能做耗时业务。</p>
+<p>如果在 ChannelHandler 里执行慢 SQL、远程调用、大计算：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">IO 线程被阻塞 同一个 EventLoop 上的其他连接都受影响 </span><br></pre></td></tr></table></figure>
+
+<p>正确做法：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">IO 线程负责收发和轻量编解码 耗时业务投递到业务线程池 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>Netty 的高性能来自事件驱动和工程细节。它用 EventLoop 绑定 Channel，避免大量线程切换；用 Pipeline 组织处理链；用 ByteBuf 和内存池减少内存分配；同时基于 epoll&#x2F;kqueue 等机制提升 IO 多路复用效率。但使用时要避免在 IO 线程里做阻塞业务。</p>
+</blockquote>
+<hr>
+<p><strong>8. Netty 的零拷贝体现在哪里？</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>Netty 的零拷贝更多是用户态层面的减少内存复制，不完全等同于操作系统 sendfile 的零拷贝。</p>
+</blockquote>
+<p>Netty 常见零拷贝点：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. CompositeByteBuf 多个 ByteBuf 逻辑合并，避免真实复制 2. slice() 切片共享原始内存，不复制数据 3. duplicate() 共享同一块内存，只复制读写指针等元数据 4. FileRegion / DefaultFileRegion 底层可使用 transferTo/sendfile 发送文件 </span><br></pre></td></tr></table></figure>
+
+<p><strong>示例：CompositeByteBuf</strong></p>
+<p>传统合并：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">header buffer + body buffer 需要复制到一个新 buffer </span><br></pre></td></tr></table></figure>
+
+<p>CompositeByteBuf：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">逻辑上看是一个 buffer 底层仍引用多个 buffer 避免复制 </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CompositeByteBuf  ├── ByteBuf header  └── ByteBuf body </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>Netty 的零拷贝包含两层含义：一是用户态减少 ByteBuf 之间的内存复制，比如 slice、duplicate、CompositeByteBuf；二是文件传输时通过 FileRegion 利用操作系统 transferTo&#x2F;sendfile，减少内核态和用户态之间的数据拷贝。</p>
+</blockquote>
+<hr>
+<p><strong>9. 零拷贝和网络 IO 的关系</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>网络 IO 里的零拷贝主要用于文件直接发送到网络，核心是避免数据从内核 Page Cache 拷贝到用户态，再从用户态拷贝回 Socket Buffer。</p>
+</blockquote>
+<p>传统方式：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">磁盘 -&gt; Page Cache -&gt; 用户 buffer -&gt; Socket Buffer -&gt; 网卡 </span><br></pre></td></tr></table></figure>
+
+<p>sendfile：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">磁盘 -&gt; Page Cache -&gt; Socket Buffer -&gt; 网卡 </span><br></pre></td></tr></table></figure>
+
+<p>带 DMA Scatter-Gather 的 sendfile：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">磁盘 -&gt; Page Cache Page Cache -&gt; 网卡 Socket Buffer 只保存描述符 </span><br></pre></td></tr></table></figure>
+
+<p><strong>适合场景：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">静态文件服务器 Nginx Kafka 大文件下载 视频分发 </span><br></pre></td></tr></table></figure>
+
+<p><strong>不适合场景：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">数据需要加密 数据需要压缩 数据需要修改 数据需要业务解析 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>零拷贝并不是没有任何数据移动，而是减少 CPU 参与的冗余内存拷贝。它适合文件内容无需用户态加工、直接发往网络的场景；如果数据必须经过业务处理，就很难完全零拷贝。</p>
+</blockquote>
+<hr>
+<p><strong>10. Java NIO 核心组件</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>Java NIO 的核心是 Channel、Buffer、Selector。Channel 表示连接或文件通道，Buffer 是数据容器，Selector 用来监听多个 Channel 的事件。</p>
+</blockquote>
+<p><strong>三件套：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Channel：数据通道 Buffer：读写缓冲区 Selector：多路复用器 </span><br></pre></td></tr></table></figure>
+
+<p>NIO 读数据：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SocketChannel -&gt; Buffer -&gt; 应用处理 </span><br></pre></td></tr></table></figure>
+
+<p>NIO 写数据：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">应用数据 -&gt; Buffer -&gt; SocketChannel </span><br></pre></td></tr></table></figure>
+
+<p>Selector 事件循环：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">while (true) &#123;    selector.select();    Set&lt;SelectionKey&gt; keys = selector.selectedKeys();     for (SelectionKey key : keys) &#123;        if (key.isAcceptable()) &#123;            // accept        &#125; else if (key.isReadable()) &#123;            // read        &#125; else if (key.isWritable()) &#123;            // write        &#125;    &#125;     keys.clear(); &#125; </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>Java NIO 通过 Selector 让一个线程管理多个 Channel 的事件，避免 BIO 一个连接一个线程的问题。但原生 NIO 编程复杂，容易出现空轮询、半包处理、连接管理等问题，所以生产上通常使用 Netty。</p>
+</blockquote>
+<hr>
+<p><strong>第五轮总结</strong></p>
+<p>这一轮核心主线：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Socket：操作系统网络编程接口 BIO：一个连接一个线程，阻塞 NIO：一个线程管理多个连接，同步非阻塞 AIO：异步完成通知 select/poll：全量传递、全量扫描 epoll：注册事件，只返回就绪 fd LT：有数据就反复通知 ET：状态变化通知一次，必须读到 EAGAIN Reactor：事件驱动 + 事件分发 Netty：NIO + Reactor + ByteBuf + 内存池 + Pipeline 零拷贝：减少 CPU 冗余拷贝 </span><br></pre></td></tr></table></figure>
+
+<p>面试高分表达：</p>
+<blockquote>
+<p>高并发网络编程的核心不是无限加线程，而是用 IO 多路复用让少量线程管理大量连接，用 Reactor 模型分发事件，用业务线程池隔离耗时逻辑。Netty 在这个基础上补齐了编解码、内存管理、线程模型和零拷贝等工程能力，所以成为 Java 网络编程的主流框架。</p>
+</blockquote>
+<p>下一轮就是最后一轮：<strong>网络排查与架构场景：接口超时、TIME_WAIT&#x2F;CLOSE_WAIT、QPS 上不去、浏览器输入 URL、网关设计、百万 WebSocket</strong>。</p>
+<p>16:00</p>
+<p>继续回答</p>
+<p>16:12</p>
+<p>继续，下面是 <strong>第六轮：网络排查与架构场景深入版</strong>。这一轮很像真正的高级后端&#x2F;架构岗面试：不只问你懂不懂协议，还问你线上怎么定位、系统怎么设计。</p>
+<p><strong>1. 线上接口超时怎么排查？</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>接口超时要按链路分段排查：客户端、DNS、网络连接、TLS、网关、应用服务、缓存、数据库、第三方依赖，先定位慢在哪一段，再深入。</p>
+</blockquote>
+<p><strong>完整链路：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">客户端  | DNS 解析  | TCP 建连 / TLS 握手  | CDN / LB / 网关  | 应用服务  | 缓存 / DB / MQ / 第三方接口 </span><br></pre></td></tr></table></figure>
+
+<p><strong>排查步骤：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 确认是个别用户慢，还是全局慢 2. 看监控：P99、P95、错误率、超时率 3. 用 curl 拆分 DNS、建连、TLS、首字节耗时 4. 查网关日志：是否路由慢、限流、上游超时 5. 查应用日志：接口耗时、线程池、GC、锁等待 6. 查依赖：Redis、MySQL、MQ、第三方接口 7. 查网络：丢包、重传、连接数、带宽 </span><br></pre></td></tr></table></figure>
+
+<p>curl 分段耗时：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -w &quot; dns: %&#123;time_namelookup&#125; connect: %&#123;time_connect&#125; tls: %&#123;time_appconnect&#125; ttfb: %&#123;time_starttransfer&#125; total: %&#123;time_total&#125; &quot; -o /dev/null -s https://example.com/api </span><br></pre></td></tr></table></figure>
+
+<p>含义：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">time_namelookup：DNS 解析耗时 time_connect：TCP 建连耗时 time_appconnect：TLS 握手耗时 time_starttransfer：首字节时间 time_total：总耗时 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>我不会一上来猜数据库慢，而是先把请求链路拆开，用指标和日志判断慢在哪一段。DNS 慢查解析，connect 慢查网络和服务端连接队列，ttfb 慢查网关、应用和下游依赖。</p>
+</blockquote>
+<hr>
+<p><strong>2. TIME_WAIT 过多怎么处理？</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>TIME_WAIT 是主动关闭连接的一方进入的正常状态。TIME_WAIT 多不一定是问题，重点是判断是否有大量短连接或服务端主动关闭连接。</p>
+</blockquote>
+<p><strong>常见原因：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 短连接太多 2. 服务端主动关闭连接 3. HTTP Keep-Alive 没生效 4. 连接池配置不合理 5. 客户端频繁创建连接 </span><br></pre></td></tr></table></figure>
+
+<p><strong>排查命令：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ss -ant | awk &#x27;&#123;print $1&#125;&#x27; | sort | uniq -c ss -ant state time-wait | wc -l </span><br></pre></td></tr></table></figure>
+
+<p><strong>解决思路：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 开启 HTTP Keep-Alive 2. 使用连接池复用连接 3. 服务端尽量不要主动关闭连接 4. 调整客户端超时和连接池大小 5. 合理调整内核参数 </span><br></pre></td></tr></table></figure>
+
+<p>谨慎调参：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">net.ipv4.tcp_tw_reuse net.ipv4.ip_local_port_range net.ipv4.tcp_fin_timeout </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>TIME_WAIT 的根因通常是连接复用不足或短连接过多。处理时优先从长连接、连接池和关闭方入手，内核参数只能辅助，不能掩盖应用层连接管理问题。</p>
+</blockquote>
+<hr>
+<p><strong>3. CLOSE_WAIT 过多怎么处理？</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>CLOSE_WAIT 多通常是应用层没有正确关闭连接，比 TIME_WAIT 更值得警惕。</p>
+</blockquote>
+<p>状态含义：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">对端已经发 FIN 本机内核已经回 ACK 但本机应用还没调用 close() </span><br></pre></td></tr></table></figure>
+
+<p><strong>常见原因：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 代码没有关闭 socket/response/body 2. 连接池泄漏 3. 异常分支没有释放资源 4. 线程阻塞，无法执行 close 5. 第三方 SDK 使用不当 </span><br></pre></td></tr></table></figure>
+
+<p><strong>排查命令：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ss -ant state close-wait lsof -p &lt;pid&gt; ls /proc/&lt;pid&gt;/fd | wc -l </span><br></pre></td></tr></table></figure>
+
+<p>Java 排查：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jstack &lt;pid&gt; jcmd &lt;pid&gt; Thread.print </span><br></pre></td></tr></table></figure>
+
+<p>重点看：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">IO 线程是否阻塞 连接池是否耗尽 是否大量线程卡在 read/write 是否有资源未关闭 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>CLOSE_WAIT 多基本可以先怀疑应用没有释放连接。排查重点是代码 finally&#x2F;try-with-resources、HTTP Client 响应体是否关闭、连接池是否泄漏，以及线程是否阻塞在某个慢依赖上。</p>
+</blockquote>
+<hr>
+<p><strong>4. QPS 上不去可能有哪些网络原因？</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>QPS 上不去不一定是业务代码慢，也可能是连接队列、端口耗尽、带宽、丢包重传、连接池、网关限流、内核参数等网络层因素导致。</p>
+</blockquote>
+<p><strong>常见网络原因：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. TCP 连接建立慢 2. 半连接队列或全连接队列满 3. 客户端临时端口耗尽 4. TIME_WAIT 过多 5. 带宽打满 6. 丢包导致重传 7. 网关或 LB 限流 8. 连接池太小 9. DNS 解析慢 10. TLS 握手成本高 </span><br></pre></td></tr></table></figure>
+
+<p><strong>排查方向：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ss -s ss -ant netstat -s sar -n DEV 1 sar -n TCP,ETCP 1 iostat -x 1 top pidstat -w 1 </span><br></pre></td></tr></table></figure>
+
+<p>重点看：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">retransmission：TCP 重传 listen queue overflow：监听队列溢出 established：连接是否足够 time_wait：短连接是否多 bandwidth：网卡是否打满 </span><br></pre></td></tr></table></figure>
+
+<p><strong>优化方向：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 使用长连接和连接池 2. 调大 backlog 和连接队列 3. 优化 TLS：会话复用、HTTP/2、硬件加速 4. 扩容网关和服务实例 5. 降低丢包，优化网络路径 6. 增大客户端临时端口范围 7. 使用多端口或多源 IP </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>QPS 上不去时我会同时看应用吞吐和网络指标。如果 CPU 没满但 QPS 上不去，要重点看连接队列、连接池、带宽、重传、端口耗尽和网关限制。</p>
+</blockquote>
+<hr>
+<p><strong>5. 浏览器输入 URL 到页面展示发生了什么？</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>这个过程包括 URL 解析、DNS 查询、建立连接、TLS 握手、发送 HTTP 请求、服务端处理、浏览器解析渲染资源。</p>
+</blockquote>
+<p><strong>完整流程：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 浏览器解析 URL 2. 查浏览器缓存、DNS 缓存、hosts 3. DNS 解析域名得到 IP 4. 建立 TCP 连接，HTTPS 还要 TLS 握手 5. 浏览器发送 HTTP 请求 6. 请求经过 CDN、负载均衡、网关 7. 服务端处理请求，返回 HTML 8. 浏览器解析 HTML 9. 加载 CSS、JS、图片等资源 10. 构建 DOM 树和 CSSOM 树 11. 生成 Render Tree 12. Layout 布局 13. Paint 绘制 14. Composite 合成展示 </span><br></pre></td></tr></table></figure>
+
+<p>网络侧图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">浏览器  | DNS  | TCP/TLS  | CDN/LB/Gateway  | 应用服务  | DB/Cache </span><br></pre></td></tr></table></figure>
+
+<p>浏览器渲染侧：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">HTML -&gt; DOM CSS  -&gt; CSSOM DOM + CSSOM -&gt; Render Tree Render Tree -&gt; Layout -&gt; Paint -&gt; Composite </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>这题要分两半讲：网络链路负责把资源拿回来，包括 DNS、TCP&#x2F;TLS、HTTP、CDN、网关、服务端；浏览器渲染链路负责把 HTML、CSS、JS 解析成页面，包括 DOM、CSSOM、布局、绘制和合成。</p>
+</blockquote>
+<hr>
+<p><strong>6. 如何设计高并发 API 网关？</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>高并发网关要做到无状态、异步非阻塞、可水平扩展，并具备路由、鉴权、限流、熔断、灰度、观测和高可用能力。</p>
+</blockquote>
+<p><strong>核心能力：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 路由转发 2. 统一鉴权 3. 限流防刷 4. 熔断降级 5. 负载均衡 6. 灰度发布 7. 协议转换 8. 日志审计 9. 监控追踪 </span><br></pre></td></tr></table></figure>
+
+<p><strong>架构图：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">客户端  |  v DNS / CDN / LB  |  v API Gateway 集群  |  | 鉴权 / 限流 / 路由 / 灰度  v 后端服务集群 </span><br></pre></td></tr></table></figure>
+
+<p><strong>高并发设计点：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 网关无状态，方便水平扩容 2. 使用异步非阻塞 IO，比如 Netty / Nginx / Envoy 3. 路由规则本地缓存，避免每次查 DB 4. 限流用本地限流 + 分布式限流组合 5. 鉴权结果短时缓存 6. 配置中心动态下发规则 7. 熔断隔离慢服务 8. 全链路 trace 和指标监控 </span><br></pre></td></tr></table></figure>
+
+<p><strong>限流策略：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">单机限流：令牌桶、漏桶、滑动窗口 分布式限流：Redis、网关集群配额、Sentinel </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>网关是系统入口，核心原则是自己不能成为瓶颈。设计上要无状态、可水平扩展，IO 模型要异步非阻塞，配置和路由要本地缓存，慢服务要熔断隔离，限流鉴权这类公共能力要前置但不能拖慢主链路。</p>
+</blockquote>
+<hr>
+<p><strong>7. 如何设计百万 WebSocket 连接服务？</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>百万 WebSocket 连接的核心不是单机扛百万，而是连接层、消息层、状态层分离，通过多节点长连接网关、连接注册中心、消息路由和水平扩展实现。</p>
+</blockquote>
+<p><strong>整体架构：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">客户端  |  v 接入层 LB  |  v WebSocket Gateway 集群  |  | 连接注册  v 连接状态存储 Redis / etcd  |  v 消息路由服务  |  v 业务服务 / MQ </span><br></pre></td></tr></table></figure>
+
+<p><strong>关键设计点：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 长连接网关只维护连接，不做重业务 2. 每个连接绑定到某个网关节点 3. 用户 ID -&gt; 网关节点 映射存储到 Redis 4. 业务服务发送消息时先查用户在哪个节点 5. 消息投递到对应网关节点 6. 网关通过本地连接推送给客户端 </span><br></pre></td></tr></table></figure>
+
+<p><strong>连接映射：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">userId -&gt; gatewayNodeId -&gt; channelId </span><br></pre></td></tr></table></figure>
+
+<p><strong>消息流：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">业务服务  |  | 发送给 userId=1001  v 消息路由  |  | 查询 userId 所在网关  v Gateway-3  |  v 用户 WebSocket 连接 </span><br></pre></td></tr></table></figure>
+
+<p><strong>难点：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 连接保活：心跳、超时检测 2. 断线重连：重连退避、防止雪崩 3. 消息可靠性：ACK、重试、离线消息 4. 水平扩容：连接重新分布 5. 单机 fd 限制、内存、CPU 6. 网关节点宕机后的连接清理 7. 跨机房推送和就近接入 </span><br></pre></td></tr></table></figure>
+
+<p><strong>单机优化：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 使用 epoll/kqueue 2. 调大文件描述符限制 3. 调整 TCP keepalive 4. 控制每连接内存占用 5. 避免每连接一个线程 6. 使用 Netty 等事件驱动框架 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>百万 WebSocket 的核心是连接治理。接入网关负责维持长连接，业务服务不直接持有连接；用户到连接节点的映射放在共享状态中；消息通过路由服务投递到对应网关。系统要重点处理心跳、断线重连、离线消息、节点故障和水平扩容。</p>
+</blockquote>
+<hr>
+<p><strong>8. 网络抖动和丢包怎么定位？</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>网络抖动要从客户端、服务端、中间链路三侧定位，看延迟、丢包、重传、带宽和路由路径变化。</p>
+</blockquote>
+<p><strong>常用工具：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ping mtr traceroute tcpdump ss sar -n TCP,ETCP 1 iftop </span><br></pre></td></tr></table></figure>
+
+<p><strong>关注指标：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">RTT 延迟 packet loss 丢包率 TCP retrans 重传 带宽利用率 连接数 网卡错误包 </span><br></pre></td></tr></table></figure>
+
+<p><strong>排查思路：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. ping 看基本连通性和 RTT 2. mtr 看哪一跳开始丢包或延迟升高 3. tcpdump 抓包看重传、乱序、RST 4. sar 看 TCP 重传和网卡吞吐 5. 对比同机房、跨机房、不同运营商 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>网络问题不能只看应用日志，要结合链路工具和 TCP 指标。尤其是接口偶发慢，常见原因是丢包重传、跨运营商链路波动、网关到上游连接池异常或带宽打满。</p>
+</blockquote>
+<hr>
+<p><strong>9. 502、503、504 怎么排查？</strong></p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>502 偏上游响应异常，503 偏服务不可用或过载，504 偏网关等待上游超时。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th align="left">状态码</th>
+<th align="left">含义</th>
+<th align="left">常见原因</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">502</td>
+<td align="left">Bad Gateway</td>
+<td align="left">上游连接被拒绝、异常断开、返回非法响应</td>
+</tr>
+<tr>
+<td align="left">503</td>
+<td align="left">Service Unavailable</td>
+<td align="left">服务过载、维护、限流、无可用实例</td>
+</tr>
+<tr>
+<td align="left">504</td>
+<td align="left">Gateway Timeout</td>
+<td align="left">网关等待上游超时</td>
+</tr>
+</tbody></table>
+<p><strong>排查方向：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">502： 上游服务是否挂了 端口是否监听 连接是否被 reset 协议是否匹配 503： 服务实例是否健康 是否被限流 连接池是否耗尽 网关是否无可用 upstream 504： 上游接口是否慢 网关超时配置是否过短 DB/Redis/第三方依赖是否慢 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>502、503、504 都常出现在代理或网关层。排查时要先看网关日志里的 upstream 状态，再看服务注册、健康检查、连接池和应用耗时，不能只盯业务服务日志。</p>
+</blockquote>
+<hr>
+<p><strong>10. 网络面试最终串讲模板</strong></p>
+<p>如果面试官让你整体讲网络请求链路，可以这样答：</p>
+<blockquote>
+<p>一个请求首先经过 DNS 解析拿到入口 IP，然后建立 TCP 连接；如果是 HTTPS，还要做 TLS 握手，完成身份认证和密钥协商。请求进入服务端后，可能先经过 CDN、负载均衡和 API 网关，网关做鉴权、限流、路由和灰度，再转发到具体服务实例。服务内部可能访问 Redis、MySQL、MQ 或第三方接口，最后响应沿原链路返回。</p>
+<p>如果线上出现慢请求，我会按阶段拆解：DNS、建连、TLS、网关、应用、缓存、数据库、第三方依赖。网络层重点关注连接队列、TIME_WAIT、CLOSE_WAIT、TCP 重传、带宽、连接池和网关超时。架构上则通过长连接、连接池、异步非阻塞、限流熔断、缓存和水平扩展提升吞吐和稳定性。</p>
+</blockquote>
+<p><strong>第六轮总结</strong></p>
+<p>这一轮你要记住：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">接口超时：分段定位，不要猜 TIME_WAIT：主动关闭方，短连接多 CLOSE_WAIT：应用没 close，通常是 bug QPS 上不去：看连接队列、重传、带宽、连接池 URL 到页面：网络链路 + 浏览器渲染链路 高并发网关：无状态、异步非阻塞、限流熔断 百万 WebSocket：连接层和业务层解耦 502/503/504：网关视角定位上游问题 </span><br></pre></td></tr></table></figure>
+
+<p>到这里，6 轮网络高频面试题就完整闭环了。你后面可以继续按“单题深入”来问，比如：HTTPS 握手继续深挖、epoll 底层红黑树和就绪队列、百万 WebSocket 详细设计、接口超时排查实战版。</p>
+<p>16:12</p>
+<p>epoll 底层红黑树和就绪队列、百万 WebSocket 详细设计详细说下</p>
+<p>16:18</p>
+<p>下面分两块讲：<strong>epoll 底层红黑树和就绪队列</strong>、<strong>百万 WebSocket 详细设计</strong>。这两个都很适合中高级面试，回答时要既能讲机制，也能讲工程落地。</p>
+<p><strong>一、epoll 底层：红黑树 + 就绪队列</strong></p>
+<p><strong>先给面试结论：</strong></p>
+<blockquote>
+<p>epoll 的核心数据结构可以理解为一棵红黑树和一个就绪队列。红黑树保存所有被监听的 fd，方便增删改查；就绪队列保存已经发生事件的 fd。epoll_wait 不需要像 select&#x2F;poll 一样全量扫描 fd，只需要从就绪队列里取事件。</p>
+</blockquote>
+<hr>
+<p><strong>1. select&#x2F;poll 的问题</strong></p>
+<p>select&#x2F;poll 的典型问题是：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">每次调用都要传入所有 fd 内核每次都要遍历所有 fd 用户态返回后还要再遍历一遍找哪些 fd 就绪 </span><br></pre></td></tr></table></figure>
+
+<p>假设监听 10 万连接，但只有 100 个连接有数据：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select/poll：仍然要扫描 10 万个 fd epoll：只返回这 100 个活跃 fd </span><br></pre></td></tr></table></figure>
+
+<p>所以 epoll 更适合：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">大量连接，少量活跃 </span><br></pre></td></tr></table></figure>
+
+<p>比如网关、IM、WebSocket、长连接服务。</p>
+<hr>
+<p><strong>2. epoll 三个核心 API</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">int epoll_create(int size); int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event); int epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout); </span><br></pre></td></tr></table></figure>
+
+<p>分别对应：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">epoll_create：创建 epoll 实例 epoll_ctl：添加、修改、删除监听 fd epoll_wait：等待就绪事件 </span><br></pre></td></tr></table></figure>
+
+<hr>
+<p><strong>3. 红黑树保存监听 fd</strong></p>
+<p>当调用：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">epoll_ctl(epfd, EPOLL_CTL_ADD, fd, event); </span><br></pre></td></tr></table></figure>
+
+<p>内核会把这个 fd 注册到 epoll 实例中。</p>
+<p>可以抽象理解为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">epoll 实例  |  v 红黑树  ├── fd=3  ├── fd=7  ├── fd=11  ├── fd=20  └── fd=100 </span><br></pre></td></tr></table></figure>
+
+<p>红黑树的作用：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 保存所有被监听的 fd 2. 支持快速查找 fd 是否已经注册 3. 支持快速添加、删除、修改监听事件 </span><br></pre></td></tr></table></figure>
+
+<p>复杂度大致是：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">epoll_ctl add/mod/del：O(logN) </span><br></pre></td></tr></table></figure>
+
+<p>这里的 N 是监听 fd 数量。</p>
+<p><strong>为什么用红黑树？</strong></p>
+<p>因为 epoll 需要频繁做：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">添加 fd 删除 fd 修改 fd 关注事件 查找 fd 是否存在 </span><br></pre></td></tr></table></figure>
+
+<p>红黑树是平衡二叉搜索树，能保证较稳定的查找和更新性能。</p>
+<p>面试可以说：</p>
+<blockquote>
+<p>红黑树不是为了 epoll_wait 快，而是为了 epoll_ctl 管理监听 fd 快。</p>
+</blockquote>
+<p>这个点很加分。</p>
+<hr>
+<p><strong>4. 就绪队列保存活跃 fd</strong></p>
+<p>当某个 socket 有数据可读、可写或者发生异常时，内核会通过回调机制把对应事件加入就绪队列。</p>
+<p>抽象结构：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">epoll 实例  |  ├── 红黑树：保存所有监听 fd  |  └── 就绪队列：保存已经就绪的 fd        ├── fd=7  可读        ├── fd=20 可读        └── fd=31 可写 </span><br></pre></td></tr></table></figure>
+
+<p>当应用调用：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">epoll_wait(epfd, events, maxevents, timeout); </span><br></pre></td></tr></table></figure>
+
+<p>epoll 不需要遍历整棵红黑树，而是直接检查就绪队列：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">就绪队列为空：阻塞等待 就绪队列非空：拷贝就绪事件到用户态并返回 </span><br></pre></td></tr></table></figure>
+
+<p>所以 epoll_wait 的复杂度更接近：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">O(就绪事件数量) </span><br></pre></td></tr></table></figure>
+
+<p>而不是：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">O(监听 fd 总数) </span><br></pre></td></tr></table></figure>
+
+<hr>
+<p><strong>5. 事件是怎么进就绪队列的？</strong></p>
+<p>当你用 epoll_ctl 注册 fd 时，内核会把当前 epoll 实例挂到这个 socket 的等待队列上。</p>
+<p>可以理解为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">socket fd  |  └── 等待队列 wait queue        |        └── epoll 回调函数 </span><br></pre></td></tr></table></figure>
+
+<p>当网卡收到数据，内核协议栈把数据放入 socket 接收缓冲区后，会唤醒等待队列。</p>
+<p>然后 epoll 的回调被触发：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">socket 收到数据    |    v 触发等待队列回调    |    v 把 fd 对应事件加入 epoll 就绪队列    |    v 唤醒阻塞在 epoll_wait 的线程 </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">网卡收到数据  |  v 内核协议栈处理  |  v 数据进入 socket 接收缓冲区  |  v 触发 socket wait queue  |  v epoll 回调把事件放入 ready list  |  v epoll_wait 返回 </span><br></pre></td></tr></table></figure>
+
+<hr>
+<p><strong>6. 红黑树和就绪队列整体图</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">epoll instance                    |        ┌───────────┴───────────┐        v                       v   红黑树 RB-Tree            就绪队列 Ready List   保存监听 fd               保存活跃事件        |                       |   fd 3,7,11,20...          fd 7, fd 20        |                       | epoll_ctl 管理             epoll_wait 返回 </span><br></pre></td></tr></table></figure>
+
+<p>一句话：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">红黑树管“我关心谁” 就绪队列管“谁已经有事了” </span><br></pre></td></tr></table></figure>
+
+<p>这个表达挺好记，也挺像面试官爱听的人话版。</p>
+<hr>
+<p><strong>7. epoll 为什么比 select&#x2F;poll 高效？</strong></p>
+<p>不是所有情况下都高效，准确说：</p>
+<blockquote>
+<p>在大量连接、少量活跃的场景下，epoll 更高效。</p>
+</blockquote>
+<p>原因：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. fd 集合只注册一次，不用每次重复从用户态传到内核态 2. 内核维护监听集合，避免重复构建 3. 事件就绪后进入就绪队列，不需要全量扫描 4. epoll_wait 只返回活跃 fd </span><br></pre></td></tr></table></figure>
+
+<p>但如果所有 fd 都很活跃：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">监听 10 万个 fd 每次都有 10 万个 fd 就绪 </span><br></pre></td></tr></table></figure>
+
+<p>epoll 优势会下降，因为最终还是要处理所有活跃事件。</p>
+<hr>
+<p><strong>8. LT 和 ET 在就绪队列上的差异</strong></p>
+<p><strong>LT：水平触发</strong></p>
+<p>只要 socket 缓冲区还有数据，就会持续通知。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fd 有数据 epoll_wait 返回 应用只读了一半 下次 epoll_wait 还会返回 </span><br></pre></td></tr></table></figure>
+
+<p><strong>ET：边缘触发</strong></p>
+<p>只有状态变化时通知一次。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fd 从无数据 -&gt; 有数据 epoll_wait 返回一次 应用只读了一半 如果后面没有新数据到来，可能不再通知 </span><br></pre></td></tr></table></figure>
+
+<p>所以 ET 要求：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">非阻塞 fd 循环 read 到 EAGAIN </span><br></pre></td></tr></table></figure>
+
+<p>面试表达：</p>
+<blockquote>
+<p>LT 是提醒你“还有数据没处理”，ET 是提醒你“状态刚发生变化”。ET 性能更好，但要求应用一次性读到 EAGAIN，否则可能漏事件。</p>
+</blockquote>
+<hr>
+<p><strong>9. epoll 常见面试追问</strong></p>
+<p><strong>追问 1：epoll_wait 是不是 O(1)？</strong></p>
+<p>更严谨地说：</p>
+<blockquote>
+<p>epoll_wait 不需要遍历所有监听 fd，它的成本主要和就绪事件数量有关。所以不能简单说永远 O(1)，更准确是接近 O(ready events)。</p>
+</blockquote>
+<p><strong>追问 2：epoll 一定比 select 快吗？</strong></p>
+<p>不一定。</p>
+<p>如果 fd 很少，select&#x2F;poll 简单直接，差距不明显。</p>
+<p>如果大量连接但活跃连接少，epoll 优势明显。</p>
+<p><strong>追问 3：epoll 的红黑树是干什么的？</strong></p>
+<blockquote>
+<p>红黑树保存所有被监听的 fd，用于 epoll_ctl 的增删改查；真正让 epoll_wait 高效的是就绪队列。</p>
+</blockquote>
+<hr>
+<h1 id="二、百万-WebSocket-详细设计"><a href="#二、百万-WebSocket-详细设计" class="headerlink" title="二、百万 WebSocket 详细设计"></a>二、百万 WebSocket 详细设计</h1><p><strong>先给面试结论：</strong></p>
+<blockquote>
+<p>百万 WebSocket 系统的核心不是让业务服务直接维护百万连接，而是把连接接入层、消息路由层、业务处理层解耦。连接网关负责维持长连接，业务服务负责产生消息，消息路由负责找到用户所在连接节点并投递。</p>
+</blockquote>
+<hr>
+<p><strong>1. 需求假设</strong></p>
+<p>面试时先讲假设，很专业。</p>
+<p>假设场景：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">在线用户：100 万 消息类型：系统通知、私信、状态推送 连接方式：WebSocket 消息可靠性：至少一次送达 离线消息：需要保存一段时间 客户端：Web / App 部署：多节点、可水平扩展 </span><br></pre></td></tr></table></figure>
+
+<p>核心指标：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">连接数 消息 QPS 消息延迟 在线状态准确性 节点故障恢复 扩容能力 </span><br></pre></td></tr></table></figure>
+
+<hr>
+<p><strong>2. 总体架构</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">客户端  |  v 接入层 LB  |  v WebSocket Gateway 集群  |  | 连接注册 / 心跳维护  v 连接状态存储 Redis / etcd  |  v 消息路由服务  |  v MQ  |  v 业务服务 </span><br></pre></td></tr></table></figure>
+
+<p>更清晰的消息链路：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">业务服务  |  | 产生消息  v MQ  |  v 消息路由服务  |  | 查询 userId 在哪个 Gateway  v WebSocket Gateway  |  v 客户端 </span><br></pre></td></tr></table></figure>
+
+<hr>
+<p><strong>3. 核心模块拆分</strong></p>
+<p><strong>WebSocket Gateway</strong></p>
+<p>职责：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 接收 WebSocket 连接 2. 维护 Channel 3. 心跳检测 4. 连接鉴权 5. 用户上线/下线注册 6. 向客户端推送消息 </span><br></pre></td></tr></table></figure>
+
+<p>不做：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">复杂业务逻辑 重 SQL 大计算 复杂规则判断 </span><br></pre></td></tr></table></figure>
+
+<p><strong>消息路由服务</strong></p>
+<p>职责：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 根据 userId 查连接位置 2. 将消息投递到对应 Gateway 3. 处理用户多端在线 4. 处理离线用户 5. 做消息重试和失败记录 </span><br></pre></td></tr></table></figure>
+
+<p><strong>业务服务</strong></p>
+<p>职责：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 产生业务消息 2. 写消息表或投递 MQ 3. 不直接关心连接在哪台机器 </span><br></pre></td></tr></table></figure>
+
+<p><strong>连接状态存储</strong></p>
+<p>保存：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">userId -&gt; gatewayNodeId -&gt; channelId </span><br></pre></td></tr></table></figure>
+
+<p>如果支持多端：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">userId -&gt; [  &#123;deviceId, gatewayNodeId, channelId, loginTime&#125; ] </span><br></pre></td></tr></table></figure>
+
+<hr>
+<p><strong>4. 为什么不要业务服务直接维护 WebSocket？</strong></p>
+<p>因为会导致：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 业务服务和连接状态强耦合 2. 服务扩容缩容困难 3. 某个业务重启会断开大量连接 4. 推送能力无法复用 5. 消息路由复杂 </span><br></pre></td></tr></table></figure>
+
+<p>更合理的是：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">连接层稳定 业务层灵活 中间用 MQ 和路由解耦 </span><br></pre></td></tr></table></figure>
+
+<p>面试表达：</p>
+<blockquote>
+<p>长连接是基础设施能力，不应该绑死在某个业务服务里。接入层维护连接，业务层只生产消息，通过消息路由投递到具体连接节点。</p>
+</blockquote>
+<hr>
+<p><strong>5. 用户连接注册流程</strong></p>
+<p>流程：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 客户端携带 token 发起 WebSocket 连接 2. Gateway 校验 token 3. 校验通过后建立连接 4. Gateway 生成 channelId 5. 写入连接状态存储 6. 启动心跳检测 </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">客户端  |  | WebSocket + token  v Gateway-1  |  | 校验 token  v Redis: user:1001 -&gt; Gateway-1, channel-abc </span><br></pre></td></tr></table></figure>
+
+<p>状态结构：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;  &quot;userId&quot;: &quot;1001&quot;,  &quot;gatewayNodeId&quot;: &quot;gw-1&quot;,  &quot;channelId&quot;: &quot;ch-abc&quot;,  &quot;deviceId&quot;: &quot;ios-001&quot;,  &quot;lastHeartbeat&quot;: 1710000000 &#125; </span><br></pre></td></tr></table></figure>
+
+<hr>
+<p><strong>6. 消息推送流程</strong></p>
+<p>单用户推送：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 业务服务产生消息 2. 消息写入 MQ 3. 路由服务消费消息 4. 查询 userId 对应 Gateway 5. 调用对应 Gateway 内部推送接口 6. Gateway 根据 channelId 找到本地连接 7. 发送 WebSocket 消息 8. 客户端 ACK 9. 更新消息状态 </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">业务服务  |  v MQ  |  v 消息路由  |  | userId=1001 在 gw-1  v Gateway-1  |  | channelId=ch-abc  v 客户端 </span><br></pre></td></tr></table></figure>
+
+<p>群发&#x2F;广播：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">业务服务 -&gt; MQ -&gt; 广播任务              |              v        拆分用户分片              |              v        多个路由 worker 并行推送 </span><br></pre></td></tr></table></figure>
+
+<p>不要直接一个请求循环推百万用户。那是事故预告片，不太想上映。</p>
+<hr>
+<p><strong>7. 连接状态如何存储？</strong></p>
+<p>可选方案：</p>
+<p><strong>Redis</strong></p>
+<p>优点：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">性能高 实现简单 适合 userId 到节点映射 支持 TTL </span><br></pre></td></tr></table></figure>
+
+<p>缺点：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">强一致性一般 节点故障清理要处理 </span><br></pre></td></tr></table></figure>
+
+<p>推荐：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Redis Cluster + TTL + 心跳续期 </span><br></pre></td></tr></table></figure>
+
+<p>Key 设计：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ws:user:&#123;userId&#125; -&gt; device/session list ws:node:&#123;nodeId&#125;:users -&gt; userId set ws:session:&#123;sessionId&#125; -&gt; connection metadata </span><br></pre></td></tr></table></figure>
+
+<p><strong>etcd &#x2F; Consul</strong></p>
+<p>适合：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">节点注册 配置发现 少量强一致元数据 </span><br></pre></td></tr></table></figure>
+
+<p>不适合：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">高频用户连接状态读写 </span><br></pre></td></tr></table></figure>
+
+<p>所以常见组合：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Redis 存用户连接映射 etcd/注册中心存 Gateway 节点列表 </span><br></pre></td></tr></table></figure>
+
+<hr>
+<p><strong>8. 心跳和连接保活</strong></p>
+<p>为什么需要心跳？</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 检测客户端是否还在线 2. 清理异常断开的连接 3. 防止 NAT/代理层空闲连接被断开 4. 维持连接状态准确性 </span><br></pre></td></tr></table></figure>
+
+<p>心跳设计：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">客户端每 30s 发送 ping 服务端收到后返回 pong 服务端记录 lastHeartbeat 超过 90s 未收到心跳，关闭连接并清理状态 </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">客户端 -- ping --&gt; Gateway 客户端 &lt;-- pong -- Gateway lastHeartbeat 更新时间 </span><br></pre></td></tr></table></figure>
+
+<p>注意：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">心跳间隔不能太短，否则百万连接会产生巨大心跳流量 </span><br></pre></td></tr></table></figure>
+
+<p>比如 100 万连接，30 秒一次心跳：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1000000 / 30 ≈ 33333 次心跳/秒 </span><br></pre></td></tr></table></figure>
+
+<p>这还只是心跳，别小看它，心跳也会敲 CPU 的门。</p>
+<hr>
+<p><strong>9. 消息可靠性设计</strong></p>
+<p>WebSocket 本身只是连接通道，不等于业务消息可靠。</p>
+<p>如果要求可靠送达，需要应用层 ACK。</p>
+<p>消息状态：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CREATED SENT ACKED FAILED EXPIRED </span><br></pre></td></tr></table></figure>
+
+<p>推送流程：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 服务端生成 messageId 2. 推送消息给客户端 3. 客户端处理后回 ACK(messageId) 4. 服务端收到 ACK 标记成功 5. 超时未 ACK 则重试 6. 多次失败进入离线消息或失败队列 </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Gateway -&gt; messageId=123 -&gt; Client Gateway &lt;- ACK 123        &lt;- Client </span><br></pre></td></tr></table></figure>
+
+<p>至少一次投递会带来重复消息，所以客户端要幂等：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">根据 messageId 去重 </span><br></pre></td></tr></table></figure>
+
+<p>面试表达：</p>
+<blockquote>
+<p>WebSocket 保证连接上能发数据，但不保证业务语义上的可靠送达。要实现可靠推送，需要 messageId、ACK、超时重试、离线存储和客户端幂等。</p>
+</blockquote>
+<hr>
+<p><strong>10. 离线消息设计</strong></p>
+<p>如果用户不在线：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 消息写入离线消息表/Redis/MQ 2. 用户上线后拉取未读消息 3. 推送后等待 ACK 4. ACK 后标记已读或已送达 </span><br></pre></td></tr></table></figure>
+
+<p>存储选型：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">短期通知：Redis / MQ 延迟重试 重要消息：MySQL / Cassandra / HBase 大规模 IM：专门消息存储，按会话分片 </span><br></pre></td></tr></table></figure>
+
+<p>简化表结构：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">message_id user_id content status created_at expire_at </span><br></pre></td></tr></table></figure>
+
+<p>注意：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">离线消息不能无限存 需要 TTL、分页拉取、过期清理 </span><br></pre></td></tr></table></figure>
+
+<hr>
+<p><strong>11. Gateway 单机容量怎么估算？</strong></p>
+<p>百万连接不是先喊口号，要估算资源。</p>
+<p>每连接消耗：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fd 内存：Channel 对象、Buffer、用户态连接上下文 心跳处理成本 TLS 状态 内核 socket buffer </span><br></pre></td></tr></table></figure>
+
+<p>假设一个 Gateway 保守承载 5 万连接：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">100 万连接 / 5 万 = 20 台 再加冗余，部署 30 台左右 </span><br></pre></td></tr></table></figure>
+
+<p>如果单机 10 万连接：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">100 万 / 10 万 = 10 台 加冗余，15 台左右 </span><br></pre></td></tr></table></figure>
+
+<p>要关注：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ulimit -n net.core.somaxconn net.ipv4.ip_local_port_range net.ipv4.tcp_keepalive_time net.ipv4.tcp_mem net.ipv4.tcp_rmem net.ipv4.tcp_wmem </span><br></pre></td></tr></table></figure>
+
+<p>单机优化：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 使用 Netty epoll native transport 2. 调大 fd 限制 3. 控制每连接 buffer 大小 4. 避免给每连接分配大对象 5. 使用堆外内存池 6. 减少心跳频率 7. 避免 IO 线程阻塞 </span><br></pre></td></tr></table></figure>
+
+<hr>
+<p><strong>12. LB 怎么设计？</strong></p>
+<p>WebSocket 是长连接，LB 要注意：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 支持 WebSocket 升级 2. 长连接超时时间足够长 3. 健康检查准确 4. 尽量连接均衡 5. 节点下线要优雅摘流 </span><br></pre></td></tr></table></figure>
+
+<p>负载策略：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">最少连接数 一致性哈希 加权轮询 </span><br></pre></td></tr></table></figure>
+
+<p>更推荐：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">接入层按最少连接数或负载指标分配 </span><br></pre></td></tr></table></figure>
+
+<p>因为 WebSocket 连接持续时间长，普通轮询可能不够均匀。</p>
+<p>节点下线流程：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 从 LB 摘除节点 2. 不再接收新连接 3. 通知客户端重连或等待连接自然断开 4. 清理连接状态 5. 完成下线 </span><br></pre></td></tr></table></figure>
+
+<hr>
+<p><strong>13. Gateway 宕机怎么处理？</strong></p>
+<p>问题：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Gateway 宕机后，本机连接全部断开 Redis 里可能还残留 userId -&gt; gateway 映射 业务消息可能继续路由到故障节点 </span><br></pre></td></tr></table></figure>
+
+<p>解决：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. Gateway 定期上报节点心跳 2. 路由服务感知节点下线 3. 清理该节点关联的连接映射 4. 客户端自动重连到其他节点 5. 未 ACK 消息重新投递 </span><br></pre></td></tr></table></figure>
+
+<p>节点状态：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gw-1 alive gw-2 alive gw-3 dead </span><br></pre></td></tr></table></figure>
+
+<p>清理方式：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">通过 ws:node:&#123;nodeId&#125;:users 找到该节点用户 批量删除或标记连接失效 </span><br></pre></td></tr></table></figure>
+
+<p>客户端重连策略：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">指数退避 + 随机抖动 </span><br></pre></td></tr></table></figure>
+
+<p>避免所有客户端同时重连把系统打爆。</p>
+<hr>
+<p><strong>14. 扩容缩容怎么做？</strong></p>
+<p><strong>扩容：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 新 Gateway 注册到服务发现 2. LB 开始分配新连接 3. 老连接不迁移 4. 新连接逐渐分布到新节点 </span><br></pre></td></tr></table></figure>
+
+<p>WebSocket 长连接不会自动迁移，所以扩容见效主要靠：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">新连接 断线重连 主动重平衡 </span><br></pre></td></tr></table></figure>
+
+<p><strong>缩容：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 节点摘流 2. 停止接收新连接 3. 给客户端发送 reconnect 指令 4. 客户端带退避重连 5. 清理节点连接状态 6. 关闭节点 </span><br></pre></td></tr></table></figure>
+
+<p>不要直接 kill 节点，否则会造成重连风暴。</p>
+<hr>
+<p><strong>15. 多端登录怎么处理？</strong></p>
+<p>如果一个用户多端在线：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">userId=1001  ├── iPhone -&gt; gw-1 -&gt; ch-a  ├── Web    -&gt; gw-3 -&gt; ch-b  └── iPad   -&gt; gw-2 -&gt; ch-c </span><br></pre></td></tr></table></figure>
+
+<p>策略可选：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 全端推送 2. 只推最近活跃端 3. 按设备类型推 4. 互踢：新登录踢旧登录 </span><br></pre></td></tr></table></figure>
+
+<p>面试中说清楚：</p>
+<blockquote>
+<p>这个取决于业务语义。IM 通常多端同步，风控登录可能只保留一个端。</p>
+</blockquote>
+<hr>
+<p><strong>16. 安全设计</strong></p>
+<p>WebSocket 建连要做鉴权：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. token 校验 2. token 过期处理 3. 连接频率限制 4. 单用户最大连接数 5. 单 IP 最大连接数 6. 消息大小限制 7. 心跳异常踢下线 8. 防止恶意空连接占资源 </span><br></pre></td></tr></table></figure>
+
+<p>连接建立：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wss://example.com/ws?token=xxx </span><br></pre></td></tr></table></figure>
+
+<p>更推荐：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Header / Cookie 携带 token </span><br></pre></td></tr></table></figure>
+
+<p>生产上使用：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">WSS = WebSocket over TLS </span><br></pre></td></tr></table></figure>
+
+<hr>
+<p><strong>17. 监控指标</strong></p>
+<p>必须监控：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">当前连接数 新建连接速率 断开连接速率 心跳 QPS 消息推送 QPS 推送成功率 ACK 延迟 离线消息堆积 Gateway CPU/内存/fd EventLoop 延迟 MQ 堆积 Redis 延迟 重连次数 节点连接分布 </span><br></pre></td></tr></table></figure>
+
+<p>核心告警：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">连接数突降 重连率突增 ACK 延迟升高 MQ 消费延迟 Redis 超时 单节点连接倾斜 fd 使用率过高 </span><br></pre></td></tr></table></figure>
+
+<hr>
+<p><strong>18. 百万 WebSocket 面试标准回答</strong></p>
+<p>可以直接这样讲：</p>
+<blockquote>
+<p>百万 WebSocket 不能让业务服务直接维护连接，我会把系统拆成连接接入层、消息路由层和业务层。WebSocket Gateway 只负责长连接、鉴权、心跳和推送；业务服务产生消息后写 MQ；消息路由服务根据 userId 到 Gateway 的映射找到连接所在节点，再把消息投递到对应 Gateway。</p>
+<p>连接状态可以放 Redis，结构类似 userId 到 gatewayNodeId、channelId、deviceId 的映射，并用 TTL 和心跳续期保证状态不过期。Gateway 宕机时，通过节点心跳发现故障，清理该节点连接映射，客户端使用指数退避重连。消息可靠性上，用 messageId、客户端 ACK、超时重试、离线消息和客户端幂等保证至少一次送达。</p>
+<p>单机容量要根据 fd、内存、socket buffer、心跳 QPS 和 EventLoop 延迟评估，通常不会追求单机扛百万，而是多节点水平扩展。LB 要支持 WebSocket 长连接，节点下线要先摘流再让客户端重连，避免重连风暴。监控上重点看连接数、重连率、ACK 延迟、MQ 堆积、Redis 延迟和节点连接分布。</p>
+</blockquote>
+<p><strong>最后一句压轴：</strong></p>
+<blockquote>
+<p>这类系统的关键不是“能连上”，而是连接状态可治理、消息可路由、故障可恢复、扩容不雪崩。</p>
+</blockquote>
+<p>16:18</p>
+<p>websocket + netty  + gateway 怎么落地</p>
+<p>16:32</p>
+<p>可以落地成一套 <strong>“边缘 API Gateway 负责入口治理，Netty WebSocket Gateway 负责长连接接入，业务服务负责消息生产”</strong> 的架构。重点先说清楚：这里有两个 gateway，别混成一坨。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">API Gateway：HTTP 入口治理，鉴权、限流、路由、灰度 WebSocket Gateway：长连接接入，维护 Channel、心跳、推送 </span><br></pre></td></tr></table></figure>
+
+<p><strong>整体架构</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">客户端  |  | HTTPS / WSS  v LB / Nginx / API Gateway  |  | /api/**  -&gt; HTTP 微服务  | /ws      -&gt; Netty WebSocket Gateway  v Netty WebSocket Gateway 集群  |  | 注册连接状态  v Redis Cluster  |  | 消息异步解耦  v MQ：Kafka / RocketMQ / RabbitMQ  |  v 业务服务 </span><br></pre></td></tr></table></figure>
+
+<p>更完整一点：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">客户端  |  v SLB / Nginx  |  ├── HTTP 请求 -&gt; API Gateway -&gt; 业务服务  |  └── WebSocket 连接 -&gt; Netty WS Gateway                          |                          ├── Redis：userId -&gt; nodeId/channelId                          ├── MQ：消费业务推送消息                          └── RPC/HTTP：内部推送接口 </span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="1-网关怎么分工？"><a href="#1-网关怎么分工？" class="headerlink" title="1. 网关怎么分工？"></a>1. 网关怎么分工？</h2><p><strong>API Gateway 做什么？</strong></p>
+<p>适合做 HTTP 请求治理：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">登录鉴权 接口限流 路由转发 灰度发布 统一日志 请求签名校验 HTTP API 聚合 </span><br></pre></td></tr></table></figure>
+
+<p>常见组件：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Spring Cloud Gateway Nginx Kong Envoy APISIX </span><br></pre></td></tr></table></figure>
+
+<p><strong>Netty WebSocket Gateway 做什么？</strong></p>
+<p>只做长连接相关事情：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">WebSocket 握手 连接鉴权 Channel 维护 心跳检测 用户上线/下线 消息推送 连接状态注册 </span><br></pre></td></tr></table></figure>
+
+<p>不建议在 Netty Gateway 里做：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">复杂业务计算 慢 SQL 远程接口编排 大对象处理 复杂规则判断 </span><br></pre></td></tr></table></figure>
+
+<p>一句话：</p>
+<blockquote>
+<p>API Gateway 管 HTTP 流量治理，Netty WebSocket Gateway 管长连接生命周期。业务逻辑不要塞进长连接网关里。</p>
+</blockquote>
+<hr>
+<h2 id="2-WebSocket-建连流程"><a href="#2-WebSocket-建连流程" class="headerlink" title="2. WebSocket 建连流程"></a>2. WebSocket 建连流程</h2><p>客户端连接：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wss://example.com/ws?token=xxx </span><br></pre></td></tr></table></figure>
+
+<p>建议生产上用：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wss://example.com/ws Header/Cookie 携带 token </span><br></pre></td></tr></table></figure>
+
+<p>建连流程：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 客户端发起 WSS 连接 2. LB/Nginx 转发到某个 Netty WS Gateway 3. Netty 完成 HTTP Upgrade 4. Gateway 校验 token 5. 解析 userId、deviceId、tenantId 6. 绑定 Channel 和用户上下文 7. 写入 Redis 连接映射 8. 返回连接成功消息 9. 开始心跳 </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Client  |  | WebSocket Upgrade + token  v Netty Gateway  |  | 校验 token  v Redis: ws:user:&#123;userId&#125;:&#123;deviceId&#125; = nodeId + channelId </span><br></pre></td></tr></table></figure>
+
+<p>连接状态可以存：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;  &quot;userId&quot;: &quot;1001&quot;,  &quot;deviceId&quot;: &quot;ios-001&quot;,  &quot;nodeId&quot;: &quot;ws-gw-03&quot;,  &quot;channelId&quot;: &quot;ch-8899&quot;,  &quot;connectedAt&quot;: 1710000000,  &quot;lastHeartbeat&quot;: 1710000030 &#125; </span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="3-Netty-服务端-Pipeline-怎么设计？"><a href="#3-Netty-服务端-Pipeline-怎么设计？" class="headerlink" title="3. Netty 服务端 Pipeline 怎么设计？"></a>3. Netty 服务端 Pipeline 怎么设计？</h2><p>典型 Pipeline：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pipeline.addLast(new HttpServerCodec()); pipeline.addLast(new HttpObjectAggregator(65536)); pipeline.addLast(new WebSocketServerProtocolHandler(&quot;/ws&quot;, null, true)); pipeline.addLast(new IdleStateHandler(90, 0, 0)); pipeline.addLast(new AuthHandshakeHandler()); pipeline.addLast(new WebSocketFrameDecoder()); pipeline.addLast(new BusinessMessageHandler()); pipeline.addLast(new ExceptionHandler()); </span><br></pre></td></tr></table></figure>
+
+<p>更准确的职责：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">HttpServerCodec： HTTP 编解码，处理 WebSocket 握手前的 HTTP 请求 HttpObjectAggregator： 聚合 HTTP 请求，方便鉴权 WebSocketServerProtocolHandler： 处理 WebSocket Upgrade、Ping/Pong、Close IdleStateHandler： 检测读空闲，触发心跳超时 AuthHandshakeHandler： 握手阶段鉴权，绑定用户信息 WebSocketFrameDecoder： 解析 Text/Binary Frame BusinessMessageHandler： 处理上行消息、ACK、订阅等轻量逻辑 ExceptionHandler： 异常关闭和资源清理 </span><br></pre></td></tr></table></figure>
+
+<p>注意：</p>
+<blockquote>
+<p>鉴权最好在握手阶段完成，不要等连接建立后才发现 token 不合法。</p>
+</blockquote>
+<hr>
+<h2 id="4-Channel-怎么管理？"><a href="#4-Channel-怎么管理？" class="headerlink" title="4. Channel 怎么管理？"></a>4. Channel 怎么管理？</h2><p>本机内存维护 Channel：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">channelId -&gt; Channel userId -&gt; channelId list channelId -&gt; session context </span><br></pre></td></tr></table></figure>
+
+<p>例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ConcurrentHashMap&lt;String, Channel&gt; channelMap; ConcurrentHashMap&lt;Long, Set&lt;String&gt;&gt; userChannelMap; ConcurrentHashMap&lt;String, SessionContext&gt; sessionMap; </span><br></pre></td></tr></table></figure>
+
+<p>Redis 维护全局连接位置：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ws:user:&#123;userId&#125; -&gt; sessions ws:session:&#123;sessionId&#125; -&gt; metadata ws:node:&#123;nodeId&#125;:sessions -&gt; sessionId set </span><br></pre></td></tr></table></figure>
+
+<p>单端在线：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ws:user:1001 = ws-gw-03:ch-8899 </span><br></pre></td></tr></table></figure>
+
+<p>多端在线：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ws:user:1001 = [  ios -&gt; ws-gw-03:ch-a,  web -&gt; ws-gw-01:ch-b ] </span><br></pre></td></tr></table></figure>
+
+<p>为什么本地和 Redis 都要有？</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">本地 Map：真正发消息要找到 Channel Redis：其他服务要知道用户在哪个 Gateway </span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="5-消息下发怎么走？"><a href="#5-消息下发怎么走？" class="headerlink" title="5. 消息下发怎么走？"></a>5. 消息下发怎么走？</h2><p>有两种落地方式。</p>
+<p><strong>方式一：MQ 广播到所有 Gateway，Gateway 本地判断</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">业务服务 -&gt; MQ Topic -&gt; 所有 Gateway 消费 Gateway 判断目标用户是否在本机 在本机就推送，不在就忽略 </span><br></pre></td></tr></table></figure>
+
+<p>优点：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">实现简单 不需要单独路由服务 </span><br></pre></td></tr></table></figure>
+
+<p>缺点：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Gateway 多时消息放大严重 每个节点都收到无关消息 不适合大规模精准推送 </span><br></pre></td></tr></table></figure>
+
+<p>适合：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">小规模系统 广播类消息 早期版本 </span><br></pre></td></tr></table></figure>
+
+<p><strong>方式二：消息路由服务精准投递，推荐</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">业务服务 -&gt; MQ -&gt; Push Router -&gt; 查 Redis -&gt; 指定 Gateway -&gt; Client </span><br></pre></td></tr></table></figure>
+
+<p>流程：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 业务服务产生 PushMessage 2. 写入 MQ 3. Push Router 消费 4. 查 Redis：userId 在哪个 nodeId 5. 调用目标 Gateway 内部接口 6. Gateway 本地根据 channelId 推送 7. 客户端 ACK </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">业务服务  |  v MQ  |  v Push Router  |  | 查 Redis: userId -&gt; ws-gw-03  v ws-gw-03  |  v Client </span><br></pre></td></tr></table></figure>
+
+<p>推荐生产使用第二种。</p>
+<hr>
+<h2 id="6-Gateway-之间怎么通信？"><a href="#6-Gateway-之间怎么通信？" class="headerlink" title="6. Gateway 之间怎么通信？"></a>6. Gateway 之间怎么通信？</h2><p>Push Router 找到目标 Gateway 后，需要把消息发到那台机器。</p>
+<p>可选方式：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. HTTP/gRPC 调用 Gateway 内部推送接口 2. 每个 Gateway 订阅自己的 MQ Topic/Queue 3. Redis Stream / PubSub </span><br></pre></td></tr></table></figure>
+
+<p>推荐：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">中等规模：HTTP/gRPC 内部接口 大规模：按 nodeId 分片 MQ Queue </span><br></pre></td></tr></table></figure>
+
+<p>比如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">push.queue.ws-gw-01 push.queue.ws-gw-02 push.queue.ws-gw-03 </span><br></pre></td></tr></table></figure>
+
+<p>Push Router 投递到对应节点队列：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">userId=1001 -&gt; ws-gw-03 -&gt; push.queue.ws-gw-03 </span><br></pre></td></tr></table></figure>
+
+<p>Gateway 只消费自己的队列。</p>
+<hr>
+<h2 id="7-上行消息怎么处理？"><a href="#7-上行消息怎么处理？" class="headerlink" title="7. 上行消息怎么处理？"></a>7. 上行消息怎么处理？</h2><p>客户端发来的消息不要在 Gateway 里重业务处理。</p>
+<p>流程：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Client -&gt; Netty Gateway -&gt; MQ/RPC -&gt; 业务服务 </span><br></pre></td></tr></table></figure>
+
+<p>例如客户端发送聊天消息：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;  &quot;type&quot;: &quot;CHAT_SEND&quot;,  &quot;requestId&quot;: &quot;req-123&quot;,  &quot;conversationId&quot;: &quot;c-100&quot;,  &quot;content&quot;: &quot;hello&quot; &#125; </span><br></pre></td></tr></table></figure>
+
+<p>Gateway 做轻量校验：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">连接是否登录 消息大小是否合法 频率是否超限 协议格式是否正确 </span><br></pre></td></tr></table></figure>
+
+<p>然后投递：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Gateway -&gt; MQ -&gt; Chat Service </span><br></pre></td></tr></table></figure>
+
+<p>业务服务处理完成后，再走下发链路推给接收方。</p>
+<hr>
+<h2 id="8-心跳怎么落地？"><a href="#8-心跳怎么落地？" class="headerlink" title="8. 心跳怎么落地？"></a>8. 心跳怎么落地？</h2><p>建议：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">客户端每 30s 发送 ping 服务端 90s 未收到任何读事件则断开 Redis session TTL 设置为 120s 每次心跳续期 </span><br></pre></td></tr></table></figure>
+
+<p>Netty：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pipeline.addLast(new IdleStateHandler(90, 0, 0)); </span><br></pre></td></tr></table></figure>
+
+<p>处理：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">读空闲事件触发  |  v 服务端发送 ping 或直接关闭  |  v 如果仍无响应，关闭 Channel  |  v 清理本地 Map 和 Redis </span><br></pre></td></tr></table></figure>
+
+<p>心跳包：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;  &quot;type&quot;: &quot;PING&quot;,  &quot;ts&quot;: 1710000000 &#125; </span><br></pre></td></tr></table></figure>
+
+<p>响应：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;  &quot;type&quot;: &quot;PONG&quot;,  &quot;ts&quot;: 1710000000 &#125; </span><br></pre></td></tr></table></figure>
+
+<p>注意百万连接下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">100 万连接 / 30 秒 = 3.3 万心跳 QPS </span><br></pre></td></tr></table></figure>
+
+<p>所以心跳处理必须轻，不能每次都查数据库。小小心跳，敲起来也挺吵的。</p>
+<hr>
+<h2 id="9-ACK-和可靠投递怎么落地？"><a href="#9-ACK-和可靠投递怎么落地？" class="headerlink" title="9. ACK 和可靠投递怎么落地？"></a>9. ACK 和可靠投递怎么落地？</h2><p>下发消息格式：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;  &quot;type&quot;: &quot;PUSH&quot;,  &quot;messageId&quot;: &quot;msg-10001&quot;,  &quot;bizType&quot;: &quot;ORDER_STATUS&quot;,  &quot;payload&quot;: &#123;&#125; &#125; </span><br></pre></td></tr></table></figure>
+
+<p>客户端收到后回：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;  &quot;type&quot;: &quot;ACK&quot;,  &quot;messageId&quot;: &quot;msg-10001&quot; &#125; </span><br></pre></td></tr></table></figure>
+
+<p>服务端处理：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">收到 ACK  |  v 更新消息状态为 ACKED </span><br></pre></td></tr></table></figure>
+
+<p>如果超时未 ACK：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 重试 N 次 2. 仍失败则写离线消息 3. 用户下次上线拉取 </span><br></pre></td></tr></table></figure>
+
+<p>可靠性语义建议说清楚：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">至少一次送达 客户端按 messageId 幂等去重 </span><br></pre></td></tr></table></figure>
+
+<p>不要轻易承诺“刚好一次”，面试里容易被追着打。</p>
+<hr>
+<h2 id="10-限流和保护怎么做？"><a href="#10-限流和保护怎么做？" class="headerlink" title="10. 限流和保护怎么做？"></a>10. 限流和保护怎么做？</h2><p>连接层：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">单 IP 最大连接数 单用户最大连接数 连接建立速率限制 握手失败次数限制 </span><br></pre></td></tr></table></figure>
+
+<p>消息层：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">单连接上行 QPS 单用户发送频率 单消息大小 单 Gateway 推送队列长度 </span><br></pre></td></tr></table></figure>
+
+<p>资源保护：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">超过最大连接数拒绝新连接 发送队列积压过多断开慢客户端 消息体过大直接关闭 恶意连接加入黑名单 </span><br></pre></td></tr></table></figure>
+
+<p>慢客户端问题：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">如果客户端网络很差，服务端发送缓冲区持续堆积 会拖垮 Gateway 内存 </span><br></pre></td></tr></table></figure>
+
+<p>处理：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 每个 Channel 设置待发送队列上限 2. 超过阈值丢弃低优先级消息 3. 严重时断开连接 </span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="11-部署落地形态"><a href="#11-部署落地形态" class="headerlink" title="11. 部署落地形态**"></a>11. 部署落地形态**</h2><p>推荐部署：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Nginx / SLB  |  v Netty WS Gateway Deployment  |  v Redis Cluster  |  v MQ Cluster  |  v Push Router / Business Services </span><br></pre></td></tr></table></figure>
+
+<p>Gateway 节点启动时：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 生成 nodeId 2. 注册到服务发现 3. 定时上报心跳 4. 暴露内部推送接口 </span><br></pre></td></tr></table></figure>
+
+<p>节点下线：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 从 LB 摘流 2. 停止接收新连接 3. 通知客户端重连或等待自然断开 4. 清理 Redis 中 nodeId 对应 sessions 5. 关闭进程 </span><br></pre></td></tr></table></figure>
+
+<p>K8s 场景注意：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">preStop hook 做优雅下线 readinessProbe 控制摘流 terminationGracePeriodSeconds 给足</span><br></pre></td></tr></table></figure>
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1757983019/" target="_blank">网络高频面试题</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                
+                <div class="article-prev-next">
+                    
+                        <a href="/article/1786983019/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1786983019/" title="发布于 2025-06-24 10:36">分布式事务总结</a>
+                        <br>
+                    
+                    
+                        <a href="/article/1756983019/" class="next-prefix">» </a> 下一篇：    <a href="/article/1756983019/" title="发布于 2025-05-24 10:36">高频操作系统面试题</a>
+                    
+                </div>
+            </div>
+            
+    <div class="article-comments">
+        
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
+    
+</div>
+
+    <div id="footer"></div>
+    <div id="sidebar">
+    <div class="menu-wrap" style="display:none;">
+        
+            <div class="menu-notice">
+                <span class="iconfont icon-notice"></span>
+                <div class="notice">
+                    <span>简单地活着，肆意而又精彩！</span>
+                </div>
+            </div>
+        
+        <nav class="menu">
+            <div class="menu-introduce"> 
+                <div class="introduce-avatar">
+                    <img src="/image/sidebar/avatar.jpg">
+                </div> 
+                <div class="introduce-info"> 
+                    <div class="introduce-user"><span>Live For Code</span></div>
+                </div> 
+            </div> 
+            <div class="menu-list">
+                <ul>
+                    
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                    
+                        <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
+                    
+                        <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
+                    
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                    
+                        <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
+                    
+                        <li class=""><a href="/about" class="" target="_self"><span class="iconfont icon-about-fill"></span>关于</a></li>
+                    
+                        <li class=""><a href="/atom.xml" class="" target="_blank"><span class="iconfont icon-rss"></span>订阅</a></li>
+                    
+                        <li class=""><a href="/comment" class="" target="_self"><span class="iconfont icon-comments-fill"></span>留言板</a></li>
+                    
+                        <li class=""><a href="/friend" class="" target="_self"><span class="iconfont icon-link"></span>友情链接</a></li>
+                    
+                </ul> 
+            </div> 
+            <div class="menu-link">
+                <div class="box">
+                    <div class="image-box"></div>
+                </div>
+                
+                    <a name="知乎" href="https://www.zhihu.com/people/wo-xin-de-love" class="" target="_blank" data=""><span class="iconfont icon-zhihu"></span></a>
+                
+                    <a name="微博" href="https://weibo.com/u/3939432776" class="" target="_blank" data=""><span class="iconfont icon-weibo"></span></a>
+                
+                    <a name="QQ" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"><span class="iconfont icon-qq"></span></a>
+                
+                    <a name="微信" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"><span class="iconfont icon-wechat"></span></a>
+                
+                    <a name="GitHub" href="https://github.com/first19326" class="" target="_blank" data=""><span class="iconfont icon-github"></span></a>
+                
+            </div> 
+        </nav>
+        <button class="menu-button-close"></button>
+        <div class="morph-shape" id="morph-shape" data-morph-open="M-7.312,0H15c0,0,66,113.339,66,399.5C81,664.006,15,800,15,800H-7.312V0z;M-7.312,0H100c0,0,0,113.839,0,400c0,264.506,0,400,0,400H-7.312V0z">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 800" preserveAspectRatio="none">
+                <path d="M-7.312,0H0c0,0,0,113.839,0,400c0,264.506,0,400,0,400h-7.312V0z"/>
+            </svg>
+        </div>
+    </div>
+    <button class="menu-button-open">MENU</button>
+    <div class="menu-cover"></div>
+</div>
+    
+<div id="tools">
+    <div class="progressbar-top"></div>
+
+    <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
+    <script type="text/javascript" src="/js/APlayer.min.js"></script>
+    <script type="text/javascript" src="/js/Meting.min.js"></script>
+    <meting-js id="3778678" lrcshow="false" server="netease"
+               type="playlist" fixed="true" autoplay="false"
+               loop="all" order="random" preload="auto"
+               volume="0.67" mutex="true"></meting-js>
+
+    <script type="text/javascript">
+        (function () {
+            var toolsRoot = document.getElementById('tools');
+            if (!toolsRoot || typeof APlayer === 'undefined') {
+                return;
+            }
+
+            var metingElement = toolsRoot.querySelector('meting-js');
+            var targetVolume = 0.67;
+            var autoplayEnabled = true;
+            var introAudio = {
+                name: "知我",
+                artist: "国风堂 / 哦漏",
+                cover: "/image/header/home.jpg",
+                url: "/music/song/知我.mp3",
+                lrc: ""
+            };
+            var introIndex = -1;
+            var introRemoved = false;
+            var metingPlayer = null;
+            var initTimer = null;
+
+            function restoreAudio(audio) {
+                if (!audio) {
+                    return;
+                }
+
+                audio.muted = false;
+                audio.defaultMuted = false;
+                audio.removeAttribute('muted');
+                audio.removeAttribute('autoplay');
+                audio.volume = targetVolume;
+            }
+
+            function attemptPlay(player, muted) {
+                if (!player || !player.audio) {
+                    return;
+                }
+
+                var audio = player.audio;
+                if (typeof muted === 'boolean') {
+                    audio.muted = muted;
+                    audio.defaultMuted = muted;
+                    if (muted) {
+                        audio.setAttribute('muted', 'muted');
+                        audio.setAttribute('autoplay', 'autoplay');
+                        audio.volume = 0;
+                    }
+                }
+
+                var result = audio.play();
+                if (result && typeof result.catch === 'function') {
+                    result.catch(function () {
+                        if (player && player.setUIPaused) {
+                            player.setUIPaused();
+                        }
+                    });
+                }
+            }
+
+            function startMutedAutoplay(player) {
+                if (!player || !player.audio) {
+                    return;
+                }
+
+                var audio = player.audio;
+                audio.muted = true;
+                audio.defaultMuted = true;
+                audio.setAttribute('muted', 'muted');
+                audio.setAttribute('autoplay', 'autoplay');
+                audio.volume = 0;
+
+                var clearMute = function () {
+                    restoreAudio(audio);
+                };
+
+                audio.addEventListener('playing', function () {
+                    window.setTimeout(clearMute, 120);
+                }, {once: true});
+
+                ['loadedmetadata', 'canplay', 'canplaythrough'].forEach(function (eventName) {
+                    audio.addEventListener(eventName, function resumeOnReady() {
+                        if (audio.paused) {
+                            attemptPlay(player, true);
+                        }
+                    }, {once: true});
+                });
+
+                [0, 250, 1200, 2500].forEach(function (delay) {
+                    window.setTimeout(function () {
+                        if (audio.paused) {
+                            attemptPlay(player, true);
+                        }
+                    }, delay);
+                });
+
+                attemptPlay(player, true);
+            }
+
+            function showPlayerControls(player) {
+                if (player && player.setMode) {
+                    player.setMode('normal');
+                }
+                if (player && player.template && player.template.info) {
+                    player.template.info.style.display = 'block';
+                }
+            }
+
+            function resetRandomOrder(player) {
+                if (!player || !player.list || !player.list.audios) {
+                    return;
+                }
+
+                var order = [];
+                for (var i = 0; i < player.list.audios.length; i++) {
+                    order.push(i);
+                }
+                for (var j = order.length - 1; j > 0; j--) {
+                    var randomIndex = Math.floor(Math.random() * (j + 1));
+                    var item = order[j];
+                    order[j] = order[randomIndex];
+                    order[randomIndex] = item;
+                }
+                player.randomOrder = order;
+            }
+
+            function removeIntroAfterLeaving(player) {
+                if (introRemoved || introIndex < 0 || !player || !player.list || player.list.index === introIndex) {
+                    return;
+                }
+
+                player.removeAudio(introIndex);
+                introRemoved = true;
+                introIndex = -1;
+
+                if (player.options && player.options.order === 'random') {
+                    resetRandomOrder(player);
+                }
+            }
+
+            function initIntro(player) {
+                if (!player || !player.list || !player.list.audios || !player.addAudio || !introAudio.url) {
+                    return;
+                }
+
+                metingPlayer = player;
+                showPlayerControls(player);
+
+                player.addAudio(introAudio);
+                introIndex = player.list.audios.length - 1;
+                player.list.switch(introIndex);
+                showPlayerControls(player);
+
+                player.on('listswitch', function () {
+                    window.setTimeout(function () {
+                        removeIntroAfterLeaving(player);
+                    }, 0);
+                });
+                player.on('ended', function () {
+                    window.setTimeout(function () {
+                        removeIntroAfterLeaving(player);
+                    }, 0);
+                });
+
+                if (autoplayEnabled) {
+                    startMutedAutoplay(player);
+                }
+
+                document.addEventListener('click', function resumeMusic() {
+                    if (player && player.audio && player.audio.paused) {
+                        restoreAudio(player.audio);
+                        attemptPlay(player, false);
+                    }
+                    document.removeEventListener('click', resumeMusic);
+                });
+
+                window.__liveForCodeMusic = {
+                    player: player,
+                    meting: metingElement
+                };
+            }
+
+            initTimer = window.setInterval(function () {
+                if (metingElement && metingElement.aplayer) {
+                    window.clearInterval(initTimer);
+                    initIntro(metingElement.aplayer);
+                }
+            }, 100);
+        })();
+    </script>
+    
+    <div class="wrap-right">
+        <div class="setting">
+            <div class="iconbox mode">
+                <div class="light">
+                    <span class="iconfont icon-daymode"></span>
+                    <span class="icontext">浅色模式</span>
+                </div>
+                <div class="dark">
+                    <span class="iconfont icon-nightmode-fill"></span>
+                    <span class="icontext">深色模式</span>
+                </div>
+            </div>
+            <div class="iconbox bottom">
+                <div style="display: inline-block; transform: rotate(180deg);">
+                    <span class="iconfont icon-top"></span>
+                </div>
+                <span class="icontext">跳至底部</span>
+            </div>
+        </div>
+        <div class="iconbox set">
+            <div style="display: inline-block;">
+                <span class="iconfont icon-setting"></span>
+            </div>
+            <span class="icontext">设置</span>
+        </div>
+        <div class="iconbox top">
+            <span class="iconfont icon-top"></span>
+            <span class="icontext">返回顶部</span>
+        </div>
+    </div>
+    <div class="loading"></div>
+</div>
+
+    <script>
+    window.config = {
+        GitHubUserName     : "first19326",
+        GitHubRepositories : "Hexo-LiveForCode",
+
+        User             : "Live For Code",
+        UserAvatar       : "/image/sidebar/avatar.jpg",
+        WebsiteStartDate : "2020-01-01",
+
+        WebsiteTitleBlur         : "(◍´꒳`◍) Hi, Live For Code",
+        WebsiteTitleBlurTimeOut  : 500,
+        WebsiteTitleFocus        : "(*´∇｀*) 欢迎回来!",
+        WebsiteTitleFocusTimeOut : 1000,
+        WebsiteFavicon           : "/image/website/logo.png",
+
+        ProgressBar : {
+            id       : "topProgressBar",
+            color    : "#77B6FF",
+            height   : "2px",
+            duration : 0.2
+        },
+
+        Loading: {
+            rebound : {
+                tension  : 16,
+                friction : 5
+            },
+            spinner : {
+                id     : "spinner",
+                radius : 90,
+                sides  : 3,
+                depth  : 4,
+                colors : {
+                    background : "#F0F0F0",
+                    stroke     : "#272633",
+                    base       : "",
+                    child      : "#272633"
+                },
+                alwaysForward : true,
+                restAt        : 0.5,
+                renderBase    : false
+            }
+        },
+
+        HomeHeaderAnimationRendered : true,
+        HomeHeaderAnimation         : {
+            radius      : 15,
+            density     : 0.2,
+            color       : "rgba(255, 255, 255, .2)",
+            clearOffset : 0.3
+        },
+
+        BackAnimationRendered          : true,
+        IEBrowserBackAnimationRendered : false,
+        BackAnimation                  : {
+            colorSaturation  : "60%",
+            colorBrightness  : "50%",
+            colorAlpha       : 0.5,
+            colorCycleSpeed  : 5,
+            verticalPosition : "random",
+            horizontalSpeed  : 200,
+            ribbonCount      : 3,
+            strokeSize       : 0,
+            parallaxAmount   : -0.2,
+            animateSections  : true
+        },
+
+        HomeHeaderImage : [
+            
+                "/image/header/home.jpg",
+            
+                "/image/header/home.jpeg",
+            
+                "/image/header/2023-04-17-20-51-03.jpg",
+            
+                "/image/header/2023-04-17-20-54-07.jpg",
+            
+                "/image/header/2023-04-17-20-54-22.jpg",
+            
+                "/image/header/2023-04-17-20-55-25.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+        HomeBannerText  : "",
+
+        ArticleHeaderImage : [
+            
+                "/image/header/article.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+
+        OtherBannerText : "",
+
+        Error : {
+            icon    : "icon-swimming",
+            title   : "PAGE NOT FOUND",
+            content : [
+                
+                    "很抱歉，您访问的页面不存在！",
+                
+                    "可能是输入地址有误或该地址已变更。",
+                
+            ],
+            buttons : [
+                
+                    {
+                        icon  : "icon-home",
+                        text  : "返回首页",
+                        href  : "https://fadeway32.gitee.io/",
+                        class : ""
+                    },
+                
+            ]
+        },
+
+        MenuNotice : {
+            enable : true,
+            notice : "简单地活着，肆意而又精彩！",
+            speed  : 20
+        },
+        MenuList : [
+            
+                {
+                    name   : "首页",
+                    icon   : "icon-home-fill",
+                    href   : "/",
+                    type   : "index",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "分类",
+                    icon   : "icon-folder-fill",
+                    href   : "/category",
+                    type   : "category",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "标签",
+                    icon   : "icon-discount-fill",
+                    href   : "/tag",
+                    type   : "tag",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "归档",
+                    icon   : "icon-calendar-fill",
+                    href   : "/archive",
+                    type   : "archive",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "赞赏",
+                    icon   : "icon-heart-fill",
+                    href   : "/donate",
+                    type   : "donate",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "关于",
+                    icon   : "icon-about-fill",
+                    href   : "/about",
+                    type   : "about",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "订阅",
+                    icon   : "icon-rss",
+                    href   : "/atom.xml",
+                    type   : "",
+                    class  : "",
+                    target : "_blank"
+                },
+            
+                {
+                    name   : "留言板",
+                    icon   : "icon-comments-fill",
+                    href   : "/comment",
+                    type   : "comment",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "友情链接",
+                    icon   : "icon-link",
+                    href   : "/friend",
+                    type   : "friend",
+                    class  : "",
+                    target : "_self"
+                },
+            
+        ],
+        MenuLink : [
+            
+                
+                    {
+                        name   : "知乎",
+                        icon   : "icon-zhihu",
+                        href   : "https://www.zhihu.com/people/wo-xin-de-love",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "微博",
+                        icon   : "icon-weibo",
+                        href   : "https://weibo.com/u/3939432776",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "QQ",
+                        icon   : "icon-qq",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"
+                    },
+                
+                    {
+                        name   : "微信",
+                        icon   : "icon-wechat",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"
+                    },
+                
+                    {
+                        name   : "GitHub",
+                        icon   : "icon-github",
+                        href   : "https://github.com/first19326",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+            
+        ],
+
+        FooterStyle : 2,
+        BottomText  : "<div><span class='face'>ღゝ◡╹)ノ♡</span></div><div>【人生若只如初见<span><i class='iconfont icon-like-fill'></i></span>何事秋风悲画扇】</div><div>&copy; 2020-2022 WorstOne. All Rights Reserved.</div>",
+
+        ConsoleList : [
+            
+                
+                    [
+                        
+                            
+                                "Based on cnblogs theme SimpleMemory.",
+                            
+                                "",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "SimpleMemory Author:",
+                            
+                                "BNDong",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "Theme:",
+                            
+                                "LiveForCode",
+                            
+                        
+                    ],
+                
+            
+        ],
+
+        FontIconExtend : "",
+
+        Donate : {
+            paypal  : "",
+            bitcoin : "",
+            alipay  : "/image/donate/alipay.png",
+            wechat  : "/image/donate/wechat.png"
+        },
+
+        Search : {
+            applicationID : "854JXVO35S",
+            apiKey        : "1945575867b066df2d460a4a97e23421",
+            indexName     : "hexo2",
+            hits          : {
+                page : 30
+            },
+            labels        : {
+                placeholder : "搜索",
+                empty       : "未发现与 「${query}」 相关的内容",
+                stats       : "${hits} 条相关条目，使用了 ${time} 毫秒",
+            }
+        }, 
+
+        Valine : {
+            switch         : true,
+            el             : ".comments-content",
+            appId          : "srhKtvWPQTWYKh3qX8G8M7v0-gzGzoHsz",
+            appKey         : "8uVSP1q6UlALVC5igYfIfv2h",
+            serverURLs     : "",
+            placeholder    : "你是我一生只会遇见一次的惊喜...",
+            avatar         : "mm",
+            meta           : "nick,mail,link",
+            requiredFields : "nick,mail",
+            pageSize       : 5,
+            lang           : "zh-cn",
+            visitor        : true,
+            enableQQ       : true
+        },
+
+        Tocbot : {
+            switch                : true,
+            tocSelector           : ".toc",
+            contentSelector       : ".article-body",
+            headingSelector       : "h1, h2, h3, h4, h5",
+            headingsOffset        : 0,
+            scrollSmooth          : true,
+            scrollSmoothOffset    : -5,
+            positionFixedSelector : ".toc",
+            positionFixedClass    : "toc-fixed",
+            fixedSidebarOffset    : "",
+        },
+
+        Require : {
+            baseUrl     : "/js/",
+            waitSeconds : 100
+        },
+
+        Music : {
+            type : "Meting"
+        },
+        APlayer : {
+            container : ".aplayer",
+            fixed     : true,
+            autoplay  : true,
+            loop      : "all",
+            order     : "list",
+            preload   : "auto",
+            volume    : 0.67,
+            mutex     : true,
+            lrcType   : 0,
+            audio     : [
+                
+                    {
+                        name   : "知我",
+                        artist : "国风堂 / 哦漏",
+                        cover  : "/image/header/home.jpg",
+                        url    : "/music/song/知我.mp3",
+                        lrc    : ""
+                    },
+                
+            ]
+        },
+        Meting : {
+            id       : "3778678", 
+            lrcshow  : false, 
+            server   : "netease", 
+            type     : "playlist", 
+            fixed    : true, 
+            autoplay : true, 
+            loop     : "all", 
+            order    : "random", 
+            preload  : "auto", 
+            volume   : 0.67, 
+            mutex    : true
+        },
+
+        Mouse : {
+            enable  : true,
+            options : {
+                size  : 6,
+                sizeF : 24
+            }
+        },
+
+        LazyLoad : {
+            default : "/image/website/lazyload.svg"
+        },
+  
+        Style : {
+            aplayer          : "/css/APlayer.css",
+            archive          : "/css/archive.css",
+            base             : "/css/base.css",
+            clipboard        : "/css/clipboard.css",
+            code             : "/css/code.css",
+            donate           : "/css/donate.css",
+            fancybox         : "/css/jquery.fancybox.css",
+            footer           : "/css/footer.css",
+            iconfont         : "/iconfont/iconfont.css",
+            index            : "/css/index.css",
+            menuBubble       : "/css/menu-bubble.css",
+            mouse            : "/css/mouse.css",
+            page             : "/css/page.css",
+            post             : "/css/post.css",
+            search           : "/css/search.css",
+            tocbot           : "/css/tocbot.css",
+            valine           : "/css/valine.css"
+        },
+
+        Script: {
+            aplayer          : "/js/APlayer.min.js",
+            config           : "/js/require.config.js",
+            index            : "/js/index.js",
+            instantSearch    : "/js/instantsearch.min.js",
+            iscroll          : "/js/iscroll.js",
+            jQuery           : "/js/jquery-3.4.1.min.js",
+            loading          : "/js/loading.js",
+            meting           : "/js/Meting.min.js",
+            require          : "/js/require.min.js"
+        },
+
+        Font: {
+            LongCang    : "/font/LongCang.css",
+            Monda       : "/font/Monda.css",
+            NotoSansSC  : "/font/NotoSansSC.css",
+            NotoSerifSC : "/font/NotoSerifSC.css",
+            Playball    : "/font/Playball.css",
+            PTMono      : "/font/PTMono.css",
+            Roboto      : "/font/Roboto.css",
+            RobotoSlab  : "/font/RobotoSlab.css",
+            Rosario     : "/font/Rosario.css",
+            UbuntuMono  : "/font/UbuntuMono.css"
+        },
+
+        Suffix : {
+            about : "你知道的越多,你不知道的越多"
+        },
+            
+        Theme : {
+            url  : "https://fadeway32.gitee.io/",
+            name : "fadeway32"
+        }  
+    };
+</script>
+    <script type="text/javascript" src="/js/home-docs.js"></script>
+    <script type="text/javascript" src="/js/index.js"></script>
+</body>
+</html>

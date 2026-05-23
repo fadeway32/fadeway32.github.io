@@ -1,0 +1,2732 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <!--    <meta name="referrer" content="origin">-->
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>
+        
+            JUC / JVM / GC 核心原理与高频场景设计
+        
+    </title>
+    <link rel="shortcut icon" href="#"/>
+
+    <link type="text/css" rel="stylesheet" href="/font/LongCang.css">
+    <link type="text/css" rel="stylesheet" href="/font/Monda.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSansSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSerifSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/Playball.css">
+    <link type="text/css" rel="stylesheet" href="/font/PTMono.css">
+    <link type="text/css" rel="stylesheet" href="/font/Roboto.css">
+    <link type="text/css" rel="stylesheet" href="/font/RobotoSlab.css">
+    <link type="text/css" rel="stylesheet" href="/font/Rosario.css">
+    <link type="text/css" rel="stylesheet" href="/font/UbuntuMono.css">
+
+    <link type="text/css" rel="stylesheet" href="/css/base.css">
+    <link type="text/css" rel="stylesheet" href="/css/code.css">
+
+    <script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+    <a id="cover"></a>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
+<header>
+    <meta name="referrer" content="no-referrer">
+</header>
+<div id="header" class="header">
+    <div class="vertical">
+        <div class="inner">
+            
+                <h1 class="header-subtitle">JUC / JVM / GC 核心原理与高频场景设计</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2025-08-24
+                        </span>
+                        
+                            <span id="/article/1797983019/" class="leancloud_visitors" data-flag-title="JUC / JVM / GC 核心原理与高频场景设计">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1797983019/"></span>
+                        </span>
+                    </p>
+                    
+                    
+                </div>
+            
+        </div>
+    </div>
+    
+</div>
+<div id="container"
+
+>
+    
+        <!-- 文章页面 -->
+        
+        <div id="article" data-doc-title="JUC / JVM / GC 核心原理与高频场景设计" data-doc-path="/article/1797983019/"
+             data-doc-url="/article/1797983019/" data-doc-date="2025-08-24">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="JUC-x2F-JVM-x2F-GC-核心原理与高频场景设计"><a href="#JUC-x2F-JVM-x2F-GC-核心原理与高频场景设计" class="headerlink" title="JUC &#x2F; JVM &#x2F; GC 核心原理与高频场景设计"></a>JUC &#x2F; JVM &#x2F; GC 核心原理与高频场景设计</h1><blockquote>
+<p>说明：本文以 <strong>JDK 8</strong> 为主线，兼顾 <strong>JDK 17 &#x2F; 21</strong> 的关键差异。<br>涉及偏向锁、CMS 等旧特性时，会特别标注其时代背景和现代 JDK 的变化。</p>
+</blockquote>
+<h2 id="阅读方式"><a href="#阅读方式" class="headerlink" title="阅读方式"></a>阅读方式</h2><ul>
+<li>先看每章开头的“核心概念”，建立整体框架。</li>
+<li>再看“底层原理”，理解为什么这么设计。</li>
+<li>最后看“高频场景设计”，把知识点落到工程实践。</li>
+<li>重点看“详细设计案例库”，那里按背景、目标、架构、代码、风险把方案展开。</li>
+<li>文末附了官方资料、源码步骤图与链接，适合复盘和继续深挖。</li>
+</ul>
+<hr>
+<h2 id="一、JUC：Java-并发编程"><a href="#一、JUC：Java-并发编程" class="headerlink" title="一、JUC：Java 并发编程"></a>一、JUC：Java 并发编程</h2><h3 id="1-线程基础"><a href="#1-线程基础" class="headerlink" title="1. 线程基础"></a>1. 线程基础</h3><h4 id="1-1-线程状态与生命周期"><a href="#1-1-线程状态与生命周期" class="headerlink" title="1.1 线程状态与生命周期"></a>1.1 线程状态与生命周期</h4><p>Java 线程在 <code>Thread.State</code> 中分为 6 种状态：</p>
+<table>
+<thead>
+<tr>
+<th>状态</th>
+<th>含义</th>
+<th>典型场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>NEW</code></td>
+<td>线程已创建但未启动</td>
+<td><code>new Thread()</code> 后未调用 <code>start()</code></td>
+</tr>
+<tr>
+<td><code>RUNNABLE</code></td>
+<td>可运行，包含“运行中”和“就绪”</td>
+<td>已进入调度队列</td>
+</tr>
+<tr>
+<td><code>BLOCKED</code></td>
+<td>等待获取监视器锁</td>
+<td>进入 <code>synchronized</code> 失败</td>
+</tr>
+<tr>
+<td><code>WAITING</code></td>
+<td>无限期等待</td>
+<td><code>wait()</code>、<code>join()</code>、<code>park()</code></td>
+</tr>
+<tr>
+<td><code>TIMED_WAITING</code></td>
+<td>有时限等待</td>
+<td><code>sleep()</code>、<code>wait(timeout)</code>、<code>join(timeout)</code></td>
+</tr>
+<tr>
+<td><code>TERMINATED</code></td>
+<td>线程结束</td>
+<td><code>run()</code> 执行完毕</td>
+</tr>
+</tbody></table>
+<p>线程状态变化本质上是 <strong>JVM 状态 + OS 调度状态</strong> 的组合，不要把 <code>RUNNABLE</code> 误解成“必须正在占用 CPU”。</p>
+<h4 id="1-2-线程创建方式"><a href="#1-2-线程创建方式" class="headerlink" title="1.2 线程创建方式"></a>1.2 线程创建方式</h4><p>常见创建方式有四类：</p>
+<ol>
+<li>继承 <code>Thread</code></li>
+<li>实现 <code>Runnable</code></li>
+<li>实现 <code>Callable</code> + <code>FutureTask</code></li>
+<li>使用线程池</li>
+</ol>
+<p>工程上最常用的是 <strong>线程池</strong>。<code>Runnable</code> 适合无返回值任务，<code>Callable</code> 适合有返回值、可抛异常任务。</p>
+<h4 id="1-3-线程优先级"><a href="#1-3-线程优先级" class="headerlink" title="1.3 线程优先级"></a>1.3 线程优先级</h4><p><code>Thread</code> 的优先级范围是 <code>1~10</code>，默认值是 <code>5</code>。但它只是 <strong>调度提示</strong>，不是严格保证。不同 JVM 和操作系统对优先级的支持程度不同，所以不要把业务正确性建立在线程优先级上。</p>
+<h4 id="1-4-常见线程方法"><a href="#1-4-常见线程方法" class="headerlink" title="1.4 常见线程方法"></a>1.4 常见线程方法</h4><ul>
+<li><code>start()</code>：启动新线程</li>
+<li><code>sleep()</code>：让出 CPU，但不释放锁</li>
+<li><code>wait()</code>：进入等待并释放对象监视器，必须在同步块中调用</li>
+<li><code>notify()/notifyAll()</code>：唤醒等待该监视器的线程</li>
+<li><code>join()</code>：等待目标线程结束</li>
+<li><code>interrupt()</code>：设置中断标记，配合阻塞方法使用</li>
+</ul>
+<p><code>wait/notify</code> 依赖对象监视器，<code>park/unpark</code> 依赖“许可位”，后者更适合并发框架内部使用。</p>
+<hr>
+<h3 id="2-线程池"><a href="#2-线程池" class="headerlink" title="2. 线程池"></a>2. 线程池</h3><h4 id="2-1-为什么需要线程池"><a href="#2-1-为什么需要线程池" class="headerlink" title="2.1 为什么需要线程池"></a>2.1 为什么需要线程池</h4><p>线程池解决三个核心问题：</p>
+<ol>
+<li>频繁创建和销毁线程的开销</li>
+<li>线程数量失控导致的资源争抢</li>
+<li>任务执行与提交解耦，便于限流、排队、降级</li>
+</ol>
+<h4 id="2-2-核心参数"><a href="#2-2-核心参数" class="headerlink" title="2.2 核心参数"></a>2.2 核心参数</h4><p><code>ThreadPoolExecutor</code> 的 7 个核心参数：</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>作用</th>
+<th>设计要点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>corePoolSize</code></td>
+<td>核心线程数</td>
+<td>常驻线程数，决定基本并发能力</td>
+</tr>
+<tr>
+<td><code>maximumPoolSize</code></td>
+<td>最大线程数</td>
+<td>队列满后还能扩张到的上限</td>
+</tr>
+<tr>
+<td><code>keepAliveTime</code></td>
+<td>空闲存活时间</td>
+<td>非核心线程默认会回收</td>
+</tr>
+<tr>
+<td><code>unit</code></td>
+<td>时间单位</td>
+<td><code>keepAliveTime</code> 的单位</td>
+</tr>
+<tr>
+<td><code>workQueue</code></td>
+<td>任务队列</td>
+<td>影响吞吐、延迟、内存占用</td>
+</tr>
+<tr>
+<td><code>threadFactory</code></td>
+<td>线程工厂</td>
+<td>统一命名、守护线程、异常处理</td>
+</tr>
+<tr>
+<td><code>handler</code></td>
+<td>拒绝策略</td>
+<td>资源打满时的兜底逻辑</td>
+</tr>
+</tbody></table>
+<h4 id="2-3-任务执行流程"><a href="#2-3-任务执行流程" class="headerlink" title="2.3 任务执行流程"></a>2.3 任务执行流程</h4><p><code>execute()</code> 的核心逻辑可以概括为：</p>
+<ol>
+<li>如果当前 worker 数小于 <code>corePoolSize</code>，直接创建核心线程执行任务。</li>
+<li>否则尝试把任务放入队列。</li>
+<li>如果队列满了，再尝试创建非核心线程。</li>
+<li>如果线程数也到上限，则触发拒绝策略。</li>
+</ol>
+<p>JDK 8 的实现里，<code>ctl</code> 用一个整型同时记录 <strong>运行状态</strong> 和 <strong>工作线程数</strong>。这是一个非常典型的“位运算压缩状态”设计，目的是减少锁竞争并提高状态判断效率。</p>
+<h4 id="2-4-生命周期"><a href="#2-4-生命周期" class="headerlink" title="2.4 生命周期"></a>2.4 生命周期</h4><p>线程池状态主要有：</p>
+<p><code>RUNNING -&gt; SHUTDOWN -&gt; STOP -&gt; TIDYING -&gt; TERMINATED</code></p>
+<ul>
+<li><code>shutdown()</code>：不再接收新任务，已提交任务继续执行</li>
+<li><code>shutdownNow()</code>：尝试中断正在执行的任务，并返回队列中未执行任务</li>
+<li><code>awaitTermination()</code>：等待线程池终止</li>
+</ul>
+<h4 id="2-5-拒绝策略"><a href="#2-5-拒绝策略" class="headerlink" title="2.5 拒绝策略"></a>2.5 拒绝策略</h4><table>
+<thead>
+<tr>
+<th>策略</th>
+<th>行为</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>AbortPolicy</code></td>
+<td>直接抛异常</td>
+<td>严格控制任务不能丢</td>
+</tr>
+<tr>
+<td><code>CallerRunsPolicy</code></td>
+<td>由提交线程执行</td>
+<td>轻度降速，形成反压</td>
+</tr>
+<tr>
+<td><code>DiscardPolicy</code></td>
+<td>直接丢弃</td>
+<td>少量任务可丢的场景</td>
+</tr>
+<tr>
+<td><code>DiscardOldestPolicy</code></td>
+<td>丢最旧任务</td>
+<td>更偏“最新任务优先”</td>
+</tr>
+</tbody></table>
+<p>生产上常见做法是：<strong>有界队列 + 可观测拒绝 + 明确降级</strong>。不要默认用无界队列，否则问题只是被延后暴露。</p>
+<h4 id="2-6-线程池推荐配置思路"><a href="#2-6-线程池推荐配置思路" class="headerlink" title="2.6 线程池推荐配置思路"></a>2.6 线程池推荐配置思路</h4><ul>
+<li>CPU 密集型：<code>corePoolSize ≈ CPU核数 + 1</code></li>
+<li>IO 密集型：线程数可以更高，核心在于等待时间占比</li>
+<li>批量任务：优先有界队列，防止内存膨胀</li>
+<li>低峰释放：适当设置 <code>allowCoreThreadTimeOut(true)</code></li>
+</ul>
+<h4 id="2-7-线程池示例"><a href="#2-7-线程池示例" class="headerlink" title="2.7 线程池示例"></a>2.7 线程池示例</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">AtomicInteger</span> <span class="variable">THREAD_ID</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">AtomicInteger</span>(<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">ExecutorService</span> <span class="variable">ORDER_POOL</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ThreadPoolExecutor</span>(</span><br><span class="line">        <span class="number">8</span>,</span><br><span class="line">        <span class="number">16</span>,</span><br><span class="line">        <span class="number">60L</span>,</span><br><span class="line">        TimeUnit.SECONDS,</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">ArrayBlockingQueue</span>&lt;&gt;(<span class="number">2000</span>),</span><br><span class="line">        r -&gt; &#123;</span><br><span class="line">            <span class="type">Thread</span> <span class="variable">t</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Thread</span>(r);</span><br><span class="line">            t.setName(<span class="string">&quot;order-pool-&quot;</span> + THREAD_ID.getAndIncrement());</span><br><span class="line">            t.setDaemon(<span class="literal">false</span>);</span><br><span class="line">            <span class="keyword">return</span> t;</span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">ThreadPoolExecutor</span>.CallerRunsPolicy()</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-8-源码步骤梳理（架构图）"><a href="#2-8-源码步骤梳理（架构图）" class="headerlink" title="2.8 源码步骤梳理（架构图）"></a>2.8 源码步骤梳理（架构图）</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    A[execute 提交任务] --&gt; B&#123;workerCount &lt; corePoolSize&#125;</span><br><span class="line">    B -- 是 --&gt; C[addWorker 创建核心线程]</span><br><span class="line">    B -- 否 --&gt; D[workQueue.offer 入队]</span><br><span class="line">    D -- 成功 --&gt; E&#123;再次检查 pool 状态&#125;</span><br><span class="line">    E -- RUNNING --&gt; F[任务等待 worker 消费]</span><br><span class="line">    E -- 非 RUNNING --&gt; G[移除任务并拒绝]</span><br><span class="line">    D -- 失败 --&gt; H&#123;workerCount &lt; maximumPoolSize&#125;</span><br><span class="line">    H -- 是 --&gt; I[addWorker 创建非核心线程]</span><br><span class="line">    H -- 否 --&gt; J[RejectedExecutionHandler]</span><br><span class="line">    C --&gt; K[runWorker 循环执行]</span><br><span class="line">    I --&gt; K</span><br><span class="line">    K --&gt; L[getTask 获取下一个任务]</span><br><span class="line">    L --&gt; M[执行任务并回收异常]</span><br><span class="line">    M --&gt; L</span><br></pre></td></tr></table></figure>
+
+<p>源码步骤可以记成一条主线：</p>
+<ol>
+<li><code>execute()</code> 先看当前 worker 数是否小于 <code>corePoolSize</code>，能扩核就先扩核。</li>
+<li>不能扩核时，优先把任务放进队列，借助队列削峰。</li>
+<li>队列满了才尝试扩到 <code>maximumPoolSize</code>，这一步是“最后扩容”。</li>
+<li>再满就触发拒绝策略，系统开始显式背压或降级。</li>
+<li>Worker 线程实际执行时，会在 <code>runWorker()</code> 里循环调用 <code>getTask()</code>，任务耗尽后再按空闲时间退出。</li>
+</ol>
+<hr>
+<h3 id="3-volatile-与-synchronized"><a href="#3-volatile-与-synchronized" class="headerlink" title="3. volatile 与 synchronized"></a>3. <code>volatile</code> 与 <code>synchronized</code></h3><h4 id="3-1-volatile-的本质"><a href="#3-1-volatile-的本质" class="headerlink" title="3.1 volatile 的本质"></a>3.1 <code>volatile</code> 的本质</h4><p><code>volatile</code> 保证两件事：</p>
+<ol>
+<li><strong>可见性</strong>：写入后对其他线程立即可见</li>
+<li><strong>有序性</strong>：禁止特定的指令重排序</li>
+</ol>
+<p>它 <strong>不保证复合操作的原子性</strong>。例如 <code>i++</code> 仍然不是线程安全的，因为它包含“读-改-写”三个步骤。</p>
+<p><code>volatile</code> 的典型用法：</p>
+<ul>
+<li>状态标记</li>
+<li>配置刷新</li>
+<li>双重检查单例中的实例引用</li>
+<li>轻量级发布-订阅信号</li>
+</ul>
+<h4 id="3-2-synchronized-的本质"><a href="#3-2-synchronized-的本质" class="headerlink" title="3.2 synchronized 的本质"></a>3.2 <code>synchronized</code> 的本质</h4><p><code>synchronized</code> 通过对象监视器实现互斥，进入同步块时执行 <code>monitorenter</code>，退出时执行 <code>monitorexit</code>。它同时提供：</p>
+<ul>
+<li>原子性</li>
+<li>可见性</li>
+<li>有序性</li>
+<li>可重入性</li>
+</ul>
+<h4 id="3-3-锁升级流程"><a href="#3-3-锁升级流程" class="headerlink" title="3.3 锁升级流程"></a>3.3 锁升级流程</h4><p>JDK 8 中经典流程是：</p>
+<p><code>无锁 -&gt; 偏向锁 -&gt; 轻量级锁 -&gt; 重量级锁</code></p>
+<p>但要注意：</p>
+<ul>
+<li>偏向锁在现代 JDK 中已经被逐步禁用&#x2F;移除，不应再作为新版本默认前提。</li>
+<li>现代 JDK 更应把重点放在 <strong>轻量级锁、重量级锁、JIT 优化、锁消除、锁粗化</strong> 上。</li>
+</ul>
+<h4 id="3-4-volatile-vs-synchronized"><a href="#3-4-volatile-vs-synchronized" class="headerlink" title="3.4 volatile vs synchronized"></a>3.4 <code>volatile</code> vs <code>synchronized</code></h4><table>
+<thead>
+<tr>
+<th>维度</th>
+<th><code>volatile</code></th>
+<th><code>synchronized</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>作用</td>
+<td>变量可见性、有序性</td>
+<td>互斥 + 可见性 + 原子性</td>
+</tr>
+<tr>
+<td>是否阻塞</td>
+<td>否</td>
+<td>可能阻塞</td>
+</tr>
+<tr>
+<td>适合场景</td>
+<td>状态标记、单次发布</td>
+<td>临界区保护</td>
+</tr>
+<tr>
+<td>性能</td>
+<td>更轻量</td>
+<td>竞争下开销更高</td>
+</tr>
+<tr>
+<td>复杂操作</td>
+<td>不安全</td>
+<td>安全</td>
+</tr>
+</tbody></table>
+<h4 id="3-5-DCL-单例示例"><a href="#3-5-DCL-单例示例" class="headerlink" title="3.5 DCL 单例示例"></a>3.5 DCL 单例示例</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">class</span> <span class="title class_">Singleton</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">volatile</span> Singleton instance;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="title function_">Singleton</span><span class="params">()</span> &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> Singleton <span class="title function_">getInstance</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (instance == <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="keyword">synchronized</span> (Singleton.class) &#123;</span><br><span class="line">                <span class="keyword">if</span> (instance == <span class="literal">null</span>) &#123;</span><br><span class="line">                    instance = <span class="keyword">new</span> <span class="title class_">Singleton</span>();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里的 <code>volatile</code> 关键作用是防止“引用先赋值、对象未完全初始化”的重排序问题。</p>
+<hr>
+<h3 id="4-CAS-与原子类"><a href="#4-CAS-与原子类" class="headerlink" title="4. CAS 与原子类"></a>4. CAS 与原子类</h3><h4 id="4-1-CAS-是什么"><a href="#4-1-CAS-是什么" class="headerlink" title="4.1 CAS 是什么"></a>4.1 CAS 是什么</h4><p>CAS（Compare-And-Swap）比较并交换，核心思想是：</p>
+<blockquote>
+<p>先比较内存中的值是否等于期望值，如果相等，则更新为新值。</p>
+</blockquote>
+<p>它通常借助 CPU 原子指令完成，是很多无锁算法的基础。</p>
+<h4 id="4-2-CAS-的优缺点"><a href="#4-2-CAS-的优缺点" class="headerlink" title="4.2 CAS 的优缺点"></a>4.2 CAS 的优缺点</h4><p>优点：</p>
+<ul>
+<li>无阻塞，竞争低时性能很好</li>
+<li>适合高并发计数、状态更新</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>只能保障单个变量级别的原子更新</li>
+<li>高竞争下会自旋浪费 CPU</li>
+<li>存在 ABA 问题</li>
+</ul>
+<h4 id="4-3-ABA-问题"><a href="#4-3-ABA-问题" class="headerlink" title="4.3 ABA 问题"></a>4.3 ABA 问题</h4><p>如果变量从 <code>A -&gt; B -&gt; A</code>，CAS 只看到“还是 A”，就可能误判状态没变。</p>
+<p>解决方案：</p>
+<ul>
+<li><code>AtomicStampedReference</code></li>
+<li><code>AtomicMarkableReference</code></li>
+<li>引入版本号或时间戳</li>
+</ul>
+<h4 id="4-4-原子类"><a href="#4-4-原子类" class="headerlink" title="4.4 原子类"></a>4.4 原子类</h4><p>常见原子类：</p>
+<ul>
+<li><code>AtomicInteger</code></li>
+<li><code>AtomicLong</code></li>
+<li><code>AtomicReference</code></li>
+<li><code>AtomicIntegerArray</code></li>
+<li><code>AtomicStampedReference</code></li>
+<li><code>LongAdder</code></li>
+</ul>
+<p>其中 <code>LongAdder</code> 在高并发计数场景下通常比 <code>AtomicLong</code> 更优，因为它把热点竞争分散到了多个 <code>Cell</code> 上；但它的 <code>sum()</code> 不是强一致快照，适合统计型指标，不适合强实时精确值。</p>
+<hr>
+<h3 id="5-AQS-框架"><a href="#5-AQS-框架" class="headerlink" title="5. AQS 框架"></a>5. AQS 框架</h3><h4 id="5-1-核心思想"><a href="#5-1-核心思想" class="headerlink" title="5.1 核心思想"></a>5.1 核心思想</h4><p>AQS（AbstractQueuedSynchronizer）是 Java 并发同步器的基础框架，核心是：</p>
+<ul>
+<li>用一个 <code>state</code> 表示同步状态</li>
+<li>用 FIFO 队列管理等待线程</li>
+<li>通过 CAS + <code>park/unpark</code> 完成阻塞唤醒</li>
+</ul>
+<h4 id="5-2-关键结构"><a href="#5-2-关键结构" class="headerlink" title="5.2 关键结构"></a>5.2 关键结构</h4><table>
+<thead>
+<tr>
+<th>结构</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>state</code></td>
+<td>同步状态，很多同步器都基于它扩展</td>
+</tr>
+<tr>
+<td>CLH 队列</td>
+<td>保存等待获取锁的线程</td>
+</tr>
+<tr>
+<td><code>Node</code></td>
+<td>队列节点，保存前驱、后继、等待模式</td>
+</tr>
+<tr>
+<td><code>ConditionObject</code></td>
+<td>条件队列，支持 await&#x2F;signal</td>
+</tr>
+</tbody></table>
+<h4 id="5-3-获取与释放"><a href="#5-3-获取与释放" class="headerlink" title="5.3 获取与释放"></a>5.3 获取与释放</h4><p>简化理解：</p>
+<ol>
+<li>调用 <code>tryAcquire/tryRelease</code></li>
+<li>失败则入队</li>
+<li>入队后 <code>park()</code> 挂起</li>
+<li>释放时唤醒后继节点</li>
+</ol>
+<p>AQS 把“同步语义”与“排队阻塞”解耦，使得 <code>ReentrantLock</code>、<code>CountDownLatch</code>、<code>Semaphore</code> 等组件可以共享同一套排队逻辑。</p>
+<h4 id="5-4-常见组件"><a href="#5-4-常见组件" class="headerlink" title="5.4 常见组件"></a>5.4 常见组件</h4><table>
+<thead>
+<tr>
+<th>组件</th>
+<th>模式</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ReentrantLock</code></td>
+<td>独占</td>
+<td>可中断、可超时、公平锁</td>
+</tr>
+<tr>
+<td><code>CountDownLatch</code></td>
+<td>共享</td>
+<td>一次性倒计时</td>
+</tr>
+<tr>
+<td><code>Semaphore</code></td>
+<td>共享</td>
+<td>限制并发许可数</td>
+</tr>
+<tr>
+<td><code>ReentrantReadWriteLock</code></td>
+<td>读写分离</td>
+<td>读多写少优化</td>
+</tr>
+</tbody></table>
+<h4 id="5-5-ReentrantLock-与-synchronized"><a href="#5-5-ReentrantLock-与-synchronized" class="headerlink" title="5.5 ReentrantLock 与 synchronized"></a>5.5 <code>ReentrantLock</code> 与 <code>synchronized</code></h4><p><code>ReentrantLock</code> 的优势：</p>
+<ul>
+<li>支持公平&#x2F;非公平</li>
+<li>支持可中断获取锁</li>
+<li>支持超时获取</li>
+<li>支持多个 <code>Condition</code></li>
+</ul>
+<p><code>synchronized</code> 的优势：</p>
+<ul>
+<li>语法简单</li>
+<li>JVM 优化成熟</li>
+<li>出错概率低</li>
+</ul>
+<p>如果同步逻辑简单，优先 <code>synchronized</code>；如果需要超时、可中断、多个条件队列，优先 <code>ReentrantLock</code>。</p>
+<h4 id="5-6-源码步骤梳理（架构图）"><a href="#5-6-源码步骤梳理（架构图）" class="headerlink" title="5.6 源码步骤梳理（架构图）"></a>5.6 源码步骤梳理（架构图）</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    A[acquire / lock] --&gt; B[tryAcquire]</span><br><span class="line">    B -- 成功 --&gt; C[获得 state]</span><br><span class="line">    B -- 失败 --&gt; D[addWaiter 入队]</span><br><span class="line">    D --&gt; E[acquireQueued]</span><br><span class="line">    E --&gt; F&#123;前驱是否为 head 且可再次尝试?&#125;</span><br><span class="line">    F -- 是 --&gt; G[成功后设置 head]</span><br><span class="line">    F -- 否 --&gt; H[park 挂起]</span><br><span class="line">    H --&gt; I[release / unlock]</span><br><span class="line">    I --&gt; J[unparkSuccessor 唤醒后继]</span><br></pre></td></tr></table></figure>
+
+<p>这条链路的核心是“模板方法 + 队列化阻塞”：</p>
+<ol>
+<li><code>acquire()</code> 先调用子类实现的 <code>tryAcquire()</code>，让不同同步器定义自己的语义。</li>
+<li>失败后线程进入 AQS 队列，进入等待。</li>
+<li>当持有者释放 <code>state</code> 后，AQS 负责唤醒后继节点。</li>
+<li><code>ConditionObject</code> 只是把等待队列拆成了“条件队列 + 同步队列”，底层仍然回到同一个 AQS 状态机。</li>
+</ol>
+<hr>
+<h3 id="6-并发容器"><a href="#6-并发容器" class="headerlink" title="6. 并发容器"></a>6. 并发容器</h3><h4 id="6-1-ConcurrentHashMap"><a href="#6-1-ConcurrentHashMap" class="headerlink" title="6.1 ConcurrentHashMap"></a>6.1 <code>ConcurrentHashMap</code></h4><p>JDK 8 的 <code>ConcurrentHashMap</code> 不再使用分段锁，而是采用：</p>
+<ul>
+<li>数组 + 链表 + 红黑树</li>
+<li>CAS 初始化和扩容</li>
+<li>bin 级别锁竞争控制</li>
+</ul>
+<p>关键机制：</p>
+<table>
+<thead>
+<tr>
+<th>机制</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>sizeCtl</code></td>
+<td>控制初始化和扩容阈值</td>
+</tr>
+<tr>
+<td><code>ForwardingNode</code></td>
+<td>扩容迁移标记</td>
+</tr>
+<tr>
+<td><code>TreeBin</code></td>
+<td>链表过长后转红黑树</td>
+</tr>
+<tr>
+<td><code>CounterCell</code></td>
+<td>分散计数竞争</td>
+</tr>
+</tbody></table>
+<p>常见阈值：</p>
+<ul>
+<li>链表长度达到 8，且表容量足够大时会树化</li>
+<li>链表过短时可能退化回链表</li>
+</ul>
+<p>设计考量是：<strong>低竞争走 CAS，高竞争才同步</strong>，尽量把锁粒度压缩到单个桶。</p>
+<h4 id="6-2-CopyOnWriteArrayList"><a href="#6-2-CopyOnWriteArrayList" class="headerlink" title="6.2 CopyOnWriteArrayList"></a>6.2 <code>CopyOnWriteArrayList</code></h4><p>它的核心是“写时复制”：</p>
+<ul>
+<li>读：直接读快照数组，无锁</li>
+<li>写：先加锁，再复制新数组并替换引用</li>
+</ul>
+<p>适合：</p>
+<ul>
+<li>读多写少</li>
+<li>配置列表</li>
+<li>监听器集合</li>
+</ul>
+<p>不适合：</p>
+<ul>
+<li>写多</li>
+<li>大数组频繁变更</li>
+</ul>
+<h4 id="6-3-常见容器选型"><a href="#6-3-常见容器选型" class="headerlink" title="6.3 常见容器选型"></a>6.3 常见容器选型</h4><table>
+<thead>
+<tr>
+<th>场景</th>
+<th>推荐容器</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>高并发 Map</td>
+<td><code>ConcurrentHashMap</code></td>
+</tr>
+<tr>
+<td>读多写少列表</td>
+<td><code>CopyOnWriteArrayList</code></td>
+</tr>
+<tr>
+<td>生产者-消费者</td>
+<td><code>BlockingQueue</code></td>
+</tr>
+<tr>
+<td>计数器</td>
+<td><code>LongAdder</code></td>
+</tr>
+<tr>
+<td>有序优先级队列</td>
+<td><code>PriorityBlockingQueue</code></td>
+</tr>
+</tbody></table>
+<h4 id="6-4-源码步骤梳理（架构图）"><a href="#6-4-源码步骤梳理（架构图）" class="headerlink" title="6.4 源码步骤梳理（架构图）"></a>6.4 源码步骤梳理（架构图）</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    A[put / compute / get] --&gt; B&#123;table 已初始化?&#125;</span><br><span class="line">    B -- 否 --&gt; C[initTable 初始化数组]</span><br><span class="line">    B -- 是 --&gt; D[spread hash 计算桶位]</span><br><span class="line">    D --&gt; E&#123;桶位为空?&#125;</span><br><span class="line">    E -- 是 --&gt; F[CAS 直接插入节点]</span><br><span class="line">    E -- 否 --&gt; G&#123;桶头是否 ForwardingNode?&#125;</span><br><span class="line">    G -- 是 --&gt; H[helpTransfer 协助扩容]</span><br><span class="line">    G -- 否 --&gt; I[synchronized 锁定桶头]</span><br><span class="line">    I --&gt; J[链表或红黑树中查找/更新]</span><br><span class="line">    J --&gt; K&#123;链表长度是否达到树化阈值?&#125;</span><br><span class="line">    K -- 是 --&gt; L[treeifyBin 树化]</span><br><span class="line">    J --&gt; M&#123;元素数量是否触发扩容?&#125;</span><br><span class="line">    M -- 是 --&gt; H</span><br></pre></td></tr></table></figure>
+
+<p>源码步骤重点在“局部锁 + 全局协作”：</p>
+<ol>
+<li><code>putVal()</code> 先算 hash，再定位桶位。</li>
+<li>桶为空时优先 CAS，避免进入锁。</li>
+<li>桶不为空时，只锁住单个 bin，而不是整张表。</li>
+<li>链表过长才树化，容量不足时会优先扩容而不是盲目树化。</li>
+<li>扩容时通过 <code>ForwardingNode</code> 和 <code>helpTransfer()</code> 让多个线程共同搬迁数据。</li>
+</ol>
+<hr>
+<h3 id="7-并发工具类与线程间通信"><a href="#7-并发工具类与线程间通信" class="headerlink" title="7. 并发工具类与线程间通信"></a>7. 并发工具类与线程间通信</h3><h4 id="7-1-常见工具类"><a href="#7-1-常见工具类" class="headerlink" title="7.1 常见工具类"></a>7.1 常见工具类</h4><table>
+<thead>
+<tr>
+<th>工具</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>CountDownLatch</code></td>
+<td>等待多个任务完成</td>
+</tr>
+<tr>
+<td><code>CyclicBarrier</code></td>
+<td>多线程互相等待到同一点</td>
+</tr>
+<tr>
+<td><code>Semaphore</code></td>
+<td>控制并发许可数</td>
+</tr>
+<tr>
+<td><code>Exchanger</code></td>
+<td>两个线程交换数据</td>
+</tr>
+<tr>
+<td><code>Phaser</code></td>
+<td>更灵活的阶段性同步</td>
+</tr>
+<tr>
+<td><code>FutureTask</code></td>
+<td>任务包装 + 结果获取</td>
+</tr>
+<tr>
+<td><code>CompletableFuture</code></td>
+<td>异步编排、组合、回调</td>
+</tr>
+</tbody></table>
+<h4 id="7-2-wait-notify、join、park-unpark"><a href="#7-2-wait-notify、join、park-unpark" class="headerlink" title="7.2 wait/notify、join、park/unpark"></a>7.2 <code>wait/notify</code>、<code>join</code>、<code>park/unpark</code></h4><ul>
+<li><code>wait/notify</code>：依赖对象监视器，必须在同步块内使用</li>
+<li><code>join</code>：本质是等待线程终止</li>
+<li><code>park/unpark</code>：更底层的阻塞唤醒机制，常用于 AQS</li>
+</ul>
+<p><code>wait/notify</code> 要始终配合 <code>while</code> 循环检查条件，防止虚假唤醒。</p>
+<h4 id="7-3-线程通信模式"><a href="#7-3-线程通信模式" class="headerlink" title="7.3 线程通信模式"></a>7.3 线程通信模式</h4><ol>
+<li>单次等待：<code>CountDownLatch</code></li>
+<li>周期同步：<code>CyclicBarrier</code></li>
+<li>令牌控制：<code>Semaphore</code></li>
+<li>异步回调：<code>CompletableFuture</code></li>
+<li>生产消费：<code>BlockingQueue</code></li>
+</ol>
+<hr>
+<h3 id="8-JMM-与可见性-x2F-有序性-x2F-原子性"><a href="#8-JMM-与可见性-x2F-有序性-x2F-原子性" class="headerlink" title="8. JMM 与可见性 &#x2F; 有序性 &#x2F; 原子性"></a>8. JMM 与可见性 &#x2F; 有序性 &#x2F; 原子性</h3><h4 id="8-1-JMM-是什么"><a href="#8-1-JMM-是什么" class="headerlink" title="8.1 JMM 是什么"></a>8.1 JMM 是什么</h4><p>Java 内存模型（JMM）定义了：</p>
+<ul>
+<li>线程如何读写共享变量</li>
+<li>编译器和 CPU 可进行哪些重排序</li>
+<li>哪些操作之间存在可见性约束</li>
+</ul>
+<p>它不是具体硬件实现，而是 <strong>JVM 对并发语义的抽象规范</strong>。</p>
+<h4 id="8-2-三个核心问题"><a href="#8-2-三个核心问题" class="headerlink" title="8.2 三个核心问题"></a>8.2 三个核心问题</h4><table>
+<thead>
+<tr>
+<th>问题</th>
+<th>说明</th>
+<th>常见手段</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>可见性</td>
+<td>一个线程写了，另一个线程何时可见</td>
+<td><code>volatile</code>、锁、并发类</td>
+</tr>
+<tr>
+<td>有序性</td>
+<td>指令重排是否影响结果</td>
+<td><code>volatile</code>、锁、final 语义</td>
+</tr>
+<tr>
+<td>原子性</td>
+<td>操作是否可被中断</td>
+<td>锁、CAS、原子类</td>
+</tr>
+</tbody></table>
+<h4 id="8-3-happens-before-规则"><a href="#8-3-happens-before-规则" class="headerlink" title="8.3 happens-before 规则"></a>8.3 happens-before 规则</h4><p>常见规则：</p>
+<ul>
+<li>程序次序规则</li>
+<li>监视器锁规则</li>
+<li><code>volatile</code> 变量规则</li>
+<li>线程启动规则</li>
+<li>线程终止规则</li>
+<li>中断规则</li>
+<li>传递性</li>
+<li>类初始化规则</li>
+</ul>
+<p>记忆方式：<strong>能建立 happens-before 的地方，JMM 就会帮你建立足够的内存可见性保障</strong>。</p>
+<hr>
+<h3 id="9-高频场景设计"><a href="#9-高频场景设计" class="headerlink" title="9. 高频场景设计"></a>9. 高频场景设计</h3><h4 id="9-1-线程池参数定制与使用"><a href="#9-1-线程池参数定制与使用" class="headerlink" title="9.1 线程池参数定制与使用"></a>9.1 线程池参数定制与使用</h4><p>思路：</p>
+<ol>
+<li>先区分 CPU 密集和 IO 密集</li>
+<li>再决定队列类型和容量</li>
+<li>最后决定拒绝策略和监控指标</li>
+</ol>
+<p>建议：</p>
+<ul>
+<li>CPU 密集：少线程 + 有界队列</li>
+<li>IO 密集：适当增大线程数，但要看响应时间和下游承载</li>
+<li>核心业务：用有界队列防止雪崩</li>
+</ul>
+<p>监控重点：</p>
+<ul>
+<li>队列长度</li>
+<li>活跃线程数</li>
+<li>拒绝次数</li>
+<li>任务执行时间</li>
+<li>活跃线程占比</li>
+</ul>
+<h4 id="9-2-高并发下的单例设计"><a href="#9-2-高并发下的单例设计" class="headerlink" title="9.2 高并发下的单例设计"></a>9.2 高并发下的单例设计</h4><p>推荐优先级：</p>
+<ol>
+<li>枚举单例</li>
+<li>静态内部类</li>
+<li>DCL + <code>volatile</code></li>
+</ol>
+<p>如果单例里有复杂初始化，建议把重资源延迟到显式 <code>init()</code>，避免类加载期间做重活。</p>
+<h4 id="9-3-线程安全集合选型"><a href="#9-3-线程安全集合选型" class="headerlink" title="9.3 线程安全集合选型"></a>9.3 线程安全集合选型</h4><table>
+<thead>
+<tr>
+<th>场景</th>
+<th>推荐方案</th>
+<th>理由</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>并发 Map</td>
+<td><code>ConcurrentHashMap</code></td>
+<td>读写并发能力强</td>
+</tr>
+<tr>
+<td>读多写少列表</td>
+<td><code>CopyOnWriteArrayList</code></td>
+<td>读无锁</td>
+</tr>
+<tr>
+<td>频繁增删且规模大</td>
+<td><code>ConcurrentLinkedQueue</code> 或分片设计</td>
+<td>避免 COW 写放大</td>
+</tr>
+<tr>
+<td>共享计数</td>
+<td><code>LongAdder</code></td>
+<td>减少热点竞争</td>
+</tr>
+</tbody></table>
+<h4 id="9-4-并发控制：限流-x2F-熔断-x2F-信号量"><a href="#9-4-并发控制：限流-x2F-熔断-x2F-信号量" class="headerlink" title="9.4 并发控制：限流 &#x2F; 熔断 &#x2F; 信号量"></a>9.4 并发控制：限流 &#x2F; 熔断 &#x2F; 信号量</h4><p>JUC 本身最直接的并发控制工具是 <code>Semaphore</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">class</span> <span class="title class_">ApiGuard</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="type">Semaphore</span> <span class="variable">semaphore</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Semaphore</span>(<span class="number">100</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> &lt;T&gt; T <span class="title function_">invoke</span><span class="params">(Callable&lt;T&gt; task)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="keyword">if</span> (!semaphore.tryAcquire(<span class="number">50</span>, TimeUnit.MILLISECONDS)) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RejectedExecutionException</span>(<span class="string">&quot;system busy&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> task.call();</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            semaphore.release();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>说明：</p>
+<ul>
+<li><code>Semaphore</code> 解决的是“并发度控制”</li>
+<li>真正的“熔断”通常还需要失败率统计、慢调用统计、开关状态机</li>
+<li>工程上可与 Resilience4j、Sentinel 等结合使用</li>
+</ul>
+<h4 id="9-5-数据一致性保障"><a href="#9-5-数据一致性保障" class="headerlink" title="9.5 数据一致性保障"></a>9.5 数据一致性保障</h4><p>常见手段：</p>
+<ul>
+<li>单写多读用 <code>volatile</code></li>
+<li>复合写入用锁</li>
+<li>高并发计数用 <code>LongAdder</code></li>
+<li>结构性一致性用事务、锁或消息最终一致</li>
+</ul>
+<p>典型场景：</p>
+<ul>
+<li>本地缓存刷新</li>
+<li>库存扣减</li>
+<li>状态机切换</li>
+<li>幂等更新</li>
+</ul>
+<h4 id="9-6-异步任务处理"><a href="#9-6-异步任务处理" class="headerlink" title="9.6 异步任务处理"></a>9.6 异步任务处理</h4><p>推荐模式：</p>
+<ul>
+<li>自定义线程池 + <code>CompletableFuture</code></li>
+<li>为每个异步分支配置超时和降级</li>
+<li>合并结果时统一处理异常和上下文</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">CompletableFuture&lt;String&gt; f1 = CompletableFuture.supplyAsync(() -&gt; callA(), ORDER_POOL);</span><br><span class="line">CompletableFuture&lt;String&gt; f2 = CompletableFuture.supplyAsync(() -&gt; callB(), ORDER_POOL);</span><br><span class="line"></span><br><span class="line">CompletableFuture&lt;List&lt;String&gt;&gt; all = CompletableFuture.allOf(f1, f2)</span><br><span class="line">        .thenApply(v -&gt; List.of(f1.join(), f2.join()));</span><br></pre></td></tr></table></figure>
+
+<h4 id="9-7-批量任务并行化"><a href="#9-7-批量任务并行化" class="headerlink" title="9.7 批量任务并行化"></a>9.7 批量任务并行化</h4><p>推荐思路：</p>
+<ol>
+<li>先分片</li>
+<li>再并行</li>
+<li>最后汇总</li>
+</ol>
+<p>如果任务之间有强依赖，优先保证顺序正确，再考虑并行；不要为了并发而并发。</p>
+<h4 id="9-8-死锁排查与规避"><a href="#9-8-死锁排查与规避" class="headerlink" title="9.8 死锁排查与规避"></a>9.8 死锁排查与规避</h4><p>规避原则：</p>
+<ul>
+<li>固定加锁顺序</li>
+<li>尽量缩小锁范围</li>
+<li>不在锁内做远程调用</li>
+<li>使用 <code>tryLock(timeout)</code> 做超时兜底</li>
+</ul>
+<p>排查思路：</p>
+<ol>
+<li><code>jstack</code> &#x2F; <code>jcmd Thread.print</code> 看线程阻塞关系</li>
+<li>找到互相等待的锁</li>
+<li>还原锁顺序</li>
+<li>增加超时与告警</li>
+</ol>
+<h4 id="9-9-缓存击穿-x2F-雪崩的并发方案"><a href="#9-9-缓存击穿-x2F-雪崩的并发方案" class="headerlink" title="9.9 缓存击穿 &#x2F; 雪崩的并发方案"></a>9.9 缓存击穿 &#x2F; 雪崩的并发方案</h4><p>常见策略：</p>
+<ul>
+<li>击穿：单飞加载、互斥锁、<code>FutureTask</code> 合并请求</li>
+<li>雪崩：随机过期、分批预热、限流降级</li>
+<li>热点 key：本地缓存 + 分布式缓存双层防护</li>
+</ul>
+<p><code>FutureTask</code> 单飞示例：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> ConcurrentHashMap&lt;String, FutureTask&lt;Product&gt;&gt; loading = <span class="keyword">new</span> <span class="title class_">ConcurrentHashMap</span>&lt;&gt;();</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> Product <span class="title function_">getProduct</span><span class="params">(String id)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">    <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">        FutureTask&lt;Product&gt; task = loading.get(id);</span><br><span class="line">        <span class="keyword">if</span> (task == <span class="literal">null</span>) &#123;</span><br><span class="line">            FutureTask&lt;Product&gt; newTask = <span class="keyword">new</span> <span class="title class_">FutureTask</span>&lt;&gt;(() -&gt; loadFromDb(id));</span><br><span class="line">            task = loading.putIfAbsent(id, newTask);</span><br><span class="line">            <span class="keyword">if</span> (task == <span class="literal">null</span>) &#123;</span><br><span class="line">                task = newTask;</span><br><span class="line">                task.run();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> task.get();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (CancellationException | ExecutionException e) &#123;</span><br><span class="line">            loading.remove(id, task);</span><br><span class="line">            <span class="keyword">throw</span> e;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="10-JUC-面试复习详解"><a href="#10-JUC-面试复习详解" class="headerlink" title="10. JUC 面试复习详解"></a>10. JUC 面试复习详解</h3><h4 id="10-1-volatile-为什么能保证可见性，为什么不能保证-i-原子性"><a href="#10-1-volatile-为什么能保证可见性，为什么不能保证-i-原子性" class="headerlink" title="10.1 volatile 为什么能保证可见性，为什么不能保证 i++ 原子性"></a>10.1 <code>volatile</code> 为什么能保证可见性，为什么不能保证 <code>i++</code> 原子性</h4><p><code>volatile</code> 解决的是“一个线程写了，另一个线程能不能立刻看到”的问题。它通过内存屏障约束读写顺序，让写入及时刷新到主内存、读取及时从主内存重新感知，因此适合作为状态标记、开关和单次发布信号。</p>
+<p>但 <code>i++</code> 不是单步操作，它至少包含“读出值、计算新值、写回结果”三步。即使变量是 <code>volatile</code>，这三步之间仍然可能被别的线程插入，所以仍然会丢失更新。要保证这类复合操作安全，必须用锁或原子类。</p>
+<h4 id="10-2-synchronized-为什么可重入，锁升级在什么条件下发生"><a href="#10-2-synchronized-为什么可重入，锁升级在什么条件下发生" class="headerlink" title="10.2 synchronized 为什么可重入，锁升级在什么条件下发生"></a>10.2 <code>synchronized</code> 为什么可重入，锁升级在什么条件下发生</h4><p><code>synchronized</code> 可重入，是因为 JVM 会记录当前持锁线程以及进入次数，同一个线程再次进入同一把锁时不会被自己挡住，而是把重入计数加一。等退出同步块时，计数逐步减一，直到归零才真正释放锁。</p>
+<p>锁升级是 JVM 为了适配不同竞争强度而做的状态演进。竞争弱时走更轻量的路径，竞争增强后再逐步膨胀为更重的锁形态。现代 JDK 里偏向锁不再是重点，面试更重要的是讲清“轻量路径到重量路径”的设计目的，而不是死记某个版本的状态名。</p>
+<h4 id="10-3-线程池-execute-的三步走逻辑是什么"><a href="#10-3-线程池-execute-的三步走逻辑是什么" class="headerlink" title="10.3 线程池 execute() 的三步走逻辑是什么"></a>10.3 线程池 <code>execute()</code> 的三步走逻辑是什么</h4><p><code>execute()</code> 的主路径可以概括为：先看是否还能创建核心线程，再尝试入队，队列满了再扩到最大线程数，最后才拒绝。它不是简单的“来了就开线程”，而是用队列做削峰，用线程上限做保护。</p>
+<p><code>AbortPolicy</code> 是直接抛异常，适合不能丢任务的硬失败场景；<code>CallerRunsPolicy</code> 是让提交线程自己执行，形成反压，适合允许降速但尽量不丢任务的业务。二者的差异不是“会不会失败”，而是“失败时让谁承担代价”。</p>
+<h4 id="10-4-LongAdder-为什么高并发下比-AtomicLong-更快"><a href="#10-4-LongAdder-为什么高并发下比-AtomicLong-更快" class="headerlink" title="10.4 LongAdder 为什么高并发下比 AtomicLong 更快"></a>10.4 <code>LongAdder</code> 为什么高并发下比 <code>AtomicLong</code> 更快</h4><p><code>AtomicLong</code> 的瓶颈在单点 CAS 竞争，线程越多，失败重试越频繁。<code>LongAdder</code> 则把计数拆到多个 <code>Cell</code> 上，把热点竞争分散开，线程尽量打到不同槽位，因此在高并发计数场景下吞吐更高。</p>
+<p>代价是它不是强一致快照，求和时需要汇总多个槽位，所以更适合统计指标，而不是严格的实时精确值。</p>
+<h4 id="10-5-AQS-为什么能复用给-ReentrantLock、Semaphore、CountDownLatch"><a href="#10-5-AQS-为什么能复用给-ReentrantLock、Semaphore、CountDownLatch" class="headerlink" title="10.5 AQS 为什么能复用给 ReentrantLock、Semaphore、CountDownLatch"></a>10.5 AQS 为什么能复用给 <code>ReentrantLock</code>、<code>Semaphore</code>、<code>CountDownLatch</code></h4><p>AQS 复用的不是某个具体锁，而是一套通用同步框架：<code>state</code> 表示同步状态，FIFO 队列管理等待线程，CAS 和 <code>park/unpark</code> 完成阻塞唤醒。不同组件只需要定义“如何获取 state”“如何释放 state”。</p>
+<p><code>ReentrantLock</code> 是独占语义，<code>Semaphore</code> 是共享许可语义，<code>CountDownLatch</code> 是计数归零语义，但它们底层都在复用同一套排队和唤醒框架，这就是 AQS 最强的地方。</p>
+<h4 id="10-6-ConcurrentHashMap-为什么-JDK-8-不再使用分段锁"><a href="#10-6-ConcurrentHashMap-为什么-JDK-8-不再使用分段锁" class="headerlink" title="10.6 ConcurrentHashMap 为什么 JDK 8 不再使用分段锁"></a>10.6 <code>ConcurrentHashMap</code> 为什么 JDK 8 不再使用分段锁</h4><p>JDK 7 的分段锁把并发粒度固定在 segment 级别，粒度偏粗，且额外结构多。JDK 8 改成桶级别控制，结合 CAS、链表&#x2F;红黑树、必要时对桶头加锁和协作扩容，让读写冲突范围更小，吞吐更好。</p>
+<p>所以它不是“去掉锁”，而是“把锁粒度缩得更小，再把扩容和树化机制补上”。这也是 JDK 8 版本最值得讲清的设计点。</p>
+<h4 id="10-7-CopyOnWriteArrayList-为什么适合读多写少"><a href="#10-7-CopyOnWriteArrayList-为什么适合读多写少" class="headerlink" title="10.7 CopyOnWriteArrayList 为什么适合读多写少"></a>10.7 <code>CopyOnWriteArrayList</code> 为什么适合读多写少</h4><p>它的读是直接读快照数组，不加锁，所以很快。写的时候会复制整份数组，再替换引用，因此写成本高。只要写不频繁，这种“用写开销换读性能”的思路就很划算。</p>
+<p>如果集合很大、写很频繁，COW 会产生明显的复制和内存压力，这时就不合适了。</p>
+<h4 id="10-8-wait-notify-和-park-unpark-的差异是什么"><a href="#10-8-wait-notify-和-park-unpark-的差异是什么" class="headerlink" title="10.8 wait/notify 和 park/unpark 的差异是什么"></a>10.8 <code>wait/notify</code> 和 <code>park/unpark</code> 的差异是什么</h4><p><code>wait/notify</code> 基于对象监视器，必须持有锁才能调用，<code>wait()</code> 会释放锁并进入等待；<code>park/unpark</code> 则更底层，不依赖对象监视器，是 AQS 里挂起和唤醒线程的基础工具。</p>
+<p>一个很容易错的点是：<code>park/unpark</code> 不是“加强版 wait&#x2F;notify”，而是不同层次的原语。前者偏框架内部控制，后者偏对象锁协作。</p>
+<h4 id="10-9-什么是-happens-before，如何借它判断并发正确性"><a href="#10-9-什么是-happens-before，如何借它判断并发正确性" class="headerlink" title="10.9 什么是 happens-before，如何借它判断并发正确性"></a>10.9 什么是 happens-before，如何借它判断并发正确性</h4><p>happens-before 是 JMM 给并发操作定义的可见性和顺序关系。只要前一个操作 happens-before 后一个操作，前者的结果对后者就是可见的。它是判断并发代码“是不是靠谱”的核心标准。</p>
+<p>实际排查时可以这样做：先找写线程有没有经过 <code>volatile</code>、锁、线程启动&#x2F;终止等同步边界，再看读线程是否一定会经过这些边界。如果没有明确的 happens-before，就不要假设数据已经同步好了。</p>
+<hr>
+<h2 id="二、JVM：Java-虚拟机"><a href="#二、JVM：Java-虚拟机" class="headerlink" title="二、JVM：Java 虚拟机"></a>二、JVM：Java 虚拟机</h2><h3 id="1-运行时内存区域"><a href="#1-运行时内存区域" class="headerlink" title="1. 运行时内存区域"></a>1. 运行时内存区域</h3><table>
+<thead>
+<tr>
+<th>区域</th>
+<th>作用</th>
+<th>常见异常</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>程序计数器</td>
+<td>当前线程执行字节码的位置</td>
+<td>通常不会 OOM</td>
+</tr>
+<tr>
+<td>虚拟机栈</td>
+<td>Java 方法栈帧</td>
+<td><code>StackOverflowError</code>、<code>OutOfMemoryError</code></td>
+</tr>
+<tr>
+<td>本地方法栈</td>
+<td>JNI &#x2F; Native 方法</td>
+<td><code>StackOverflowError</code>、<code>OutOfMemoryError</code></td>
+</tr>
+<tr>
+<td>堆</td>
+<td>对象实例和数组</td>
+<td><code>Java heap space</code></td>
+</tr>
+<tr>
+<td>方法区 &#x2F; 元空间</td>
+<td>类元数据、常量、方法信息</td>
+<td><code>Metaspace</code> OOM</td>
+</tr>
+<tr>
+<td>直接内存</td>
+<td>NIO、堆外内存</td>
+<td><code>Direct buffer memory</code></td>
+</tr>
+</tbody></table>
+<h4 id="1-1-各区域特点"><a href="#1-1-各区域特点" class="headerlink" title="1.1 各区域特点"></a>1.1 各区域特点</h4><ul>
+<li><strong>程序计数器</strong>：线程私有，记录下一条字节码指令地址</li>
+<li><strong>虚拟机栈</strong>：线程私有，保存局部变量、操作数栈、动态链接、返回地址</li>
+<li><strong>堆</strong>：线程共享，GC 主要管理对象区域</li>
+<li><strong>元空间</strong>：JDK 8 起使用本地内存存放类元数据，不再使用永久代</li>
+<li><strong>直接内存</strong>：不在堆里，但仍受进程地址空间和系统内存限制</li>
+</ul>
+<h4 id="1-2-常见异常场景"><a href="#1-2-常见异常场景" class="headerlink" title="1.2 常见异常场景"></a>1.2 常见异常场景</h4><ul>
+<li>栈深递归太深 -&gt; <code>StackOverflowError</code></li>
+<li>创建线程过多 -&gt; <code>unable to create new native thread</code></li>
+<li>类太多或类加载器泄漏 -&gt; <code>Metaspace</code> OOM</li>
+<li>大量 <code>ByteBuffer.allocateDirect()</code> -&gt; <code>Direct buffer memory</code></li>
+</ul>
+<hr>
+<h3 id="2-类加载机制"><a href="#2-类加载机制" class="headerlink" title="2. 类加载机制"></a>2. 类加载机制</h3><h4 id="2-1-七个阶段"><a href="#2-1-七个阶段" class="headerlink" title="2.1 七个阶段"></a>2.1 七个阶段</h4><table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>加载</td>
+<td>读取字节流，生成 <code>Class</code> 对象</td>
+</tr>
+<tr>
+<td>验证</td>
+<td>确保字节码合法、结构正确</td>
+</tr>
+<tr>
+<td>准备</td>
+<td>为静态变量分配内存并设默认值</td>
+</tr>
+<tr>
+<td>解析</td>
+<td>符号引用转直接引用</td>
+</tr>
+<tr>
+<td>初始化</td>
+<td>执行 <code>&lt;clinit&gt;</code></td>
+</tr>
+<tr>
+<td>使用</td>
+<td>类被正常调用</td>
+</tr>
+<tr>
+<td>卸载</td>
+<td>类及其类加载器不再可达时回收</td>
+</tr>
+</tbody></table>
+<h4 id="2-2-类加载器体系"><a href="#2-2-类加载器体系" class="headerlink" title="2.2 类加载器体系"></a>2.2 类加载器体系</h4><ul>
+<li>Bootstrap ClassLoader</li>
+<li>Platform ClassLoader</li>
+<li>Application ClassLoader</li>
+<li>Custom ClassLoader</li>
+</ul>
+<h4 id="2-3-双亲委派模型"><a href="#2-3-双亲委派模型" class="headerlink" title="2.3 双亲委派模型"></a>2.3 双亲委派模型</h4><p>父加载器优先的目的主要是：</p>
+<ol>
+<li>避免核心类被篡改</li>
+<li>保证 <code>java.lang.*</code> 等基础类唯一性</li>
+<li>降低重复加载</li>
+</ol>
+<p>但在应用服务器、插件系统、隔离部署场景中，经常会有 <strong>child-first</strong> 的自定义加载逻辑。</p>
+<h4 id="2-4-类加载问题"><a href="#2-4-类加载问题" class="headerlink" title="2.4 类加载问题"></a>2.4 类加载问题</h4><table>
+<thead>
+<tr>
+<th>问题</th>
+<th>现象</th>
+<th>常见原因</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ClassNotFoundException</code></td>
+<td>找不到类</td>
+<td>类路径、依赖缺失</td>
+</tr>
+<tr>
+<td><code>NoClassDefFoundError</code></td>
+<td>编译时有，运行时没有</td>
+<td>依赖丢失、初始化失败</td>
+</tr>
+<tr>
+<td><code>LinkageError</code></td>
+<td>类链接冲突</td>
+<td>重复类、版本冲突</td>
+</tr>
+<tr>
+<td><code>ClassCastException</code></td>
+<td>看似同名类却不能强转</td>
+<td>不同类加载器加载了同名类</td>
+</tr>
+</tbody></table>
+<h4 id="2-5-类初始化触发点"><a href="#2-5-类初始化触发点" class="headerlink" title="2.5 类初始化触发点"></a>2.5 类初始化触发点</h4><p>常见触发包括：</p>
+<ul>
+<li><code>new</code></li>
+<li>访问静态字段</li>
+<li>调用静态方法</li>
+<li>反射</li>
+<li>初始化子类前先初始化父类</li>
+</ul>
+<h4 id="2-6-源码步骤梳理（架构图）"><a href="#2-6-源码步骤梳理（架构图）" class="headerlink" title="2.6 源码步骤梳理（架构图）"></a>2.6 源码步骤梳理（架构图）</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    A[ClassLoader.loadClass] --&gt; B&#123;已加载?&#125;</span><br><span class="line">    B -- 是 --&gt; C[直接返回 Class]</span><br><span class="line">    B -- 否 --&gt; D[父加载器委派]</span><br><span class="line">    D -- 找到 --&gt; C</span><br><span class="line">    D -- 未找到 --&gt; E[findClass]</span><br><span class="line">    E --&gt; F[读取字节码]</span><br><span class="line">    F --&gt; G[defineClass]</span><br><span class="line">    G --&gt; H[verify 验证]</span><br><span class="line">    H --&gt; I[prepare 准备]</span><br><span class="line">    I --&gt; J[resolve 解析]</span><br><span class="line">    J --&gt; K[initialize 执行 clinit]</span><br></pre></td></tr></table></figure>
+
+<p>源码步骤要抓住“先委派、再定义、再链接、最后初始化”：</p>
+<ol>
+<li><code>loadClass()</code> 先检查缓存，避免重复加载。</li>
+<li>默认先交给父加载器，确保核心类唯一性和安全性。</li>
+<li>父加载器找不到时，子加载器才会走自己的 <code>findClass()</code>。</li>
+<li><code>defineClass()</code> 把字节数组变成 JVM 中的 <code>Class</code> 对象。</li>
+<li>随后完成验证、准备、解析，最后在首次主动使用时执行 <code>&lt;clinit&gt;</code>。</li>
+</ol>
+<hr>
+<h3 id="3-字节码执行引擎"><a href="#3-字节码执行引擎" class="headerlink" title="3. 字节码执行引擎"></a>3. 字节码执行引擎</h3><h4 id="3-1-栈帧结构"><a href="#3-1-栈帧结构" class="headerlink" title="3.1 栈帧结构"></a>3.1 栈帧结构</h4><p>每个方法调用对应一个栈帧，主要包含：</p>
+<ul>
+<li>局部变量表</li>
+<li>操作数栈</li>
+<li>动态链接</li>
+<li>方法返回地址</li>
+</ul>
+<h4 id="3-2-方法调用过程"><a href="#3-2-方法调用过程" class="headerlink" title="3.2 方法调用过程"></a>3.2 方法调用过程</h4><p>字节码解释执行时，JVM 需要完成：</p>
+<ol>
+<li>指令取值</li>
+<li>操作数出栈&#x2F;入栈</li>
+<li>常量池解析</li>
+<li>方法调用分派</li>
+<li>返回值压栈</li>
+</ol>
+<p>常见调用指令：</p>
+<ul>
+<li><code>invokestatic</code></li>
+<li><code>invokespecial</code></li>
+<li><code>invokevirtual</code></li>
+<li><code>invokeinterface</code></li>
+<li><code>invokedynamic</code></li>
+</ul>
+<h4 id="3-3-Interpreter-vs-JIT"><a href="#3-3-Interpreter-vs-JIT" class="headerlink" title="3.3 Interpreter vs JIT"></a>3.3 Interpreter vs JIT</h4><ul>
+<li>解释器：启动快，执行相对慢</li>
+<li>JIT：把热点代码编译成本地机器码，执行快</li>
+</ul>
+<p>现代 JVM 一般采用分层编译：</p>
+<ul>
+<li>C1：偏启动和轻量优化</li>
+<li>C2：偏激进优化</li>
+<li>Tiered Compilation：综合前两者</li>
+</ul>
+<h4 id="3-4-逃逸分析"><a href="#3-4-逃逸分析" class="headerlink" title="3.4 逃逸分析"></a>3.4 逃逸分析</h4><p>逃逸分析判断对象是否“逃出”方法或线程：</p>
+<ul>
+<li>不逃逸 -&gt; 可能做栈上分配、标量替换</li>
+<li>不跨线程 -&gt; 可能做锁消除</li>
+</ul>
+<p>这也是为什么某些看似“加锁”的代码，在热点编译后性能会很好。</p>
+<hr>
+<h3 id="4-对象创建、布局与访问定位"><a href="#4-对象创建、布局与访问定位" class="headerlink" title="4. 对象创建、布局与访问定位"></a>4. 对象创建、布局与访问定位</h3><h4 id="4-1-对象创建流程"><a href="#4-1-对象创建流程" class="headerlink" title="4.1 对象创建流程"></a>4.1 对象创建流程</h4><p>典型流程：</p>
+<ol>
+<li>检查类是否已加载、初始化</li>
+<li>为对象分配内存</li>
+<li>将内存置零</li>
+<li>设置对象头</li>
+<li>执行构造方法</li>
+</ol>
+<h4 id="4-2-内存分配方式"><a href="#4-2-内存分配方式" class="headerlink" title="4.2 内存分配方式"></a>4.2 内存分配方式</h4><ul>
+<li>指针碰撞：适合规整堆</li>
+<li>空闲列表：适合碎片化堆</li>
+<li>TLAB：线程本地分配缓冲，减少竞争</li>
+</ul>
+<h4 id="4-3-对象布局"><a href="#4-3-对象布局" class="headerlink" title="4.3 对象布局"></a>4.3 对象布局</h4><p>典型对象包含：</p>
+<ul>
+<li>对象头</li>
+<li>实例数据</li>
+<li>对齐填充</li>
+</ul>
+<p>对象头里通常有：</p>
+<ul>
+<li>Mark Word</li>
+<li>Klass Pointer</li>
+<li>数组长度（数组对象）</li>
+</ul>
+<h4 id="4-4-访问定位"><a href="#4-4-访问定位" class="headerlink" title="4.4 访问定位"></a>4.4 访问定位</h4><p>HotSpot 常见是直接指针访问对象，这样少一层间接寻址，性能更好。</p>
+<h4 id="4-5-源码步骤梳理（架构图）"><a href="#4-5-源码步骤梳理（架构图）" class="headerlink" title="4.5 源码步骤梳理（架构图）"></a>4.5 源码步骤梳理（架构图）</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    A[new 指令] --&gt; B[检查类是否已初始化]</span><br><span class="line">    B --&gt; C[计算对象大小]</span><br><span class="line">    C --&gt; D&#123;TLAB 可用?&#125;</span><br><span class="line">    D -- 是 --&gt; E[在 TLAB 中分配]</span><br><span class="line">    D -- 否 --&gt; F[指针碰撞或空闲列表分配]</span><br><span class="line">    E --&gt; G[对象头初始化]</span><br><span class="line">    F --&gt; G</span><br><span class="line">    G --&gt; H[实例字段置零]</span><br><span class="line">    H --&gt; I[调用构造方法]</span><br></pre></td></tr></table></figure>
+
+<p>对象创建的关键顺序是：</p>
+<ol>
+<li>先保证类已完成初始化，否则实例都无法构造。</li>
+<li>再尝试从线程本地缓冲区 TLAB 分配，减少多线程竞争。</li>
+<li>如果 TLAB 不够，就走堆上的快速分配路径。</li>
+<li>对象头先写好 Mark Word 和类指针，再进行字段零值初始化。</li>
+<li>最后才执行构造方法，完成真正的业务初始化。</li>
+</ol>
+<hr>
+<h3 id="5-OOM-与内存泄漏"><a href="#5-OOM-与内存泄漏" class="headerlink" title="5. OOM 与内存泄漏"></a>5. OOM 与内存泄漏</h3><h4 id="5-1-两者区别"><a href="#5-1-两者区别" class="headerlink" title="5.1 两者区别"></a>5.1 两者区别</h4><ul>
+<li><strong>内存泄漏</strong>：不再使用的对象仍被引用，回收不了</li>
+<li><strong>OOM</strong>：可用内存耗尽，最终抛异常</li>
+</ul>
+<p>内存泄漏是原因，OOM 是结果。</p>
+<h4 id="5-2-常见泄漏点"><a href="#5-2-常见泄漏点" class="headerlink" title="5.2 常见泄漏点"></a>5.2 常见泄漏点</h4><ul>
+<li><code>static</code> 集合长期持有对象</li>
+<li><code>ThreadLocal</code> 未清理</li>
+<li>监听器未注销</li>
+<li>类加载器未释放</li>
+<li>直接内存未归还</li>
+</ul>
+<h4 id="5-3-常见-OOM-类型"><a href="#5-3-常见-OOM-类型" class="headerlink" title="5.3 常见 OOM 类型"></a>5.3 常见 OOM 类型</h4><ul>
+<li><code>Java heap space</code></li>
+<li><code>Metaspace</code></li>
+<li><code>Direct buffer memory</code></li>
+<li><code>unable to create new native thread</code></li>
+<li><code>GC overhead limit exceeded</code></li>
+</ul>
+<h4 id="5-4-排查流程"><a href="#5-4-排查流程" class="headerlink" title="5.4 排查流程"></a>5.4 排查流程</h4><ol>
+<li>先确认 OOM 类型</li>
+<li>看 GC 日志是否频繁 Full GC</li>
+<li>导出 heap dump &#x2F; native memory 信息</li>
+<li>用 MAT &#x2F; JProfiler &#x2F; VisualVM 找 dominator tree</li>
+<li>看 GC Roots 是否把对象链住</li>
+<li>结合业务流修复泄漏源</li>
+</ol>
+<hr>
+<h3 id="6-高频场景设计"><a href="#6-高频场景设计" class="headerlink" title="6. 高频场景设计"></a>6. 高频场景设计</h3><h4 id="6-1-OOM-排查"><a href="#6-1-OOM-排查" class="headerlink" title="6.1 OOM 排查"></a>6.1 OOM 排查</h4><p>推荐工具：</p>
+<table>
+<thead>
+<tr>
+<th>工具</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>jcmd</code></td>
+<td>统一入口，查 heap、线程、类、NMT</td>
+</tr>
+<tr>
+<td><code>jstack</code></td>
+<td>线程栈与死锁</td>
+</tr>
+<tr>
+<td><code>jmap</code></td>
+<td>heap dump、对象统计</td>
+</tr>
+<tr>
+<td><code>jstat</code></td>
+<td>GC 统计</td>
+</tr>
+<tr>
+<td>MAT</td>
+<td>堆转储分析</td>
+</tr>
+<tr>
+<td>JFR</td>
+<td>运行时事件追踪</td>
+</tr>
+</tbody></table>
+<p>JDK 8 常用 GC 日志参数：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">-XX:+PrintGCDetails</span><br><span class="line">-XX:+PrintGCDateStamps</span><br><span class="line">-XX:+PrintTenuringDistribution</span><br><span class="line">-Xloggc:gc.log</span><br></pre></td></tr></table></figure>
+
+<p>JDK 9+ 推荐：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-Xlog:gc*,safepoint:file=gc.log:time,level,tags</span><br></pre></td></tr></table></figure>
+
+<h4 id="6-2-类加载问题定位"><a href="#6-2-类加载问题定位" class="headerlink" title="6.2 类加载问题定位"></a>6.2 类加载问题定位</h4><p>处理思路：</p>
+<ul>
+<li>检查类路径和依赖版本</li>
+<li>看是否存在同名不同版本 jar</li>
+<li>判断是否是不同类加载器加载导致</li>
+<li>排查热部署&#x2F;容器隔离是否引入 child-first 冲突</li>
+</ul>
+<h4 id="6-3-热部署方案设计"><a href="#6-3-热部署方案设计" class="headerlink" title="6.3 热部署方案设计"></a>6.3 热部署方案设计</h4><p>常见设计：</p>
+<ul>
+<li>每次部署使用新的类加载器</li>
+<li>业务类从新加载器加载</li>
+<li>共享基础类留在父加载器</li>
+<li>退出时释放线程、连接池、定时器、ThreadLocal</li>
+</ul>
+<p>避免点：</p>
+<ul>
+<li>静态单例持有子加载器对象</li>
+<li>线程池线程未退出</li>
+<li>JDBC 驱动、SPI、缓存未清理</li>
+</ul>
+<h4 id="6-4-JVM-参数调优"><a href="#6-4-JVM-参数调优" class="headerlink" title="6.4 JVM 参数调优"></a>6.4 JVM 参数调优</h4><p>基本原则：</p>
+<ul>
+<li>先定 GC，再调堆</li>
+<li>先看停顿目标，再看吞吐</li>
+<li>先保证稳定，再追求极致</li>
+</ul>
+<p>常见参数思路：</p>
+<ul>
+<li><code>-Xms</code> 与 <code>-Xmx</code> 设为相等，避免运行中扩容</li>
+<li><code>-XX:MaxMetaspaceSize</code> 防止类元数据失控</li>
+<li><code>-XX:MaxDirectMemorySize</code> 约束堆外内存</li>
+<li><code>-XX:MaxGCPauseMillis</code> 设定 G1 的停顿目标</li>
+</ul>
+<h4 id="6-5-字节码增强应用"><a href="#6-5-字节码增强应用" class="headerlink" title="6.5 字节码增强应用"></a>6.5 字节码增强应用</h4><p>常见方式：</p>
+<ul>
+<li>JDK 动态代理：接口代理</li>
+<li>CGLIB：子类代理</li>
+<li>ASM &#x2F; ByteBuddy：直接操作字节码</li>
+<li>Java Agent：运行时插桩</li>
+</ul>
+<p>典型应用：</p>
+<ul>
+<li>AOP</li>
+<li>链路追踪</li>
+<li>ORM 延迟加载</li>
+<li>监控采集</li>
+</ul>
+<h4 id="6-6-运行时监控方案"><a href="#6-6-运行时监控方案" class="headerlink" title="6.6 运行时监控方案"></a>6.6 运行时监控方案</h4><p>建议监控维度：</p>
+<ul>
+<li>GC 停顿次数、时长、回收率</li>
+<li>堆、元空间、直接内存</li>
+<li>线程数、死锁数</li>
+<li>类加载数量</li>
+<li>业务请求延迟与错误率</li>
+</ul>
+<p>工程实践里常把 JVM 指标输出到 Prometheus &#x2F; Grafana，再配合告警阈值和趋势分析。</p>
+<hr>
+<h3 id="7-JVM-面试复习详解"><a href="#7-JVM-面试复习详解" class="headerlink" title="7. JVM 面试复习详解"></a>7. JVM 面试复习详解</h3><h4 id="7-1-运行时数据区各自的作用是什么"><a href="#7-1-运行时数据区各自的作用是什么" class="headerlink" title="7.1 运行时数据区各自的作用是什么"></a>7.1 运行时数据区各自的作用是什么</h4><p>程序计数器负责记录当前线程执行到哪条字节码；虚拟机栈保存方法调用期间的局部变量、操作数栈和返回信息；本地方法栈服务于 JNI 或 Native 调用；堆承载绝大多数对象实例；方法区 &#x2F; 元空间存放类元数据、常量和方法信息；直接内存则用于 NIO 和堆外缓冲。</p>
+<p>最容易出问题的是堆、元空间和直接内存。堆会因为对象太多而 OOM，元空间会因为类元数据太多或类加载器泄漏而膨胀，直接内存则常在 NIO 场景里被忽视。</p>
+<h4 id="7-2-元空间和永久代有什么区别"><a href="#7-2-元空间和永久代有什么区别" class="headerlink" title="7.2 元空间和永久代有什么区别"></a>7.2 元空间和永久代有什么区别</h4><p>永久代是早期 HotSpot 用来存放类元数据的堆内区域，容量固定，容易受堆大小限制。元空间把这部分元数据移到本地内存里，降低了容量约束，也避免了永久代固定上限带来的频繁溢出问题。</p>
+<p>所以 JDK 8 以后，类很多、动态代理很多、热部署很多时，常见的不是“永久代 OOM”，而是 <code>Metaspace</code> 压力或类加载器泄漏。</p>
+<h4 id="7-3-双亲委派模型为什么重要"><a href="#7-3-双亲委派模型为什么重要" class="headerlink" title="7.3 双亲委派模型为什么重要"></a>7.3 双亲委派模型为什么重要</h4><p>双亲委派的意义是先让父加载器查找，避免核心类被重复定义或篡改，保证基础类唯一性和安全性。<code>java.lang.String</code> 这类核心类如果能被应用随便覆盖，整个 JVM 的基础就不稳了。</p>
+<p>不过在插件化、容器化、热部署场景里，开发者也会故意打破双亲委派，改成 child-first。面试里要讲清楚：不是不知道委派，而是知道什么场景下要遵守，什么场景下要主动改变。</p>
+<h4 id="7-4-类初始化何时触发"><a href="#7-4-类初始化何时触发" class="headerlink" title="7.4 类初始化何时触发"></a>7.4 类初始化何时触发</h4><p>只有“主动使用”才会触发初始化，例如 <code>new</code>、访问静态字段、调用静态方法、反射、初始化父类等。单纯拿到 <code>Class</code> 对象，通常还不会立刻触发 <code>&lt;clinit&gt;</code>。</p>
+<p>这题经常和单例、静态变量初始化顺序一起考，核心判断标准就是：有没有真正触发首次主动使用。</p>
+<h4 id="7-5-栈帧中有哪些信息"><a href="#7-5-栈帧中有哪些信息" class="headerlink" title="7.5 栈帧中有哪些信息"></a>7.5 栈帧中有哪些信息</h4><p>每次方法调用都会创建一个栈帧，栈帧里主要有局部变量表、操作数栈、动态链接和方法返回地址。局部变量表负责参数和临时变量，操作数栈负责字节码执行的中间值，动态链接用于常量池解析，返回地址决定方法结束后返回到哪里。</p>
+<p>递归过深会导致虚拟机栈耗尽，表现为 <code>StackOverflowError</code>。如果不是递归，而是线程开太多，也可能因为每个线程都要占用栈空间而触发资源耗尽。</p>
+<h4 id="7-6-JIT-和解释器各自的优缺点是什么"><a href="#7-6-JIT-和解释器各自的优缺点是什么" class="headerlink" title="7.6 JIT 和解释器各自的优缺点是什么"></a>7.6 JIT 和解释器各自的优缺点是什么</h4><p>解释器启动快，适合冷代码和短生命周期程序；JIT 会把热点方法编译成机器码，长期运行性能更高。现代 JVM 不是二选一，而是通常先解释执行，等热点稳定后再做分层编译。</p>
+<p>逃逸分析是 JIT 的重要优化之一，它可以帮助做栈上分配、标量替换和锁消除。你可以把它理解成“编译器替你减少对象分配和同步开销”。</p>
+<h4 id="7-7-对象从-new-到可用经历了什么"><a href="#7-7-对象从-new-到可用经历了什么" class="headerlink" title="7.7 对象从 new 到可用经历了什么"></a>7.7 对象从 <code>new</code> 到可用经历了什么</h4><p>对象创建通常经历类初始化检查、分配内存、内存清零、设置对象头、执行构造方法几个阶段。分配内存时常优先走 TLAB，减少多线程争抢堆空间的成本。</p>
+<p>这题的核心不是死记顺序，而是理解为什么要先清零、为什么要先写对象头、为什么构造方法总是在最后执行。因为 JVM 需要先把对象放进一个一致的内存状态里，再交给业务代码初始化。</p>
+<h4 id="7-8-OOM-和内存泄漏如何区分"><a href="#7-8-OOM-和内存泄漏如何区分" class="headerlink" title="7.8 OOM 和内存泄漏如何区分"></a>7.8 OOM 和内存泄漏如何区分</h4><p>内存泄漏是“本不该再活的对象还被引用着”，OOM 是“内存最终被耗尽”。所以泄漏是根因，OOM 是结果。排查时先看异常类型，再结合 GC 日志、heap dump 和引用链找根因。</p>
+<p>如果是 <code>Metaspace</code> OOM，就优先怀疑类加载器泄漏；如果是堆 OOM，就看大对象、集合和缓存；如果是直接内存 OOM，就查 NIO 缓冲、堆外库和 <code>MaxDirectMemorySize</code>。</p>
+<h4 id="7-9-热部署为什么容易引发类加载器泄漏"><a href="#7-9-热部署为什么容易引发类加载器泄漏" class="headerlink" title="7.9 热部署为什么容易引发类加载器泄漏"></a>7.9 热部署为什么容易引发类加载器泄漏</h4><p>热部署通常依赖“旧类加载器整体回收，新类加载器重新加载”。只要旧类加载器还被线程、静态字段、ThreadLocal、缓存、SPI 或连接池引用着，它就无法被释放，元空间也会跟着一直占着。</p>
+<p>所以热部署的关键不是“重新加载类”，而是“确保旧加载器及其引用链全部断开”。</p>
+<h4 id="7-10-类加载问题怎么定位"><a href="#7-10-类加载问题怎么定位" class="headerlink" title="7.10 类加载问题怎么定位"></a>7.10 类加载问题怎么定位</h4><p><code>ClassNotFoundException</code> 往往是类路径或依赖缺失；<code>NoClassDefFoundError</code> 常见于运行时依赖丢失或类初始化失败；<code>ClassCastException</code> 则经常意味着同名类被不同类加载器加载了。定位时先查类路径和依赖版本，再查加载器链路。</p>
+<p>一个很实用的判断方法是：只要涉及容器、插件、热部署，先怀疑类加载器；只要本地能跑线上挂，先怀疑依赖冲突。</p>
+<hr>
+<h2 id="三、GC：垃圾回收"><a href="#三、GC：垃圾回收" class="headerlink" title="三、GC：垃圾回收"></a>三、GC：垃圾回收</h2><h3 id="1-垃圾判定"><a href="#1-垃圾判定" class="headerlink" title="1. 垃圾判定"></a>1. 垃圾判定</h3><h4 id="1-1-引用计数"><a href="#1-1-引用计数" class="headerlink" title="1.1 引用计数"></a>1.1 引用计数</h4><p>给对象维护引用计数，引用加一，失效减一。优点是简单，缺点是 <strong>无法处理循环引用</strong>，所以现代主流 JVM 并不以它作为核心算法。</p>
+<h4 id="1-2-可达性分析"><a href="#1-2-可达性分析" class="headerlink" title="1.2 可达性分析"></a>1.2 可达性分析</h4><p>以 GC Roots 为起点向下搜索，凡是不可达的对象都可视为垃圾。</p>
+<p>常见 GC Roots：</p>
+<ul>
+<li>线程栈中的局部变量</li>
+<li>静态变量</li>
+<li>常量引用</li>
+<li>JNI 引用</li>
+<li>同步锁持有关系</li>
+</ul>
+<h4 id="1-3-四种引用"><a href="#1-3-四种引用" class="headerlink" title="1.3 四种引用"></a>1.3 四种引用</h4><table>
+<thead>
+<tr>
+<th>引用类型</th>
+<th>作用</th>
+<th>回收时机</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>强引用</td>
+<td>默认引用</td>
+<td>不会被回收</td>
+</tr>
+<tr>
+<td>软引用</td>
+<td>内存不足时回收</td>
+<td>常用于缓存</td>
+</tr>
+<tr>
+<td>弱引用</td>
+<td>下次 GC 直接回收</td>
+<td>常用于映射表</td>
+</tr>
+<tr>
+<td>虚引用</td>
+<td>仅用于通知和清理</td>
+<td>配合 <code>ReferenceQueue</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h3 id="2-分代回收思想"><a href="#2-分代回收思想" class="headerlink" title="2. 分代回收思想"></a>2. 分代回收思想</h3><h4 id="2-1-为什么要分代"><a href="#2-1-为什么要分代" class="headerlink" title="2.1 为什么要分代"></a>2.1 为什么要分代</h4><p>经验法则是“绝大多数对象朝生夕死”。因此把对象分为：</p>
+<ul>
+<li>年轻代：高频分配、高频回收</li>
+<li>老年代：存活时间长、回收代价高</li>
+</ul>
+<h4 id="2-2-典型分区"><a href="#2-2-典型分区" class="headerlink" title="2.2 典型分区"></a>2.2 典型分区</h4><ul>
+<li>Eden：新对象主要分配区</li>
+<li>Survivor：存活对象过渡区</li>
+<li>Old：长期存活对象区</li>
+<li>Metaspace：类元数据，不在 Java 堆内</li>
+</ul>
+<h4 id="2-3-晋升与年龄"><a href="#2-3-晋升与年龄" class="headerlink" title="2.3 晋升与年龄"></a>2.3 晋升与年龄</h4><p>对象在多次 Minor GC 后会逐步晋升到老年代。是否晋升取决于：</p>
+<ul>
+<li>对象年龄</li>
+<li>Survivor 空间大小</li>
+<li>动态年龄判定</li>
+</ul>
+<hr>
+<h3 id="3-回收算法"><a href="#3-回收算法" class="headerlink" title="3. 回收算法"></a>3. 回收算法</h3><table>
+<thead>
+<tr>
+<th>算法</th>
+<th>思路</th>
+<th>优点</th>
+<th>缺点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>标记-清除</td>
+<td>标记垃圾后直接清理</td>
+<td>实现简单</td>
+<td>产生碎片</td>
+</tr>
+<tr>
+<td>复制</td>
+<td>存活对象复制到新区域</td>
+<td>无碎片，速度快</td>
+<td>空间利用率低</td>
+</tr>
+<tr>
+<td>标记-整理</td>
+<td>标记后压缩整理</td>
+<td>无碎片</td>
+<td>移动成本高</td>
+</tr>
+<tr>
+<td>分代收集</td>
+<td>按对象年龄选择算法</td>
+<td>兼顾吞吐和停顿</td>
+<td>设计更复杂</td>
+</tr>
+</tbody></table>
+<p>简化理解：</p>
+<ul>
+<li>年轻代常用复制算法</li>
+<li>老年代常用标记-清除或标记-整理</li>
+</ul>
+<hr>
+<h3 id="4-经典垃圾收集器"><a href="#4-经典垃圾收集器" class="headerlink" title="4. 经典垃圾收集器"></a>4. 经典垃圾收集器</h3><h4 id="4-1-发展脉络"><a href="#4-1-发展脉络" class="headerlink" title="4.1 发展脉络"></a>4.1 发展脉络</h4><table>
+<thead>
+<tr>
+<th>收集器</th>
+<th>特点</th>
+<th>适合场景</th>
+<th>现状</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Serial</td>
+<td>单线程、STW</td>
+<td>小堆、简单场景</td>
+<td>仍可用</td>
+</tr>
+<tr>
+<td>ParNew</td>
+<td>年轻代并行</td>
+<td>旧 CMS 配套</td>
+<td>旧时代方案</td>
+</tr>
+<tr>
+<td>Parallel Scavenge &#x2F; Parallel Old</td>
+<td>吞吐优先</td>
+<td>批处理、后台任务</td>
+<td>JDK 8 常见默认组合</td>
+</tr>
+<tr>
+<td>CMS</td>
+<td>低停顿、并发标记清除</td>
+<td>对延迟敏感但可接受碎片</td>
+<td>JDK 14 已移除</td>
+</tr>
+<tr>
+<td>G1</td>
+<td>Region 化、可预测停顿</td>
+<td>大堆、服务端应用</td>
+<td>JDK 9 起默认</td>
+</tr>
+<tr>
+<td>ZGC</td>
+<td>极低停顿、并发搬迁</td>
+<td>超大堆、低延迟</td>
+<td>现代主力</td>
+</tr>
+<tr>
+<td>Shenandoah</td>
+<td>低停顿、并发压缩</td>
+<td>低延迟系统</td>
+<td>现代可选</td>
+</tr>
+</tbody></table>
+<h4 id="4-2-Serial"><a href="#4-2-Serial" class="headerlink" title="4.2 Serial"></a>4.2 Serial</h4><ul>
+<li>单线程收集</li>
+<li>适合小堆和简单客户端场景</li>
+<li>优点是实现简单、额外开销低</li>
+</ul>
+<h4 id="4-3-Parallel"><a href="#4-3-Parallel" class="headerlink" title="4.3 Parallel"></a>4.3 Parallel</h4><ul>
+<li>追求吞吐量</li>
+<li>适合批处理、离线任务、后台计算</li>
+<li>缺点是暂停时间相对不稳定</li>
+</ul>
+<h4 id="4-4-CMS"><a href="#4-4-CMS" class="headerlink" title="4.4 CMS"></a>4.4 CMS</h4><p>CMS 以“低停顿”为主要目标，采用并发标记和并发清除，但会面临：</p>
+<ul>
+<li>标记清除产生碎片</li>
+<li>并发阶段仍有 CPU 开销</li>
+<li>高碎片时可能触发 Full GC</li>
+</ul>
+<p>它是经典老方案，但在现代 JDK 已经退场，更多是理解演进价值。</p>
+<h4 id="4-5-G1"><a href="#4-5-G1" class="headerlink" title="4.5 G1"></a>4.5 G1</h4><p>G1 的核心思路：</p>
+<ul>
+<li>把堆切成多个 Region</li>
+<li>通过收集价值预测控制停顿</li>
+<li>先收年轻代，再在合适时机做 Mixed GC</li>
+</ul>
+<p>关键机制：</p>
+<ul>
+<li>Remembered Set：跨 Region 引用记录</li>
+<li>SATB：并发标记时的快照起点</li>
+<li>Evacuation：对象搬迁</li>
+<li>Humongous Object：大对象走特殊分配路径</li>
+</ul>
+<p>G1 适合大多数服务端应用，尤其是需要在 <strong>吞吐和停顿之间平衡</strong> 的场景。</p>
+<h4 id="4-6-ZGC"><a href="#4-6-ZGC" class="headerlink" title="4.6 ZGC"></a>4.6 ZGC</h4><p>ZGC 的目标是把停顿压到极低级别。核心特征：</p>
+<ul>
+<li>大部分工作并发完成</li>
+<li>采用加载屏障等机制支持对象搬迁</li>
+<li>适合超大堆和低延迟系统</li>
+</ul>
+<p>JDK 21 的 <strong>Generational ZGC</strong> 进一步加入分代思路，以提升吞吐和分配效率。</p>
+<h4 id="4-7-Shenandoah"><a href="#4-7-Shenandoah" class="headerlink" title="4.7 Shenandoah"></a>4.7 Shenandoah</h4><p>Shenandoah 也是低停顿收集器，强调并发标记、并发压缩和低延迟。它在理念上和 ZGC 很接近，常用于对 STW 极其敏感的系统。</p>
+<h4 id="4-8-源码步骤梳理（架构图）"><a href="#4-8-源码步骤梳理（架构图）" class="headerlink" title="4.8 源码步骤梳理（架构图）"></a>4.8 源码步骤梳理（架构图）</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    A[对象分配] --&gt; B[Eden 填满]</span><br><span class="line">    B --&gt; C[Minor GC]</span><br><span class="line">    C --&gt; D[存活对象复制到 Survivor 或 Old]</span><br><span class="line">    D --&gt; E&#123;老年代压力是否升高&#125;</span><br><span class="line">    E -- 否 --&gt; A</span><br><span class="line">    E -- 是 --&gt; F[并发标记]</span><br><span class="line">    F --&gt; G[Mixed GC 或 Full GC]</span><br><span class="line">    G --&gt; H[回收并整理空间]</span><br></pre></td></tr></table></figure>
+
+<p>如果把收集器抽象成一条回收流水线，可以这样理解：</p>
+<ol>
+<li>新对象先进入年轻代，绝大多数对象在这里就被回收掉。</li>
+<li>能活下来的对象经过多次 Minor GC 后逐步晋升。</li>
+<li>老年代压力上升后，再进入并发标记和混合回收。</li>
+<li>G1 更强调 Region 级调度，ZGC 和 Shenandoah 更强调并发搬迁与极低停顿。</li>
+</ol>
+<hr>
+<h3 id="5-Minor-x2F-Major-x2F-Full-GC"><a href="#5-Minor-x2F-Major-x2F-Full-GC" class="headerlink" title="5. Minor &#x2F; Major &#x2F; Full GC"></a>5. Minor &#x2F; Major &#x2F; Full GC</h3><h4 id="5-1-基本含义"><a href="#5-1-基本含义" class="headerlink" title="5.1 基本含义"></a>5.1 基本含义</h4><ul>
+<li><strong>Minor GC</strong>：年轻代回收</li>
+<li><strong>Major GC</strong>：通常指老年代回收，具体含义可能因收集器而异</li>
+<li><strong>Full GC</strong>：整堆回收，通常伴随 STW，可能涉及类卸载、元空间整理</li>
+</ul>
+<h4 id="5-2-常见触发条件"><a href="#5-2-常见触发条件" class="headerlink" title="5.2 常见触发条件"></a>5.2 常见触发条件</h4><ul>
+<li>Eden 放不下新对象</li>
+<li>老年代空间不足</li>
+<li>元空间压力过大</li>
+<li>显式 <code>System.gc()</code></li>
+<li>G1 的并发周期失败或退化</li>
+</ul>
+<h4 id="5-3-设计建议"><a href="#5-3-设计建议" class="headerlink" title="5.3 设计建议"></a>5.3 设计建议</h4><ul>
+<li>尽量避免频繁 Full GC</li>
+<li>关注分配速率和晋升速率</li>
+<li>关注大对象和长生命周期对象</li>
+</ul>
+<hr>
+<h3 id="6-高频场景设计-1"><a href="#6-高频场景设计-1" class="headerlink" title="6. 高频场景设计"></a>6. 高频场景设计</h3><h4 id="6-1-大内存应用-GC-优化"><a href="#6-1-大内存应用-GC-优化" class="headerlink" title="6.1 大内存应用 GC 优化"></a>6.1 大内存应用 GC 优化</h4><p>建议：</p>
+<ul>
+<li>优先考虑 G1 或 ZGC</li>
+<li><code>Xms</code> 与 <code>Xmx</code> 设成相同</li>
+<li>避免堆频繁扩缩容</li>
+<li>关注对象分配速率和晋升率</li>
+</ul>
+<p>G1 常见参数思路：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">-XX:+UseG1GC</span><br><span class="line">-Xms4g</span><br><span class="line">-Xmx4g</span><br><span class="line">-XX:MaxGCPauseMillis=200</span><br><span class="line">-XX:InitiatingHeapOccupancyPercent=45</span><br></pre></td></tr></table></figure>
+
+<h4 id="6-2-低延迟系统-GC-选型"><a href="#6-2-低延迟系统-GC-选型" class="headerlink" title="6.2 低延迟系统 GC 选型"></a>6.2 低延迟系统 GC 选型</h4><p>优先顺序通常是：</p>
+<ol>
+<li>ZGC</li>
+<li>Shenandoah</li>
+<li>G1</li>
+<li>Parallel &#x2F; CMS 仅限历史环境</li>
+</ol>
+<p>低延迟系统关注的不是“平均停顿”，而是 <strong>尾延迟</strong>。</p>
+<h4 id="6-3-Full-GC-频繁问题排查"><a href="#6-3-Full-GC-频繁问题排查" class="headerlink" title="6.3 Full GC 频繁问题排查"></a>6.3 Full GC 频繁问题排查</h4><p>排查顺序：</p>
+<ol>
+<li>看是哪种 Full GC</li>
+<li>看老年代是否持续增长</li>
+<li>看元空间是否膨胀</li>
+<li>看是否有大对象或直接内存问题</li>
+<li>看是否存在类加载器泄漏或 ThreadLocal 泄漏</li>
+</ol>
+<h4 id="6-4-OOM-问题分析与解决"><a href="#6-4-OOM-问题分析与解决" class="headerlink" title="6.4 OOM 问题分析与解决"></a>6.4 OOM 问题分析与解决</h4><p>思路：</p>
+<ul>
+<li>先判断堆内还是堆外</li>
+<li>再判断对象泄漏还是分配过快</li>
+<li>最后结合 GC 日志与堆转储定位根因</li>
+</ul>
+<h4 id="6-5-对象生命周期优化"><a href="#6-5-对象生命周期优化" class="headerlink" title="6.5 对象生命周期优化"></a>6.5 对象生命周期优化</h4><p>原则：</p>
+<ul>
+<li>少创建临时大对象</li>
+<li>及时释放缓存和集合引用</li>
+<li>不要长期持有短生命周期对象</li>
+<li>热点对象可考虑复用，但要防止对象池反而增加复杂度</li>
+</ul>
+<h4 id="6-6-内存分配策略设计"><a href="#6-6-内存分配策略设计" class="headerlink" title="6.6 内存分配策略设计"></a>6.6 内存分配策略设计</h4><p>常见策略：</p>
+<ul>
+<li>业务缓存加上过期和容量上限</li>
+<li>大数组提前预分配，避免反复扩容</li>
+<li>大对象尽量减少跨代存活</li>
+<li>关注对象图深度，减少长链引用</li>
+</ul>
+<hr>
+<h3 id="7-GC-调优与排查工具"><a href="#7-GC-调优与排查工具" class="headerlink" title="7. GC 调优与排查工具"></a>7. GC 调优与排查工具</h3><table>
+<thead>
+<tr>
+<th>工具</th>
+<th>用途</th>
+<th>适合阶段</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>GC 日志</td>
+<td>看回收频率、停顿、晋升</td>
+<td>第一现场</td>
+</tr>
+<tr>
+<td><code>jstat</code></td>
+<td>看 GC 统计趋势</td>
+<td>日常观测</td>
+</tr>
+<tr>
+<td><code>jcmd</code></td>
+<td>查 heap、线程、NMT</td>
+<td>快速定位</td>
+</tr>
+<tr>
+<td><code>jmap</code></td>
+<td>导出 heap dump</td>
+<td>深度分析</td>
+</tr>
+<tr>
+<td>MAT</td>
+<td>堆转储分析</td>
+<td>查泄漏根因</td>
+</tr>
+<tr>
+<td>JFR</td>
+<td>跟踪事件与延迟</td>
+<td>线上采样</td>
+</tr>
+</tbody></table>
+<p>建议把 GC 日志、堆使用率、暂停时间、分配速率、元空间占用一起看，单看一个指标容易误判。</p>
+<hr>
+<h3 id="8-GC-面试复习详解"><a href="#8-GC-面试复习详解" class="headerlink" title="8. GC 面试复习详解"></a>8. GC 面试复习详解</h3><h4 id="8-1-为什么说“绝大多数对象朝生夕死”"><a href="#8-1-为什么说“绝大多数对象朝生夕死”" class="headerlink" title="8.1 为什么说“绝大多数对象朝生夕死”"></a>8.1 为什么说“绝大多数对象朝生夕死”</h4><p>在典型 Java 服务里，大量对象只服务于一次请求、一次函数调用或一次临时计算，很快就失去引用。这种分布非常适合分代回收：新对象优先放年轻代，活不久的对象能快速被清掉，回收成本低。</p>
+<p>所以分代思想不是为了“分区而分区”，而是基于真实对象生命周期分布做出的工程优化。</p>
+<h4 id="8-2-强引用、软引用、弱引用、虚引用有什么区别"><a href="#8-2-强引用、软引用、弱引用、虚引用有什么区别" class="headerlink" title="8.2 强引用、软引用、弱引用、虚引用有什么区别"></a>8.2 强引用、软引用、弱引用、虚引用有什么区别</h4><p>强引用默认不会回收；软引用会在内存紧张时被清理，常用于缓存；弱引用在下一次 GC 时就会被回收，常用于映射表；虚引用本身不决定对象存活，只用于清理前后的通知。</p>
+<p>如果面试追问用途，最常见的答法是：软引用偏缓存，弱引用偏引用跟踪，虚引用偏资源清理。</p>
+<h4 id="8-3-为什么分代收集有效"><a href="#8-3-为什么分代收集有效" class="headerlink" title="8.3 为什么分代收集有效"></a>8.3 为什么分代收集有效</h4><p>因为对象的存活时间往往呈现明显分层。年轻代对象多、死亡率高，适合用复制算法快速回收；老年代对象更稳定，适合采用标记-清除或标记-整理来减少复制成本。</p>
+<p>分代收集的本质是“把不同生命周期的对象分开管理”，不是简单把堆切几块。</p>
+<h4 id="8-4-标记-清除和标记-整理有什么区别"><a href="#8-4-标记-清除和标记-整理有什么区别" class="headerlink" title="8.4 标记-清除和标记-整理有什么区别"></a>8.4 标记-清除和标记-整理有什么区别</h4><p>标记-清除是先标记垃圾，再直接清掉，优点是实现简单，缺点是会产生碎片；标记-整理则会在清理前把存活对象往一边移动，减少碎片，但移动对象本身有额外成本。</p>
+<p>所以如果更看重空间连续性，整理更合适；如果更看重实现简单和局部回收成本，清除也有价值。</p>
+<h4 id="8-5-CMS-为什么容易碎片化"><a href="#8-5-CMS-为什么容易碎片化" class="headerlink" title="8.5 CMS 为什么容易碎片化"></a>8.5 CMS 为什么容易碎片化</h4><p>CMS 的目标是尽量减少停顿，它采用并发标记和并发清除，但不会像整理算法那样主动压缩堆内存。久而久之，老年代会留下很多不连续空洞，导致大对象分配失败或触发 Full GC。</p>
+<p>这也是 CMS 最经典的历史缺陷之一，所以它在现代 JDK 中已经退出主流舞台。</p>
+<h4 id="8-6-G1-为什么能更好地控制停顿"><a href="#8-6-G1-为什么能更好地控制停顿" class="headerlink" title="8.6 G1 为什么能更好地控制停顿"></a>8.6 G1 为什么能更好地控制停顿</h4><p>G1 把堆切成多个 Region，并维护每个 Region 的回收收益模型。它不是“把所有垃圾一起扫”，而是按停顿目标选择最划算的 Region 做回收，因此能在吞吐和停顿之间取得更平衡的结果。</p>
+<p>G1 最核心的价值是把 GC 从“整堆粗粒度回收”变成“Region 级的可预测调度”。</p>
+<h4 id="8-7-ZGC-为什么适合超大堆低延迟场景"><a href="#8-7-ZGC-为什么适合超大堆低延迟场景" class="headerlink" title="8.7 ZGC 为什么适合超大堆低延迟场景"></a>8.7 ZGC 为什么适合超大堆低延迟场景</h4><p>ZGC 的目标是把 STW 压到极低，并让绝大多数回收动作并发完成。它通过加载屏障、并发标记、并发搬迁等机制，把停顿时间控制得非常短，因此特别适合超大堆和尾延迟敏感系统。</p>
+<p>JDK 21 的分代 ZGC 进一步把年轻代和老年代的回收思路结合起来，兼顾低延迟和吞吐。</p>
+<h4 id="8-8-Minor-GC、Mixed-GC、Full-GC-的区别"><a href="#8-8-Minor-GC、Mixed-GC、Full-GC-的区别" class="headerlink" title="8.8 Minor GC、Mixed GC、Full GC 的区别"></a>8.8 Minor GC、Mixed GC、Full GC 的区别</h4><p>Minor GC 一般是年轻代回收；Mixed GC 常见于 G1，既回收年轻代，也回收部分老年代 Region；Full GC 则通常是整堆级回收，停顿最重，也最需要避免。</p>
+<p>实战里最关键的不是背定义，而是判断为什么会触发 Full GC：是老年代满了、元空间膨胀了，还是并发回收跟不上分配速度。</p>
+<h4 id="8-9-元空间和堆的边界在哪里"><a href="#8-9-元空间和堆的边界在哪里" class="headerlink" title="8.9 元空间和堆的边界在哪里"></a>8.9 元空间和堆的边界在哪里</h4><p>堆主要管对象实例，元空间管类元数据。对象本身不在元空间里，但类、方法、常量池、运行时类型信息这些内容会占用元空间。换句话说，堆是“对象世界”，元空间是“类世界”。</p>
+<p>如果线上频繁 <code>Metaspace</code> OOM，通常不是对象太多，而是类太多、动态代理太多、热部署没清干净，或者类加载器没有释放。</p>
+<h4 id="8-10-大对象和直接内存问题怎么排查"><a href="#8-10-大对象和直接内存问题怎么排查" class="headerlink" title="8.10 大对象和直接内存问题怎么排查"></a>8.10 大对象和直接内存问题怎么排查</h4><p>大对象会给年轻代和老年代都带来压力，容易导致提早晋升或回收抖动；直接内存虽然不在堆里，但会影响进程总内存和 NIO 性能。排查时要同时看堆、堆外、元空间和 GC 日志，不能只盯着 <code>heap usage</code>。</p>
+<p>如果是大对象问题，重点看分配速率和存活时间；如果是直接内存问题，重点看 NIO 缓冲、本地库和 <code>MaxDirectMemorySize</code>。</p>
+<hr>
+<p>下面这部分把前面的原理真正落到设计层面。每个案例都按“背景 - 目标 - 架构 - 代码 - 细节 - 风险”展开，适合直接拿去做方案讨论、面试追问和问题排查。</p>
+<h2 id="四、详细设计案例库"><a href="#四、详细设计案例库" class="headerlink" title="四、详细设计案例库"></a>四、详细设计案例库</h2><h3 id="1-订单异步化与线程池治理"><a href="#1-订单异步化与线程池治理" class="headerlink" title="1. 订单异步化与线程池治理"></a>1. 订单异步化与线程池治理</h3><h4 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h4><p>订单创建后通常会串联多个非核心步骤，例如发券、发消息、写审计、同步搜索索引、通知下游。它们共同特点是：</p>
+<ul>
+<li>耗时不稳定</li>
+<li>某些分支可以失败重试</li>
+<li>失败不能拖垮主流程</li>
+<li>高峰期容易把数据库和下游打满</li>
+</ul>
+<h4 id="设计目标"><a href="#设计目标" class="headerlink" title="设计目标"></a>设计目标</h4><ol>
+<li>主链路尽快返回</li>
+<li>异步任务可控、可观测、可降级</li>
+<li>高峰时能自动形成背压</li>
+<li>不因为某个下游慢调用把线程池拖死</li>
+</ol>
+<h4 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">flowchart LR</span><br><span class="line">    A[订单请求] --&gt; B[主线程快速落库]</span><br><span class="line">    B --&gt; C[提交异步任务]</span><br><span class="line">    C --&gt; D[有界线程池]</span><br><span class="line">    D --&gt; E[执行发券/发消息/索引同步]</span><br><span class="line">    E --&gt; F[埋点与告警]</span><br><span class="line">    D --&gt; G&#123;队列满?&#125;</span><br><span class="line">    G -- 是 --&gt; H[CallerRuns 或 降级]</span><br><span class="line">    G -- 否 --&gt; E</span><br></pre></td></tr></table></figure>
+
+<h4 id="参数设计"><a href="#参数设计" class="headerlink" title="参数设计"></a>参数设计</h4><ul>
+<li>CPU 密集分支：<code>corePoolSize</code> 接近 CPU 核数</li>
+<li>IO 密集分支：适当放大线程数，但必须配有界队列</li>
+<li>队列容量：按峰值流量和可接受排队时间估算，不要无界</li>
+<li>拒绝策略：核心链路一般不用直接丢弃，优先反压或降级</li>
+</ul>
+<h4 id="参考实现"><a href="#参考实现" class="headerlink" title="参考实现"></a>参考实现</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">class</span> <span class="title class_">OrderAsyncExecutor</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">ThreadPoolExecutor</span> <span class="variable">EXECUTOR</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ThreadPoolExecutor</span>(</span><br><span class="line">            <span class="number">8</span>,</span><br><span class="line">            <span class="number">16</span>,</span><br><span class="line">            <span class="number">60L</span>,</span><br><span class="line">            TimeUnit.SECONDS,</span><br><span class="line">            <span class="keyword">new</span> <span class="title class_">ArrayBlockingQueue</span>&lt;&gt;(<span class="number">2000</span>),</span><br><span class="line">            r -&gt; &#123;</span><br><span class="line">                <span class="type">Thread</span> <span class="variable">t</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Thread</span>(r);</span><br><span class="line">                t.setName(<span class="string">&quot;order-async-&quot;</span> + THREAD_ID.incrementAndGet());</span><br><span class="line">                <span class="keyword">return</span> t;</span><br><span class="line">            &#125;,</span><br><span class="line">            <span class="keyword">new</span> <span class="title class_">ThreadPoolExecutor</span>.CallerRunsPolicy()</span><br><span class="line">    );</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">AtomicInteger</span> <span class="variable">THREAD_ID</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">AtomicInteger</span>(<span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> CompletableFuture&lt;Void&gt; <span class="title function_">submit</span><span class="params">(Runnable task)</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> CompletableFuture.runAsync(task, EXECUTOR);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="运行细节"><a href="#运行细节" class="headerlink" title="运行细节"></a>运行细节</h4><ol>
+<li>主线程只做强一致步骤，不把慢操作放进同步事务里。</li>
+<li>异步任务拆成独立子任务，便于重试和补偿。</li>
+<li>队列长度、活跃线程数、拒绝次数、任务耗时要接入监控。</li>
+<li>如果某个下游持续变慢，先限流，再降级，最后才扩容线程池。</li>
+</ol>
+<h4 id="常见坑"><a href="#常见坑" class="headerlink" title="常见坑"></a>常见坑</h4><ul>
+<li>用无界队列，导致内存和延迟一起失控</li>
+<li>一个线程池同时承载 CPU 计算和 IO 等待，互相拖累</li>
+<li>任务里再提交同一个线程池，容易形成隐性死锁</li>
+<li>忽略任务超时，导致线程长期被占住</li>
+</ul>
+<h3 id="2-高并发单例与配置客户端"><a href="#2-高并发单例与配置客户端" class="headerlink" title="2. 高并发单例与配置客户端"></a>2. 高并发单例与配置客户端</h3><h4 id="场景"><a href="#场景" class="headerlink" title="场景"></a>场景</h4><p>配置中心客户端、ID 生成器、限流器、远程服务连接器都适合单例化，但前提是初始化逻辑必须可控。</p>
+<h4 id="设计选择"><a href="#设计选择" class="headerlink" title="设计选择"></a>设计选择</h4><ul>
+<li>纯懒加载、初始化简单：静态内部类</li>
+<li>需要防反射、反序列化：枚举单例</li>
+<li>初始化需要传参：显式 <code>init()</code> + DCL</li>
+</ul>
+<h4 id="推荐实现"><a href="#推荐实现" class="headerlink" title="推荐实现"></a>推荐实现</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">class</span> <span class="title class_">ConfigClient</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">volatile</span> ConfigClient instance;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">volatile</span> <span class="type">boolean</span> initialized;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="title function_">ConfigClient</span><span class="params">()</span> &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> ConfigClient <span class="title function_">getInstance</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (instance == <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="keyword">synchronized</span> (ConfigClient.class) &#123;</span><br><span class="line">                <span class="keyword">if</span> (instance == <span class="literal">null</span>) &#123;</span><br><span class="line">                    instance = <span class="keyword">new</span> <span class="title class_">ConfigClient</span>();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">init</span><span class="params">(Config config)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (initialized) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">synchronized</span> (<span class="built_in">this</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> (initialized) &#123;</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 建立连接、加载配置、预热本地缓存</span></span><br><span class="line">            initialized = <span class="literal">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="设计细节"><a href="#设计细节" class="headerlink" title="设计细节"></a>设计细节</h4><ol>
+<li>构造方法保持轻量，不在里面做远程调用。</li>
+<li>把重资源初始化放到显式 <code>init()</code>，避免类加载时阻塞。</li>
+<li>单例对象如果会被序列化，必须处理反序列化重复创建问题。</li>
+<li>如果运行在容器里，注意类加载器隔离，不要让静态字段跨部署残留。</li>
+</ol>
+<h3 id="3-热点缓存与击穿防护"><a href="#3-热点缓存与击穿防护" class="headerlink" title="3. 热点缓存与击穿防护"></a>3. 热点缓存与击穿防护</h3><h4 id="背景-1"><a href="#背景-1" class="headerlink" title="背景"></a>背景</h4><p>热点商品、秒杀库存、用户画像、活动配置等 key 在过期或失效时会被大量并发请求击穿到数据库。</p>
+<h4 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h4><ul>
+<li>让同一个 key 在失效瞬间只回源一次</li>
+<li>防止缓存雪崩把后端打穿</li>
+<li>保证缓存重建过程可控、可观测</li>
+</ul>
+<h4 id="架构-1"><a href="#架构-1" class="headerlink" title="架构"></a>架构</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    A[请求到达] --&gt; B&#123;本地缓存命中?&#125;</span><br><span class="line">    B -- 是 --&gt; C[直接返回]</span><br><span class="line">    B -- 否 --&gt; D&#123;Redis 命中?&#125;</span><br><span class="line">    D -- 是 --&gt; E[回填本地缓存]</span><br><span class="line">    D -- 否 --&gt; F[单飞加载]</span><br><span class="line">    F --&gt; G[查数据库]</span><br><span class="line">    G --&gt; H[写 Redis + 本地缓存]</span><br><span class="line">    H --&gt; C</span><br></pre></td></tr></table></figure>
+
+<h4 id="单飞加载实现"><a href="#单飞加载实现" class="headerlink" title="单飞加载实现"></a>单飞加载实现</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> ConcurrentHashMap&lt;String, FutureTask&lt;Product&gt;&gt; loading = <span class="keyword">new</span> <span class="title class_">ConcurrentHashMap</span>&lt;&gt;();</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> Product <span class="title function_">getProduct</span><span class="params">(String id)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">    <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">        FutureTask&lt;Product&gt; task = loading.get(id);</span><br><span class="line">        <span class="keyword">if</span> (task == <span class="literal">null</span>) &#123;</span><br><span class="line">            FutureTask&lt;Product&gt; newTask = <span class="keyword">new</span> <span class="title class_">FutureTask</span>&lt;&gt;(() -&gt; loadFromDb(id));</span><br><span class="line">            task = loading.putIfAbsent(id, newTask);</span><br><span class="line">            <span class="keyword">if</span> (task == <span class="literal">null</span>) &#123;</span><br><span class="line">                task = newTask;</span><br><span class="line">                task.run();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> task.get();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (CancellationException | ExecutionException e) &#123;</span><br><span class="line">            loading.remove(id, task);</span><br><span class="line">            <span class="keyword">throw</span> e;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="防雪崩细节"><a href="#防雪崩细节" class="headerlink" title="防雪崩细节"></a>防雪崩细节</h4><ul>
+<li>过期时间加随机抖动，避免同一批 key 同时失效</li>
+<li>热点 key 主动预热，不等它自然过期</li>
+<li>对数据库回源加互斥和限流，防止缓存失效时形成流量尖峰</li>
+<li>允许短时间返回旧值，换取系统可用性</li>
+</ul>
+<h4 id="常见坑-1"><a href="#常见坑-1" class="headerlink" title="常见坑"></a>常见坑</h4><ul>
+<li>缓存穿透只做空值缓存，不做参数校验</li>
+<li>缓存雪崩只加过期时间，不做预热和限流</li>
+<li>缓存重建没有超时，导致线程长时间阻塞</li>
+</ul>
+<h3 id="4-限流、熔断与并发控制"><a href="#4-限流、熔断与并发控制" class="headerlink" title="4. 限流、熔断与并发控制"></a>4. 限流、熔断与并发控制</h3><h4 id="设计边界"><a href="#设计边界" class="headerlink" title="设计边界"></a>设计边界</h4><p><code>Semaphore</code> 适合做并发度控制，但熔断本身还需要失败率、慢调用率和状态机。</p>
+<h4 id="并发限流示例"><a href="#并发限流示例" class="headerlink" title="并发限流示例"></a>并发限流示例</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">class</span> <span class="title class_">ConcurrencyGuard</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="type">Semaphore</span> <span class="variable">permits</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Semaphore</span>(<span class="number">100</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> &lt;T&gt; T <span class="title function_">call</span><span class="params">(Callable&lt;T&gt; task)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="keyword">if</span> (!permits.tryAcquire(<span class="number">50</span>, TimeUnit.MILLISECONDS)) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RejectedExecutionException</span>(<span class="string">&quot;busy&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> task.call();</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            permits.release();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="熔断状态机"><a href="#熔断状态机" class="headerlink" title="熔断状态机"></a>熔断状态机</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">stateDiagram-v2</span><br><span class="line">    [*] --&gt; CLOSED</span><br><span class="line">    CLOSED --&gt; OPEN : 错误率过高</span><br><span class="line">    OPEN --&gt; HALF_OPEN : 到达冷却时间</span><br><span class="line">    HALF_OPEN --&gt; CLOSED : 探测成功</span><br><span class="line">    HALF_OPEN --&gt; OPEN : 探测失败</span><br></pre></td></tr></table></figure>
+
+<h4 id="设计细节-1"><a href="#设计细节-1" class="headerlink" title="设计细节"></a>设计细节</h4><ol>
+<li><code>CLOSED</code> 正常放行。</li>
+<li><code>OPEN</code> 直接拒绝，保护下游。</li>
+<li><code>HALF_OPEN</code> 只允许少量探测请求。</li>
+<li>状态切换必须是原子操作，避免多线程同时翻转。</li>
+</ol>
+<h4 id="常见坑-2"><a href="#常见坑-2" class="headerlink" title="常见坑"></a>常见坑</h4><ul>
+<li>把限流和熔断混成一个开关</li>
+<li>只统计错误次数，不看时间窗口</li>
+<li>没有熔断恢复路径，开了就回不来</li>
+</ul>
+<h3 id="5-死锁排查与规避"><a href="#5-死锁排查与规避" class="headerlink" title="5. 死锁排查与规避"></a>5. 死锁排查与规避</h3><h4 id="设计原则"><a href="#设计原则" class="headerlink" title="设计原则"></a>设计原则</h4><ul>
+<li>固定加锁顺序</li>
+<li>锁内不做远程调用</li>
+<li>必要时使用 <code>tryLock(timeout)</code></li>
+</ul>
+<h4 id="排查流程"><a href="#排查流程" class="headerlink" title="排查流程"></a>排查流程</h4><ol>
+<li>用 <code>jstack</code> 或 <code>jcmd Thread.print</code> 找到互相等待的线程。</li>
+<li>看锁拥有者和等待者。</li>
+<li>还原代码里的加锁顺序。</li>
+<li>给高风险临界区加超时和告警。</li>
+</ol>
+<h4 id="代码示例"><a href="#代码示例" class="headerlink" title="代码示例"></a>代码示例</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">transfer</span><span class="params">(Lock first, Lock second)</span> <span class="keyword">throws</span> InterruptedException &#123;</span><br><span class="line">    <span class="keyword">if</span> (!first.tryLock(<span class="number">100</span>, TimeUnit.MILLISECONDS)) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (!second.tryLock(<span class="number">100</span>, TimeUnit.MILLISECONDS)) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            second.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        first.unlock();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="运行时辅助判断"><a href="#运行时辅助判断" class="headerlink" title="运行时辅助判断"></a>运行时辅助判断</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">ThreadMXBean</span> <span class="variable">bean</span> <span class="operator">=</span> ManagementFactory.getThreadMXBean();</span><br><span class="line"><span class="type">long</span>[] ids = bean.findDeadlockedThreads();</span><br></pre></td></tr></table></figure>
+
+<p>如果 <code>ids</code> 非空，就说明 JVM 已经能识别到循环等待关系，接下来就是定位锁的来源。</p>
+<h3 id="6-OOM、类加载器泄漏与堆外内存排查"><a href="#6-OOM、类加载器泄漏与堆外内存排查" class="headerlink" title="6. OOM、类加载器泄漏与堆外内存排查"></a>6. OOM、类加载器泄漏与堆外内存排查</h3><h4 id="排查决策树"><a href="#排查决策树" class="headerlink" title="排查决策树"></a>排查决策树</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    A[线上 OOM] --&gt; B&#123;异常类型&#125;</span><br><span class="line">    B -- heap space --&gt; C[查堆 dump]</span><br><span class="line">    B -- Metaspace --&gt; D[查类加载器和动态代理]</span><br><span class="line">    B -- Direct buffer memory --&gt; E[查堆外分配]</span><br><span class="line">    B -- unable to create new native thread --&gt; F[查线程数和栈大小]</span><br><span class="line">    C --&gt; G[MAT 看 dominator tree]</span><br><span class="line">    D --&gt; H[查 classloader 泄漏]</span><br><span class="line">    E --&gt; I[查 NIO / Netty / native 库]</span><br><span class="line">    F --&gt; J[查线程池与系统限制]</span><br></pre></td></tr></table></figure>
+
+<h4 id="关键动作"><a href="#关键动作" class="headerlink" title="关键动作"></a>关键动作</h4><ul>
+<li>堆 OOM：先导出 heap dump，再看 dominator tree 和 GC Roots</li>
+<li>元空间 OOM：先看动态代理、热部署、SPI、类加载器链</li>
+<li>直接内存 OOM：先看 NIO 堆外分配和 <code>MaxDirectMemorySize</code></li>
+<li>线程 OOM：先看线程池膨胀和每线程栈大小</li>
+</ul>
+<h4 id="参数建议"><a href="#参数建议" class="headerlink" title="参数建议"></a>参数建议</h4><ul>
+<li><code>-XX:MaxMetaspaceSize</code>：控制类元数据上限</li>
+<li><code>-XX:MaxDirectMemorySize</code>：控制堆外上限</li>
+<li><code>-Xss</code>：控制单线程栈大小，线程多时尤其重要</li>
+</ul>
+<h3 id="7-大内存服务的-GC-选型与调优"><a href="#7-大内存服务的-GC-选型与调优" class="headerlink" title="7. 大内存服务的 GC 选型与调优"></a>7. 大内存服务的 GC 选型与调优</h3><h4 id="选型逻辑"><a href="#选型逻辑" class="headerlink" title="选型逻辑"></a>选型逻辑</h4><table>
+<thead>
+<tr>
+<th>场景</th>
+<th>选型</th>
+<th>理由</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>小堆、简单应用</td>
+<td>Serial &#x2F; Parallel</td>
+<td>实现简单，吞吐优先</td>
+</tr>
+<tr>
+<td>普通服务端</td>
+<td>G1</td>
+<td>可预测停顿，平衡性好</td>
+</tr>
+<tr>
+<td>超大堆、低延迟</td>
+<td>ZGC &#x2F; Shenandoah</td>
+<td>STW 极低</td>
+</tr>
+</tbody></table>
+<h4 id="G1-调优步骤"><a href="#G1-调优步骤" class="headerlink" title="G1 调优步骤"></a>G1 调优步骤</h4><ol>
+<li>固定堆大小，避免运行中扩容。</li>
+<li>先观察分配速率、晋升速率和暂停时间。</li>
+<li>通过 <code>MaxGCPauseMillis</code> 设停顿目标，但不要把它当硬保证。</li>
+<li>关注老年代 Region 占用和 humongous object。</li>
+</ol>
+<h4 id="G1-示例参数"><a href="#G1-示例参数" class="headerlink" title="G1 示例参数"></a>G1 示例参数</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">-XX:+UseG1GC</span><br><span class="line">-Xms4g</span><br><span class="line">-Xmx4g</span><br><span class="line">-XX:MaxGCPauseMillis=200</span><br><span class="line">-XX:InitiatingHeapOccupancyPercent=45</span><br><span class="line">-XX:+ParallelRefProcEnabled</span><br></pre></td></tr></table></figure>
+
+<h4 id="ZGC-适用条件"><a href="#ZGC-适用条件" class="headerlink" title="ZGC 适用条件"></a>ZGC 适用条件</h4><ul>
+<li>堆非常大</li>
+<li>对尾延迟敏感</li>
+<li>愿意用更现代的收集器换更低停顿</li>
+</ul>
+<h4 id="观察指标"><a href="#观察指标" class="headerlink" title="观察指标"></a>观察指标</h4><ul>
+<li>P99 &#x2F; P999 停顿</li>
+<li>分配速率</li>
+<li>晋升速率</li>
+<li>Full GC 次数</li>
+<li>元空间和直接内存占用</li>
+</ul>
+<hr>
+<h2 id="五、Java-x2F-后端题库（面经抽取）"><a href="#五、Java-x2F-后端题库（面经抽取）" class="headerlink" title="五、Java &#x2F; 后端题库（面经抽取）"></a>五、Java &#x2F; 后端题库（面经抽取）</h2><blockquote>
+<p>说明：本章从《面试备考手册.md》中筛选 Java &#x2F; 后端相关题目，剔除 Go、纯前端和纯算法内容，按“题目 + 详解”重排。</p>
+</blockquote>
+<h3 id="1-Java-基础、集合与并发"><a href="#1-Java-基础、集合与并发" class="headerlink" title="1. Java 基础、集合与并发"></a>1. Java 基础、集合与并发</h3><h4 id="Q1：HashMap-为什么线程不安全？具体会出什么问题？"><a href="#Q1：HashMap-为什么线程不安全？具体会出什么问题？" class="headerlink" title="Q1：HashMap 为什么线程不安全？具体会出什么问题？"></a>Q1：HashMap 为什么线程不安全？具体会出什么问题？</h4><p>HashMap 的问题不在“不能读”，而在“并发写会破坏内部状态”。多个线程同时 <code>put</code> 时，可能在扩容、链表挂接、<code>size</code> 统计上发生竞态，轻则丢数据，重则让结构不一致。JDK 7 时代最典型的问题是扩容时链表重排可能形成环；JDK 8 虽然结构更稳，但它依然不是并发容器。</p>
+<ul>
+<li>追问：为什么 <code>ConcurrentHashMap</code> 能解决这些问题？</li>
+<li>追问：如果只是多线程读，HashMap 还能不能安全使用？</li>
+</ul>
+<h4 id="Q2：ConcurrentHashMap-JDK-8-是怎么实现线程安全的？"><a href="#Q2：ConcurrentHashMap-JDK-8-是怎么实现线程安全的？" class="headerlink" title="Q2：ConcurrentHashMap JDK 8 是怎么实现线程安全的？"></a>Q2：ConcurrentHashMap JDK 8 是怎么实现线程安全的？</h4><p>JDK 8 的 <code>ConcurrentHashMap</code> 不再用分段锁，而是采用“数组 + 桶级锁 + CAS + 协作扩容”。空桶插入时尽量走 CAS，冲突发生时只锁单个桶头，不会锁整张表；扩容时通过 <code>ForwardingNode</code> 和 <code>helpTransfer</code> 让多个线程一起搬迁数据，减少单线程搬表的停顿。</p>
+<ul>
+<li>追问：<code>sizeCtl</code>、<code>ForwardingNode</code>、<code>TreeBin</code> 各自是干什么的？</li>
+<li>追问：为什么链表长度到一定阈值要树化？</li>
+</ul>
+<h4 id="Q3：CopyOnWriteArraySet-内部怎么实现？为什么适合读多写少？"><a href="#Q3：CopyOnWriteArraySet-内部怎么实现？为什么适合读多写少？" class="headerlink" title="Q3：CopyOnWriteArraySet 内部怎么实现？为什么适合读多写少？"></a>Q3：CopyOnWriteArraySet 内部怎么实现？为什么适合读多写少？</h4><p><code>CopyOnWriteArraySet</code> 底层其实是 <code>CopyOnWriteArrayList</code> 的包装，核心思路是“写时复制，读时无锁”。每次写入都会复制一份新数组，再把引用替换掉，因此读线程始终看到一个稳定快照，适合配置列表、监听器、注册表这类读远多于写的场景。</p>
+<ul>
+<li>追问：为什么它不适合写多场景？</li>
+<li>追问：和 <code>Collections.synchronizedSet</code>、<code>ConcurrentHashMap.newKeySet()</code> 怎么选？</li>
+</ul>
+<h4 id="Q4：ThreadLocal-为什么常用？为什么会内存泄漏？"><a href="#Q4：ThreadLocal-为什么常用？为什么会内存泄漏？" class="headerlink" title="Q4：ThreadLocal 为什么常用？为什么会内存泄漏？"></a>Q4：ThreadLocal 为什么常用？为什么会内存泄漏？</h4><p>ThreadLocal 适合传递“线程维度上下文”，例如请求 ID、登录态、事务上下文。它的泄漏风险来自两个点：<code>ThreadLocalMap</code> 的 key 是弱引用，但 value 仍然是强引用；而线程池线程是复用的，如果任务结束不 <code>remove()</code>，旧上下文就可能一直挂在工作线程上。</p>
+<ul>
+<li>追问：为什么在线程池场景下更容易出问题？</li>
+<li>追问：正确的清理姿势是什么？</li>
+</ul>
+<h4 id="Q5：线程安全集合有哪些？怎么选型？"><a href="#Q5：线程安全集合有哪些？怎么选型？" class="headerlink" title="Q5：线程安全集合有哪些？怎么选型？"></a>Q5：线程安全集合有哪些？怎么选型？</h4><p>如果是高并发 Map，优先 <code>ConcurrentHashMap</code>；如果是读多写少列表，优先 <code>CopyOnWriteArrayList</code>；如果是队列型生产消费，优先各种 <code>BlockingQueue</code>；如果是计数器，优先 <code>LongAdder</code>。选型的核心不是“哪个名字听起来更安全”，而是看读写比例、是否要求强一致、是否允许复制开销。</p>
+<ul>
+<li>追问：<code>LongAdder</code> 为什么比 <code>AtomicLong</code> 在高并发下更快？</li>
+<li>追问：<code>CopyOnWriteArrayList</code> 的读写成本分别是什么？</li>
+</ul>
+<h4 id="Q6：线程安全单例怎么写？为什么-DCL-要配-volatile？"><a href="#Q6：线程安全单例怎么写？为什么-DCL-要配-volatile？" class="headerlink" title="Q6：线程安全单例怎么写？为什么 DCL 要配 volatile？"></a>Q6：线程安全单例怎么写？为什么 DCL 要配 <code>volatile</code>？</h4><p>常见单例方案有枚举、静态内部类、DCL。DCL 之所以需要 <code>volatile</code>，是因为对象创建并不是一步完成，存在“先分配地址、再初始化对象、最后赋引用”的重排序风险；<code>volatile</code> 用来保证写入顺序和可见性，避免别的线程拿到一个“半初始化对象”。</p>
+<ul>
+<li>追问：为什么静态内部类天然线程安全？</li>
+<li>追问：单例在序列化、反射、类加载器隔离下还有哪些坑？</li>
+</ul>
+<h3 id="2-JVM-x2F-GC-x2F-内存"><a href="#2-JVM-x2F-GC-x2F-内存" class="headerlink" title="2. JVM &#x2F; GC &#x2F; 内存"></a>2. JVM &#x2F; GC &#x2F; 内存</h3><h4 id="Q7：Java-项目出现内存溢出，你会怎么排查？"><a href="#Q7：Java-项目出现内存溢出，你会怎么排查？" class="headerlink" title="Q7：Java 项目出现内存溢出，你会怎么排查？"></a>Q7：Java 项目出现内存溢出，你会怎么排查？</h4><p>先确认 OOM 类型，再决定看堆、堆外还是类元数据。堆 OOM 先抓 heap dump，再结合 <code>jstack</code>、<code>jstat</code>、GC 日志、MAT 看对象引用链；如果是 <code>Metaspace</code>，优先怀疑类加载器泄漏、动态代理或热部署；如果是 <code>Direct buffer memory</code>，重点看 NIO&#x2F;Netty&#x2F;堆外分配。</p>
+<ul>
+<li>追问：heap dump 里重点看哪些指标？</li>
+<li>追问：如何区分 OOM 和“只是高水位”？</li>
+</ul>
+<h4 id="Q8：堆外内存-OOM-怎么排查？"><a href="#Q8：堆外内存-OOM-怎么排查？" class="headerlink" title="Q8：堆外内存 OOM 怎么排查？"></a>Q8：堆外内存 OOM 怎么排查？</h4><p>堆外内存问题常被忽略，因为它不直接出现在 Java heap 里。排查时要看 <code>DirectByteBuffer</code>、JNI、本地库、Netty Arena、<code>MaxDirectMemorySize</code>，必要时配合 NMT（Native Memory Tracking）或系统层工具看进程真实占用。很多线上“堆没满却挂了”的问题，本质上都是堆外打满或 native 资源泄漏。</p>
+<ul>
+<li>追问：为什么 <code>ByteBuffer.allocateDirect()</code> 容易让人误判？</li>
+<li>追问：<code>-XX:MaxDirectMemorySize</code> 应该怎么配？</li>
+</ul>
+<h4 id="Q9：怎么判断是内存泄漏，而不是正常的高水位？"><a href="#Q9：怎么判断是内存泄漏，而不是正常的高水位？" class="headerlink" title="Q9：怎么判断是内存泄漏，而不是正常的高水位？"></a>Q9：怎么判断是内存泄漏，而不是正常的高水位？</h4><p>正常高水位一般会在某个稳定区间波动，而内存泄漏往往表现为“回收后基线持续抬高”。判断时看 GC 后存活对象是否长期增长、Dominator Tree 是否指向固定持有者、GC Roots 是否形成长链。泄漏不是看“某次涨了”，而是看“涨完以后回不去”。</p>
+<ul>
+<li>追问：哪些对象最容易成为泄漏源？</li>
+<li>追问：ThreadLocal、静态集合、缓存分别怎么排查？</li>
+</ul>
+<h4 id="Q10：JDK-8、17、25-的区别怎么看？"><a href="#Q10：JDK-8、17、25-的区别怎么看？" class="headerlink" title="Q10：JDK 8、17、25 的区别怎么看？"></a>Q10：JDK 8、17、25 的区别怎么看？</h4><p>面试里建议按三层来答：JDK 8 是经典基线，很多并发和 JVM 八股都以它为参照；JDK 17 是 LTS 现代化版本，语言和 JVM 都更成熟；更高版本则体现持续演进，重点看低停顿 GC、语言简化、安全性与运行时优化。不要死背“小版本发布说明”，要抓“特性演进方向”。</p>
+<ul>
+<li>追问：从 JDK 8 升到 JDK 17，最需要关注哪些兼容性？</li>
+<li>追问：现代 JDK 对面试里的“偏向锁、CMS”口径有什么影响？</li>
+</ul>
+<h4 id="Q11：CMS-失败后会发生什么？"><a href="#Q11：CMS-失败后会发生什么？" class="headerlink" title="Q11：CMS 失败后会发生什么？"></a>Q11：CMS 失败后会发生什么？</h4><p>CMS 的目标是低停顿，但如果并发标记&#x2F;清理赶不上分配速度，可能出现 <code>Concurrent Mode Failure</code>，随后退化成 Full GC。此时 JVM 会进入更重的 STW 回收路径，暂停时间明显拉长。面试里要讲清楚：CMS 的失败不是“逻辑崩了”，而是“并发回收跟不上分配节奏”。</p>
+<ul>
+<li>追问：CMS 为什么容易碎片化？</li>
+<li>追问：G1、ZGC、Shenandoah 如何避免同类问题？</li>
+</ul>
+<h3 id="3-Spring-x2F-AOP-x2F-认证"><a href="#3-Spring-x2F-AOP-x2F-认证" class="headerlink" title="3. Spring &#x2F; AOP &#x2F; 认证"></a>3. Spring &#x2F; AOP &#x2F; 认证</h3><h4 id="Q12：AOP-是什么，应用场景是什么？无侵入字节码植入怎么做？"><a href="#Q12：AOP-是什么，应用场景是什么？无侵入字节码植入怎么做？" class="headerlink" title="Q12：AOP 是什么，应用场景是什么？无侵入字节码植入怎么做？"></a>Q12：AOP 是什么，应用场景是什么？无侵入字节码植入怎么做？</h4><p>AOP 的本质是把“横切关注点”从业务代码里剥离出来，比如日志、监控、鉴权、事务、限流。常规做法是代理模式；如果要做到跨工程、无侵入，通常要走 Java Agent + Instrumentation + ASM&#x2F;ByteBuddy 这一套，在类加载或运行时把字节码织入进去。</p>
+<ul>
+<li>追问：Spring AOP 和字节码增强的边界是什么？</li>
+<li>追问：为什么 Arthas、SkyWalking 这类工具要走 Agent 路线？</li>
+</ul>
+<h4 id="Q13：IOC-和-AOP-的关系是什么？"><a href="#Q13：IOC-和-AOP-的关系是什么？" class="headerlink" title="Q13：IOC 和 AOP 的关系是什么？"></a>Q13：IOC 和 AOP 的关系是什么？</h4><p>IOC 解决的是“对象怎么创建、怎么装配、怎么管理生命周期”，AOP 解决的是“怎么在不污染业务代码的情况下织入额外行为”。前者是容器能力，后者是增强能力，二者一起构成 Spring 的核心抽象。面试里最好别把它们说成一个东西。</p>
+<ul>
+<li>追问：Bean 生命周期里 AOP 是在哪一步织入的？</li>
+<li>追问：为什么 Spring 里很多切面基于代理而不是直接改字节码？</li>
+</ul>
+<h4 id="Q14：JWT-为什么会出现？和-Cookie-Session-有什么不同？"><a href="#Q14：JWT-为什么会出现？和-Cookie-Session-有什么不同？" class="headerlink" title="Q14：JWT 为什么会出现？和 Cookie + Session 有什么不同？"></a>Q14：JWT 为什么会出现？和 Cookie + Session 有什么不同？</h4><p>JWT 解决的是“服务端尽量无状态地携带身份信息”的问题。它把身份声明编码进 token，服务端只要验签就能识别身份，适合前后端分离、多服务共享认证、移动端和跨域场景；而 Cookie + Session 更依赖服务端保存会话状态，容易在横向扩展时引入 Session 共享问题。</p>
+<ul>
+<li>追问：JWT 的 payload 能不能随便放敏感信息？</li>
+<li>追问：JWT 的吊销和续期怎么设计？</li>
+</ul>
+<h4 id="Q15：Spring-Boot-自动装配的大致原理是什么？"><a href="#Q15：Spring-Boot-自动装配的大致原理是什么？" class="headerlink" title="Q15：Spring Boot 自动装配的大致原理是什么？"></a>Q15：Spring Boot 自动装配的大致原理是什么？</h4><p>Spring Boot 的核心是“约定优于配置”。它通过 starter 依赖、条件装配、自动配置类和环境属性绑定，把常见中间件的配置自动接进容器里。你可以把它理解成“Spring 容器 + 条件化默认值 + 一组可覆盖的 starter 方案”。</p>
+<ul>
+<li>追问：<code>@ConditionalOnClass</code>、<code>@ConditionalOnMissingBean</code> 的作用是什么？</li>
+<li>追问：为什么说 Boot 降低了配置成本，但没有消灭配置复杂度？</li>
+</ul>
+<h3 id="4-MySQL-x2F-Redis-x2F-数据一致性"><a href="#4-MySQL-x2F-Redis-x2F-数据一致性" class="headerlink" title="4. MySQL &#x2F; Redis &#x2F; 数据一致性"></a>4. MySQL &#x2F; Redis &#x2F; 数据一致性</h3><h4 id="Q16：B-树为什么适合做数据库索引？"><a href="#Q16：B-树为什么适合做数据库索引？" class="headerlink" title="Q16：B+树为什么适合做数据库索引？"></a>Q16：B+树为什么适合做数据库索引？</h4><p>B+树的优势不在“名字像树”，而在“磁盘友好”。它把数据尽量放在叶子节点，并通过叶子链表支持范围扫描，能减少磁盘 IO 次数；同时非叶子节点只存索引，不存大数据，扇出更高、树高更低。数据库索引追求的不是查找算法的理论最优，而是磁盘访问次数最少。</p>
+<ul>
+<li>追问：为什么数据库不用红黑树做索引？</li>
+<li>追问：B 树、B+树、哈希索引的适用场景有什么差异？</li>
+</ul>
+<h4 id="Q17：聚簇索引、非聚簇索引、覆盖索引和回表怎么理解？"><a href="#Q17：聚簇索引、非聚簇索引、覆盖索引和回表怎么理解？" class="headerlink" title="Q17：聚簇索引、非聚簇索引、覆盖索引和回表怎么理解？"></a>Q17：聚簇索引、非聚簇索引、覆盖索引和回表怎么理解？</h4><p>聚簇索引的叶子节点直接存整行数据，查询主键通常最顺；非聚簇索引的叶子节点存的是主键或行定位信息，命中后可能还要回表。覆盖索引则是“查询需要的字段都在索引里”，因此不需要回表。联合索引要遵循最左前缀，不然很容易让索引失效。</p>
+<ul>
+<li>追问：什么情况下会出现索引失效？</li>
+<li>追问：为什么 <code>like &#39;%xxx&#39;</code> 很难命中普通索引？</li>
+</ul>
+<h4 id="Q18：慢-SQL-怎么优化？"><a href="#Q18：慢-SQL-怎么优化？" class="headerlink" title="Q18：慢 SQL 怎么优化？"></a>Q18：慢 SQL 怎么优化？</h4><p>先用 <code>explain</code> 看执行计划，再判断问题是索引没建、索引没走、还是走了但代价太高。优化顺序一般是：先减少扫描行数，再减少回表，再减少排序和临时表，最后才考虑 SQL 改写、分表分库或缓存。很多慢 SQL 不是“SQL 写错了”，而是“表结构和索引设计没跟业务模式对齐”。</p>
+<ul>
+<li>追问：如何判断是索引问题还是数据量问题？</li>
+<li>追问：<code>order by</code>、<code>group by</code>、函数计算对索引有什么影响？</li>
+</ul>
+<h4 id="Q19：MVCC-和四种隔离级别怎么理解？"><a href="#Q19：MVCC-和四种隔离级别怎么理解？" class="headerlink" title="Q19：MVCC 和四种隔离级别怎么理解？"></a>Q19：MVCC 和四种隔离级别怎么理解？</h4><p>MVCC 解决的是“读写并发下，普通读如何不加锁也能看到一致视图”的问题。它依赖 undo log 和 read view，把不同事务看到的版本隔离开。隔离级别从读未提交到串行化，核心差异就在于脏读、不可重复读和幻读的处理方式，面试里一定要结合“读视图”和“锁”来讲，而不是只背定义。</p>
+<ul>
+<li>追问：幻读为什么在 InnoDB 里经常和 Next-Key Lock 一起出现？</li>
+<li>追问：可重复读为什么是 MySQL 默认隔离级别？</li>
+</ul>
+<h4 id="Q20：Redis-为什么快？常见数据结构怎么选？"><a href="#Q20：Redis-为什么快？常见数据结构怎么选？" class="headerlink" title="Q20：Redis 为什么快？常见数据结构怎么选？"></a>Q20：Redis 为什么快？常见数据结构怎么选？</h4><p>Redis 快的原因是内存访问、单线程事件循环、IO 多路复用和高效数据结构设计。选型上，String 适合缓存值和计数，Hash 适合对象字段，List 适合队列&#x2F;栈，Set 适合去重和关系判断，ZSet 适合排行榜和延迟队列。面试里别只说“单线程快”，要补上“单线程不代表只有一个线程，而是主命令执行串行化，避免锁竞争”。</p>
+<ul>
+<li>追问：为什么 Redis 不是万能的持久化数据库？</li>
+<li>追问：大 Key 和热 Key 为什么危险？</li>
+</ul>
+<h4 id="Q21：缓存穿透、击穿、雪崩怎么解决？"><a href="#Q21：缓存穿透、击穿、雪崩怎么解决？" class="headerlink" title="Q21：缓存穿透、击穿、雪崩怎么解决？"></a>Q21：缓存穿透、击穿、雪崩怎么解决？</h4><p>缓存穿透是大量请求都查不到数据，直接打到数据库；击穿是某个热点 key 失效后瞬间大量请求回源；雪崩是大量 key 在同一时间失效。应对手段分别是：参数校验 + 空值缓存&#x2F;布隆过滤器，互斥重建&#x2F;单飞加载，随机过期 + 预热 + 限流降级。真正稳的方案不是只挡住一次峰值，而是让系统在失效窗口内也能自我保护。</p>
+<ul>
+<li>追问：为什么空值缓存也要设置 TTL？</li>
+<li>追问：缓存重建为什么要做互斥？</li>
+</ul>
+<h4 id="Q22：分布式锁怎么设计？怎么避免死锁？"><a href="#Q22：分布式锁怎么设计？怎么避免死锁？" class="headerlink" title="Q22：分布式锁怎么设计？怎么避免死锁？"></a>Q22：分布式锁怎么设计？怎么避免死锁？</h4><p>最常见的分布式锁是 <code>SET key value NX PX ttl</code>，保证“抢锁、过期、自动释放”三件事。要避免死锁，必须给锁加过期时间、给 value 加唯一标识、释放时做校验，避免误删别人的锁；如果业务有长时间持锁或失败重试，还要考虑续租、重入和幂等。</p>
+<ul>
+<li>追问：Redlock 的思路是什么？它的争议点在哪里？</li>
+<li>追问：什么时候不该用分布式锁，而应该改成队列&#x2F;幂等&#x2F;乐观并发控制？</li>
+</ul>
+<h4 id="Q23：数据一致性中“先更新数据库再删除缓存”是什么意思？"><a href="#Q23：数据一致性中“先更新数据库再删除缓存”是什么意思？" class="headerlink" title="Q23：数据一致性中“先更新数据库再删除缓存”是什么意思？"></a>Q23：数据一致性中“先更新数据库再删除缓存”是什么意思？</h4><p>它是一种常见的缓存一致性策略，核心是让数据库成为最终事实源，缓存只是临时加速层。写请求先落库，再删除缓存，下一次读请求会重新回源并重建缓存。这个方案的关键难点不在“删缓存”，而在“并发读写窗口”里如何接受短暂不一致，并配合重试、延迟双删或消息通知降低脏读概率。</p>
+<ul>
+<li>追问：为什么不是先删缓存再更新数据库？</li>
+<li>追问：如果缓存删除失败怎么办？</li>
+</ul>
+<h3 id="5-网络-x2F-OS-x2F-Linux"><a href="#5-网络-x2F-OS-x2F-Linux" class="headerlink" title="5. 网络 &#x2F; OS &#x2F; Linux"></a>5. 网络 &#x2F; OS &#x2F; Linux</h3><h4 id="Q24：TCP-三次握手、四次挥手和-TIME-WAIT-为什么存在？"><a href="#Q24：TCP-三次握手、四次挥手和-TIME-WAIT-为什么存在？" class="headerlink" title="Q24：TCP 三次握手、四次挥手和 TIME_WAIT 为什么存在？"></a>Q24：TCP 三次握手、四次挥手和 TIME_WAIT 为什么存在？</h4><p>三次握手解决的是“双方收发能力都确认”的问题，四次挥手解决的是“双方都能独立关闭方向”的问题。TIME_WAIT 的存在是为了处理迟到报文和保证最后 ACK 可重传，它不是“浪费时间”，而是 TCP 可靠性的组成部分。面试中讲这些要围绕“可靠传输”而不是机械背时序。</p>
+<ul>
+<li>追问：为什么不是两次握手？</li>
+<li>追问：TIME_WAIT 太多会带来什么问题？</li>
+</ul>
+<h4 id="Q25：HTTP-x2F-1-1、HTTP-x2F-2、HTTPS-x2F-TLS-有什么区别？"><a href="#Q25：HTTP-x2F-1-1、HTTP-x2F-2、HTTPS-x2F-TLS-有什么区别？" class="headerlink" title="Q25：HTTP&#x2F;1.1、HTTP&#x2F;2、HTTPS &#x2F; TLS 有什么区别？"></a>Q25：HTTP&#x2F;1.1、HTTP&#x2F;2、HTTPS &#x2F; TLS 有什么区别？</h4><p>HTTP&#x2F;1.1 解决了基本的请求响应，但头部冗余和队头阻塞明显；HTTP&#x2F;2 通过多路复用、头部压缩和二进制帧提升了性能；HTTPS 本质上是 HTTP + TLS，用来提供加密、完整性和身份认证。面试里经常会顺带追问 TLS 握手，所以回答时最好把“传输层加密”这条线串起来。</p>
+<ul>
+<li>追问：HTTPS 的证书链为什么重要？</li>
+<li>追问：HTTP&#x2F;2 一定比 HTTP&#x2F;1.1 快吗？</li>
+</ul>
+<h4 id="Q26：进程、线程、协程有什么区别？IO-多路复用怎么理解？"><a href="#Q26：进程、线程、协程有什么区别？IO-多路复用怎么理解？" class="headerlink" title="Q26：进程、线程、协程有什么区别？IO 多路复用怎么理解？"></a>Q26：进程、线程、协程有什么区别？IO 多路复用怎么理解？</h4><p>进程是资源分配的基本单位，线程是 CPU 调度的基本单位，协程则更偏用户态轻量调度。IO 多路复用的核心是让一个线程同时关注多个连接的状态，避免“每个连接一个线程”的资源浪费；<code>select/poll/epoll</code> 的差异主要体现在监听规模、数据结构和事件通知效率上。</p>
+<ul>
+<li>追问：为什么高并发网络服务会偏向 epoll？</li>
+<li>追问：协程为什么常和异步 IO 一起出现？</li>
+</ul>
+<h4 id="Q27：虚拟内存、堆和栈有什么区别？死锁四条件怎么预防？"><a href="#Q27：虚拟内存、堆和栈有什么区别？死锁四条件怎么预防？" class="headerlink" title="Q27：虚拟内存、堆和栈有什么区别？死锁四条件怎么预防？"></a>Q27：虚拟内存、堆和栈有什么区别？死锁四条件怎么预防？</h4><p>虚拟内存是操作系统给进程构造的连续地址空间，堆和栈只是其中两类典型区域。栈天然短生命周期、自动回收，堆适合动态分配、生命周期更灵活。死锁的四个条件是互斥、占有并等待、不可抢占、循环等待；预防思路就是打破其中任意一个条件，或者在工程上通过固定锁顺序和超时机制把死锁风险降下来。</p>
+<ul>
+<li>追问：为什么栈溢出和内存泄漏不是一回事？</li>
+<li>追问：<code>tryLock(timeout)</code> 为什么是常见防死锁手段？</li>
+</ul>
+<h3 id="6-系统设计与-AI-x2F-Agent"><a href="#6-系统设计与-AI-x2F-Agent" class="headerlink" title="6. 系统设计与 AI &#x2F; Agent"></a>6. 系统设计与 AI &#x2F; Agent</h3><h4 id="Q28：秒杀系统怎么设计，如何防超卖？"><a href="#Q28：秒杀系统怎么设计，如何防超卖？" class="headerlink" title="Q28：秒杀系统怎么设计，如何防超卖？"></a>Q28：秒杀系统怎么设计，如何防超卖？</h4><p>秒杀系统的核心是“削峰、限流、预扣、异步化”。前端接入层先做限流和排队，库存扣减用原子操作或预扣库存，成功请求再异步落库，失败则快速返回。防超卖的关键不是数据库事务本身，而是让高并发先在缓存、队列、令牌和本地校验层被拦住。</p>
+<ul>
+<li>追问：为什么很多秒杀系统会先在 Redis 里预扣库存？</li>
+<li>追问：如果异步落库失败，如何补偿？</li>
+</ul>
+<h4 id="Q29：分布式-ID-怎么设计？"><a href="#Q29：分布式-ID-怎么设计？" class="headerlink" title="Q29：分布式 ID 怎么设计？"></a>Q29：分布式 ID 怎么设计？</h4><p>常见思路是雪花算法：时间戳 + 机器标识 + 序列号。它的优点是趋势递增、生成快、无需中心协调；缺点是依赖时钟、机器位规划要提前设计，且业务迁移时要考虑号段、回拨和冲突问题。面试里要讲清“ID 设计不是只看唯一性，还要看趋势性、吞吐和可运维性”。</p>
+<ul>
+<li>追问：如果机器时钟回拨怎么办？</li>
+<li>追问：数据库自增 ID、号段模式、UUID 各有什么代价？</li>
+</ul>
+<h4 id="Q30：限流怎么做？令牌桶、漏桶、滑动窗口有什么区别？"><a href="#Q30：限流怎么做？令牌桶、漏桶、滑动窗口有什么区别？" class="headerlink" title="Q30：限流怎么做？令牌桶、漏桶、滑动窗口有什么区别？"></a>Q30：限流怎么做？令牌桶、漏桶、滑动窗口有什么区别？</h4><p>令牌桶更适合“允许一定突发”的场景，漏桶更强调平滑输出，滑动窗口则更适合按时间粒度统计访问量。工程里常见的做法是入口层限流 + 业务层降级 + 下游保护联动，而不是只放一个限流器就以为万事大吉。</p>
+<ul>
+<li>追问：为什么令牌桶更适合接口网关？</li>
+<li>追问：限流和熔断到底有什么区别？</li>
+</ul>
+<h4 id="Q31：短链服务怎么设计？敏感词过滤怎么做？"><a href="#Q31：短链服务怎么设计？敏感词过滤怎么做？" class="headerlink" title="Q31：短链服务怎么设计？敏感词过滤怎么做？"></a>Q31：短链服务怎么设计？敏感词过滤怎么做？</h4><p>短链服务的核心是“短码生成、映射存储、重定向查询、冲突处理和统计分析”。敏感词过滤则常用 Trie 树或 AC 自动机，把字符流扫描变成前缀匹配问题。两者都属于典型的“高频读、少量写”后端问题，重点不是算法炫技，而是数据结构、缓存和可扩展性的平衡。</p>
+<ul>
+<li>追问：短链如何防止重复短码？</li>
+<li>追问：敏感词替换如何支持热更新？</li>
+</ul>
+<h4 id="Q32：为什么有时选-Kafka-而不是-RabbitMQ？"><a href="#Q32：为什么有时选-Kafka-而不是-RabbitMQ？" class="headerlink" title="Q32：为什么有时选 Kafka 而不是 RabbitMQ？"></a>Q32：为什么有时选 Kafka 而不是 RabbitMQ？</h4><p>Kafka 更适合高吞吐、日志流、事件流和可回放场景，偏“流式数据管道”；RabbitMQ 更偏传统消息队列，路由能力强、延迟相对低、语义更细。选型时要看你更看重吞吐、积压能力、消费模式还是路由灵活度，而不是只看“哪个名字更火”。</p>
+<ul>
+<li>追问：消息队列在系统设计里最常见的三个作用是什么？</li>
+<li>追问：如何处理消息重复和消息丢失？</li>
+</ul>
+<h4 id="Q33：RAG-是什么？混合检索怎么做？"><a href="#Q33：RAG-是什么？混合检索怎么做？" class="headerlink" title="Q33：RAG 是什么？混合检索怎么做？"></a>Q33：RAG 是什么？混合检索怎么做？</h4><p>RAG 的完整链路是：文档加载、切分、向量化、入库、召回、重排、生成。混合检索一般是“关键词检索 + 向量检索”并行召回，再通过 rerank 融合结果，以兼顾语义匹配和精确命中。真正难的不是“接一个向量库”，而是 chunk 策略、召回策略、重排质量和上下文窗口控制。</p>
+<ul>
+<li>追问：为什么只做向量检索不够？</li>
+<li>追问：chunk 切分和 overlap 为什么重要？</li>
+</ul>
+<h4 id="Q34：ReAct、Plan-和-Workflow-有什么区别？"><a href="#Q34：ReAct、Plan-和-Workflow-有什么区别？" class="headerlink" title="Q34：ReAct、Plan 和 Workflow 有什么区别？"></a>Q34：ReAct、Plan 和 Workflow 有什么区别？</h4><p>ReAct 是“思考-行动-观察”的闭环，更适合任务中间信息不确定、需要多轮工具交互的场景；Plan 更偏先规划后执行，适合步骤较稳定的长任务；Workflow 则更像固定流程编排，步骤和分支都较明确。面试里最重要的是说清楚“什么时候该让模型自由推理，什么时候该把流程收紧”。</p>
+<ul>
+<li>追问：为什么有些 Agent 场景更适合 Workflow 而不是 ReAct？</li>
+<li>追问：长链路任务里怎样避免死循环？</li>
+</ul>
+<h4 id="Q35：Agent、Tool、Skill、MCP、LangChain-x2F-LangGraph-怎么理解？"><a href="#Q35：Agent、Tool、Skill、MCP、LangChain-x2F-LangGraph-怎么理解？" class="headerlink" title="Q35：Agent、Tool、Skill、MCP、LangChain &#x2F; LangGraph 怎么理解？"></a>Q35：Agent、Tool、Skill、MCP、LangChain &#x2F; LangGraph 怎么理解？</h4><p>Tool 是最底层的可调用动作，Skill 是对一组工具和逻辑的封装，Agent 是任务理解和协调执行的主体；MCP 则提供工具能力的标准化接入方式，方便动态发现和统一调用。LangChain 更偏上层编排与开发体验，LangGraph 更适合显式状态机和复杂分支控制；如果你的任务链路长、分支多、状态复杂，LangGraph 往往更稳。</p>
+<ul>
+<li>追问：为什么很多 Agent 项目最后都会回到“状态机 + 工具调用”？</li>
+<li>追问：如何保证工具调用可靠性和幂等性？</li>
+</ul>
+<h4 id="Q36：多-Agent-如何协同？怎么控制上下文膨胀？"><a href="#Q36：多-Agent-如何协同？怎么控制上下文膨胀？" class="headerlink" title="Q36：多 Agent 如何协同？怎么控制上下文膨胀？"></a>Q36：多 Agent 如何协同？怎么控制上下文膨胀？</h4><p>多 Agent 的核心价值是分工协作和上下文隔离：主 Agent 负责理解目标和协调，子 Agent 负责搜索、抽取、校验或执行具体步骤。上下文膨胀通常靠“结构化状态、任务拆分、阶段性总结、短记忆 + 长记忆分离”来控制，而不是无脑把所有历史都塞回模型。</p>
+<ul>
+<li>追问：什么时候多 Agent 比单 Agent 更合适？</li>
+<li>追问：如何评估一个 Agent 系统的质量？</li>
+</ul>
+<h4 id="Q37：SSE-流式输出怎么理解？后端要注意什么？"><a href="#Q37：SSE-流式输出怎么理解？后端要注意什么？" class="headerlink" title="Q37：SSE 流式输出怎么理解？后端要注意什么？"></a>Q37：SSE 流式输出怎么理解？后端要注意什么？</h4><p>SSE 适合服务端持续向客户端推送增量结果，比如 Agent 推理过程、长任务进度、消息流式输出。后端实现时要关注连接保活、断线重连、分块发送、错误兜底和超时控制；如果业务有双向交互需求，再考虑 WebSocket，而不是把所有流式场景都硬塞进一个协议。</p>
+<ul>
+<li>追问：SSE 和 WebSocket 的差异是什么？</li>
+<li>追问：流式输出里如何做异常中断和部分结果返回？</li>
+</ul>
+<hr>
+<h2 id="六、综合速查表"><a href="#六、综合速查表" class="headerlink" title="六、综合速查表"></a>六、综合速查表</h2><h3 id="1-JUC-关键组件选择"><a href="#1-JUC-关键组件选择" class="headerlink" title="1. JUC 关键组件选择"></a>1. JUC 关键组件选择</h3><table>
+<thead>
+<tr>
+<th>需求</th>
+<th>推荐组件</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>线程复用</td>
+<td><code>ThreadPoolExecutor</code></td>
+<td>控制并发、队列化</td>
+</tr>
+<tr>
+<td>状态标记</td>
+<td><code>volatile</code></td>
+<td>轻量可见性</td>
+</tr>
+<tr>
+<td>互斥保护</td>
+<td><code>synchronized</code> &#x2F; <code>ReentrantLock</code></td>
+<td>简单或高级能力</td>
+</tr>
+<tr>
+<td>高并发计数</td>
+<td><code>LongAdder</code></td>
+<td>减少热点竞争</td>
+</tr>
+<tr>
+<td>并发 Map</td>
+<td><code>ConcurrentHashMap</code></td>
+<td>高并发读写</td>
+</tr>
+<tr>
+<td>一次性等待</td>
+<td><code>CountDownLatch</code></td>
+<td>简单有效</td>
+</tr>
+<tr>
+<td>并发限流</td>
+<td><code>Semaphore</code></td>
+<td>控制并发度</td>
+</tr>
+<tr>
+<td>读多写少列表</td>
+<td><code>CopyOnWriteArrayList</code></td>
+<td>读无锁</td>
+</tr>
+</tbody></table>
+<h3 id="2-JVM-x2F-GC-诊断命令速查"><a href="#2-JVM-x2F-GC-诊断命令速查" class="headerlink" title="2. JVM &#x2F; GC 诊断命令速查"></a>2. JVM &#x2F; GC 诊断命令速查</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">jps -lvm</span><br><span class="line">jstack -l &lt;pid&gt;</span><br><span class="line">jcmd &lt;pid&gt; Thread.<span class="built_in">print</span></span><br><span class="line">jcmd &lt;pid&gt; GC.heap_info</span><br><span class="line">jstat -gcutil &lt;pid&gt; 1000</span><br><span class="line">jmap -dump:format=b,file=heap.hprof &lt;pid&gt;</span><br><span class="line">jcmd &lt;pid&gt; VM.native_memory summary</span><br></pre></td></tr></table></figure>
+
+<p>JDK 8 常用日志：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">-XX:+PrintGCDetails</span><br><span class="line">-XX:+PrintGCDateStamps</span><br><span class="line">-XX:+PrintTenuringDistribution</span><br><span class="line">-Xloggc:gc.log</span><br></pre></td></tr></table></figure>
+
+<p>JDK 9+ 常用日志：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-Xlog:gc*,safepoint:file=gc.log:time,level,tags</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="七、参考资料"><a href="#七、参考资料" class="headerlink" title="七、参考资料"></a>七、参考资料</h2><p>以下资料用于校准本文的版本口径、并发语义和收集器演进结论：</p>
+<ol>
+<li><a target="_blank" rel="noopener" href="https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/package-summary.html">Oracle JDK 8 <code>java.util.concurrent</code> package summary</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.html">Oracle JDK 8 <code>Thread</code> API</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.State.html">Oracle JDK 8 <code>Thread.State</code> API</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.oracle.com/javase/8/docs/api/java/lang/ClassLoader.html">Oracle JDK 8 <code>ClassLoader</code> API</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-17.html">Oracle JLS 8 Chapter 17: Memory Model</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-2.html">Oracle JVMS 8 Chapter 2: Runtime Data Areas</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-5.html">Oracle JVMS 8 Chapter 5: Loading, Linking, and Initializing</a></li>
+<li><a target="_blank" rel="noopener" href="https://openjdk.org/jeps/248">OpenJDK JEP 248: Make G1 the Default Garbage Collector</a></li>
+<li><a target="_blank" rel="noopener" href="https://openjdk.org/jeps/291">OpenJDK JEP 291: Deprecate the Concurrent Mark Sweep (CMS) Garbage Collector</a></li>
+<li><a target="_blank" rel="noopener" href="https://openjdk.org/jeps/363">OpenJDK JEP 363: Remove the CMS Garbage Collector</a></li>
+<li><a target="_blank" rel="noopener" href="https://openjdk.org/jeps/374">OpenJDK JEP 374: Disable Biased Locking</a></li>
+<li><a target="_blank" rel="noopener" href="https://openjdk.org/jeps/377">OpenJDK JEP 377: ZGC Production Ready</a></li>
+<li><a target="_blank" rel="noopener" href="https://openjdk.org/jeps/439">OpenJDK JEP 439: Generational ZGC</a></li>
+<li><a target="_blank" rel="noopener" href="https://raw.githubusercontent.com/openjdk/jdk8u-dev/master/jdk/src/share/classes/java/util/concurrent/ThreadPoolExecutor.java">OpenJDK JDK 8u <code>ThreadPoolExecutor</code> source</a></li>
+<li><a target="_blank" rel="noopener" href="https://raw.githubusercontent.com/openjdk/jdk8u-dev/master/jdk/src/share/classes/java/util/concurrent/locks/AbstractQueuedSynchronizer.java">OpenJDK JDK 8u <code>AbstractQueuedSynchronizer</code> source</a></li>
+<li><a target="_blank" rel="noopener" href="https://raw.githubusercontent.com/openjdk/jdk8u-dev/master/jdk/src/share/classes/java/util/concurrent/ConcurrentHashMap.java">OpenJDK JDK 8u <code>ConcurrentHashMap</code> source</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CopyOnWriteArrayList.html">Oracle JDK 8 <code>CopyOnWriteArrayList</code> API</a></li>
+</ol>
+<hr>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>这份文档的主线是：</p>
+<p><strong>JUC 解决“怎么安全高效地并发”，JVM 解决“代码怎么被装载和执行”，GC 解决“对象怎么被管理和回收”。</strong></p>
+<p>把这三条线串起来，很多面试题和生产问题都会变得非常清楚。</p>
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1797983019/" target="_blank">JUC / JVM / GC 核心原理与高频场景设计</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                
+                <div class="article-prev-next">
+                    
+                    
+                        <a href="/article/1752903579/" class="next-prefix">» </a> 下一篇：    <a href="/article/1752903579/" title="发布于 2025-07-16 01:42">02 LangChain框架解析</a>
+                    
+                </div>
+            </div>
+            
+    <div class="article-comments">
+        
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
+    
+</div>
+
+    <div id="footer"></div>
+    <div id="sidebar">
+    <div class="menu-wrap" style="display:none;">
+        
+            <div class="menu-notice">
+                <span class="iconfont icon-notice"></span>
+                <div class="notice">
+                    <span>简单地活着，肆意而又精彩！</span>
+                </div>
+            </div>
+        
+        <nav class="menu">
+            <div class="menu-introduce"> 
+                <div class="introduce-avatar">
+                    <img src="/image/sidebar/avatar.jpg">
+                </div> 
+                <div class="introduce-info"> 
+                    <div class="introduce-user"><span>Live For Code</span></div>
+                </div> 
+            </div> 
+            <div class="menu-list">
+                <ul>
+                    
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                    
+                        <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
+                    
+                        <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
+                    
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                    
+                        <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
+                    
+                        <li class=""><a href="/about" class="" target="_self"><span class="iconfont icon-about-fill"></span>关于</a></li>
+                    
+                        <li class=""><a href="/atom.xml" class="" target="_blank"><span class="iconfont icon-rss"></span>订阅</a></li>
+                    
+                        <li class=""><a href="/comment" class="" target="_self"><span class="iconfont icon-comments-fill"></span>留言板</a></li>
+                    
+                        <li class=""><a href="/friend" class="" target="_self"><span class="iconfont icon-link"></span>友情链接</a></li>
+                    
+                </ul> 
+            </div> 
+            <div class="menu-link">
+                <div class="box">
+                    <div class="image-box"></div>
+                </div>
+                
+                    <a name="知乎" href="https://www.zhihu.com/people/wo-xin-de-love" class="" target="_blank" data=""><span class="iconfont icon-zhihu"></span></a>
+                
+                    <a name="微博" href="https://weibo.com/u/3939432776" class="" target="_blank" data=""><span class="iconfont icon-weibo"></span></a>
+                
+                    <a name="QQ" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"><span class="iconfont icon-qq"></span></a>
+                
+                    <a name="微信" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"><span class="iconfont icon-wechat"></span></a>
+                
+                    <a name="GitHub" href="https://github.com/first19326" class="" target="_blank" data=""><span class="iconfont icon-github"></span></a>
+                
+            </div> 
+        </nav>
+        <button class="menu-button-close"></button>
+        <div class="morph-shape" id="morph-shape" data-morph-open="M-7.312,0H15c0,0,66,113.339,66,399.5C81,664.006,15,800,15,800H-7.312V0z;M-7.312,0H100c0,0,0,113.839,0,400c0,264.506,0,400,0,400H-7.312V0z">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 800" preserveAspectRatio="none">
+                <path d="M-7.312,0H0c0,0,0,113.839,0,400c0,264.506,0,400,0,400h-7.312V0z"/>
+            </svg>
+        </div>
+    </div>
+    <button class="menu-button-open">MENU</button>
+    <div class="menu-cover"></div>
+</div>
+    
+<div id="tools">
+    <div class="progressbar-top"></div>
+
+    <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
+    <script type="text/javascript" src="/js/APlayer.min.js"></script>
+    <script type="text/javascript" src="/js/Meting.min.js"></script>
+    <meting-js id="3778678" lrcshow="false" server="netease"
+               type="playlist" fixed="true" autoplay="false"
+               loop="all" order="random" preload="auto"
+               volume="0.67" mutex="true"></meting-js>
+
+    <script type="text/javascript">
+        (function () {
+            var toolsRoot = document.getElementById('tools');
+            if (!toolsRoot || typeof APlayer === 'undefined') {
+                return;
+            }
+
+            var metingElement = toolsRoot.querySelector('meting-js');
+            var targetVolume = 0.67;
+            var autoplayEnabled = true;
+            var introAudio = {
+                name: "知我",
+                artist: "国风堂 / 哦漏",
+                cover: "/image/header/home.jpg",
+                url: "/music/song/知我.mp3",
+                lrc: ""
+            };
+            var introIndex = -1;
+            var introRemoved = false;
+            var metingPlayer = null;
+            var initTimer = null;
+
+            function restoreAudio(audio) {
+                if (!audio) {
+                    return;
+                }
+
+                audio.muted = false;
+                audio.defaultMuted = false;
+                audio.removeAttribute('muted');
+                audio.removeAttribute('autoplay');
+                audio.volume = targetVolume;
+            }
+
+            function attemptPlay(player, muted) {
+                if (!player || !player.audio) {
+                    return;
+                }
+
+                var audio = player.audio;
+                if (typeof muted === 'boolean') {
+                    audio.muted = muted;
+                    audio.defaultMuted = muted;
+                    if (muted) {
+                        audio.setAttribute('muted', 'muted');
+                        audio.setAttribute('autoplay', 'autoplay');
+                        audio.volume = 0;
+                    }
+                }
+
+                var result = audio.play();
+                if (result && typeof result.catch === 'function') {
+                    result.catch(function () {
+                        if (player && player.setUIPaused) {
+                            player.setUIPaused();
+                        }
+                    });
+                }
+            }
+
+            function startMutedAutoplay(player) {
+                if (!player || !player.audio) {
+                    return;
+                }
+
+                var audio = player.audio;
+                audio.muted = true;
+                audio.defaultMuted = true;
+                audio.setAttribute('muted', 'muted');
+                audio.setAttribute('autoplay', 'autoplay');
+                audio.volume = 0;
+
+                var clearMute = function () {
+                    restoreAudio(audio);
+                };
+
+                audio.addEventListener('playing', function () {
+                    window.setTimeout(clearMute, 120);
+                }, {once: true});
+
+                ['loadedmetadata', 'canplay', 'canplaythrough'].forEach(function (eventName) {
+                    audio.addEventListener(eventName, function resumeOnReady() {
+                        if (audio.paused) {
+                            attemptPlay(player, true);
+                        }
+                    }, {once: true});
+                });
+
+                [0, 250, 1200, 2500].forEach(function (delay) {
+                    window.setTimeout(function () {
+                        if (audio.paused) {
+                            attemptPlay(player, true);
+                        }
+                    }, delay);
+                });
+
+                attemptPlay(player, true);
+            }
+
+            function showPlayerControls(player) {
+                if (player && player.setMode) {
+                    player.setMode('normal');
+                }
+                if (player && player.template && player.template.info) {
+                    player.template.info.style.display = 'block';
+                }
+            }
+
+            function resetRandomOrder(player) {
+                if (!player || !player.list || !player.list.audios) {
+                    return;
+                }
+
+                var order = [];
+                for (var i = 0; i < player.list.audios.length; i++) {
+                    order.push(i);
+                }
+                for (var j = order.length - 1; j > 0; j--) {
+                    var randomIndex = Math.floor(Math.random() * (j + 1));
+                    var item = order[j];
+                    order[j] = order[randomIndex];
+                    order[randomIndex] = item;
+                }
+                player.randomOrder = order;
+            }
+
+            function removeIntroAfterLeaving(player) {
+                if (introRemoved || introIndex < 0 || !player || !player.list || player.list.index === introIndex) {
+                    return;
+                }
+
+                player.removeAudio(introIndex);
+                introRemoved = true;
+                introIndex = -1;
+
+                if (player.options && player.options.order === 'random') {
+                    resetRandomOrder(player);
+                }
+            }
+
+            function initIntro(player) {
+                if (!player || !player.list || !player.list.audios || !player.addAudio || !introAudio.url) {
+                    return;
+                }
+
+                metingPlayer = player;
+                showPlayerControls(player);
+
+                player.addAudio(introAudio);
+                introIndex = player.list.audios.length - 1;
+                player.list.switch(introIndex);
+                showPlayerControls(player);
+
+                player.on('listswitch', function () {
+                    window.setTimeout(function () {
+                        removeIntroAfterLeaving(player);
+                    }, 0);
+                });
+                player.on('ended', function () {
+                    window.setTimeout(function () {
+                        removeIntroAfterLeaving(player);
+                    }, 0);
+                });
+
+                if (autoplayEnabled) {
+                    startMutedAutoplay(player);
+                }
+
+                document.addEventListener('click', function resumeMusic() {
+                    if (player && player.audio && player.audio.paused) {
+                        restoreAudio(player.audio);
+                        attemptPlay(player, false);
+                    }
+                    document.removeEventListener('click', resumeMusic);
+                });
+
+                window.__liveForCodeMusic = {
+                    player: player,
+                    meting: metingElement
+                };
+            }
+
+            initTimer = window.setInterval(function () {
+                if (metingElement && metingElement.aplayer) {
+                    window.clearInterval(initTimer);
+                    initIntro(metingElement.aplayer);
+                }
+            }, 100);
+        })();
+    </script>
+    
+    <div class="wrap-right">
+        <div class="setting">
+            <div class="iconbox mode">
+                <div class="light">
+                    <span class="iconfont icon-daymode"></span>
+                    <span class="icontext">浅色模式</span>
+                </div>
+                <div class="dark">
+                    <span class="iconfont icon-nightmode-fill"></span>
+                    <span class="icontext">深色模式</span>
+                </div>
+            </div>
+            <div class="iconbox bottom">
+                <div style="display: inline-block; transform: rotate(180deg);">
+                    <span class="iconfont icon-top"></span>
+                </div>
+                <span class="icontext">跳至底部</span>
+            </div>
+        </div>
+        <div class="iconbox set">
+            <div style="display: inline-block;">
+                <span class="iconfont icon-setting"></span>
+            </div>
+            <span class="icontext">设置</span>
+        </div>
+        <div class="iconbox top">
+            <span class="iconfont icon-top"></span>
+            <span class="icontext">返回顶部</span>
+        </div>
+    </div>
+    <div class="loading"></div>
+</div>
+
+    <script>
+    window.config = {
+        GitHubUserName     : "first19326",
+        GitHubRepositories : "Hexo-LiveForCode",
+
+        User             : "Live For Code",
+        UserAvatar       : "/image/sidebar/avatar.jpg",
+        WebsiteStartDate : "2020-01-01",
+
+        WebsiteTitleBlur         : "(◍´꒳`◍) Hi, Live For Code",
+        WebsiteTitleBlurTimeOut  : 500,
+        WebsiteTitleFocus        : "(*´∇｀*) 欢迎回来!",
+        WebsiteTitleFocusTimeOut : 1000,
+        WebsiteFavicon           : "/image/website/logo.png",
+
+        ProgressBar : {
+            id       : "topProgressBar",
+            color    : "#77B6FF",
+            height   : "2px",
+            duration : 0.2
+        },
+
+        Loading: {
+            rebound : {
+                tension  : 16,
+                friction : 5
+            },
+            spinner : {
+                id     : "spinner",
+                radius : 90,
+                sides  : 3,
+                depth  : 4,
+                colors : {
+                    background : "#F0F0F0",
+                    stroke     : "#272633",
+                    base       : "",
+                    child      : "#272633"
+                },
+                alwaysForward : true,
+                restAt        : 0.5,
+                renderBase    : false
+            }
+        },
+
+        HomeHeaderAnimationRendered : true,
+        HomeHeaderAnimation         : {
+            radius      : 15,
+            density     : 0.2,
+            color       : "rgba(255, 255, 255, .2)",
+            clearOffset : 0.3
+        },
+
+        BackAnimationRendered          : true,
+        IEBrowserBackAnimationRendered : false,
+        BackAnimation                  : {
+            colorSaturation  : "60%",
+            colorBrightness  : "50%",
+            colorAlpha       : 0.5,
+            colorCycleSpeed  : 5,
+            verticalPosition : "random",
+            horizontalSpeed  : 200,
+            ribbonCount      : 3,
+            strokeSize       : 0,
+            parallaxAmount   : -0.2,
+            animateSections  : true
+        },
+
+        HomeHeaderImage : [
+            
+                "/image/header/home.jpg",
+            
+                "/image/header/home.jpeg",
+            
+                "/image/header/2023-04-17-20-51-03.jpg",
+            
+                "/image/header/2023-04-17-20-54-07.jpg",
+            
+                "/image/header/2023-04-17-20-54-22.jpg",
+            
+                "/image/header/2023-04-17-20-55-25.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+        HomeBannerText  : "",
+
+        ArticleHeaderImage : [
+            
+                "/image/header/article.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+
+        OtherBannerText : "",
+
+        Error : {
+            icon    : "icon-swimming",
+            title   : "PAGE NOT FOUND",
+            content : [
+                
+                    "很抱歉，您访问的页面不存在！",
+                
+                    "可能是输入地址有误或该地址已变更。",
+                
+            ],
+            buttons : [
+                
+                    {
+                        icon  : "icon-home",
+                        text  : "返回首页",
+                        href  : "https://fadeway32.gitee.io/",
+                        class : ""
+                    },
+                
+            ]
+        },
+
+        MenuNotice : {
+            enable : true,
+            notice : "简单地活着，肆意而又精彩！",
+            speed  : 20
+        },
+        MenuList : [
+            
+                {
+                    name   : "首页",
+                    icon   : "icon-home-fill",
+                    href   : "/",
+                    type   : "index",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "分类",
+                    icon   : "icon-folder-fill",
+                    href   : "/category",
+                    type   : "category",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "标签",
+                    icon   : "icon-discount-fill",
+                    href   : "/tag",
+                    type   : "tag",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "归档",
+                    icon   : "icon-calendar-fill",
+                    href   : "/archive",
+                    type   : "archive",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "赞赏",
+                    icon   : "icon-heart-fill",
+                    href   : "/donate",
+                    type   : "donate",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "关于",
+                    icon   : "icon-about-fill",
+                    href   : "/about",
+                    type   : "about",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "订阅",
+                    icon   : "icon-rss",
+                    href   : "/atom.xml",
+                    type   : "",
+                    class  : "",
+                    target : "_blank"
+                },
+            
+                {
+                    name   : "留言板",
+                    icon   : "icon-comments-fill",
+                    href   : "/comment",
+                    type   : "comment",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "友情链接",
+                    icon   : "icon-link",
+                    href   : "/friend",
+                    type   : "friend",
+                    class  : "",
+                    target : "_self"
+                },
+            
+        ],
+        MenuLink : [
+            
+                
+                    {
+                        name   : "知乎",
+                        icon   : "icon-zhihu",
+                        href   : "https://www.zhihu.com/people/wo-xin-de-love",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "微博",
+                        icon   : "icon-weibo",
+                        href   : "https://weibo.com/u/3939432776",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "QQ",
+                        icon   : "icon-qq",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"
+                    },
+                
+                    {
+                        name   : "微信",
+                        icon   : "icon-wechat",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"
+                    },
+                
+                    {
+                        name   : "GitHub",
+                        icon   : "icon-github",
+                        href   : "https://github.com/first19326",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+            
+        ],
+
+        FooterStyle : 2,
+        BottomText  : "<div><span class='face'>ღゝ◡╹)ノ♡</span></div><div>【人生若只如初见<span><i class='iconfont icon-like-fill'></i></span>何事秋风悲画扇】</div><div>&copy; 2020-2022 WorstOne. All Rights Reserved.</div>",
+
+        ConsoleList : [
+            
+                
+                    [
+                        
+                            
+                                "Based on cnblogs theme SimpleMemory.",
+                            
+                                "",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "SimpleMemory Author:",
+                            
+                                "BNDong",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "Theme:",
+                            
+                                "LiveForCode",
+                            
+                        
+                    ],
+                
+            
+        ],
+
+        FontIconExtend : "",
+
+        Donate : {
+            paypal  : "",
+            bitcoin : "",
+            alipay  : "/image/donate/alipay.png",
+            wechat  : "/image/donate/wechat.png"
+        },
+
+        Search : {
+            applicationID : "854JXVO35S",
+            apiKey        : "1945575867b066df2d460a4a97e23421",
+            indexName     : "hexo2",
+            hits          : {
+                page : 30
+            },
+            labels        : {
+                placeholder : "搜索",
+                empty       : "未发现与 「${query}」 相关的内容",
+                stats       : "${hits} 条相关条目，使用了 ${time} 毫秒",
+            }
+        }, 
+
+        Valine : {
+            switch         : true,
+            el             : ".comments-content",
+            appId          : "srhKtvWPQTWYKh3qX8G8M7v0-gzGzoHsz",
+            appKey         : "8uVSP1q6UlALVC5igYfIfv2h",
+            serverURLs     : "",
+            placeholder    : "你是我一生只会遇见一次的惊喜...",
+            avatar         : "mm",
+            meta           : "nick,mail,link",
+            requiredFields : "nick,mail",
+            pageSize       : 5,
+            lang           : "zh-cn",
+            visitor        : true,
+            enableQQ       : true
+        },
+
+        Tocbot : {
+            switch                : true,
+            tocSelector           : ".toc",
+            contentSelector       : ".article-body",
+            headingSelector       : "h1, h2, h3, h4, h5",
+            headingsOffset        : 0,
+            scrollSmooth          : true,
+            scrollSmoothOffset    : -5,
+            positionFixedSelector : ".toc",
+            positionFixedClass    : "toc-fixed",
+            fixedSidebarOffset    : "",
+        },
+
+        Require : {
+            baseUrl     : "/js/",
+            waitSeconds : 100
+        },
+
+        Music : {
+            type : "Meting"
+        },
+        APlayer : {
+            container : ".aplayer",
+            fixed     : true,
+            autoplay  : true,
+            loop      : "all",
+            order     : "list",
+            preload   : "auto",
+            volume    : 0.67,
+            mutex     : true,
+            lrcType   : 0,
+            audio     : [
+                
+                    {
+                        name   : "知我",
+                        artist : "国风堂 / 哦漏",
+                        cover  : "/image/header/home.jpg",
+                        url    : "/music/song/知我.mp3",
+                        lrc    : ""
+                    },
+                
+            ]
+        },
+        Meting : {
+            id       : "3778678", 
+            lrcshow  : false, 
+            server   : "netease", 
+            type     : "playlist", 
+            fixed    : true, 
+            autoplay : true, 
+            loop     : "all", 
+            order    : "random", 
+            preload  : "auto", 
+            volume   : 0.67, 
+            mutex    : true
+        },
+
+        Mouse : {
+            enable  : true,
+            options : {
+                size  : 6,
+                sizeF : 24
+            }
+        },
+
+        LazyLoad : {
+            default : "/image/website/lazyload.svg"
+        },
+  
+        Style : {
+            aplayer          : "/css/APlayer.css",
+            archive          : "/css/archive.css",
+            base             : "/css/base.css",
+            clipboard        : "/css/clipboard.css",
+            code             : "/css/code.css",
+            donate           : "/css/donate.css",
+            fancybox         : "/css/jquery.fancybox.css",
+            footer           : "/css/footer.css",
+            iconfont         : "/iconfont/iconfont.css",
+            index            : "/css/index.css",
+            menuBubble       : "/css/menu-bubble.css",
+            mouse            : "/css/mouse.css",
+            page             : "/css/page.css",
+            post             : "/css/post.css",
+            search           : "/css/search.css",
+            tocbot           : "/css/tocbot.css",
+            valine           : "/css/valine.css"
+        },
+
+        Script: {
+            aplayer          : "/js/APlayer.min.js",
+            config           : "/js/require.config.js",
+            index            : "/js/index.js",
+            instantSearch    : "/js/instantsearch.min.js",
+            iscroll          : "/js/iscroll.js",
+            jQuery           : "/js/jquery-3.4.1.min.js",
+            loading          : "/js/loading.js",
+            meting           : "/js/Meting.min.js",
+            require          : "/js/require.min.js"
+        },
+
+        Font: {
+            LongCang    : "/font/LongCang.css",
+            Monda       : "/font/Monda.css",
+            NotoSansSC  : "/font/NotoSansSC.css",
+            NotoSerifSC : "/font/NotoSerifSC.css",
+            Playball    : "/font/Playball.css",
+            PTMono      : "/font/PTMono.css",
+            Roboto      : "/font/Roboto.css",
+            RobotoSlab  : "/font/RobotoSlab.css",
+            Rosario     : "/font/Rosario.css",
+            UbuntuMono  : "/font/UbuntuMono.css"
+        },
+
+        Suffix : {
+            about : "你知道的越多,你不知道的越多"
+        },
+            
+        Theme : {
+            url  : "https://fadeway32.gitee.io/",
+            name : "fadeway32"
+        }  
+    };
+</script>
+    <script type="text/javascript" src="/js/home-docs.js"></script>
+    <script type="text/javascript" src="/js/index.js"></script>
+</body>
+</html>

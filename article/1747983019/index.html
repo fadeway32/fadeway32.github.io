@@ -1,0 +1,2721 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <!--    <meta name="referrer" content="origin">-->
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>
+        
+            K8s总结
+        
+    </title>
+    <link rel="shortcut icon" href="#"/>
+
+    <link type="text/css" rel="stylesheet" href="/font/LongCang.css">
+    <link type="text/css" rel="stylesheet" href="/font/Monda.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSansSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSerifSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/Playball.css">
+    <link type="text/css" rel="stylesheet" href="/font/PTMono.css">
+    <link type="text/css" rel="stylesheet" href="/font/Roboto.css">
+    <link type="text/css" rel="stylesheet" href="/font/RobotoSlab.css">
+    <link type="text/css" rel="stylesheet" href="/font/Rosario.css">
+    <link type="text/css" rel="stylesheet" href="/font/UbuntuMono.css">
+
+    <link type="text/css" rel="stylesheet" href="/css/base.css">
+    <link type="text/css" rel="stylesheet" href="/css/code.css">
+
+    <script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+    <a id="cover"></a>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
+<header>
+    <meta name="referrer" content="no-referrer">
+</header>
+<div id="header" class="header">
+    <div class="vertical">
+        <div class="inner">
+            
+                <h1 class="header-subtitle">K8s总结</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2025-05-23
+                        </span>
+                        
+                            <span id="/article/1747983019/" class="leancloud_visitors" data-flag-title="K8s总结">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1747983019/"></span>
+                        </span>
+                    </p>
+                    
+                    
+                </div>
+            
+        </div>
+    </div>
+    
+</div>
+<div id="container"
+
+>
+    
+        <!-- 文章页面 -->
+        
+        <div id="article" data-doc-title="K8s总结" data-doc-path="/article/1747983019/"
+             data-doc-url="/article/1747983019/" data-doc-date="2025-05-23">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="K8s-高频面试题分批梳理计划"><a href="#K8s-高频面试题分批梳理计划" class="headerlink" title="K8s 高频面试题分批梳理计划"></a>K8s 高频面试题分批梳理计划</h1><h2 id="Summary"><a href="#Summary" class="headerlink" title="Summary"></a>Summary</h2><p>按 <strong>Java 后端 &#x2F; 高级后端 &#x2F; 架构岗</strong> 面试视角，把 Kubernetes 高频题拆成 7 轮讲解。每题按固定结构回答：<strong>一句话结论、核心原理、流程图、常见追问、面试表达</strong>，重点覆盖基础概念、调度、网络、存储、发布、故障排查和架构落地。</p>
+<h2 id="Key-Topics"><a href="#Key-Topics" class="headerlink" title="Key Topics"></a>Key Topics</h2><ol>
+<li><strong>第一轮：K8s 基础核心</strong><ul>
+<li>Kubernetes 是什么，解决什么问题</li>
+<li>Master&#x2F;Worker 架构</li>
+<li>Pod、Node、Namespace、Label、Annotation</li>
+<li>Deployment、ReplicaSet、StatefulSet、DaemonSet、Job&#x2F;CronJob</li>
+<li>Service、Ingress、ConfigMap、Secret</li>
+</ul>
+</li>
+<li><strong>第二轮：Pod 生命周期与调度</strong><ul>
+<li>Pod 创建流程</li>
+<li>kube-apiserver、scheduler、controller-manager、kubelet 分工</li>
+<li>调度流程</li>
+<li>资源 requests&#x2F;limits</li>
+<li>QoS 分类</li>
+<li>探针：liveness&#x2F;readiness&#x2F;startup</li>
+<li>Pod 重启策略</li>
+</ul>
+</li>
+<li><strong>第三轮：K8s 网络</strong><ul>
+<li>Service 四种类型</li>
+<li>ClusterIP、NodePort、LoadBalancer、ExternalName</li>
+<li>kube-proxy 原理：iptables&#x2F;IPVS</li>
+<li>Pod 间通信</li>
+<li>Service 负载均衡原理</li>
+<li>Ingress 和 Ingress Controller</li>
+<li>CNI 是什么</li>
+<li>CoreDNS 解析流程</li>
+</ul>
+</li>
+<li><strong>第四轮：存储与配置</strong><ul>
+<li>Volume、PV、PVC、StorageClass</li>
+<li>静态供给和动态供给</li>
+<li>StatefulSet 稳定身份和稳定存储</li>
+<li>ConfigMap 和 Secret 区别</li>
+<li>Secret 安全注意点</li>
+<li>数据库是否适合跑在 K8s</li>
+</ul>
+</li>
+<li><strong>第五轮：发布、扩缩容与高可用</strong><ul>
+<li>Deployment 滚动更新</li>
+<li>maxSurge &#x2F; maxUnavailable</li>
+<li>蓝绿发布、金丝雀发布、灰度发布</li>
+<li>HPA、VPA、Cluster Autoscaler</li>
+<li>PodDisruptionBudget</li>
+<li>多副本服务如何保证高可用</li>
+<li>如何优雅停机</li>
+</ul>
+</li>
+<li><strong>第六轮：故障排查</strong><ul>
+<li>Pod 一直 Pending 怎么排查</li>
+<li>Pod CrashLoopBackOff 怎么排查</li>
+<li>ImagePullBackOff 怎么排查</li>
+<li>Service 访问不通怎么排查</li>
+<li>Ingress 访问 502&#x2F;504 怎么排查</li>
+<li>节点 NotReady 怎么排查</li>
+<li>CPU&#x2F;内存飙高怎么定位</li>
+<li>常用 kubectl 命令</li>
+</ul>
+</li>
+<li><strong>第七轮：架构与生产实践</strong><ul>
+<li>K8s 中如何部署 Java 微服务</li>
+<li>网关、服务发现、配置中心如何落地</li>
+<li>K8s 和 Spring Cloud 的关系</li>
+<li>日志、监控、链路追踪方案</li>
+<li>权限 RBAC</li>
+<li>多环境、多集群、命名空间隔离</li>
+<li>K8s 生产环境最佳实践</li>
+</ul>
+</li>
+</ol>
+<h2 id="Answer-Format"><a href="#Answer-Format" class="headerlink" title="Answer Format"></a>Answer Format</h2><p>每一轮输出保持统一：</p>
+<ul>
+<li><strong>面试结论</strong>：先给 30 秒答案。</li>
+<li><strong>底层机制</strong>：讲清楚组件怎么协作。</li>
+<li><strong>流程图</strong>：用文本图表示请求或资源流转。</li>
+<li><strong>常见追问</strong>：补充面试官可能继续问的问题。</li>
+<li><strong>标准表达</strong>：给一段可以直接用于面试的回答。</li>
+</ul>
+<h2 id="Test-x2F-Acceptance-Criteria"><a href="#Test-x2F-Acceptance-Criteria" class="headerlink" title="Test &#x2F; Acceptance Criteria"></a>Test &#x2F; Acceptance Criteria</h2><p>完成后应覆盖：</p>
+<ul>
+<li>K8s 八股基础题</li>
+<li>Pod、Service、Ingress、调度、存储核心原理</li>
+<li>生产发布和高可用实践</li>
+<li>常见线上故障排查</li>
+<li>高级后端&#x2F;架构岗表达方式</li>
+</ul>
+<h2 id="Assumptions"><a href="#Assumptions" class="headerlink" title="Assumptions"></a>Assumptions</h2><p>默认面向 <strong>Java 后端 &#x2F; 高级后端 &#x2F; 架构岗</strong>。不绑定某个特定 K8s 小版本，回答以通用生产实践为主，避免陷入过细版本差异。</p>
+<p>Implement plan</p>
+<p>17:44</p>
+<p>下面开始 <strong>第一轮：K8s 基础核心</strong>。这一轮先把 Kubernetes 的对象模型和整体架构讲清楚，后面调度、网络、存储、发布都是建立在这些概念上。</p>
+<h2 id="1-Kubernetes-是什么，解决什么问题？"><a href="#1-Kubernetes-是什么，解决什么问题？" class="headerlink" title="1. Kubernetes 是什么，解决什么问题？"></a>1. Kubernetes 是什么，解决什么问题？</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>Kubernetes 是一个容器编排平台，用来管理容器化应用的部署、调度、扩缩容、服务发现、故障自愈和滚动发布。它解决的是大规模容器应用“怎么部署、怎么运行、怎么发现、怎么恢复”的问题。</p>
+</blockquote>
+<p>传统部署的问题：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">手工部署困难 机器资源利用率低 服务扩缩容麻烦 实例挂了需要人工恢复 发布回滚复杂 服务地址变化后发现困难 </span><br></pre></td></tr></table></figure>
+
+<p>K8s 解决：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">自动调度：把 Pod 放到合适 Node 自动拉起：实例挂了自动重建 服务发现：Service 提供稳定访问入口 弹性扩缩容：按副本数或指标扩容 滚动发布：平滑升级和回滚 配置管理：ConfigMap / Secret 资源隔离：Namespace / ResourceQuota </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>K8s 本质是一个声明式的容器编排系统。用户描述期望状态，比如我要 3 个副本，K8s 控制器不断把实际状态调整到期望状态。它不是简单运行 Docker，而是提供了调度、自愈、服务发现、发布、扩缩容等完整平台能力。</p>
+</blockquote>
+<hr>
+<h2 id="2-Master-x2F-Worker-架构"><a href="#2-Master-x2F-Worker-架构" class="headerlink" title="2. Master &#x2F; Worker 架构"></a>2. Master &#x2F; Worker 架构</h2><p>现在更准确叫：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Control Plane：控制平面 Worker Node：工作节点 </span><br></pre></td></tr></table></figure>
+
+<p>面试里很多人仍然说 Master&#x2F;Worker，可以兼容回答。</p>
+<p><strong>整体架构：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">用户 / kubectl / CI/CD        |        v kube-apiserver        |        v etcd  &lt;---- controller-manager        |        v scheduler        |        v Worker Node  ├── kubelet  ├── kube-proxy  └── container runtime </span><br></pre></td></tr></table></figure>
+
+<p><strong>Control Plane 组件：</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">组件</th>
+<th align="left">作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">kube-apiserver</td>
+<td align="left">K8s 统一入口，所有资源操作都经过它</td>
+</tr>
+<tr>
+<td align="left">etcd</td>
+<td align="left">保存集群状态和资源对象</td>
+</tr>
+<tr>
+<td align="left">scheduler</td>
+<td align="left">负责给未调度 Pod 选择 Node</td>
+</tr>
+<tr>
+<td align="left">controller-manager</td>
+<td align="left">负责控制器逻辑，让实际状态接近期望状态</td>
+</tr>
+</tbody></table>
+<p><strong>Worker Node 组件：</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">组件</th>
+<th align="left">作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">kubelet</td>
+<td align="left">节点代理，负责 Pod 生命周期管理</td>
+</tr>
+<tr>
+<td align="left">kube-proxy</td>
+<td align="left">维护 Service 转发规则</td>
+</tr>
+<tr>
+<td align="left">container runtime</td>
+<td align="left">真正运行容器，比如 containerd</td>
+</tr>
+</tbody></table>
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>K8s 是典型的控制面和数据面分离。控制面负责资源声明、调度和状态协调；工作节点负责真正运行 Pod。apiserver 是入口，etcd 是状态存储，scheduler 做调度，controller-manager 做控制循环，kubelet 在节点上负责把 Pod 真正拉起来。</p>
+</blockquote>
+<hr>
+<h2 id="3-Pod-是什么？"><a href="#3-Pod-是什么？" class="headerlink" title="3. Pod 是什么？"></a>3. Pod 是什么？</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>Pod 是 K8s 中最小的调度和部署单位，一个 Pod 里可以包含一个或多个容器，这些容器共享网络命名空间和存储卷。</p>
+</blockquote>
+<p>不要说“容器是 K8s 最小单位”，准确是：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">K8s 最小调度单位是 Pod 容器运行在 Pod 里面 </span><br></pre></td></tr></table></figure>
+
+<p>Pod 内部特点：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">共享 IP 共享端口空间 共享 Volume 生命周期绑定 </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Pod ├── Container A ├── Container B ├── shared network namespace └── shared volume </span><br></pre></td></tr></table></figure>
+
+<p>为什么不直接调度容器？</p>
+<blockquote>
+<p>因为有些容器天然需要强绑定，比如业务容器 + sidecar 日志采集、业务容器 + service mesh proxy，它们需要部署在同一台机器、共享网络和生命周期。</p>
+</blockquote>
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>Pod 是对一组紧密相关容器的封装。K8s 不直接调度单个容器，而是调度 Pod。一个 Pod 内的容器共享网络和存储，适合业务容器和 Sidecar 这种强耦合场景。</p>
+</blockquote>
+<hr>
+<h2 id="4-Node、Namespace、Label、Annotation"><a href="#4-Node、Namespace、Label、Annotation" class="headerlink" title="4. Node、Namespace、Label、Annotation"></a>4. Node、Namespace、Label、Annotation</h2><p><strong>Node</strong></p>
+<blockquote>
+<p>Node 是 K8s 的工作节点，可以是物理机或虚拟机，Pod 最终运行在 Node 上。</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Cluster ├── Node 1 │    ├── Pod A │    └── Pod B └── Node 2      ├── Pod C      └── Pod D </span><br></pre></td></tr></table></figure>
+
+<p><strong>Namespace</strong></p>
+<blockquote>
+<p>Namespace 是逻辑隔离空间，用于区分环境、团队或业务。</p>
+</blockquote>
+<p>常见用法：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dev test staging prod team-a team-b </span><br></pre></td></tr></table></figure>
+
+<p>注意：</p>
+<blockquote>
+<p>Namespace 不是强安全边界，真正权限隔离还要配合 RBAC、NetworkPolicy、ResourceQuota。</p>
+</blockquote>
+<p><strong>Label</strong></p>
+<blockquote>
+<p>Label 是资源标签，用于选择和分组资源。</p>
+</blockquote>
+<p>例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">labels:  app: order-service  env: prod  version: v1 </span><br></pre></td></tr></table></figure>
+
+<p>Service 通过 Label 找 Pod：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Service selector:  app=order-service 匹配 Pod:  app=order-service </span><br></pre></td></tr></table></figure>
+
+<p><strong>Annotation</strong></p>
+<blockquote>
+<p>Annotation 是资源注解，用来存储非选择性元数据。</p>
+</blockquote>
+<p>常见用途：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Ingress 配置 监控采集配置 发布信息 构建版本 运维备注 </span><br></pre></td></tr></table></figure>
+
+<p><strong>Label 和 Annotation 区别：</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">对比</th>
+<th align="left">Label</th>
+<th align="left">Annotation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">是否用于选择</td>
+<td align="left">是</td>
+<td align="left">否</td>
+</tr>
+<tr>
+<td align="left">典型用途</td>
+<td align="left">筛选、分组、关联</td>
+<td align="left">存元数据、配置</td>
+</tr>
+<tr>
+<td align="left">是否参与 selector</td>
+<td align="left">参与</td>
+<td align="left">不参与</td>
+</tr>
+</tbody></table>
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>Label 是给 K8s 控制器和 Service 用来选择资源的，Annotation 更偏扩展元数据。能用于筛选和关联的放 Label，说明性或组件扩展配置放 Annotation。</p>
+</blockquote>
+<hr>
+<h2 id="5-Deployment、ReplicaSet、StatefulSet、DaemonSet、Job"><a href="#5-Deployment、ReplicaSet、StatefulSet、DaemonSet、Job" class="headerlink" title="5. Deployment、ReplicaSet、StatefulSet、DaemonSet、Job"></a>5. Deployment、ReplicaSet、StatefulSet、DaemonSet、Job</h2><p>这几个是面试高频，核心是：<strong>不同工作负载类型解决不同部署场景</strong>。</p>
+<h3 id="Deployment"><a href="#Deployment" class="headerlink" title="Deployment"></a>Deployment</h3><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>Deployment 用来部署无状态服务，支持副本管理、滚动更新和回滚，是最常用的工作负载对象。</p>
+</blockquote>
+<p>典型场景：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Java 微服务 Web 服务 API 服务 无状态业务应用 </span><br></pre></td></tr></table></figure>
+
+<p>关系：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Deployment   |   v ReplicaSet   |   v Pod 副本 </span><br></pre></td></tr></table></figure>
+
+<p>Deployment 负责：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">声明副本数 滚动更新 版本回滚 维护 ReplicaSet </span><br></pre></td></tr></table></figure>
+
+<h3 id="ReplicaSet"><a href="#ReplicaSet" class="headerlink" title="ReplicaSet"></a>ReplicaSet</h3><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>ReplicaSet 负责保证指定数量的 Pod 副本一直存在，但通常不直接使用，而是由 Deployment 管理。</p>
+</blockquote>
+<p>比如期望 3 个副本：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">期望：3 实际：2 ReplicaSet 创建 1 个 期望：3 实际：4 ReplicaSet 删除 1 个 </span><br></pre></td></tr></table></figure>
+
+<h3 id="StatefulSet"><a href="#StatefulSet" class="headerlink" title="StatefulSet"></a>StatefulSet</h3><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>StatefulSet 用于有状态服务，提供稳定的网络标识、稳定存储和有序部署&#x2F;删除。</p>
+</blockquote>
+<p>适合：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">MySQL Redis Cluster Kafka ZooKeeper Elasticsearch </span><br></pre></td></tr></table></figure>
+
+<p>特点：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Pod 名字稳定：mysql-0、mysql-1、mysql-2 网络身份稳定 PVC 稳定绑定 启动和删除有顺序 </span><br></pre></td></tr></table></figure>
+
+<p>Deployment 的 Pod 名字通常随机：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">order-service-7d9c8f9d8c-x92ab </span><br></pre></td></tr></table></figure>
+
+<p>StatefulSet 的 Pod 名字稳定：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql-0 mysql-1 mysql-2 </span><br></pre></td></tr></table></figure>
+
+<h3 id="DaemonSet"><a href="#DaemonSet" class="headerlink" title="DaemonSet"></a>DaemonSet</h3><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>DaemonSet 保证每个 Node 上运行一个 Pod，适合节点级 Agent。</p>
+</blockquote>
+<p>典型场景：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">日志采集：Fluent Bit / Filebeat 监控 Agent：Node Exporter 网络插件：CNI Agent 存储插件：CSI Node Plugin </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Node 1 -&gt; Agent Pod Node 2 -&gt; Agent Pod Node 3 -&gt; Agent Pod </span><br></pre></td></tr></table></figure>
+
+<h3 id="Job-x2F-CronJob"><a href="#Job-x2F-CronJob" class="headerlink" title="Job &#x2F; CronJob"></a>Job &#x2F; CronJob</h3><p><strong>Job</strong></p>
+<blockquote>
+<p>Job 用于一次性任务，确保任务成功完成。</p>
+</blockquote>
+<p>场景：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">数据修复 批处理 一次性脚本 离线计算 </span><br></pre></td></tr></table></figure>
+
+<p><strong>CronJob</strong></p>
+<blockquote>
+<p>CronJob 用于定时任务，类似 Linux crontab。</p>
+</blockquote>
+<p>场景：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">每天凌晨生成报表 定时清理数据 周期性同步任务 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>Deployment 适合无状态服务，StatefulSet 适合有状态服务，DaemonSet 适合每个节点都要跑的 Agent，Job&#x2F;CronJob 适合一次性或定时任务。ReplicaSet 是副本控制器，通常由 Deployment 间接管理。</p>
+</blockquote>
+<h2 id="6-Service-是什么？"><a href="#6-Service-是什么？" class="headerlink" title="6. Service 是什么？"></a>6. Service 是什么？</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>Service 为一组 Pod 提供稳定访问入口和负载均衡。因为 Pod IP 会变化，不能让调用方直接依赖 Pod IP。</p>
+</blockquote>
+<p>为什么需要 Service？</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Pod 会重建 Pod IP 会变化 副本数量会变化 调用方需要稳定入口 </span><br></pre></td></tr></table></figure>
+
+<p>Service 通过 Label Selector 找 Pod：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Service selector: app=order-service        |        v Pod A: app=order-service Pod B: app=order-service Pod C: app=order-service </span><br></pre></td></tr></table></figure>
+
+<p>访问链路：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Client  |  v Service ClusterIP  |  v Pod A / Pod B / Pod C </span><br></pre></td></tr></table></figure>
+
+<p>Service 提供：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">稳定虚拟 IP 服务发现 负载均衡 屏蔽 Pod 变化 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>Pod 是易变的，Service 是稳定的。Service 通过 selector 关联一组 Pod，对外提供固定访问地址，并把流量负载均衡到后端 Pod。</p>
+</blockquote>
+<hr>
+<h2 id="7-Ingress-是什么？"><a href="#7-Ingress-是什么？" class="headerlink" title="7. Ingress 是什么？"></a>7. Ingress 是什么？</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>Ingress 是 K8s 中管理七层 HTTP&#x2F;HTTPS 入口流量的资源对象，真正转发流量的是 Ingress Controller。</p>
+</blockquote>
+<p>不要混：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Ingress：规则 Ingress Controller：执行规则的组件 </span><br></pre></td></tr></table></figure>
+
+<p>例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">api.example.com/order -&gt; order-service api.example.com/user  -&gt; user-service </span><br></pre></td></tr></table></figure>
+
+<p>链路：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">外部用户   |   v LoadBalancer / NodePort   |   v Ingress Controller   |   v Service   |   v Pod </span><br></pre></td></tr></table></figure>
+
+<p>Ingress 能做：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">域名路由 路径路由 HTTPS 证书 七层转发 部分灰度能力 </span><br></pre></td></tr></table></figure>
+
+<p>常见 Ingress Controller：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Nginx Ingress Controller Traefik HAProxy Ingress Kong APISIX Envoy Gateway </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>Service 主要解决集群内部服务发现和四层访问，Ingress 解决 HTTP&#x2F;HTTPS 七层入口路由。Ingress 只是声明规则，必须有 Ingress Controller 才能真正生效。</p>
+</blockquote>
+<hr>
+<h2 id="8-ConfigMap-和-Secret"><a href="#8-ConfigMap-和-Secret" class="headerlink" title="8. ConfigMap 和 Secret"></a>8. ConfigMap 和 Secret</h2><h3 id="ConfigMap"><a href="#ConfigMap" class="headerlink" title="ConfigMap"></a>ConfigMap</h3><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>ConfigMap 用来管理非敏感配置，把配置和镜像解耦。</p>
+</blockquote>
+<p>适合放：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">配置文件 环境变量 开关参数 应用配置项 </span><br></pre></td></tr></table></figure>
+
+<p>使用方式：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">环境变量注入</span><br><span class="line">Volume 挂载成文件</span><br><span class="line">命令行参数</span><br></pre></td></tr></table></figure>
+
+<h3 id="Secret"><a href="#Secret" class="headerlink" title="Secret"></a>Secret</h3><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>Secret 用来保存敏感信息，比如密码、Token、证书，但默认只是 Base64 编码，不等于天然加密。</p>
+</blockquote>
+<p>适合放：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">数据库密码 API Token TLS 证书 镜像仓库凭证 </span><br></pre></td></tr></table></figure>
+
+<p>重要提醒：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Base64 不是加密 需要开启 etcd 加密 需要配合 RBAC 控制访问 生产环境可接 Vault / KMS </span><br></pre></td></tr></table></figure>
+
+<p><strong>ConfigMap vs Secret：</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">对比</th>
+<th align="left">ConfigMap</th>
+<th align="left">Secret</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">数据类型</td>
+<td align="left">普通配置</td>
+<td align="left">敏感配置</td>
+</tr>
+<tr>
+<td align="left">默认编码</td>
+<td align="left">明文</td>
+<td align="left">Base64</td>
+</tr>
+<tr>
+<td align="left">典型内容</td>
+<td align="left">application.yml</td>
+<td align="left">password&#x2F;token&#x2F;cert</td>
+</tr>
+<tr>
+<td align="left">权限要求</td>
+<td align="left">普通</td>
+<td align="left">更严格</td>
+</tr>
+</tbody></table>
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>ConfigMap 管普通配置，Secret 管敏感配置。两者都能通过环境变量或 Volume 注入到 Pod，但 Secret 默认只是 Base64 编码，生产环境还要配合 RBAC、etcd 加密和外部密钥系统。</p>
+</blockquote>
+<hr>
+<h2 id="9-第一轮总图"><a href="#9-第一轮总图" class="headerlink" title="9. 第一轮总图"></a>9. 第一轮总图</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Kubernetes Cluster  |  ├── Control Plane  │     ├── kube-apiserver  │     ├── etcd  │     ├── scheduler  │     └── controller-manager  |  └── Worker Nodes        ├── kubelet        ├── kube-proxy        ├── container runtime        └── Pods              ├── Deployment 管理无状态 Pod              ├── StatefulSet 管理有状态 Pod              ├── DaemonSet 管理节点 Agent              └── Job/CronJob 管理任务 </span><br></pre></td></tr></table></figure>
+
+<p>访问关系：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">外部用户  |  v Ingress Controller  |  v Service  |  v Pod </span><br></pre></td></tr></table></figure>
+
+<p>配置关系：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ConfigMap / Secret        |        v      Pod </span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="10-面试官常见追问"><a href="#10-面试官常见追问" class="headerlink" title="10. 面试官常见追问"></a>10. 面试官常见追问</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. Pod 和容器有什么区别？ 2. Deployment 和 ReplicaSet 什么关系？ 3. Deployment 和 StatefulSet 区别？ 4. Service 为什么需要 selector？ 5. Service 和 Ingress 区别？ 6. ConfigMap 修改后 Pod 会自动更新吗？ 7. Secret 是不是安全的？ 8. DaemonSet 适合什么场景？ 9. Namespace 能不能实现强隔离？ 10. K8s 为什么是声明式系统？ </span><br></pre></td></tr></table></figure>
+
+<p><strong>第一轮标准总结：</strong></p>
+<blockquote>
+<p>K8s 是声明式容器编排平台，核心是用户提交期望状态，控制器不断协调实际状态。Pod 是最小调度单位，Deployment 管无状态服务，StatefulSet 管有状态服务，DaemonSet 管节点级 Agent，Job&#x2F;CronJob 管任务。Service 解决 Pod 易变带来的稳定访问问题，Ingress 解决 HTTP&#x2F;HTTPS 七层入口流量。ConfigMap 和 Secret 用于配置解耦，但 Secret 生产上还要配合权限和加密机制。</p>
+</blockquote>
+<p>下一轮继续讲：<strong>Pod 生命周期与调度：Pod 创建流程、apiserver&#x2F;scheduler&#x2F;controller&#x2F;kubelet 分工、requests&#x2F;limits、QoS、探针、重启策略</strong>。</p>
+<p>17:45</p>
+<p>继续讲</p>
+<p>17:47</p>
+<p>继续，下面是 <strong>第二轮：Pod 生命周期与调度</strong>。这一轮是 K8s 面试核心中的核心，很多故障排查题都绕不开它。</p>
+<h2 id="1-Pod-创建完整流程"><a href="#1-Pod-创建完整流程" class="headerlink" title="1. Pod 创建完整流程"></a>1. Pod 创建完整流程</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>Pod 创建不是 kubelet 直接启动容器，而是用户提交资源到 apiserver，控制器创建 Pod，scheduler 选择 Node，kubelet 监听到属于自己的 Pod 后，调用容器运行时拉镜像并启动容器。</p>
+</blockquote>
+<p>流程图：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl / CI-CD   |   v kube-apiserver   |   v etcd 保存期望状态   |   v controller-manager 创建 Pod   |   v scheduler 选择 Node   |   v kubelet 监听到 Pod   |   v container runtime 拉镜像、启动容器   |   v Pod Running </span><br></pre></td></tr></table></figure>
+
+<p>标准表达：</p>
+<blockquote>
+<p>K8s 是声明式系统，用户提交的是期望状态。apiserver 负责接收请求并写入 etcd，controller 负责创建和维护资源，scheduler 负责给 Pod 绑定 Node，kubelet 在目标节点上真正执行容器启动。</p>
+</blockquote>
+<hr>
+<h2 id="2-核心组件分工"><a href="#2-核心组件分工" class="headerlink" title="2. 核心组件分工"></a>2. 核心组件分工</h2><table>
+<thead>
+<tr>
+<th align="left">组件</th>
+<th align="left">作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">kube-apiserver</td>
+<td align="left">集群统一入口，所有资源读写都经过它</td>
+</tr>
+<tr>
+<td align="left">etcd</td>
+<td align="left">存储集群状态</td>
+</tr>
+<tr>
+<td align="left">controller-manager</td>
+<td align="left">控制循环，确保实际状态接近期望状态</td>
+</tr>
+<tr>
+<td align="left">scheduler</td>
+<td align="left">给未绑定 Node 的 Pod 选择节点</td>
+</tr>
+<tr>
+<td align="left">kubelet</td>
+<td align="left">节点代理，负责 Pod 生命周期</td>
+</tr>
+<tr>
+<td align="left">container runtime</td>
+<td align="left">真正运行容器，如 containerd</td>
+</tr>
+</tbody></table>
+<p>可以这样记：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apiserver：入口 etcd：数据库 controller：调谐器 scheduler：调度员 kubelet：节点执行者 runtime：容器执行器 </span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="3-Scheduler-调度流程"><a href="#3-Scheduler-调度流程" class="headerlink" title="3. Scheduler 调度流程"></a>3. Scheduler 调度流程</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>调度分两步：先过滤掉不满足条件的节点，再对剩余节点打分，选择分数最高的 Node 绑定 Pod。</p>
+</blockquote>
+<p>流程：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">待调度 Pod   |   v Filter 过滤   |   | 排除资源不足、亲和性不匹配、污点不可容忍的节点   v Score 打分   |   | 根据资源均衡、亲和性、拓扑分布等评分   v Bind 绑定   |   v Pod 被分配到某个 Node </span><br></pre></td></tr></table></figure>
+
+<p>常见影响因素：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CPU / Memory requests nodeSelector nodeAffinity / podAffinity / podAntiAffinity taints / tolerations PV 绑定关系 拓扑分布约束 </span><br></pre></td></tr></table></figure>
+
+<p>标准表达：</p>
+<blockquote>
+<p>Scheduler 不负责启动 Pod，它只负责选择节点并写回绑定结果。真正启动容器的是目标 Node 上的 kubelet。</p>
+</blockquote>
+<hr>
+<h2 id="4-requests-和-limits"><a href="#4-requests-和-limits" class="headerlink" title="4. requests 和 limits"></a>4. requests 和 limits</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>requests 是调度依据，表示容器最少需要多少资源；limits 是运行时上限，表示容器最多能用多少资源。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th align="left">配置</th>
+<th align="left">含义</th>
+<th align="left">影响</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">requests.cpu</td>
+<td align="left">最低 CPU 需求</td>
+<td align="left">影响调度</td>
+</tr>
+<tr>
+<td align="left">requests.memory</td>
+<td align="left">最低内存需求</td>
+<td align="left">影响调度</td>
+</tr>
+<tr>
+<td align="left">limits.cpu</td>
+<td align="left">CPU 使用上限</td>
+<td align="left">超过会被限流</td>
+</tr>
+<tr>
+<td align="left">limits.memory</td>
+<td align="left">内存使用上限</td>
+<td align="left">超过可能 OOMKilled</td>
+</tr>
+</tbody></table>
+<p>重点区别：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CPU 超 limit：通常被 throttle，变慢 Memory 超 limit：可能被 OOMKilled，容器重启 </span><br></pre></td></tr></table></figure>
+
+<p>例子：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">resources:  requests:    cpu: &quot;500m&quot;    memory: &quot;512Mi&quot;  limits:    cpu: &quot;1&quot;    memory: &quot;1Gi&quot; </span><br></pre></td></tr></table></figure>
+
+<p>标准表达：</p>
+<blockquote>
+<p>requests 决定 Pod 能不能被调度到某个节点，limits 决定容器运行时最多能使用多少资源。CPU 超限一般是被限速，内存超限更危险，可能直接被 OOMKilled。</p>
+</blockquote>
+<hr>
+<h2 id="5-QoS-分类"><a href="#5-QoS-分类" class="headerlink" title="5. QoS 分类"></a>5. QoS 分类</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>K8s 根据 requests 和 limits 把 Pod 分成 Guaranteed、Burstable、BestEffort 三类，节点资源紧张时，BestEffort 最容易被驱逐，Guaranteed 最稳定。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th align="left">QoS</th>
+<th align="left">条件</th>
+<th align="left">稳定性</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">Guaranteed</td>
+<td align="left">每个容器 CPU&#x2F;Memory 都设置 request&#x3D;limit</td>
+<td align="left">最高</td>
+</tr>
+<tr>
+<td align="left">Burstable</td>
+<td align="left">设置了部分 request&#x2F;limit，但不完全相等</td>
+<td align="left">中等</td>
+</tr>
+<tr>
+<td align="left">BestEffort</td>
+<td align="left">没有设置 request&#x2F;limit</td>
+<td align="left">最低</td>
+</tr>
+</tbody></table>
+<p>驱逐优先级大致是：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">BestEffort -&gt; Burstable -&gt; Guaranteed </span><br></pre></td></tr></table></figure>
+
+<p>标准表达：</p>
+<blockquote>
+<p>生产服务一般不要裸跑 BestEffort，至少要设置 requests。核心服务可以考虑 Guaranteed，但资源利用率会低一些；大部分业务服务通常是 Burstable，在稳定性和资源利用率之间平衡。</p>
+</blockquote>
+<hr>
+<h2 id="6-探针：liveness、readiness、startup"><a href="#6-探针：liveness、readiness、startup" class="headerlink" title="6. 探针：liveness、readiness、startup"></a>6. 探针：liveness、readiness、startup</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>liveness 判断容器是否需要重启，readiness 判断 Pod 能不能接流量，startup 判断应用是否启动完成，避免慢启动应用被 liveness 误杀。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th align="left">探针</th>
+<th align="left">作用</th>
+<th align="left">失败后果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">livenessProbe</td>
+<td align="left">判断应用是否活着</td>
+<td align="left">失败会重启容器</td>
+</tr>
+<tr>
+<td align="left">readinessProbe</td>
+<td align="left">判断是否可以接流量</td>
+<td align="left">失败会从 Service Endpoints 摘除</td>
+</tr>
+<tr>
+<td align="left">startupProbe</td>
+<td align="left">判断启动是否完成</td>
+<td align="left">成功前禁用其他探针</td>
+</tr>
+</tbody></table>
+<p>典型链路：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Pod 启动  |  v startupProbe 通过  |  v readinessProbe 通过 -&gt; 加入 Service 流量  |  v livenessProbe 持续检测 -&gt; 失败则重启 </span><br></pre></td></tr></table></figure>
+
+<p>标准表达：</p>
+<blockquote>
+<p>readiness 影响流量，liveness 影响重启。不能用 liveness 代替 readiness，否则应用只是临时不可用也会被重启，反而扩大故障。</p>
+</blockquote>
+<hr>
+<h2 id="7-Pod-重启策略"><a href="#7-Pod-重启策略" class="headerlink" title="7. Pod 重启策略"></a>7. Pod 重启策略</h2><p>Pod 的 restartPolicy 常见有：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Always OnFailure Never </span><br></pre></td></tr></table></figure>
+
+<p>不同工作负载常见选择：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Deployment：通常 Always Job：通常 OnFailure 或 Never 普通长期服务：Always 一次性任务：OnFailure / Never </span><br></pre></td></tr></table></figure>
+
+<p>常见状态：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CrashLoopBackOff：容器反复启动失败 ImagePullBackOff：镜像拉取失败 Pending：还没调度或资源不满足 Running：Pod 已运行 Completed：任务执行完成 OOMKilled：内存超限被杀 </span><br></pre></td></tr></table></figure>
+
+<p>标准表达：</p>
+<blockquote>
+<p>Deployment 管理的是长期运行服务，所以容器异常退出会被持续拉起。Job 更关注任务是否成功完成，所以通常使用 OnFailure。</p>
+</blockquote>
+<hr>
+<h2 id="8-常见追问"><a href="#8-常见追问" class="headerlink" title="8. 常见追问"></a>8. 常见追问</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. Pod Pending 一般是什么原因？ 2. requests 和 limits 哪个影响调度？ 3. CPU 超限和内存超限有什么区别？ 4. readiness 和 liveness 区别？ 5. 为什么需要 startupProbe？ 6. Scheduler 会不会启动容器？ 7. OOMKilled 是谁杀的？ 8. QoS 有什么用？ </span><br></pre></td></tr></table></figure>
+
+<p><strong>第二轮总结：</strong></p>
+<blockquote>
+<p>Pod 从创建到运行，核心链路是 apiserver 接收声明、etcd 保存状态、controller 创建资源、scheduler 选择节点、kubelet 启动容器。调度主要看 requests、节点资源、亲和性、污点容忍等条件。生产中必须合理配置 requests&#x2F;limits 和探针，readiness 控制接流量，liveness 控制重启，startup 保护慢启动应用。资源配置还会影响 QoS，进而影响节点压力下的驱逐优先级。</p>
+</blockquote>
+<p>下一轮讲 <strong>K8s 网络：Service 类型、kube-proxy、Pod 间通信、Ingress、CNI、CoreDNS</strong>。</p>
+<p>17:47</p>
+<p>继续回答</p>
+<p>17:52</p>
+<p>继续，下面是 <strong>第三轮：K8s 网络</strong>。这一轮非常高频，而且是 K8s 里最容易“懂概念但讲不透”的部分。抓住三条线就稳：<strong>Pod 怎么通信、Service 怎么转发、Ingress 怎么进来</strong>。</p>
+<h2 id="1-K8s-网络模型"><a href="#1-K8s-网络模型" class="headerlink" title="1. K8s 网络模型"></a>1. K8s 网络模型</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>Kubernetes 网络模型要求每个 Pod 都有独立 IP，Pod 之间默认可以直接通信，不需要 NAT。真正实现这个网络模型的是 CNI 网络插件。</p>
+</blockquote>
+<p>K8s 网络基本原则：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">1. 每个 Pod 有自己的 IP</span><br><span class="line">2. Pod 之间可以直接通过 Pod IP 通信</span><br><span class="line">3. Node 可以和 Pod 通信</span><br><span class="line">4. Pod 内容器共享网络命名空间</span><br><span class="line">5. Service 提供稳定访问入口</span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Node 1                         Node 2</span><br><span class="line">  Pod A: 10.1.1.2  ────────&gt;    Pod B: 10.1.2.3</span><br></pre></td></tr></table></figure>
+
+<p>注意：</p>
+<blockquote>
+<p>K8s 定义网络模型，CNI 插件负责实现，比如 Flannel、Calico、Cilium。</p>
+</blockquote>
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>K8s 自身不直接实现 Pod 网络，而是定义了 Pod 间可达的网络模型，具体由 CNI 插件实现。Service 解决的是 Pod IP 变化和多副本负载均衡问题。</p>
+</blockquote>
+<hr>
+<h2 id="2-CNI-是什么？"><a href="#2-CNI-是什么？" class="headerlink" title="2. CNI 是什么？"></a>2. CNI 是什么？</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>CNI 是容器网络接口规范，K8s 通过 CNI 插件为 Pod 分配 IP、创建网络设备、配置路由和网络策略。</p>
+</blockquote>
+<p>Pod 创建时网络大致流程：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">kubelet 创建 Pod Sandbox</span><br><span class="line">   |</span><br><span class="line">   v</span><br><span class="line">调用 CNI 插件</span><br><span class="line">   |</span><br><span class="line">   v</span><br><span class="line">分配 Pod IP</span><br><span class="line">   |</span><br><span class="line">   v</span><br><span class="line">创建 veth pair</span><br><span class="line">   |</span><br><span class="line">   v</span><br><span class="line">配置路由 / 隧道 / BGP</span><br><span class="line">   |</span><br><span class="line">   v</span><br><span class="line">Pod 网络就绪</span><br></pre></td></tr></table></figure>
+
+<p>常见 CNI：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Flannel：简单，常用 VXLAN Calico：支持 BGP 和 NetworkPolicy Cilium：基于 eBPF，性能和可观测性强 Weave：较早的容器网络方案 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>CNI 负责让 Pod 接入集群网络。K8s 通过 kubelet 调用 CNI 插件，完成 IP 分配、网卡创建和路由配置。不同 CNI 的差异主要在跨节点通信方式、网络策略和性能能力上。</p>
+</blockquote>
+<hr>
+<h2 id="3-Pod-间通信"><a href="#3-Pod-间通信" class="headerlink" title="3. Pod 间通信"></a>3. Pod 间通信</h2><h3 id="同一个-Pod-内容器通信"><a href="#同一个-Pod-内容器通信" class="headerlink" title="同一个 Pod 内容器通信"></a>同一个 Pod 内容器通信</h3><p>同一个 Pod 内多个容器共享网络命名空间：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Container A -&gt; localhost -&gt; Container B </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Pod ├── Container A : localhost:8080 └── Container B : localhost:9000 </span><br></pre></td></tr></table></figure>
+
+<h3 id="同-Node-不同-Pod-通信"><a href="#同-Node-不同-Pod-通信" class="headerlink" title="同 Node 不同 Pod 通信"></a>同 Node 不同 Pod 通信</h3><p>通常通过 veth pair 和 Linux bridge 或 eBPF 转发：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Pod A  | veth  | bridge / eBPF  | veth  | Pod B </span><br></pre></td></tr></table></figure>
+
+<h3 id="跨-Node-Pod-通信"><a href="#跨-Node-Pod-通信" class="headerlink" title="跨 Node Pod 通信"></a>跨 Node Pod 通信</h3><p>由 CNI 实现，常见方式：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">VXLAN 隧道 BGP 路由 云厂商 VPC 路由 eBPF 转发 </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Pod A  | Node 1  | CNI 网络  | Node 2  | Pod B </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>同 Pod 容器通过 localhost 通信；同节点 Pod 通常通过 veth 和 bridge&#x2F;eBPF 通信；跨节点 Pod 通信由 CNI 插件通过隧道、路由或 eBPF 实现。</p>
+</blockquote>
+<hr>
+<h2 id="4-Service-是什么？为什么需要？"><a href="#4-Service-是什么？为什么需要？" class="headerlink" title="4. Service 是什么？为什么需要？"></a>4. Service 是什么？为什么需要？</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>Service 给一组动态变化的 Pod 提供稳定访问入口和负载均衡。因为 Pod 会重建，Pod IP 不稳定，调用方不能直接依赖 Pod IP。</p>
+</blockquote>
+<p>Service 通过 selector 选择 Pod：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">selector:  app: order-service </span><br></pre></td></tr></table></figure>
+
+<p>匹配：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Pod A app=order-service Pod B app=order-service Pod C app=order-service </span><br></pre></td></tr></table></figure>
+
+<p>访问链路：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Client  |  v Service ClusterIP  |  v Pod A / Pod B / Pod C </span><br></pre></td></tr></table></figure>
+
+<p>Service 后端实际由 EndpointSlice 维护：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Service  |  v EndpointSlice  |  v Pod IP 列表 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>Service 是一层稳定抽象，屏蔽了 Pod IP 和副本变化。调用方访问 Service，K8s 根据后端 Endpoints 把流量转发到真实 Pod。</p>
+</blockquote>
+<hr>
+<h2 id="5-Service-四种类型"><a href="#5-Service-四种类型" class="headerlink" title="5. Service 四种类型"></a>5. Service 四种类型</h2><h3 id="ClusterIP"><a href="#ClusterIP" class="headerlink" title="ClusterIP"></a>ClusterIP</h3><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>ClusterIP 是默认类型，只能在集群内部访问。</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Pod -&gt; ClusterIP Service -&gt; Pod </span><br></pre></td></tr></table></figure>
+
+<p>适合：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">微服务内部调用 内部数据库代理 内部缓存服务 </span><br></pre></td></tr></table></figure>
+
+<h3 id="NodePort"><a href="#NodePort" class="headerlink" title="NodePort"></a>NodePort</h3><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>NodePort 会在每个 Node 上开放一个端口，外部可以通过 NodeIP:NodePort 访问服务。</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">外部用户 -&gt; NodeIP:NodePort -&gt; Service -&gt; Pod </span><br></pre></td></tr></table></figure>
+
+<p>缺点：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">端口范围有限 暴露方式粗糙 生产通常不直接给用户用 </span><br></pre></td></tr></table></figure>
+
+<h3 id="LoadBalancer"><a href="#LoadBalancer" class="headerlink" title="LoadBalancer"></a>LoadBalancer</h3><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>LoadBalancer 通常依赖云厂商负载均衡，为 Service 创建外部 LB。</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">外部用户 -&gt; 云 LB -&gt; Node/Pod -&gt; Service -&gt; Pod </span><br></pre></td></tr></table></figure>
+
+<p>适合：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">云上服务对外暴露 </span><br></pre></td></tr></table></figure>
+
+<h3 id="ExternalName"><a href="#ExternalName" class="headerlink" title="ExternalName"></a>ExternalName</h3><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>ExternalName 把 Service 映射到外部 DNS 名称，不创建 ClusterIP。</p>
+</blockquote>
+<p>例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql-external.default.svc.cluster.local -&gt; mysql.company.com </span><br></pre></td></tr></table></figure>
+
+<p>适合：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">集群内用 Service 名访问外部服务 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>ClusterIP 用于集群内部访问，NodePort 把服务暴露到节点端口，LoadBalancer 依赖云 LB 对外暴露，ExternalName 用 DNS 别名指向外部服务。</p>
+</blockquote>
+<hr>
+<h2 id="6-kube-proxy-原理：iptables-x2F-IPVS"><a href="#6-kube-proxy-原理：iptables-x2F-IPVS" class="headerlink" title="6. kube-proxy 原理：iptables &#x2F; IPVS"></a>6. kube-proxy 原理：iptables &#x2F; IPVS</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>kube-proxy 负责在节点上维护 Service 转发规则，把访问 Service VIP 的流量转发到后端 Pod。实现模式常见有 iptables 和 IPVS。</p>
+</blockquote>
+<h3 id="iptables-模式"><a href="#iptables-模式" class="headerlink" title="iptables 模式"></a>iptables 模式</h3><p>特点：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">基于 iptables 规则做 DNAT 规则多时维护和匹配成本较高 随机负载均衡 </span><br></pre></td></tr></table></figure>
+
+<p>链路：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">访问 ClusterIP:Port   |   v iptables 规则匹配   |   v DNAT 到某个 PodIP:Port </span><br></pre></td></tr></table></figure>
+
+<h3 id="IPVS-模式"><a href="#IPVS-模式" class="headerlink" title="IPVS 模式"></a>IPVS 模式</h3><p>特点：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">基于 Linux IPVS 适合大规模 Service 支持更多负载均衡算法 性能更稳定 </span><br></pre></td></tr></table></figure>
+
+<p>算法：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rr：轮询 lc：最少连接 sh：源地址哈希 </span><br></pre></td></tr></table></figure>
+
+<p>链路：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">访问 ClusterIP   |   v IPVS 虚拟服务   |   v 真实 Pod 后端 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>kube-proxy 不直接转发每个包，而是在每个节点维护内核转发规则。iptables 模式通过 DNAT 实现，IPVS 模式通过内核 LVS 能力实现，规模大时 IPVS 通常更稳定。</p>
+</blockquote>
+<hr>
+<h2 id="7-Service-负载均衡流程"><a href="#7-Service-负载均衡流程" class="headerlink" title="7. Service 负载均衡流程"></a>7. Service 负载均衡流程</h2><p>假设访问：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">order-service.default.svc.cluster.local </span><br></pre></td></tr></table></figure>
+
+<p>流程：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">1. CoreDNS 解析 Service DNS 到 ClusterIP</span><br><span class="line">2. 客户端访问 ClusterIP:Port</span><br><span class="line">3. 本机 kube-proxy 规则生效</span><br><span class="line">4. 流量被转发到某个 PodIP:TargetPort</span><br><span class="line">5. Pod 处理请求并返回</span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Client Pod</span><br><span class="line">   |</span><br><span class="line">   | DNS 查询</span><br><span class="line">   v</span><br><span class="line">CoreDNS</span><br><span class="line">   |</span><br><span class="line">   | 返回 ClusterIP</span><br><span class="line">   v</span><br><span class="line">Service ClusterIP</span><br><span class="line">   |</span><br><span class="line">   | kube-proxy DNAT/IPVS</span><br><span class="line">   v</span><br><span class="line">Pod A / Pod B / Pod C</span><br></pre></td></tr></table></figure>
+
+<p>注意：</p>
+<blockquote>
+<p>ClusterIP 是虚拟 IP，不是真实绑定在某个 Pod 上。</p>
+</blockquote>
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>Service 的访问通常先经过 DNS 解析拿到 ClusterIP，然后由节点上的 kube-proxy 规则把流量转发到后端 Pod。真正承载请求的是 Pod，不是 ClusterIP 本身。</p>
+</blockquote>
+<hr>
+<h2 id="8-Ingress-和-Ingress-Controller"><a href="#8-Ingress-和-Ingress-Controller" class="headerlink" title="8. Ingress 和 Ingress Controller"></a>8. Ingress 和 Ingress Controller</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>Ingress 是七层入口规则，Ingress Controller 是真正实现规则的网关组件。没有 Controller，Ingress 资源本身不会转发流量。</p>
+</blockquote>
+<p>例子：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">api.example.com/order -&gt; order-service api.example.com/user  -&gt; user-service </span><br></pre></td></tr></table></figure>
+
+<p>链路：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">外部用户   |   v LB / NodePort   |   v Ingress Controller   |   v Service   |   v Pod </span><br></pre></td></tr></table></figure>
+
+<p>Ingress 能力：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">域名路由 路径路由 TLS 终止 HTTP header 路由 部分灰度发布 </span><br></pre></td></tr></table></figure>
+
+<p>常见 Controller：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Nginx Ingress Traefik Kong APISIX Envoy </span><br></pre></td></tr></table></figure>
+
+<p><strong>Service 和 Ingress 区别：</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">对比</th>
+<th align="left">Service</th>
+<th align="left">Ingress</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">层级</td>
+<td align="left">四层为主</td>
+<td align="left">七层 HTTP&#x2F;HTTPS</td>
+</tr>
+<tr>
+<td align="left">作用</td>
+<td align="left">集群内服务发现和负载均衡</td>
+<td align="left">外部 HTTP 入口</td>
+</tr>
+<tr>
+<td align="left">路由能力</td>
+<td align="left">基于端口</td>
+<td align="left">基于域名、路径、Header</td>
+</tr>
+<tr>
+<td align="left">是否需 Controller</td>
+<td align="left">kube-proxy 支撑</td>
+<td align="left">需要 Ingress Controller</td>
+</tr>
+</tbody></table>
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>Service 解决服务稳定访问，Ingress 解决外部 HTTP 流量怎么进入集群。Ingress 是规则，Ingress Controller 才是执行者。</p>
+</blockquote>
+<hr>
+<h2 id="9-CoreDNS-解析流程"><a href="#9-CoreDNS-解析流程" class="headerlink" title="9. CoreDNS 解析流程"></a>9. CoreDNS 解析流程</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>CoreDNS 是 K8s 集群内的 DNS 服务，负责把 Service 名称解析成 ClusterIP，把 Headless Service 解析成 Pod IP。</p>
+</blockquote>
+<p>常见域名：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">service.namespace.svc.cluster.local </span><br></pre></td></tr></table></figure>
+
+<p>例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">order-service.default.svc.cluster.local </span><br></pre></td></tr></table></figure>
+
+<p>简写访问：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">order-service order-service.default </span><br></pre></td></tr></table></figure>
+
+<p>解析流程：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Pod 访问 order-service   |   v Pod 内 /etc/resolv.conf 指向 CoreDNS   |   v CoreDNS 查询 K8s API   |   v 返回 Service ClusterIP </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Pod | | DNS query v CoreDNS | | watch Service / EndpointSlice v 返回 ClusterIP 或 Pod IP </span><br></pre></td></tr></table></figure>
+
+<p>Headless Service：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">clusterIP: None </span><br></pre></td></tr></table></figure>
+
+<p>解析结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">普通 Service -&gt; ClusterIP Headless Service -&gt; 后端 Pod IP 列表 </span><br></pre></td></tr></table></figure>
+
+<p>适合：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">StatefulSet 数据库集群 需要直接访问具体 Pod 的场景 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>CoreDNS 通过监听 K8s Service 和 Endpoint 信息，为集群内服务提供 DNS 解析。普通 Service 解析到 ClusterIP，Headless Service 直接解析到 Pod IP，常用于 StatefulSet。</p>
+</blockquote>
+<hr>
+<h2 id="10-NetworkPolicy-是什么？"><a href="#10-NetworkPolicy-是什么？" class="headerlink" title="10. NetworkPolicy 是什么？"></a>10. NetworkPolicy 是什么？</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>NetworkPolicy 是 K8s 的网络访问控制策略，用来限制 Pod 之间或 Pod 与外部之间的流量。</p>
+</blockquote>
+<p>默认情况下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Pod 之间通常互通 </span><br></pre></td></tr></table></figure>
+
+<p>加 NetworkPolicy 后可以限制：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">哪些 Pod 可以访问我 我可以访问哪些 Pod 允许哪些端口 </span><br></pre></td></tr></table></figure>
+
+<p>注意：</p>
+<blockquote>
+<p>NetworkPolicy 需要 CNI 插件支持，比如 Calico、Cilium。不是所有 CNI 都完整支持。</p>
+</blockquote>
+<p>典型场景：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">只允许 gateway 访问业务服务 只允许业务服务访问数据库 不同 namespace 之间隔离 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>K8s 默认网络比较开放，NetworkPolicy 用于做东西向流量隔离。但它依赖 CNI 实现，生产上需要确认网络插件是否支持。</p>
+</blockquote>
+<hr>
+<h2 id="11-常见追问"><a href="#11-常见追问" class="headerlink" title="11. 常见追问"></a>11. 常见追问</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. Pod IP 和 Service IP 有什么区别？ 2. ClusterIP 是真实 IP 吗？ 3. kube-proxy 是不是转发所有流量？ 4. iptables 和 IPVS 模式区别？ 5. Ingress 和 Service 区别？ 6. 为什么有了 Service 还需要 Ingress？ 7. CoreDNS 怎么解析 Service？ 8. Headless Service 有什么用？ 9. CNI 负责什么？ 10. NetworkPolicy 为什么不生效？ </span><br></pre></td></tr></table></figure>
+
+<p><strong>第三轮总结：</strong></p>
+<blockquote>
+<p>K8s 网络可以分三层理解：Pod 网络由 CNI 实现，保证 Pod 间可通信；Service 通过 ClusterIP 和 kube-proxy 为动态 Pod 提供稳定访问和负载均衡；Ingress 通过 Ingress Controller 管理外部 HTTP&#x2F;HTTPS 入口。CoreDNS 提供服务名解析，NetworkPolicy 提供网络隔离能力。面试时要特别强调：Ingress 是规则，Controller 才执行；Service IP 是虚拟入口，真实流量最终到 Pod。</p>
+</blockquote>
+<p>下一轮讲 <strong>存储与配置：Volume、PV&#x2F;PVC&#x2F;StorageClass、StatefulSet 稳定存储、ConfigMap&#x2F;Secret、数据库是否适合跑在 K8s</strong>。</p>
+<p>17:52</p>
+<p>继续回答</p>
+<p>18:01</p>
+<p>继续，下面是 <strong>第四轮：K8s 存储与配置</strong>。这一轮的关键是讲清楚：<strong>Pod 是短暂的，数据和配置要独立出来</strong>。K8s 里很多存储题，都是围绕这句话展开的。</p>
+<h2 id="1-Volume-是什么？"><a href="#1-Volume-是什么？" class="headerlink" title="1. Volume 是什么？"></a>1. Volume 是什么？</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>Volume 是 Pod 级别的存储抽象，用来让容器共享数据或持久化数据。它的生命周期通常和 Pod 绑定，但具体是否持久取决于 Volume 类型。</p>
+</blockquote>
+<p>为什么需要 Volume？</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">容器文件系统是临时的 容器重启可能丢数据 同一个 Pod 内多个容器需要共享文件 配置、证书、日志等需要挂载进容器 </span><br></pre></td></tr></table></figure>
+
+<p>常见 Volume 类型：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">emptyDir hostPath configMap secret persistentVolumeClaim </span><br></pre></td></tr></table></figure>
+
+<p><strong>emptyDir</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Pod 创建时创建 Pod 删除时删除 Pod 内容器可共享 </span><br></pre></td></tr></table></figure>
+
+<p>适合：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">临时缓存 中间文件 sidecar 共享目录 </span><br></pre></td></tr></table></figure>
+
+<p><strong>hostPath</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">挂载宿主机目录 </span><br></pre></td></tr></table></figure>
+
+<p>风险：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">和节点强绑定 安全风险高 可移植性差 </span><br></pre></td></tr></table></figure>
+
+<p>生产要慎用。它像一根直通宿主机的小管子，方便，但也容易把边界捅穿。</p>
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>Volume 是 Pod 对存储的抽象，解决容器文件临时性和多容器共享问题。但普通 Volume 不一定持久，真正的持久化通常要用 PV&#x2F;PVC。</p>
+</blockquote>
+<hr>
+<h2 id="2-PV、PVC、StorageClass"><a href="#2-PV、PVC、StorageClass" class="headerlink" title="2. PV、PVC、StorageClass"></a>2. PV、PVC、StorageClass</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>PV 是集群里的存储资源，PVC 是用户对存储资源的申请，StorageClass 定义动态创建存储的类型和参数。</p>
+</blockquote>
+<p>三者关系：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Pod -&gt; PVC -&gt; PV -&gt; 真实存储 </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Pod | | 挂载 v PVC：我要 20Gi，可读写 | | 绑定 v PV：实际存储卷 | v 云盘 / NFS / Ceph / NAS / 本地盘 </span><br></pre></td></tr></table></figure>
+
+<p><strong>PV</strong></p>
+<blockquote>
+<p>PersistentVolume，集群级存储资源。</p>
+</blockquote>
+<p>包含：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">容量 访问模式 回收策略 存储后端 </span><br></pre></td></tr></table></figure>
+
+<p><strong>PVC</strong></p>
+<blockquote>
+<p>PersistentVolumeClaim，用户对存储的声明。</p>
+</blockquote>
+<p>比如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">我要 20Gi 我要 ReadWriteOnce 我要 fast-ssd 类型 </span><br></pre></td></tr></table></figure>
+
+<p><strong>StorageClass</strong></p>
+<blockquote>
+<p>定义动态供给存储的模板。</p>
+</blockquote>
+<p>例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">使用 SSD 使用某个云盘类型 删除 PVC 后是否删除真实云盘 文件系统类型 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>PV 是实际存储资源，PVC 是应用对存储的申请，StorageClass 负责动态创建 PV。这样应用不需要关心底层是云盘、NFS 还是 Ceph，只声明自己需要什么容量和访问模式。</p>
+</blockquote>
+<hr>
+<h2 id="3-静态供给和动态供给"><a href="#3-静态供给和动态供给" class="headerlink" title="3. 静态供给和动态供给"></a>3. 静态供给和动态供给</h2><p><strong>静态供给</strong></p>
+<p>管理员提前创建 PV：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">管理员创建 PV 用户创建 PVC PVC 匹配并绑定 PV Pod 使用 PVC </span><br></pre></td></tr></table></figure>
+
+<p>适合：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">固定存储资源 手工管理存储 特殊存储后端 </span><br></pre></td></tr></table></figure>
+
+<p><strong>动态供给</strong></p>
+<p>用户只创建 PVC，K8s 根据 StorageClass 自动创建 PV：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">用户创建 PVC StorageClass 调用 provisioner 自动创建真实存储和 PV PVC 绑定 PV Pod 使用 PVC </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PVC | | 指定 storageClassName v StorageClass | v CSI Provisioner | v 自动创建云盘 / 存储卷 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>静态供给是管理员先准备 PV，动态供给是用户提交 PVC 后由 StorageClass 和 CSI 自动创建 PV。生产上云环境更常用动态供给，运维成本低。</p>
+</blockquote>
+<hr>
+<h2 id="4-访问模式-AccessModes"><a href="#4-访问模式-AccessModes" class="headerlink" title="4. 访问模式 AccessModes"></a>4. 访问模式 AccessModes</h2><p>常见访问模式：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ReadWriteOnce，RWO ReadOnlyMany，ROX ReadWriteMany，RWX </span><br></pre></td></tr></table></figure>
+
+<p>含义：</p>
+<table>
+<thead>
+<tr>
+<th align="left">模式</th>
+<th align="left">含义</th>
+<th align="left">常见存储</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">RWO</td>
+<td align="left">单节点读写</td>
+<td align="left">云盘、块存储</td>
+</tr>
+<tr>
+<td align="left">ROX</td>
+<td align="left">多节点只读</td>
+<td align="left">共享存储</td>
+</tr>
+<tr>
+<td align="left">RWX</td>
+<td align="left">多节点读写</td>
+<td align="left">NFS、CephFS、NAS</td>
+</tr>
+</tbody></table>
+<p>注意：</p>
+<blockquote>
+<p>RWO 不是只能被一个 Pod 挂载，而是通常只能被一个 Node 以读写方式挂载。</p>
+</blockquote>
+<p>面试标准表达：</p>
+<blockquote>
+<p>多副本应用如果多个 Pod 分布在不同 Node，并且都要读写同一份数据，不能随便用普通云盘 RWO，需要 RWX 类型存储，或者从架构上避免多个副本共享写同一块盘。</p>
+</blockquote>
+<hr>
+<h2 id="5-回收策略-ReclaimPolicy"><a href="#5-回收策略-ReclaimPolicy" class="headerlink" title="5. 回收策略 ReclaimPolicy"></a>5. 回收策略 ReclaimPolicy</h2><p>PV 回收策略：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Retain</span><br><span class="line">Delete</span><br><span class="line">Recycle 已废弃</span><br></pre></td></tr></table></figure>
+
+<p><strong>Retain</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PVC 删除后，PV 和真实数据保留 需要人工处理 </span><br></pre></td></tr></table></figure>
+
+<p>适合：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">重要数据 数据库数据 防止误删 </span><br></pre></td></tr></table></figure>
+
+<p><strong>Delete</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PVC 删除后，PV 和底层存储一起删除 </span><br></pre></td></tr></table></figure>
+
+<p>适合：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">临时环境 可重建数据 自动化资源管理 </span><br></pre></td></tr></table></figure>
+
+<p>标准表达：</p>
+<blockquote>
+<p>生产核心数据通常更谨慎，使用 Retain 或配套快照备份；临时环境可以使用 Delete 降低清理成本。</p>
+</blockquote>
+<hr>
+<h2 id="6-StatefulSet-稳定身份和稳定存储"><a href="#6-StatefulSet-稳定身份和稳定存储" class="headerlink" title="6. StatefulSet 稳定身份和稳定存储"></a>6. StatefulSet 稳定身份和稳定存储</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>StatefulSet 适合有状态服务，因为它提供稳定 Pod 名称、稳定网络身份、稳定 PVC，并按顺序创建和删除 Pod。</p>
+</blockquote>
+<p>Deployment 的 Pod：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">order-service-7f9d88c4c-xa12p order-service-7f9d88c4c-kp82m </span><br></pre></td></tr></table></figure>
+
+<p>名字随机，重建会变。</p>
+<p>StatefulSet 的 Pod：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql-0 mysql-1 mysql-2 </span><br></pre></td></tr></table></figure>
+
+<p>名字稳定。</p>
+<p>配合 Headless Service：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql-0.mysql.default.svc.cluster.local mysql-1.mysql.default.svc.cluster.local mysql-2.mysql.default.svc.cluster.local </span><br></pre></td></tr></table></figure>
+
+<p>PVC 也稳定：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">data-mysql-0 data-mysql-1 data-mysql-2 </span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql-0 -&gt; pvc-data-mysql-0 mysql-1 -&gt; pvc-data-mysql-1 mysql-2 -&gt; pvc-data-mysql-2 </span><br></pre></td></tr></table></figure>
+
+<p>Pod 重建后：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql-0 仍然挂回 pvc-data-mysql-0 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>StatefulSet 的关键不是“能跑数据库”这么简单，而是它保证每个副本有稳定身份和稳定存储。Pod 重建后名字不变、DNS 不变、PVC 也不变，这对主从复制、集群成员发现很重要。</p>
+</blockquote>
+<hr>
+<h2 id="7-ConfigMap-和-Secret-区别"><a href="#7-ConfigMap-和-Secret-区别" class="headerlink" title="7. ConfigMap 和 Secret 区别"></a>7. ConfigMap 和 Secret 区别</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>ConfigMap 存普通配置，Secret 存敏感配置。两者都可以通过环境变量或 Volume 挂载到 Pod，但 Secret 默认只是 Base64 编码，不等于加密。</p>
+</blockquote>
+<p>对比：</p>
+<table>
+<thead>
+<tr>
+<th align="left">项目</th>
+<th align="left">ConfigMap</th>
+<th align="left">Secret</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">内容</td>
+<td align="left">普通配置</td>
+<td align="left">密码、Token、证书</td>
+</tr>
+<tr>
+<td align="left">安全性</td>
+<td align="left">普通</td>
+<td align="left">更敏感</td>
+</tr>
+<tr>
+<td align="left">默认存储</td>
+<td align="left">明文</td>
+<td align="left">Base64</td>
+</tr>
+<tr>
+<td align="left">使用方式</td>
+<td align="left">env &#x2F; volume</td>
+<td align="left">env &#x2F; volume</td>
+</tr>
+<tr>
+<td align="left">典型例子</td>
+<td align="left">application.yml</td>
+<td align="left">DB password</td>
+</tr>
+</tbody></table>
+<p>使用方式：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 环境变量 2. 挂载成文件 3. 命令行参数 </span><br></pre></td></tr></table></figure>
+
+<p>重要区别：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">环境变量注入：ConfigMap 更新后，容器内环境变量不会自动更新 Volume 挂载：ConfigMap 更新后，文件内容可自动更新，但应用不一定自动 reload </span><br></pre></td></tr></table></figure>
+
+<p>标准表达：</p>
+<blockquote>
+<p>ConfigMap&#x2F;Secret 解决镜像和配置解耦，但更新配置不等于应用自动生效。很多 Java 应用仍然需要重启或接入动态配置中心。</p>
+</blockquote>
+<hr>
+<h2 id="8-Secret-安全注意点"><a href="#8-Secret-安全注意点" class="headerlink" title="8. Secret 安全注意点"></a>8. Secret 安全注意点</h2><p>面试容易被问：“Secret 安全吗？”</p>
+<p>标准答案别说“安全”，要说“相对管理敏感信息，但默认不够”。</p>
+<p>Secret 默认问题：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. Base64 只是编码，不是加密 2. 有权限读取 Secret 的人可以解码 3. 如果 etcd 未加密，Secret 可能明文落盘 4. 环境变量形式可能被进程信息或日志暴露 </span><br></pre></td></tr></table></figure>
+
+<p>生产建议：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 开启 etcd encryption at rest 2. 使用 RBAC 限制 Secret 访问 3. 使用 namespace 隔离 4. 避免把 Secret 打进镜像 5. 避免日志打印敏感信息 6. 对接 Vault / KMS / External Secrets 7. 证书和密码定期轮换 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>K8s Secret 是敏感配置管理对象，但默认 Base64 不等于加密。生产环境要配合 RBAC、etcd 静态加密、外部 KMS&#x2F;Vault 和密钥轮换，才能算比较完整的安全方案。</p>
+</blockquote>
+<hr>
+<h2 id="9-数据库适不适合跑在-K8s？"><a href="#9-数据库适不适合跑在-K8s？" class="headerlink" title="9. 数据库适不适合跑在 K8s？"></a>9. 数据库适不适合跑在 K8s？</h2><p>这是架构岗高频场景题。</p>
+<p><strong>面试结论：</strong></p>
+<blockquote>
+<p>数据库可以跑在 K8s，但要谨慎。无状态服务天然适合 K8s，有状态数据库对存储、网络、故障恢复、备份和运维能力要求更高。生产中核心数据库是否上 K8s，要看团队的存储和运维成熟度。</p>
+</blockquote>
+<p>适合的情况：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">测试环境数据库 开发环境数据库 中间件集群 云原生数据库 Operator 成熟 团队有存储和备份能力 </span><br></pre></td></tr></table></figure>
+
+<p>不适合贸然上的情况：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">核心交易数据库 强一致和低延迟要求高 存储插件不成熟 没有备份恢复演练 团队缺乏 K8s 有状态服务经验 </span><br></pre></td></tr></table></figure>
+
+<p>如果要跑，需要重点考虑：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. StatefulSet 稳定身份 2. 高性能持久化存储 3. 数据备份和恢复 4. 主从切换 5. 反亲和性，避免副本同节点 6. PDB，避免维护时同时驱逐 7. 资源隔离 8. 监控告警 9. Operator 自动化运维 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>K8s 可以承载数据库，但数据库不是只要 StatefulSet 加 PVC 就万事大吉。真正难点在数据安全、存储性能、故障恢复、备份、主从切换和运维自动化。如果团队没有成熟 Operator 和存储能力，核心数据库更建议使用云数据库或专门数据库集群。</p>
+</blockquote>
+<hr>
+<h2 id="10-常见追问"><a href="#10-常见追问" class="headerlink" title="10. 常见追问"></a>10. 常见追问</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. Volume 和 PV/PVC 区别？ 2. PVC 一直 Pending 是什么原因？ 3. StorageClass 有什么作用？ 4. RWO、ROX、RWX 区别？ 5. StatefulSet 为什么适合有状态服务？ 6. Headless Service 和 StatefulSet 什么关系？ 7. ConfigMap 更新后应用会自动生效吗？ 8. Secret 是不是加密的？ 9. hostPath 为什么生产慎用？ 10. 数据库能不能跑在 K8s？ </span><br></pre></td></tr></table></figure>
+
+<p><strong>第四轮总结：</strong></p>
+<blockquote>
+<p>K8s 中 Pod 是易变的，所以数据和配置不能依赖容器本地文件系统。临时数据可以用 emptyDir，持久数据要通过 PVC 绑定 PV，动态存储由 StorageClass 和 CSI 提供。StatefulSet 通过稳定名称、稳定网络身份和稳定 PVC 支撑有状态服务。ConfigMap 管普通配置，Secret 管敏感配置，但生产 Secret 还要配合 RBAC、etcd 加密和外部密钥系统。数据库可以跑在 K8s，但核心数据库要看存储、备份、故障恢复和运维能力是否成熟。</p>
+</blockquote>
+<p>下一轮讲 <strong>发布、扩缩容与高可用：Deployment 滚动更新、maxSurge&#x2F;maxUnavailable、蓝绿&#x2F;金丝雀&#x2F;HPA&#x2F;PDB&#x2F;优雅停机</strong>。</p>
+<p>18:01</p>
+<p>继续回答</p>
+<p>18:21</p>
+<p>继续，下面是 <strong>第五轮：K8s 发布、扩缩容与高可用</strong>。这一轮偏生产实践，面试里很容易从“Deployment 怎么更新”一路追到“怎么做到不停机发布”。</p>
+<h2 id="1-Deployment-滚动更新"><a href="#1-Deployment-滚动更新" class="headerlink" title="1. Deployment 滚动更新"></a>1. Deployment 滚动更新</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>Deployment 默认使用滚动更新，通过创建新的 ReplicaSet、逐步增加新 Pod、逐步减少旧 Pod，实现应用平滑升级和可回滚。</p>
+</blockquote>
+<p>流程：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Deployment v1  |  | 修改镜像版本  v 创建 ReplicaSet v2  |  | 新 Pod Ready 后  v 逐步减少 ReplicaSet v1 Pod  |  v 全部切到 v2 </span><br></pre></td></tr></table></figure>
+
+<p>常用命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl rollout status deployment/order-service kubectl rollout history deployment/order-service kubectl rollout undo deployment/order-service </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>Deployment 不直接替换 Pod，而是通过新旧 ReplicaSet 的副本数变化完成滚动更新。新版本异常时，可以回滚到历史 ReplicaSet。</p>
+</blockquote>
+<hr>
+<h2 id="2-maxSurge-和-maxUnavailable"><a href="#2-maxSurge-和-maxUnavailable" class="headerlink" title="2. maxSurge 和 maxUnavailable"></a>2. maxSurge 和 maxUnavailable</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>maxSurge 控制更新过程中最多额外创建多少 Pod，maxUnavailable 控制最多允许多少 Pod 不可用。它们共同决定发布速度和可用性。</p>
+</blockquote>
+<p>例子：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">strategy:  type: RollingUpdate  rollingUpdate:    maxSurge: 1    maxUnavailable: 0 </span><br></pre></td></tr></table></figure>
+
+<p>假设期望副本数是 3：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">maxSurge=1：更新时最多可以有 4 个 Pod maxUnavailable=0：更新过程中至少保证 3 个可用 </span><br></pre></td></tr></table></figure>
+
+<p>更安全：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">maxSurge: 1 maxUnavailable: 0 </span><br></pre></td></tr></table></figure>
+
+<p>更快但风险更高：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">maxSurge: 50% maxUnavailable: 50% </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>核心服务发布时我一般倾向于 maxUnavailable&#x3D;0，保证更新期间可用副本不减少；maxSurge 允许临时多起一些新 Pod，用资源换平滑发布。</p>
+</blockquote>
+<hr>
+<h2 id="3-蓝绿发布、金丝雀发布、灰度发布"><a href="#3-蓝绿发布、金丝雀发布、灰度发布" class="headerlink" title="3. 蓝绿发布、金丝雀发布、灰度发布"></a>3. 蓝绿发布、金丝雀发布、灰度发布</h2><p><strong>蓝绿发布</strong></p>
+<blockquote>
+<p>同时维护蓝、绿两套环境，一套对外服务，一套准备新版本，验证通过后一次性切流。</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">用户流量 -&gt; Blue v1 Green v2 部署完成 验证通过 用户流量 -&gt; Green v2 </span><br></pre></td></tr></table></figure>
+
+<p>优点：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">切换快 回滚快 环境隔离清晰 </span><br></pre></td></tr></table></figure>
+
+<p>缺点：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">资源成本高 一次性切流风险较大 </span><br></pre></td></tr></table></figure>
+
+<p><strong>金丝雀发布</strong></p>
+<blockquote>
+<p>先让少量流量进入新版本，观察稳定后逐步扩大比例。</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">95% -&gt; v1 5%  -&gt; v2 80% -&gt; v1 20% -&gt; v2 0%  -&gt; v1 100%-&gt; v2 </span><br></pre></td></tr></table></figure>
+
+<p>实现方式：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Ingress 权重 Service Mesh：Istio/Linkerd 网关灰度规则 两个 Deployment 按副本比例粗粒度分流 </span><br></pre></td></tr></table></figure>
+
+<p><strong>灰度发布</strong></p>
+<blockquote>
+<p>按用户、地域、Header、Cookie、租户等规则让特定流量进入新版本。</p>
+</blockquote>
+<p>例子：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">内部用户 -&gt; v2 北京用户 -&gt; v2 Header version=beta -&gt; v2 普通用户 -&gt; v1 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>蓝绿强调两套环境快速切换，金丝雀强调按流量比例逐步放量，灰度强调按用户或规则定向放量。生产中更推荐网关或 Service Mesh 做精细流量治理。</p>
+</blockquote>
+<hr>
+<h2 id="4-HPA、VPA、Cluster-Autoscaler"><a href="#4-HPA、VPA、Cluster-Autoscaler" class="headerlink" title="4. HPA、VPA、Cluster Autoscaler"></a>4. HPA、VPA、Cluster Autoscaler</h2><p><strong>HPA：Horizontal Pod Autoscaler</strong></p>
+<blockquote>
+<p>HPA 横向扩缩 Pod 副本数，适合根据 CPU、内存或自定义指标扩容。</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CPU 升高  |  v HPA 增加 Pod 副本 </span><br></pre></td></tr></table></figure>
+
+<p>常见指标：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CPU 利用率 内存利用率 QPS 队列堆积 自定义业务指标 </span><br></pre></td></tr></table></figure>
+
+<p>注意：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">HPA 基于 CPU 时，Pod 必须设置 requests.cpu </span><br></pre></td></tr></table></figure>
+
+<p><strong>VPA：Vertical Pod Autoscaler</strong></p>
+<blockquote>
+<p>VPA 纵向调整 Pod 的 requests&#x2F;limits，适合给应用推荐或自动调整资源规格。</p>
+</blockquote>
+<p>注意：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">VPA 自动调整通常会重建 Pod</span><br><span class="line">不建议和 HPA 同时基于 CPU/内存调节，容易冲突</span><br></pre></td></tr></table></figure>
+
+<p><strong>Cluster Autoscaler</strong></p>
+<blockquote>
+<p>Cluster Autoscaler 扩缩 Node。当 Pod 因资源不足 Pending 时扩容节点；节点长期空闲时缩容。</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Pod Pending</span><br><span class="line">  |</span><br><span class="line">  v</span><br><span class="line">节点资源不足</span><br><span class="line">  |</span><br><span class="line">  v</span><br><span class="line">Cluster Autoscaler 增加 Node</span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>HPA 扩 Pod，VPA 调单个 Pod 资源规格，Cluster Autoscaler 扩 Node。线上常见组合是 HPA + Cluster Autoscaler：业务压力上来先扩 Pod，节点不够再扩机器。</p>
+</blockquote>
+<hr>
+<h2 id="5-PodDisruptionBudget，PDB"><a href="#5-PodDisruptionBudget，PDB" class="headerlink" title="5. PodDisruptionBudget，PDB"></a>5. PodDisruptionBudget，PDB</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>PDB 用来限制自愿中断时最多可以同时不可用多少 Pod，防止节点维护、升级、驱逐时把服务副本一次性赶下线。</p>
+</blockquote>
+<p>例子：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: policy/v1 kind: PodDisruptionBudget spec:  minAvailable: 2  selector:    matchLabels:      app: order-service </span><br></pre></td></tr></table></figure>
+
+<p>含义：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">order-service 至少保持 2 个 Pod 可用 </span><br></pre></td></tr></table></figure>
+
+<p>PDB 能管：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl drain 节点维护 集群升级 主动驱逐 </span><br></pre></td></tr></table></figure>
+
+<p>PDB 管不了：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">节点宕机 机器断电 Pod 自己崩溃 OOMKilled </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>PDB 不是高可用的全部，它只能约束自愿中断。真正的高可用还要靠多副本、跨节点分布、探针、资源配置和故障恢复。</p>
+</blockquote>
+<hr>
+<h2 id="6-多副本服务如何保证高可用？"><a href="#6-多副本服务如何保证高可用？" class="headerlink" title="6. 多副本服务如何保证高可用？"></a>6. 多副本服务如何保证高可用？</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>多副本只是高可用的基础，不等于天然高可用。还要保证副本分散、流量只打到 Ready Pod、发布不中断、节点故障可恢复。</p>
+</blockquote>
+<p>关键手段：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. Deployment 多副本 2. readinessProbe 控制是否接流量 3. livenessProbe 异常自愈 4. Pod 反亲和 / topologySpreadConstraints 5. PDB 防止维护时同时驱逐 6. requests/limits 保证调度和隔离 7. HPA 应对流量波动 8. 多可用区部署 </span><br></pre></td></tr></table></figure>
+
+<p>副本分散示意：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Node A -&gt; order Pod 1 Node B -&gt; order Pod 2 Node C -&gt; order Pod 3 </span><br></pre></td></tr></table></figure>
+
+<p>不要变成：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Node A -&gt; order Pod 1 / 2 / 3 Node B -&gt; 空 Node C -&gt; 空 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>高可用不是把 replicas 设成 3 就结束了，还要保证 Pod 跨节点甚至跨可用区分布，并且通过 readiness、PDB 和滚动更新策略保证发布和维护期间服务可用。</p>
+</blockquote>
+<hr>
+<h2 id="7-如何优雅停机？"><a href="#7-如何优雅停机？" class="headerlink" title="7. 如何优雅停机？"></a>7. 如何优雅停机？</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>优雅停机的核心是：先从流量入口摘除，再停止接收新请求，最后等待存量请求处理完成后退出。</p>
+</blockquote>
+<p>K8s 删除 Pod 流程：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. Pod 被标记 Terminating 2. readiness 变为不可用，Service 不再转发新流量 3. 执行 preStop hook 4. kubelet 向容器发送 SIGTERM 5. 应用开始优雅关闭 6. 等待 terminationGracePeriodSeconds 7. 超时后 SIGKILL 强杀 </span><br></pre></td></tr></table></figure>
+
+<p>建议配置：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">terminationGracePeriodSeconds: 60 lifecycle:  preStop:    exec:      command: [&quot;sh&quot;, &quot;-c&quot;, &quot;sleep 10&quot;] </span><br></pre></td></tr></table></figure>
+
+<p>Java 服务要做：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">收到 SIGTERM 后停止接收新请求 等待线程池任务完成 关闭 HTTP server 关闭 MQ consumer 关闭 DB/Redis 连接池 提交或回滚事务 </span><br></pre></td></tr></table></figure>
+
+<p>Spring Boot 可以配：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">server:  shutdown: graceful spring:  lifecycle:    timeout-per-shutdown-phase: 30s </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>优雅停机不能只依赖 K8s，应用本身也要处理 SIGTERM。readiness 负责摘流，preStop 给网关和 Endpoints 更新留缓冲，应用负责处理完存量请求再退出。</p>
+</blockquote>
+<hr>
+<h2 id="8-常见追问-1"><a href="#8-常见追问-1" class="headerlink" title="8. 常见追问"></a>8. 常见追问</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. Deployment 滚动更新底层怎么做？ 2. maxSurge 和 maxUnavailable 怎么配置？ 3. 蓝绿和金丝雀区别？ 4. HPA 扩容依据是什么？ 5. HPA 和 Cluster Autoscaler 谁先触发？ 6. VPA 为什么可能导致 Pod 重启？ 7. PDB 能不能防止节点宕机？ 8. replicas=3 是否一定高可用？ 9. 如何做到 Java 服务不停机发布？ 10. readiness 和优雅停机有什么关系？ </span><br></pre></td></tr></table></figure>
+
+<p><strong>第五轮总结：</strong></p>
+<blockquote>
+<p>K8s 发布和高可用的核心是“控制变化”。Deployment 通过新旧 ReplicaSet 做滚动更新，maxSurge&#x2F;maxUnavailable 控制发布过程中的容量和可用性。HPA 扩 Pod，Cluster Autoscaler 扩 Node，PDB 约束自愿中断。真正的高可用不仅是多副本，还包括跨节点分布、探针、资源隔离、优雅停机和灰度发布能力。生产 Java 服务要特别重视 readiness 摘流和 SIGTERM 优雅关闭，否则滚动更新也可能造成请求失败。</p>
+</blockquote>
+<p>下一轮讲 <strong>K8s 故障排查：Pending、CrashLoopBackOff、ImagePullBackOff、Service 不通、Ingress 502&#x2F;504、Node NotReady 和常用 kubectl 命令</strong>。</p>
+<p>18:21</p>
+<p>继续回答</p>
+<p>20:27</p>
+<p>继续，下面是 <strong>第六轮：K8s 故障排查</strong>。这一轮非常实战，面试官会特别看你是不是只会背对象，还是能真正把线上问题拆开定位。</p>
+<h2 id="1-排查总思路"><a href="#1-排查总思路" class="headerlink" title="1. 排查总思路"></a>1. 排查总思路</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>K8s 故障排查要按资源链路分层看：Pod 状态、事件、日志、资源、网络、Service&#x2F;Endpoint、Ingress、Node。先看 describe 和 events，再看 logs 和指标。</p>
+</blockquote>
+<p>常用顺序：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl get kubectl describe kubectl logs kubectl exec kubectl get events kubectl top </span><br></pre></td></tr></table></figure>
+
+<p>基本命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">kubectl get pod -n &lt;ns&gt; -o wide</span><br><span class="line">kubectl describe pod &lt;pod&gt; -n &lt;ns&gt;</span><br><span class="line">kubectl logs &lt;pod&gt; -n &lt;ns&gt;</span><br><span class="line">kubectl logs &lt;pod&gt; -n &lt;ns&gt; --previous</span><br><span class="line">kubectl get events -n &lt;ns&gt; --sort-by=.lastTimestamp</span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>我排查 K8s 问题一般先看 Pod 当前状态和事件，判断是调度、镜像、启动、运行还是探针问题；再看日志和资源指标；如果是访问问题，再看 Service、Endpoints、Ingress 和网络策略。</p>
+</blockquote>
+<hr>
+<h2 id="2-Pod-一直-Pending-怎么排查？"><a href="#2-Pod-一直-Pending-怎么排查？" class="headerlink" title="2. Pod 一直 Pending 怎么排查？"></a>2. Pod 一直 Pending 怎么排查？</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>Pod Pending 表示还没有成功调度或启动，常见原因是资源不足、调度约束不满足、PVC 未绑定、节点污点不可容忍。</p>
+</blockquote>
+<p>排查命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">kubectl describe pod &lt;pod&gt; -n &lt;ns&gt;</span><br><span class="line">kubectl get events -n &lt;ns&gt; --sort-by=.lastTimestamp</span><br><span class="line">kubectl get nodes</span><br><span class="line">kubectl describe node &lt;node&gt;</span><br></pre></td></tr></table></figure>
+
+<p>常见原因：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. CPU / Memory requests 太大，节点资源不足 2. nodeSelector / nodeAffinity 匹配不到节点 3. taints 没有对应 tolerations 4. PVC Pending，存储没有绑定 5. 节点 NotReady 6. 配额 ResourceQuota 不足 </span><br></pre></td></tr></table></figure>
+
+<p>典型事件：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">0/5 nodes are available: insufficient cpu 0/5 nodes are available: node(s) had taint pod has unbound immediate PersistentVolumeClaims </span><br></pre></td></tr></table></figure>
+
+<p>标准表达：</p>
+<blockquote>
+<p>Pending 先看 describe 里的 Events。调度失败通常会明确告诉你是资源不足、污点、亲和性还是 PVC 未绑定。不要先看业务日志，因为 Pod 可能根本没启动。</p>
+</blockquote>
+<hr>
+<h2 id="3-CrashLoopBackOff-怎么排查？"><a href="#3-CrashLoopBackOff-怎么排查？" class="headerlink" title="3. CrashLoopBackOff 怎么排查？"></a>3. CrashLoopBackOff 怎么排查？</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>CrashLoopBackOff 表示容器启动后反复崩溃，K8s 正在退避重启。重点看容器日志、上一次日志、退出码、探针和配置。</p>
+</blockquote>
+<p>排查命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl logs &lt;pod&gt; -n &lt;ns&gt; kubectl logs &lt;pod&gt; -n &lt;ns&gt; --previous kubectl describe pod &lt;pod&gt; -n &lt;ns&gt; </span><br></pre></td></tr></table></figure>
+
+<p>常见原因：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 应用启动异常 2. 配置文件错误 3. 环境变量缺失 4. 端口冲突 5. 依赖服务不可用 6. livenessProbe 配置错误导致反复杀容器 7. JVM 参数或内存配置不合理 </span><br></pre></td></tr></table></figure>
+
+<p>看退出码：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Exit Code 1：应用异常退出 Exit Code 137：通常是被 SIGKILL，常见 OOMKilled Exit Code 143：收到 SIGTERM，正常终止或被终止 </span><br></pre></td></tr></table></figure>
+
+<p>Java 常见：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">配置中心连不上 数据库连不上启动失败 内存太小导致 OOM 启动慢被 livenessProbe 杀掉 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>CrashLoopBackOff 要看 previous logs，因为当前容器可能已经重启了。还要看 describe 里的 Last State 和 Exit Code，判断是应用异常、OOMKilled 还是探针误杀。</p>
+</blockquote>
+<hr>
+<h2 id="4-ImagePullBackOff-怎么排查？"><a href="#4-ImagePullBackOff-怎么排查？" class="headerlink" title="4. ImagePullBackOff 怎么排查？"></a>4. ImagePullBackOff 怎么排查？</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>ImagePullBackOff 表示镜像拉取失败，常见原因是镜像地址错误、tag 不存在、仓库权限不足、网络不通或镜像仓库限流。</p>
+</blockquote>
+<p>排查命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl describe pod &lt;pod&gt; -n &lt;ns&gt; </span><br></pre></td></tr></table></figure>
+
+<p>常见事件：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ErrImagePull ImagePullBackOff manifest unknown unauthorized i/o timeout </span><br></pre></td></tr></table></figure>
+
+<p>原因对应：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">manifest unknown：镜像 tag 不存在 unauthorized：镜像仓库认证失败 i/o timeout：网络或仓库不可达 not found：镜像路径错误 </span><br></pre></td></tr></table></figure>
+
+<p>解决：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 确认 image 地址和 tag 2. 确认 imagePullSecret 3. 确认节点能访问镜像仓库 4. 检查私有仓库账号权限 5. 检查镜像是否推送成功 </span><br></pre></td></tr></table></figure>
+
+<p>标准表达：</p>
+<blockquote>
+<p>ImagePullBackOff 基本看 describe 事件就能定位大方向。tag 不存在、认证失败、网络超时的错误信息很直观，优先从镜像名、tag、imagePullSecret 和节点网络查。</p>
+</blockquote>
+<hr>
+<h2 id="5-OOMKilled-怎么排查？"><a href="#5-OOMKilled-怎么排查？" class="headerlink" title="5. OOMKilled 怎么排查？"></a>5. OOMKilled 怎么排查？</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>OOMKilled 表示容器内存超过 limit，被内核或 kubelet 杀掉。排查重点是内存 limit、应用内存曲线、JVM 参数和是否有内存泄漏。</p>
+</blockquote>
+<p>排查命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl describe pod &lt;pod&gt; -n &lt;ns&gt; kubectl top pod &lt;pod&gt; -n &lt;ns&gt; kubectl logs &lt;pod&gt; -n &lt;ns&gt; --previous </span><br></pre></td></tr></table></figure>
+
+<p>看状态：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Last State: Terminated Reason: OOMKilled Exit Code: 137 </span><br></pre></td></tr></table></figure>
+
+<p>Java 特别注意：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">容器 memory limit = 1Gi JVM -Xmx 设置太大 堆外内存、线程栈、Metaspace 也要占内存 </span><br></pre></td></tr></table></figure>
+
+<p>建议：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 合理设置 requests/limits 2. JVM 使用容器感知参数 3. Xmx 不要接近容器 limit 4. 监控 heap、direct memory、metaspace、线程数 5. dump 分析内存泄漏 </span><br></pre></td></tr></table></figure>
+
+<p>标准表达：</p>
+<blockquote>
+<p>Java 容器 OOM 不能只看 Xmx，容器内存还包括堆外内存、Metaspace、线程栈和 Native 内存。Xmx 设置太接近 limit，很容易被 OOMKilled。</p>
+</blockquote>
+<hr>
+<h2 id="6-Service-访问不通怎么排查？"><a href="#6-Service-访问不通怎么排查？" class="headerlink" title="6. Service 访问不通怎么排查？"></a>6. Service 访问不通怎么排查？</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>Service 不通要按 Service -&gt; EndpointSlice -&gt; Pod -&gt; 端口 -&gt; 网络策略逐层排查。很多问题不是 Service 本身，而是 selector 没匹配到 Pod 或 Pod 没 Ready。</p>
+</blockquote>
+<p>排查命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl get svc -n &lt;ns&gt; kubectl describe svc &lt;svc&gt; -n &lt;ns&gt; kubectl get endpoints &lt;svc&gt; -n &lt;ns&gt; kubectl get endpointslice -n &lt;ns&gt; kubectl get pod -n &lt;ns&gt; --show-labels </span><br></pre></td></tr></table></figure>
+
+<p>排查点：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. Service selector 是否匹配 Pod label 2. Endpoints 是否为空 3. targetPort 是否写错 4. Pod 是否 Ready 5. 容器端口是否真正监听 6. NetworkPolicy 是否拦截 7. kube-proxy 是否异常 8. CoreDNS 是否解析异常 </span><br></pre></td></tr></table></figure>
+
+<p>进入临时 Pod 测试：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl run debug --image=busybox:1.36 -it --rm -- sh wget -qO- http://order-service:8080 nslookup order-service </span><br></pre></td></tr></table></figure>
+
+<p>标准表达：</p>
+<blockquote>
+<p>Service 不通先看 Endpoints。如果 Endpoints 为空，通常是 selector 不匹配或 Pod 未 Ready。如果 Endpoints 正常，再查端口、DNS、网络策略和 kube-proxy。</p>
+</blockquote>
+<hr>
+<h2 id="7-Ingress-访问-502-x2F-504-怎么排查？"><a href="#7-Ingress-访问-502-x2F-504-怎么排查？" class="headerlink" title="7. Ingress 访问 502&#x2F;504 怎么排查？"></a>7. Ingress 访问 502&#x2F;504 怎么排查？</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>Ingress 502&#x2F;504 要从 Ingress Controller 视角看：路由规则是否匹配、Service 是否可达、Endpoints 是否为空、上游是否超时或连接失败。</p>
+</blockquote>
+<p>排查命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl describe ingress &lt;ing&gt; -n &lt;ns&gt; kubectl get ingress -n &lt;ns&gt; kubectl logs &lt;ingress-controller-pod&gt; -n &lt;ingress-ns&gt; kubectl get svc,endpoints -n &lt;ns&gt; </span><br></pre></td></tr></table></figure>
+
+<p>502 常见原因：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. Service 后端无可用 Pod 2. targetPort 错误 3. Pod 端口未监听 4. 上游连接被拒绝 5. 协议不匹配，比如 HTTP/HTTPS 搞反 </span><br></pre></td></tr></table></figure>
+
+<p>504 常见原因：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 后端接口处理太慢 2. Ingress 超时配置过短 3. 后端连接池耗尽 4. 网络不通或丢包 </span><br></pre></td></tr></table></figure>
+
+<p>标准表达：</p>
+<blockquote>
+<p>502 更偏上游不可达或响应异常，504 更偏上游响应超时。排查时先看 Ingress Controller 日志，再看 Service 和 Endpoints，最后进 Pod 内部验证服务端口和接口耗时。</p>
+</blockquote>
+<hr>
+<h2 id="8-Node-NotReady-怎么排查？"><a href="#8-Node-NotReady-怎么排查？" class="headerlink" title="8. Node NotReady 怎么排查？"></a>8. Node NotReady 怎么排查？</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>Node NotReady 通常是 kubelet 异常、容器运行时异常、节点资源压力、网络插件异常或节点和 apiserver 通信失败。</p>
+</blockquote>
+<p>排查命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl get nodes kubectl describe node &lt;node&gt; </span><br></pre></td></tr></table></figure>
+
+<p>节点上排查：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl status kubelet journalctl -u kubelet -f systemctl status containerd df -h free -h top </span><br></pre></td></tr></table></figure>
+
+<p>常见原因：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">1. kubelet 挂了</span><br><span class="line">2. containerd 异常</span><br><span class="line">3. 节点磁盘满</span><br><span class="line">4. 内存/CPU 压力过高</span><br><span class="line">5. CNI 插件异常</span><br><span class="line">6. apiserver 网络不可达</span><br><span class="line">7. 证书过期</span><br></pre></td></tr></table></figure>
+
+<p>Node Conditions：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">MemoryPressure DiskPressure PIDPressure NetworkUnavailable Ready </span><br></pre></td></tr></table></figure>
+
+<p>标准表达：</p>
+<blockquote>
+<p>Node NotReady 先看 describe node 的 Conditions 和 Events，再上节点看 kubelet、containerd、磁盘、内存和网络。很多 NotReady 是节点资源压力或 kubelet&#x2F;container runtime 异常导致的。</p>
+</blockquote>
+<hr>
+<h2 id="9-CPU-x2F-内存飙高怎么定位？"><a href="#9-CPU-x2F-内存飙高怎么定位？" class="headerlink" title="9. CPU &#x2F; 内存飙高怎么定位？"></a>9. CPU &#x2F; 内存飙高怎么定位？</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>先用 kubectl top 定位 Pod，再结合应用日志、JVM 指标、线程栈和容器资源限制判断是业务流量、死循环、GC、内存泄漏还是资源配置问题。</p>
+</blockquote>
+<p>命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl top pod -n &lt;ns&gt; kubectl top pod -n &lt;ns&gt; --containers kubectl top node </span><br></pre></td></tr></table></figure>
+
+<p>Java CPU 高：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl exec -it &lt;pod&gt; -n &lt;ns&gt; -- sh top -H jstack &lt;pid&gt; </span><br></pre></td></tr></table></figure>
+
+<p>内存高：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jcmd &lt;pid&gt; VM.native_memory jmap -dump jstat -gc &lt;pid&gt; 1000 </span><br></pre></td></tr></table></figure>
+
+<p>注意：</p>
+<blockquote>
+<p>生产容器里不一定有这些工具，需要 debug 镜像或临时诊断容器。</p>
+</blockquote>
+<p>标准表达：</p>
+<blockquote>
+<p>K8s 层面只能先定位哪个 Pod、哪个容器资源异常，真正原因要结合应用层指标。Java 服务 CPU 高通常要看线程栈，内存高要区分堆、堆外、Metaspace 和线程栈。</p>
+</blockquote>
+<hr>
+<h2 id="10-常用-kubectl-命令清单"><a href="#10-常用-kubectl-命令清单" class="headerlink" title="10. 常用 kubectl 命令清单"></a>10. 常用 kubectl 命令清单</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># 查看资源 kubectl get pod -n &lt;ns&gt; -o wide kubectl get deploy,rs,pod -n &lt;ns&gt; kubectl get svc,ingress,endpoints -n &lt;ns&gt; # 详情和事件 kubectl describe pod &lt;pod&gt; -n &lt;ns&gt; kubectl get events -n &lt;ns&gt; --sort-by=.lastTimestamp # 日志 kubectl logs &lt;pod&gt; -n &lt;ns&gt; kubectl logs &lt;pod&gt; -n &lt;ns&gt; -c &lt;container&gt; kubectl logs &lt;pod&gt; -n &lt;ns&gt; --previous kubectl logs -f deployment/&lt;deploy&gt; -n &lt;ns&gt; # 进入容器 kubectl exec -it &lt;pod&gt; -n &lt;ns&gt; -- sh # 资源指标 kubectl top pod -n &lt;ns&gt; kubectl top node # 发布回滚 kubectl rollout status deploy/&lt;deploy&gt; -n &lt;ns&gt; kubectl rollout history deploy/&lt;deploy&gt; -n &lt;ns&gt; kubectl rollout undo deploy/&lt;deploy&gt; -n &lt;ns&gt; # 临时调试 kubectl run debug --image=busybox:1.36 -it --rm -- sh </span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="11-常见追问-1"><a href="#11-常见追问-1" class="headerlink" title="11. 常见追问"></a>11. 常见追问</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. Pending 和 CrashLoopBackOff 区别？ 2. CrashLoopBackOff 为什么要看 --previous？ 3. ImagePullBackOff 常见原因？ 4. OOMKilled 和 JVM OOM 区别？ 5. Service Endpoints 为空说明什么？ 6. Ingress 502 和 504 区别？ 7. Node NotReady 常见原因？ 8. Pod Running 但服务不通怎么排查？ 9. readiness 失败会发生什么？ 10. CPU 高怎么定位到具体线程？ </span><br></pre></td></tr></table></figure>
+
+<p><strong>第六轮总结：</strong></p>
+<blockquote>
+<p>K8s 排查要按层次来：Pod Pending 看调度和资源，CrashLoopBackOff 看日志和退出码，ImagePullBackOff 看镜像和仓库权限，OOMKilled 看内存 limit 和应用内存，Service 不通先看 Endpoints，Ingress 502&#x2F;504 看 Controller 日志和上游 Service，Node NotReady 看 kubelet、containerd、资源压力和网络。核心方法是先用事件定位方向，再用日志、指标和链路逐层验证。</p>
+</blockquote>
+<p>下一轮讲最后一部分：<strong>架构与生产实践：Java 微服务如何部署到 K8s、网关&#x2F;服务发现&#x2F;配置中心、K8s 和 Spring Cloud、日志监控链路追踪、RBAC、多环境多集群最佳实践</strong>。</p>
+<p>下面进入 <strong>第七轮：K8s 架构与生产实践</strong>。这一轮更贴近高级后端&#x2F;架构岗：不是只问 K8s 对象，而是问你怎么把业务系统真实跑稳。</p>
+<h2 id="1-K8s-中如何部署-Java-微服务？"><a href="#1-K8s-中如何部署-Java-微服务？" class="headerlink" title="1. K8s 中如何部署 Java 微服务？"></a>1. K8s 中如何部署 Java 微服务？</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>Java 微服务部署到 K8s，一般用 Deployment 管无状态服务，用 Service 暴露稳定入口，用 ConfigMap&#x2F;Secret 管配置，用 probes 做健康检查，用 requests&#x2F;limits 做资源隔离，用 HPA 做弹性扩缩容。</p>
+</blockquote>
+<p>典型结构：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Deployment  |  v Pod  |  ├── Java Container  ├── ConfigMap  ├── Secret  ├── readinessProbe  ├── livenessProbe  └── resources requests/limits  |  v Service  |  v Ingress / Gateway </span><br></pre></td></tr></table></figure>
+
+<p>Java 服务重点配置：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. 镜像尽量小，启动命令明确 2. 设置 JVM 容器感知参数 3. 配置 requests/limits 4. 配置 readiness/liveness/startupProbe 5. 支持 SIGTERM 优雅停机 6. 日志输出到 stdout/stderr 7. 配置通过 ConfigMap/Secret 或配置中心注入 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>Java 微服务上 K8s，不是把 jar 放进镜像就结束了。要配合资源限制、健康探针、优雅停机、日志标准输出、配置解耦和弹性扩缩容，才能符合生产要求。</p>
+</blockquote>
+<hr>
+<h2 id="2-网关、服务发现、配置中心如何落地？"><a href="#2-网关、服务发现、配置中心如何落地？" class="headerlink" title="2. 网关、服务发现、配置中心如何落地？"></a>2. 网关、服务发现、配置中心如何落地？</h2><h3 id="网关"><a href="#网关" class="headerlink" title="网关"></a>网关</h3><p>常见入口：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">外部流量 -&gt; Ingress Controller / API Gateway -&gt; Service -&gt; Pod </span><br></pre></td></tr></table></figure>
+
+<p>可选组件：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Nginx Ingress Spring Cloud Gateway Kong APISIX Envoy Istio Gateway </span><br></pre></td></tr></table></figure>
+
+<p>一般建议：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">南北向入口：Ingress / API Gateway 东西向服务治理：Service / Service Mesh </span><br></pre></td></tr></table></figure>
+
+<h3 id="服务发现"><a href="#服务发现" class="headerlink" title="服务发现"></a>服务发现</h3><p>K8s 内建服务发现：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Service Name -&gt; CoreDNS -&gt; ClusterIP -&gt; Pod</span><br></pre></td></tr></table></figure>
+
+<p>例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://order-service.default.svc.cluster.local:8080</span><br></pre></td></tr></table></figure>
+
+<p>Spring Cloud 迁移到 K8s 后：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">可以逐步减少 Eureka/Nacos 注册发现依赖</span><br><span class="line">使用 K8s Service + DNS 做服务发现</span><br></pre></td></tr></table></figure>
+
+<h3 id="配置中心"><a href="#配置中心" class="headerlink" title="配置中心"></a>配置中心</h3><p>配置来源可以有三类：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ConfigMap/Secret</span><br><span class="line">Nacos/Apollo/Spring Cloud Config</span><br><span class="line">Vault/KMS/External Secrets</span><br></pre></td></tr></table></figure>
+
+<p>取舍：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">少量静态配置：ConfigMap</span><br><span class="line">敏感配置：Secret + 外部密钥系统</span><br><span class="line">动态业务配置：Nacos/Apollo</span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>K8s 自带 Service 和 CoreDNS，可以承担基础服务发现；ConfigMap&#x2F;Secret 适合环境级配置，但复杂动态配置仍然可以保留 Nacos&#x2F;Apollo。网关层一般用 Ingress 或 API Gateway 统一入口，再通过 Service 转发到后端 Pod。</p>
+</blockquote>
+<hr>
+<h2 id="3-K8s-和-Spring-Cloud-的关系"><a href="#3-K8s-和-Spring-Cloud-的关系" class="headerlink" title="3. K8s 和 Spring Cloud 的关系"></a>3. K8s 和 Spring Cloud 的关系</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>K8s 和 Spring Cloud 有能力重叠，但层次不同。K8s 偏基础设施编排，Spring Cloud 偏应用层微服务治理。</p>
+</blockquote>
+<p>能力对比：</p>
+<table>
+<thead>
+<tr>
+<th align="left">能力</th>
+<th align="left">K8s</th>
+<th align="left">Spring Cloud</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">服务部署</td>
+<td align="left">Deployment</td>
+<td align="left">不负责</td>
+</tr>
+<tr>
+<td align="left">服务发现</td>
+<td align="left">Service + DNS</td>
+<td align="left">Eureka&#x2F;Nacos</td>
+</tr>
+<tr>
+<td align="left">负载均衡</td>
+<td align="left">Service&#x2F;kube-proxy</td>
+<td align="left">Ribbon&#x2F;Spring Cloud LoadBalancer</td>
+</tr>
+<tr>
+<td align="left">配置管理</td>
+<td align="left">ConfigMap&#x2F;Secret</td>
+<td align="left">Nacos&#x2F;Apollo&#x2F;Config</td>
+</tr>
+<tr>
+<td align="left">网关</td>
+<td align="left">Ingress&#x2F;Gateway</td>
+<td align="left">Spring Cloud Gateway</td>
+</tr>
+<tr>
+<td align="left">熔断限流</td>
+<td align="left">基础能力弱</td>
+<td align="left">Sentinel&#x2F;Resilience4j</td>
+</tr>
+<tr>
+<td align="left">弹性扩缩容</td>
+<td align="left">HPA</td>
+<td align="left">不负责</td>
+</tr>
+<tr>
+<td align="left">发布回滚</td>
+<td align="left">Deployment</td>
+<td align="left">不负责</td>
+</tr>
+</tbody></table>
+<p><strong>迁移思路：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">部署、弹性、服务发现逐步交给 K8s 动态配置、限流熔断、业务治理可保留 Spring Cloud 生态 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>K8s 不是 Spring Cloud 的简单替代。K8s 管容器、调度、服务发现和弹性；Spring Cloud 管应用层网关、配置、熔断、限流等。实际落地通常是两者结合，再逐步减少重复能力。</p>
+</blockquote>
+<hr>
+<h2 id="4-日志、监控、链路追踪"><a href="#4-日志、监控、链路追踪" class="headerlink" title="4. 日志、监控、链路追踪"></a>4. 日志、监控、链路追踪</h2><h3 id="日志"><a href="#日志" class="headerlink" title="日志"></a>日志</h3><p>推荐方式：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">应用日志输出 stdout/stderr 节点 DaemonSet 采集日志 发送到 Elasticsearch / Loki / Kafka </span><br></pre></td></tr></table></figure>
+
+<p>常见组件：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Fluent Bit Filebeat Vector Logstash Loki Elasticsearch </span><br></pre></td></tr></table></figure>
+
+<p>链路：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Pod stdout  |  v Node 日志文件  |  v DaemonSet 日志采集器  |  v 日志系统 </span><br></pre></td></tr></table></figure>
+
+<h3 id="监控"><a href="#监控" class="headerlink" title="监控"></a>监控</h3><p>常见方案：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Prometheus + Grafana</span><br></pre></td></tr></table></figure>
+
+<p>采集：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Node Exporter：节点指标</span><br><span class="line">kube-state-metrics：K8s 对象状态</span><br><span class="line">cAdvisor：容器指标</span><br><span class="line">应用 /actuator/prometheus：业务指标</span><br></pre></td></tr></table></figure>
+
+<p>核心指标：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Pod CPU/Memory</span><br><span class="line">重启次数</span><br><span class="line">Pod Ready 状态</span><br><span class="line">HPA 状态</span><br><span class="line">Node 资源</span><br><span class="line">Service 错误率</span><br><span class="line">接口 P95/P99</span><br><span class="line">JVM GC/线程/堆内存</span><br></pre></td></tr></table></figure>
+
+<h3 id="链路追踪"><a href="#链路追踪" class="headerlink" title="链路追踪"></a>链路追踪</h3><p>常见方案：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">OpenTelemetry</span><br><span class="line">SkyWalking</span><br><span class="line">Jaeger</span><br><span class="line">Zipkin</span><br><span class="line">Tempo</span><br></pre></td></tr></table></figure>
+
+<p>关注：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">traceId</span><br><span class="line">spanId</span><br><span class="line">服务调用耗时</span><br><span class="line">错误链路</span><br><span class="line">慢接口</span><br><span class="line">跨服务调用关系</span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>K8s 生产可观测性至少要有日志、指标、链路三件套。日志用于查具体错误，指标用于发现趋势和告警，链路追踪用于定位跨服务调用慢在哪一段。</p>
+</blockquote>
+<hr>
+<h2 id="5-RBAC-权限控制"><a href="#5-RBAC-权限控制" class="headerlink" title="5. RBAC 权限控制"></a>5. RBAC 权限控制</h2><p><strong>面试结论：</strong></p>
+<blockquote>
+<p>RBAC 是 K8s 的权限控制机制，通过 Role&#x2F;ClusterRole 定义权限，通过 RoleBinding&#x2F;ClusterRoleBinding 把权限绑定给用户、组或 ServiceAccount。</p>
+</blockquote>
+<p>核心对象：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Role：namespace 级权限</span><br><span class="line">ClusterRole：集群级权限</span><br><span class="line">RoleBinding：namespace 内绑定</span><br><span class="line">ClusterRoleBinding：集群级绑定</span><br><span class="line">ServiceAccount：Pod 使用的身份</span><br></pre></td></tr></table></figure>
+
+<p>图示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">ServiceAccount/User</span><br><span class="line">        |</span><br><span class="line">        v</span><br><span class="line">RoleBinding</span><br><span class="line">        |</span><br><span class="line">        v</span><br><span class="line">Role</span><br><span class="line">        |</span><br><span class="line">        v</span><br><span class="line">权限：get/list/watch pods</span><br></pre></td></tr></table></figure>
+
+<p>最佳实践：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">最小权限原则</span><br><span class="line">不同环境不同 namespace</span><br><span class="line">业务 Pod 使用独立 ServiceAccount</span><br><span class="line">不要随便给 cluster-admin</span><br><span class="line">定期审计权限</span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>RBAC 的关键是最小权限。Role 定义能做什么，Binding 定义谁能做。生产上要避免业务服务使用默认 ServiceAccount 或过大权限。</p>
+</blockquote>
+<hr>
+<h2 id="6-多环境、多集群、命名空间隔离"><a href="#6-多环境、多集群、命名空间隔离" class="headerlink" title="6. 多环境、多集群、命名空间隔离"></a>6. 多环境、多集群、命名空间隔离</h2><h3 id="多环境"><a href="#多环境" class="headerlink" title="多环境"></a>多环境</h3><p>常见方式：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">dev namespace</span><br><span class="line">test namespace</span><br><span class="line">staging namespace</span><br><span class="line">prod namespace</span><br></pre></td></tr></table></figure>
+
+<p>或者：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">不同环境不同集群 </span><br></pre></td></tr></table></figure>
+
+<p>推荐：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">生产和非生产尽量不同集群 同集群内用 namespace 做逻辑隔离 </span><br></pre></td></tr></table></figure>
+
+<h3 id="Namespace-隔离要配合"><a href="#Namespace-隔离要配合" class="headerlink" title="Namespace 隔离要配合"></a>Namespace 隔离要配合</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">RBAC ResourceQuota LimitRange NetworkPolicy 独立 Ingress 域名 独立 Secret </span><br></pre></td></tr></table></figure>
+
+<p>ResourceQuota 示例能力：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">限制 namespace 总 CPU/内存 限制 Pod 数量 限制 PVC 数量 </span><br></pre></td></tr></table></figure>
+
+<p>LimitRange：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">给未设置 requests/limits 的 Pod 设置默认值 限制单个 Pod 最大资源 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>Namespace 是逻辑隔离，不是完整安全隔离。生产上要配合 RBAC、ResourceQuota、NetworkPolicy 和独立发布权限。关键业务或生产环境最好独立集群。</p>
+</blockquote>
+<hr>
+<h2 id="7-K8s-生产最佳实践"><a href="#7-K8s-生产最佳实践" class="headerlink" title="7. K8s 生产最佳实践"></a>7. K8s 生产最佳实践</h2><p><strong>应用层：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">无状态服务用 Deployment 有状态服务谨慎使用 StatefulSet 日志输出 stdout 支持优雅停机 提供健康检查接口 配置和镜像解耦 </span><br></pre></td></tr></table></figure>
+
+<p><strong>资源层：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">必须配置 requests/limits 核心服务避免 BestEffort 合理设置 HPA 设置 PDB 使用反亲和或拓扑分布 </span><br></pre></td></tr></table></figure>
+
+<p><strong>发布层：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">滚动更新配置 maxSurge/maxUnavailable readiness 通过后再接流量 发布失败及时回滚 灰度发布优先走网关/Service Mesh </span><br></pre></td></tr></table></figure>
+
+<p><strong>安全层：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">镜像漏洞扫描 非 root 用户运行容器 限制容器特权 Secret 加密和权限控制 RBAC 最小权限 NetworkPolicy 隔离 </span><br></pre></td></tr></table></figure>
+
+<p><strong>可观测性：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">日志采集 Prometheus 指标 链路追踪 告警规则 审计日志 </span><br></pre></td></tr></table></figure>
+
+<p><strong>标准表达：</strong></p>
+<blockquote>
+<p>生产 K8s 的核心不是资源能跑起来，而是可发布、可扩容、可观测、可恢复、可治理。应用要适配容器生命周期，平台要做好权限、资源、网络、安全和监控。</p>
+</blockquote>
+<hr>
+<h2 id="8-架构面试综合回答模板"><a href="#8-架构面试综合回答模板" class="headerlink" title="8. 架构面试综合回答模板"></a>8. 架构面试综合回答模板</h2><p>如果面试官问：“你们 Java 微服务怎么落地 K8s？”</p>
+<p>可以这样答：</p>
+<blockquote>
+<p>我们一般用 Deployment 部署无状态 Java 服务，通过 Service 提供稳定访问入口，外部流量走 Ingress 或 API Gateway。配置通过 ConfigMap&#x2F;Secret 注入，动态业务配置保留 Nacos&#x2F;Apollo。服务发现优先使用 K8s Service 和 CoreDNS，应用层限流熔断可以继续使用 Sentinel 或 Resilience4j。</p>
+<p>生产上每个服务都要配置 requests&#x2F;limits、readiness&#x2F;liveness&#x2F;startupProbe，并支持 SIGTERM 优雅停机。发布使用 Deployment 滚动更新，核心服务设置 maxUnavailable&#x3D;0，并配合 PDB、反亲和和 HPA 保证可用性。日志输出到 stdout，由 DaemonSet 采集到日志系统，指标用 Prometheus&#x2F;Grafana，链路追踪用 OpenTelemetry 或 SkyWalking。</p>
+<p>权限上使用 RBAC 和独立 ServiceAccount，环境隔离通过 namespace 或独立集群实现，核心生产环境会配 ResourceQuota、NetworkPolicy、镜像扫描和 Secret 加密。整体目标是让服务不仅能跑，还要能稳定发布、快速排查和安全治理。</p>
+</blockquote>
+<hr>
+<h2 id="9-常见追问"><a href="#9-常见追问" class="headerlink" title="9. 常见追问"></a>9. 常见追问</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1. K8s 能不能替代 Spring Cloud？ 2. Java 服务上 K8s 要注意什么？ 3. ConfigMap 和 Nacos 怎么取舍？ 4. 服务发现用 K8s Service 还是注册中心？ 5. 如何做日志采集？ 6. Prometheus 采集哪些指标？ 7. RBAC 怎么设计？ 8. Namespace 是不是强隔离？ 9. 生产环境为什么要 requests/limits？ 10. 如何做到不停机发布？ </span><br></pre></td></tr></table></figure>
+
+<p><strong>第七轮总结：</strong></p>
+<blockquote>
+<p>K8s 生产实践的核心是把应用、平台和治理能力结合起来。Java 微服务用 Deployment&#x2F;Service&#x2F;Ingress 跑起来只是第一步，真正要考虑的是配置管理、服务发现、滚动发布、弹性扩缩容、优雅停机、日志监控链路追踪、RBAC 权限、安全策略和多环境隔离。高级面试里要体现一点：K8s 是基础设施平台，不是业务治理银弹，很多能力仍然需要和网关、配置中心、Service Mesh、监控体系、DevOps 流程一起落地。</p>
+</blockquote>
+<p>20:37</p>
+<p>回答k8s所有的常见追问的问题</p>
+<p>20:54</p>
+<p>下面给你一版 <strong>K8s 常见追问速答版</strong>，适合面试前快速过一遍。每题都是“能直接说出口”的标准回答。</p>
+<h2 id="一、基础核心追问"><a href="#一、基础核心追问" class="headerlink" title="一、基础核心追问"></a>一、基础核心追问</h2><p><strong>1. Pod 和容器有什么区别？</strong><br>容器是实际运行进程的环境，Pod 是 K8s 最小调度单位，一个 Pod 可以包含一个或多个容器，Pod 内容器共享网络和 Volume。</p>
+<p><strong>2. Deployment 和 ReplicaSet 什么关系？</strong><br>Deployment 管理 ReplicaSet，ReplicaSet 管理 Pod 副本。平时直接使用 Deployment，因为它支持滚动更新和回滚。</p>
+<p><strong>3. Deployment 和 StatefulSet 区别？</strong><br>Deployment 适合无状态服务，Pod 名称和存储不稳定；StatefulSet 适合有状态服务，提供稳定名称、稳定网络身份和稳定 PVC。</p>
+<p><strong>4. Service 为什么需要 selector？</strong><br>Service 通过 selector 匹配一组 Pod Label，从而把流量转发给这些 Pod。没有 selector，Service 不知道后端是谁。</p>
+<p><strong>5. Service 和 Ingress 区别？</strong><br>Service 解决集群内稳定访问和负载均衡，Ingress 解决外部 HTTP&#x2F;HTTPS 七层入口路由。</p>
+<p><strong>6. ConfigMap 修改后 Pod 会自动更新吗？</strong><br>如果以环境变量注入，不会自动更新；如果以 Volume 挂载，文件内容可能更新，但应用不一定自动 reload。</p>
+<p><strong>7. Secret 是不是安全的？</strong><br>Secret 默认只是 Base64 编码，不是加密。生产要配合 RBAC、etcd 加密、KMS&#x2F;Vault 和权限控制。</p>
+<p><strong>8. DaemonSet 适合什么场景？</strong><br>适合每个 Node 都要运行一个实例的场景，比如日志采集、监控 Agent、CNI 插件、存储插件。</p>
+<p><strong>9. Namespace 能不能实现强隔离？</strong><br>Namespace 是逻辑隔离，不是强安全隔离。强隔离还要配合 RBAC、NetworkPolicy、ResourceQuota，甚至独立集群。</p>
+<p><strong>10. K8s 为什么是声明式系统？</strong><br>用户声明期望状态，比如副本数为 3，K8s 控制器持续对比实际状态并自动调谐到期望状态。</p>
+<h2 id="二、Pod-生命周期与调度"><a href="#二、Pod-生命周期与调度" class="headerlink" title="二、Pod 生命周期与调度"></a>二、Pod 生命周期与调度</h2><p><strong>1. Pod Pending 一般是什么原因？</strong><br>常见是资源不足、PVC 未绑定、节点污点不可容忍、亲和性不满足、Node NotReady 或 ResourceQuota 不足。</p>
+<p><strong>2. requests 和 limits 哪个影响调度？</strong><br>requests 影响调度，scheduler 根据 requests 判断节点资源是否足够；limits 是运行时资源上限。</p>
+<p><strong>3. CPU 超限和内存超限有什么区别？</strong><br>CPU 超 limit 通常被限流，表现为变慢；内存超 limit 可能被 OOMKilled，容器会被杀掉重启。</p>
+<p><strong>4. readiness 和 liveness 区别？</strong><br>readiness 判断 Pod 能不能接流量，失败会从 Service 后端摘除；liveness 判断容器是否存活，失败会重启容器。</p>
+<p><strong>5. 为什么需要 startupProbe？</strong><br>用于保护启动慢的应用，在 startupProbe 成功前不会执行 liveness，避免应用还没启动完就被误杀。</p>
+<p><strong>6. Scheduler 会不会启动容器？</strong><br>不会。Scheduler 只负责给 Pod 选择 Node，真正启动容器的是目标节点上的 kubelet。</p>
+<p><strong>7. OOMKilled 是谁杀的？</strong><br>通常是容器内存超过 cgroup limit 后，被内核 OOM killer 杀掉，K8s 再根据重启策略拉起容器。</p>
+<p><strong>8. QoS 有什么用？</strong><br>QoS 影响节点资源紧张时的驱逐优先级，BestEffort 最容易被驱逐，Guaranteed 最稳定。</p>
+<h2 id="三、K8s-网络"><a href="#三、K8s-网络" class="headerlink" title="三、K8s 网络"></a>三、K8s 网络</h2><p><strong>1. Pod IP 和 Service IP 有什么区别？</strong><br>Pod IP 是具体 Pod 的真实地址，会变化；Service IP 是稳定虚拟入口，用来负载均衡到后端 Pod。</p>
+<p><strong>2. ClusterIP 是真实 IP 吗？</strong><br>ClusterIP 是虚拟 IP，不对应某个真实网卡，流量由 kube-proxy 的 iptables&#x2F;IPVS 规则转发到 Pod。</p>
+<p><strong>3. kube-proxy 是不是转发所有流量？</strong><br>不是。kube-proxy 主要维护 Service 转发规则，真正数据转发由内核规则完成。</p>
+<p><strong>4. iptables 和 IPVS 模式区别？</strong><br>iptables 基于规则链 DNAT，规模大时规则多；IPVS 基于内核 LVS，支持更多负载算法，大规模场景更稳定。</p>
+<p><strong>5. Ingress 和 Service 区别？</strong><br>Service 是服务访问抽象，偏四层；Ingress 是 HTTP&#x2F;HTTPS 入口规则，偏七层，需要 Ingress Controller 执行。</p>
+<p><strong>6. 为什么有了 Service 还需要 Ingress？</strong><br>Service 解决集群内访问，Ingress 解决外部域名、路径、HTTPS、七层路由等入口能力。</p>
+<p><strong>7. CoreDNS 怎么解析 Service？</strong><br>CoreDNS 监听 K8s Service 和 EndpointSlice，把 service.namespace.svc.cluster.local 解析成 ClusterIP。</p>
+<p><strong>8. Headless Service 有什么用？</strong><br>Headless Service 不分配 ClusterIP，DNS 直接返回后端 Pod IP，常用于 StatefulSet 和需要访问具体 Pod 的场景。</p>
+<p><strong>9. CNI 负责什么？</strong><br>CNI 负责给 Pod 分配 IP、创建网络设备、配置路由和网络策略，实现 Pod 间通信。</p>
+<p><strong>10. NetworkPolicy 为什么不生效？</strong><br>常见原因是 CNI 不支持 NetworkPolicy、selector 写错、namespace 选错、策略方向 ingress&#x2F;egress 配错。</p>
+<h2 id="四、存储与配置"><a href="#四、存储与配置" class="headerlink" title="四、存储与配置"></a>四、存储与配置</h2><p><strong>1. Volume 和 PV&#x2F;PVC 区别？</strong><br>Volume 是 Pod 内挂载抽象；PV 是集群存储资源；PVC 是应用对存储资源的申请。</p>
+<p><strong>2. PVC 一直 Pending 是什么原因？</strong><br>可能没有匹配 PV、StorageClass 不存在、动态 provisioner 异常、容量&#x2F;访问模式不匹配。</p>
+<p><strong>3. StorageClass 有什么作用？</strong><br>StorageClass 定义动态存储供给模板，PVC 可以通过它自动创建对应 PV 和底层存储。</p>
+<p><strong>4. RWO、ROX、RWX 区别？</strong><br>RWO 单节点读写，ROX 多节点只读，RWX 多节点读写。多副本共享写通常需要 RWX 存储。</p>
+<p><strong>5. StatefulSet 为什么适合有状态服务？</strong><br>因为它提供稳定 Pod 名称、稳定 DNS、稳定 PVC，以及有序启动和删除。</p>
+<p><strong>6. Headless Service 和 StatefulSet 什么关系？</strong><br>Headless Service 给 StatefulSet 每个 Pod 提供稳定 DNS，比如 mysql-0.mysql.default.svc.cluster.local。</p>
+<p><strong>7. ConfigMap 更新后应用会自动生效吗？</strong><br>环境变量不会自动变；Volume 文件可能更新，但 Java 应用通常仍需要 reload 机制或重启。</p>
+<p><strong>8. Secret 是不是加密的？</strong><br>默认不是加密，只是 Base64 编码；需要开启 etcd 静态加密并配合 RBAC&#x2F;KMS。</p>
+<p><strong>9. hostPath 为什么生产慎用？</strong><br>hostPath 绑定宿主机路径，可移植性差，安全风险高，Pod 调度到其他节点可能无法使用同样数据。</p>
+<p><strong>10. 数据库能不能跑在 K8s？</strong><br>可以，但要谨慎。核心难点是存储性能、备份恢复、主从切换、故障处理和 Operator 运维能力。</p>
+<h2 id="五、发布、扩缩容、高可用"><a href="#五、发布、扩缩容、高可用" class="headerlink" title="五、发布、扩缩容、高可用"></a>五、发布、扩缩容、高可用</h2><p><strong>1. Deployment 滚动更新底层怎么做？</strong><br>Deployment 创建新的 ReplicaSet，逐步增加新 Pod，减少旧 Pod，直到全部切换到新版本。</p>
+<p><strong>2. maxSurge 和 maxUnavailable 怎么配置？</strong><br>核心服务常用 maxUnavailable&#x3D;0 保证可用副本不减少，maxSurge&#x3D;1 或百分比允许临时多起 Pod。</p>
+<p><strong>3. 蓝绿和金丝雀区别？</strong><br>蓝绿是两套环境一次性切流，回滚快但资源成本高；金丝雀是小流量逐步放量，风险更低。</p>
+<p><strong>4. HPA 扩容依据是什么？</strong><br>可以基于 CPU、内存、自定义指标或外部指标；CPU HPA 依赖 Pod 的 requests.cpu。</p>
+<p><strong>5. HPA 和 Cluster Autoscaler 谁先触发？</strong><br>HPA 先扩 Pod；如果节点资源不够导致 Pod Pending，Cluster Autoscaler 再扩 Node。</p>
+<p><strong>6. VPA 为什么可能导致 Pod 重启？</strong><br>因为 VPA 调整 requests&#x2F;limits 通常需要重建 Pod，运行中的容器资源规格不能总是原地修改。</p>
+<p><strong>7. PDB 能不能防止节点宕机？</strong><br>不能。PDB 只能约束自愿中断，比如 drain、升级，不能阻止机器故障、断电、OOM。</p>
+<p><strong>8. replicas&#x3D;3 是否一定高可用？</strong><br>不一定。如果 3 个 Pod 都在同一 Node 或同一可用区，节点故障仍会全挂，需要反亲和和拓扑分布。</p>
+<p><strong>9. 如何做到 Java 服务不停机发布？</strong><br>配置 readiness 摘流、滚动更新、maxUnavailable&#x3D;0、优雅停机、SIGTERM 处理、preStop 缓冲和合理探针。</p>
+<p><strong>10. readiness 和优雅停机有什么关系？</strong><br>Pod 终止前 readiness 变失败，Service 不再转发新流量，应用再处理完存量请求后退出。</p>
+<h2 id="六、故障排查"><a href="#六、故障排查" class="headerlink" title="六、故障排查"></a>六、故障排查</h2><p><strong>1. Pending 和 CrashLoopBackOff 区别？</strong><br>Pending 是 Pod 还没成功调度或启动；CrashLoopBackOff 是容器启动后反复崩溃。</p>
+<p><strong>2. CrashLoopBackOff 为什么看 –previous？</strong><br>因为当前容器可能已经重启，崩溃原因在上一次容器日志里。</p>
+<p><strong>3. ImagePullBackOff 常见原因？</strong><br>镜像地址错误、tag 不存在、私有仓库认证失败、节点网络不通、镜像仓库限流。</p>
+<p><strong>4. OOMKilled 和 JVM OOM 区别？</strong><br>OOMKilled 是容器超过 cgroup 内存限制被系统杀；JVM OOM 是 JVM 堆或元空间等内部内存不足抛异常。</p>
+<p><strong>5. Service Endpoints 为空说明什么？</strong><br>通常是 selector 没匹配到 Pod，或者 Pod 没 Ready，也可能是命名空间或 Label 写错。</p>
+<p><strong>6. Ingress 502 和 504 区别？</strong><br>502 偏上游不可达、连接失败或响应异常；504 偏上游响应超时。</p>
+<p><strong>7. Node NotReady 常见原因？</strong><br>kubelet 异常、containerd 异常、磁盘满、内存压力、CNI 异常、节点到 apiserver 网络不通、证书问题。</p>
+<p><strong>8. Pod Running 但服务不通怎么排查？</strong><br>看 readiness、容器端口监听、Service selector、Endpoints、targetPort、NetworkPolicy、CoreDNS 和 Ingress 日志。</p>
+<p><strong>9. readiness 失败会发生什么？</strong><br>Pod 会从 Service Endpoints 中摘除，不再接收新流量，但容器不会因为 readiness 失败而自动重启。</p>
+<p><strong>10. CPU 高怎么定位到具体线程？</strong><br>先 kubectl top 找 Pod，再进入容器用 top -H 找线程，转换线程 ID 后用 jstack 定位 Java 线程栈。</p>
+<h2 id="七、架构与生产实践"><a href="#七、架构与生产实践" class="headerlink" title="七、架构与生产实践"></a>七、架构与生产实践</h2><p><strong>1. K8s 能不能替代 Spring Cloud？</strong><br>不能简单替代。K8s 管部署、调度、服务发现、弹性；Spring Cloud 更偏应用层配置、熔断、限流、网关等治理。</p>
+<p><strong>2. Java 服务上 K8s 要注意什么？</strong><br>注意 JVM 容器内存、requests&#x2F;limits、探针、优雅停机、日志 stdout、配置解耦和 HPA 指标。</p>
+<p><strong>3. ConfigMap 和 Nacos 怎么取舍？</strong><br>ConfigMap 适合环境级静态配置；Nacos&#x2F;Apollo 适合动态业务配置和运行时热更新。</p>
+<p><strong>4. 服务发现用 K8s Service 还是注册中心？</strong><br>集群内基础服务发现可以用 K8s Service&#x2F;CoreDNS；复杂应用治理或跨集群场景可保留注册中心。</p>
+<p><strong>5. 如何做日志采集？</strong><br>应用日志输出 stdout&#x2F;stderr，由 DaemonSet 日志 Agent 如 Fluent Bit&#x2F;Filebeat 采集到 ES、Loki 或 Kafka。</p>
+<p><strong>6. Prometheus 采集哪些指标？</strong><br>采集 Node、Pod、容器、K8s 对象状态、应用业务指标、JVM 指标、接口耗时和错误率。</p>
+<p><strong>7. RBAC 怎么设计？</strong><br>按最小权限原则，区分 namespace、角色和 ServiceAccount，避免默认账号和 cluster-admin 滥用。</p>
+<p><strong>8. Namespace 是不是强隔离？</strong><br>不是。Namespace 是逻辑隔离，强隔离需要 RBAC、NetworkPolicy、ResourceQuota，生产关键环境最好独立集群。</p>
+<p><strong>9. 生产环境为什么要 requests&#x2F;limits？</strong><br>requests 保证调度和基础资源，limits 防止单个容器打爆节点；不配置会影响稳定性和 HPA&#x2F;QoS。</p>
+<p><strong>10. 如何做到不停机发布？</strong><br>依靠多副本、readiness、滚动更新、优雅停机、PDB、反亲和、灰度发布和快速回滚机制共同保证。</p>
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1747983019/" target="_blank">K8s总结</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                
+                <div class="article-prev-next">
+                    
+                        <a href="/article/1756983019/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1756983019/" title="发布于 2025-05-24 10:36">高频操作系统面试题</a>
+                        <br>
+                    
+                    
+                        <a href="/article/1739713327/" class="next-prefix">» </a> 下一篇：    <a href="/article/1739713327/" title="发布于 2025-02-16 09:42">02 RocketMQ源码：NameServer启动流程源码解析</a>
+                    
+                </div>
+            </div>
+            
+    <div class="article-comments">
+        
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
+    
+</div>
+
+    <div id="footer"></div>
+    <div id="sidebar">
+    <div class="menu-wrap" style="display:none;">
+        
+            <div class="menu-notice">
+                <span class="iconfont icon-notice"></span>
+                <div class="notice">
+                    <span>简单地活着，肆意而又精彩！</span>
+                </div>
+            </div>
+        
+        <nav class="menu">
+            <div class="menu-introduce"> 
+                <div class="introduce-avatar">
+                    <img src="/image/sidebar/avatar.jpg">
+                </div> 
+                <div class="introduce-info"> 
+                    <div class="introduce-user"><span>Live For Code</span></div>
+                </div> 
+            </div> 
+            <div class="menu-list">
+                <ul>
+                    
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                    
+                        <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
+                    
+                        <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
+                    
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                    
+                        <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
+                    
+                        <li class=""><a href="/about" class="" target="_self"><span class="iconfont icon-about-fill"></span>关于</a></li>
+                    
+                        <li class=""><a href="/atom.xml" class="" target="_blank"><span class="iconfont icon-rss"></span>订阅</a></li>
+                    
+                        <li class=""><a href="/comment" class="" target="_self"><span class="iconfont icon-comments-fill"></span>留言板</a></li>
+                    
+                        <li class=""><a href="/friend" class="" target="_self"><span class="iconfont icon-link"></span>友情链接</a></li>
+                    
+                </ul> 
+            </div> 
+            <div class="menu-link">
+                <div class="box">
+                    <div class="image-box"></div>
+                </div>
+                
+                    <a name="知乎" href="https://www.zhihu.com/people/wo-xin-de-love" class="" target="_blank" data=""><span class="iconfont icon-zhihu"></span></a>
+                
+                    <a name="微博" href="https://weibo.com/u/3939432776" class="" target="_blank" data=""><span class="iconfont icon-weibo"></span></a>
+                
+                    <a name="QQ" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"><span class="iconfont icon-qq"></span></a>
+                
+                    <a name="微信" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"><span class="iconfont icon-wechat"></span></a>
+                
+                    <a name="GitHub" href="https://github.com/first19326" class="" target="_blank" data=""><span class="iconfont icon-github"></span></a>
+                
+            </div> 
+        </nav>
+        <button class="menu-button-close"></button>
+        <div class="morph-shape" id="morph-shape" data-morph-open="M-7.312,0H15c0,0,66,113.339,66,399.5C81,664.006,15,800,15,800H-7.312V0z;M-7.312,0H100c0,0,0,113.839,0,400c0,264.506,0,400,0,400H-7.312V0z">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 800" preserveAspectRatio="none">
+                <path d="M-7.312,0H0c0,0,0,113.839,0,400c0,264.506,0,400,0,400h-7.312V0z"/>
+            </svg>
+        </div>
+    </div>
+    <button class="menu-button-open">MENU</button>
+    <div class="menu-cover"></div>
+</div>
+    
+<div id="tools">
+    <div class="progressbar-top"></div>
+
+    <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
+    <script type="text/javascript" src="/js/APlayer.min.js"></script>
+    <script type="text/javascript" src="/js/Meting.min.js"></script>
+    <meting-js id="3778678" lrcshow="false" server="netease"
+               type="playlist" fixed="true" autoplay="false"
+               loop="all" order="random" preload="auto"
+               volume="0.67" mutex="true"></meting-js>
+
+    <script type="text/javascript">
+        (function () {
+            var toolsRoot = document.getElementById('tools');
+            if (!toolsRoot || typeof APlayer === 'undefined') {
+                return;
+            }
+
+            var metingElement = toolsRoot.querySelector('meting-js');
+            var targetVolume = 0.67;
+            var autoplayEnabled = true;
+            var introAudio = {
+                name: "知我",
+                artist: "国风堂 / 哦漏",
+                cover: "/image/header/home.jpg",
+                url: "/music/song/知我.mp3",
+                lrc: ""
+            };
+            var introIndex = -1;
+            var introRemoved = false;
+            var metingPlayer = null;
+            var initTimer = null;
+
+            function restoreAudio(audio) {
+                if (!audio) {
+                    return;
+                }
+
+                audio.muted = false;
+                audio.defaultMuted = false;
+                audio.removeAttribute('muted');
+                audio.removeAttribute('autoplay');
+                audio.volume = targetVolume;
+            }
+
+            function attemptPlay(player, muted) {
+                if (!player || !player.audio) {
+                    return;
+                }
+
+                var audio = player.audio;
+                if (typeof muted === 'boolean') {
+                    audio.muted = muted;
+                    audio.defaultMuted = muted;
+                    if (muted) {
+                        audio.setAttribute('muted', 'muted');
+                        audio.setAttribute('autoplay', 'autoplay');
+                        audio.volume = 0;
+                    }
+                }
+
+                var result = audio.play();
+                if (result && typeof result.catch === 'function') {
+                    result.catch(function () {
+                        if (player && player.setUIPaused) {
+                            player.setUIPaused();
+                        }
+                    });
+                }
+            }
+
+            function startMutedAutoplay(player) {
+                if (!player || !player.audio) {
+                    return;
+                }
+
+                var audio = player.audio;
+                audio.muted = true;
+                audio.defaultMuted = true;
+                audio.setAttribute('muted', 'muted');
+                audio.setAttribute('autoplay', 'autoplay');
+                audio.volume = 0;
+
+                var clearMute = function () {
+                    restoreAudio(audio);
+                };
+
+                audio.addEventListener('playing', function () {
+                    window.setTimeout(clearMute, 120);
+                }, {once: true});
+
+                ['loadedmetadata', 'canplay', 'canplaythrough'].forEach(function (eventName) {
+                    audio.addEventListener(eventName, function resumeOnReady() {
+                        if (audio.paused) {
+                            attemptPlay(player, true);
+                        }
+                    }, {once: true});
+                });
+
+                [0, 250, 1200, 2500].forEach(function (delay) {
+                    window.setTimeout(function () {
+                        if (audio.paused) {
+                            attemptPlay(player, true);
+                        }
+                    }, delay);
+                });
+
+                attemptPlay(player, true);
+            }
+
+            function showPlayerControls(player) {
+                if (player && player.setMode) {
+                    player.setMode('normal');
+                }
+                if (player && player.template && player.template.info) {
+                    player.template.info.style.display = 'block';
+                }
+            }
+
+            function resetRandomOrder(player) {
+                if (!player || !player.list || !player.list.audios) {
+                    return;
+                }
+
+                var order = [];
+                for (var i = 0; i < player.list.audios.length; i++) {
+                    order.push(i);
+                }
+                for (var j = order.length - 1; j > 0; j--) {
+                    var randomIndex = Math.floor(Math.random() * (j + 1));
+                    var item = order[j];
+                    order[j] = order[randomIndex];
+                    order[randomIndex] = item;
+                }
+                player.randomOrder = order;
+            }
+
+            function removeIntroAfterLeaving(player) {
+                if (introRemoved || introIndex < 0 || !player || !player.list || player.list.index === introIndex) {
+                    return;
+                }
+
+                player.removeAudio(introIndex);
+                introRemoved = true;
+                introIndex = -1;
+
+                if (player.options && player.options.order === 'random') {
+                    resetRandomOrder(player);
+                }
+            }
+
+            function initIntro(player) {
+                if (!player || !player.list || !player.list.audios || !player.addAudio || !introAudio.url) {
+                    return;
+                }
+
+                metingPlayer = player;
+                showPlayerControls(player);
+
+                player.addAudio(introAudio);
+                introIndex = player.list.audios.length - 1;
+                player.list.switch(introIndex);
+                showPlayerControls(player);
+
+                player.on('listswitch', function () {
+                    window.setTimeout(function () {
+                        removeIntroAfterLeaving(player);
+                    }, 0);
+                });
+                player.on('ended', function () {
+                    window.setTimeout(function () {
+                        removeIntroAfterLeaving(player);
+                    }, 0);
+                });
+
+                if (autoplayEnabled) {
+                    startMutedAutoplay(player);
+                }
+
+                document.addEventListener('click', function resumeMusic() {
+                    if (player && player.audio && player.audio.paused) {
+                        restoreAudio(player.audio);
+                        attemptPlay(player, false);
+                    }
+                    document.removeEventListener('click', resumeMusic);
+                });
+
+                window.__liveForCodeMusic = {
+                    player: player,
+                    meting: metingElement
+                };
+            }
+
+            initTimer = window.setInterval(function () {
+                if (metingElement && metingElement.aplayer) {
+                    window.clearInterval(initTimer);
+                    initIntro(metingElement.aplayer);
+                }
+            }, 100);
+        })();
+    </script>
+    
+    <div class="wrap-right">
+        <div class="setting">
+            <div class="iconbox mode">
+                <div class="light">
+                    <span class="iconfont icon-daymode"></span>
+                    <span class="icontext">浅色模式</span>
+                </div>
+                <div class="dark">
+                    <span class="iconfont icon-nightmode-fill"></span>
+                    <span class="icontext">深色模式</span>
+                </div>
+            </div>
+            <div class="iconbox bottom">
+                <div style="display: inline-block; transform: rotate(180deg);">
+                    <span class="iconfont icon-top"></span>
+                </div>
+                <span class="icontext">跳至底部</span>
+            </div>
+        </div>
+        <div class="iconbox set">
+            <div style="display: inline-block;">
+                <span class="iconfont icon-setting"></span>
+            </div>
+            <span class="icontext">设置</span>
+        </div>
+        <div class="iconbox top">
+            <span class="iconfont icon-top"></span>
+            <span class="icontext">返回顶部</span>
+        </div>
+    </div>
+    <div class="loading"></div>
+</div>
+
+    <script>
+    window.config = {
+        GitHubUserName     : "first19326",
+        GitHubRepositories : "Hexo-LiveForCode",
+
+        User             : "Live For Code",
+        UserAvatar       : "/image/sidebar/avatar.jpg",
+        WebsiteStartDate : "2020-01-01",
+
+        WebsiteTitleBlur         : "(◍´꒳`◍) Hi, Live For Code",
+        WebsiteTitleBlurTimeOut  : 500,
+        WebsiteTitleFocus        : "(*´∇｀*) 欢迎回来!",
+        WebsiteTitleFocusTimeOut : 1000,
+        WebsiteFavicon           : "/image/website/logo.png",
+
+        ProgressBar : {
+            id       : "topProgressBar",
+            color    : "#77B6FF",
+            height   : "2px",
+            duration : 0.2
+        },
+
+        Loading: {
+            rebound : {
+                tension  : 16,
+                friction : 5
+            },
+            spinner : {
+                id     : "spinner",
+                radius : 90,
+                sides  : 3,
+                depth  : 4,
+                colors : {
+                    background : "#F0F0F0",
+                    stroke     : "#272633",
+                    base       : "",
+                    child      : "#272633"
+                },
+                alwaysForward : true,
+                restAt        : 0.5,
+                renderBase    : false
+            }
+        },
+
+        HomeHeaderAnimationRendered : true,
+        HomeHeaderAnimation         : {
+            radius      : 15,
+            density     : 0.2,
+            color       : "rgba(255, 255, 255, .2)",
+            clearOffset : 0.3
+        },
+
+        BackAnimationRendered          : true,
+        IEBrowserBackAnimationRendered : false,
+        BackAnimation                  : {
+            colorSaturation  : "60%",
+            colorBrightness  : "50%",
+            colorAlpha       : 0.5,
+            colorCycleSpeed  : 5,
+            verticalPosition : "random",
+            horizontalSpeed  : 200,
+            ribbonCount      : 3,
+            strokeSize       : 0,
+            parallaxAmount   : -0.2,
+            animateSections  : true
+        },
+
+        HomeHeaderImage : [
+            
+                "/image/header/home.jpg",
+            
+                "/image/header/home.jpeg",
+            
+                "/image/header/2023-04-17-20-51-03.jpg",
+            
+                "/image/header/2023-04-17-20-54-07.jpg",
+            
+                "/image/header/2023-04-17-20-54-22.jpg",
+            
+                "/image/header/2023-04-17-20-55-25.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+        HomeBannerText  : "",
+
+        ArticleHeaderImage : [
+            
+                "/image/header/article.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+
+        OtherBannerText : "",
+
+        Error : {
+            icon    : "icon-swimming",
+            title   : "PAGE NOT FOUND",
+            content : [
+                
+                    "很抱歉，您访问的页面不存在！",
+                
+                    "可能是输入地址有误或该地址已变更。",
+                
+            ],
+            buttons : [
+                
+                    {
+                        icon  : "icon-home",
+                        text  : "返回首页",
+                        href  : "https://fadeway32.gitee.io/",
+                        class : ""
+                    },
+                
+            ]
+        },
+
+        MenuNotice : {
+            enable : true,
+            notice : "简单地活着，肆意而又精彩！",
+            speed  : 20
+        },
+        MenuList : [
+            
+                {
+                    name   : "首页",
+                    icon   : "icon-home-fill",
+                    href   : "/",
+                    type   : "index",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "分类",
+                    icon   : "icon-folder-fill",
+                    href   : "/category",
+                    type   : "category",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "标签",
+                    icon   : "icon-discount-fill",
+                    href   : "/tag",
+                    type   : "tag",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "归档",
+                    icon   : "icon-calendar-fill",
+                    href   : "/archive",
+                    type   : "archive",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "赞赏",
+                    icon   : "icon-heart-fill",
+                    href   : "/donate",
+                    type   : "donate",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "关于",
+                    icon   : "icon-about-fill",
+                    href   : "/about",
+                    type   : "about",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "订阅",
+                    icon   : "icon-rss",
+                    href   : "/atom.xml",
+                    type   : "",
+                    class  : "",
+                    target : "_blank"
+                },
+            
+                {
+                    name   : "留言板",
+                    icon   : "icon-comments-fill",
+                    href   : "/comment",
+                    type   : "comment",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "友情链接",
+                    icon   : "icon-link",
+                    href   : "/friend",
+                    type   : "friend",
+                    class  : "",
+                    target : "_self"
+                },
+            
+        ],
+        MenuLink : [
+            
+                
+                    {
+                        name   : "知乎",
+                        icon   : "icon-zhihu",
+                        href   : "https://www.zhihu.com/people/wo-xin-de-love",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "微博",
+                        icon   : "icon-weibo",
+                        href   : "https://weibo.com/u/3939432776",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "QQ",
+                        icon   : "icon-qq",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"
+                    },
+                
+                    {
+                        name   : "微信",
+                        icon   : "icon-wechat",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"
+                    },
+                
+                    {
+                        name   : "GitHub",
+                        icon   : "icon-github",
+                        href   : "https://github.com/first19326",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+            
+        ],
+
+        FooterStyle : 2,
+        BottomText  : "<div><span class='face'>ღゝ◡╹)ノ♡</span></div><div>【人生若只如初见<span><i class='iconfont icon-like-fill'></i></span>何事秋风悲画扇】</div><div>&copy; 2020-2022 WorstOne. All Rights Reserved.</div>",
+
+        ConsoleList : [
+            
+                
+                    [
+                        
+                            
+                                "Based on cnblogs theme SimpleMemory.",
+                            
+                                "",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "SimpleMemory Author:",
+                            
+                                "BNDong",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "Theme:",
+                            
+                                "LiveForCode",
+                            
+                        
+                    ],
+                
+            
+        ],
+
+        FontIconExtend : "",
+
+        Donate : {
+            paypal  : "",
+            bitcoin : "",
+            alipay  : "/image/donate/alipay.png",
+            wechat  : "/image/donate/wechat.png"
+        },
+
+        Search : {
+            applicationID : "854JXVO35S",
+            apiKey        : "1945575867b066df2d460a4a97e23421",
+            indexName     : "hexo2",
+            hits          : {
+                page : 30
+            },
+            labels        : {
+                placeholder : "搜索",
+                empty       : "未发现与 「${query}」 相关的内容",
+                stats       : "${hits} 条相关条目，使用了 ${time} 毫秒",
+            }
+        }, 
+
+        Valine : {
+            switch         : true,
+            el             : ".comments-content",
+            appId          : "srhKtvWPQTWYKh3qX8G8M7v0-gzGzoHsz",
+            appKey         : "8uVSP1q6UlALVC5igYfIfv2h",
+            serverURLs     : "",
+            placeholder    : "你是我一生只会遇见一次的惊喜...",
+            avatar         : "mm",
+            meta           : "nick,mail,link",
+            requiredFields : "nick,mail",
+            pageSize       : 5,
+            lang           : "zh-cn",
+            visitor        : true,
+            enableQQ       : true
+        },
+
+        Tocbot : {
+            switch                : true,
+            tocSelector           : ".toc",
+            contentSelector       : ".article-body",
+            headingSelector       : "h1, h2, h3, h4, h5",
+            headingsOffset        : 0,
+            scrollSmooth          : true,
+            scrollSmoothOffset    : -5,
+            positionFixedSelector : ".toc",
+            positionFixedClass    : "toc-fixed",
+            fixedSidebarOffset    : "",
+        },
+
+        Require : {
+            baseUrl     : "/js/",
+            waitSeconds : 100
+        },
+
+        Music : {
+            type : "Meting"
+        },
+        APlayer : {
+            container : ".aplayer",
+            fixed     : true,
+            autoplay  : true,
+            loop      : "all",
+            order     : "list",
+            preload   : "auto",
+            volume    : 0.67,
+            mutex     : true,
+            lrcType   : 0,
+            audio     : [
+                
+                    {
+                        name   : "知我",
+                        artist : "国风堂 / 哦漏",
+                        cover  : "/image/header/home.jpg",
+                        url    : "/music/song/知我.mp3",
+                        lrc    : ""
+                    },
+                
+            ]
+        },
+        Meting : {
+            id       : "3778678", 
+            lrcshow  : false, 
+            server   : "netease", 
+            type     : "playlist", 
+            fixed    : true, 
+            autoplay : true, 
+            loop     : "all", 
+            order    : "random", 
+            preload  : "auto", 
+            volume   : 0.67, 
+            mutex    : true
+        },
+
+        Mouse : {
+            enable  : true,
+            options : {
+                size  : 6,
+                sizeF : 24
+            }
+        },
+
+        LazyLoad : {
+            default : "/image/website/lazyload.svg"
+        },
+  
+        Style : {
+            aplayer          : "/css/APlayer.css",
+            archive          : "/css/archive.css",
+            base             : "/css/base.css",
+            clipboard        : "/css/clipboard.css",
+            code             : "/css/code.css",
+            donate           : "/css/donate.css",
+            fancybox         : "/css/jquery.fancybox.css",
+            footer           : "/css/footer.css",
+            iconfont         : "/iconfont/iconfont.css",
+            index            : "/css/index.css",
+            menuBubble       : "/css/menu-bubble.css",
+            mouse            : "/css/mouse.css",
+            page             : "/css/page.css",
+            post             : "/css/post.css",
+            search           : "/css/search.css",
+            tocbot           : "/css/tocbot.css",
+            valine           : "/css/valine.css"
+        },
+
+        Script: {
+            aplayer          : "/js/APlayer.min.js",
+            config           : "/js/require.config.js",
+            index            : "/js/index.js",
+            instantSearch    : "/js/instantsearch.min.js",
+            iscroll          : "/js/iscroll.js",
+            jQuery           : "/js/jquery-3.4.1.min.js",
+            loading          : "/js/loading.js",
+            meting           : "/js/Meting.min.js",
+            require          : "/js/require.min.js"
+        },
+
+        Font: {
+            LongCang    : "/font/LongCang.css",
+            Monda       : "/font/Monda.css",
+            NotoSansSC  : "/font/NotoSansSC.css",
+            NotoSerifSC : "/font/NotoSerifSC.css",
+            Playball    : "/font/Playball.css",
+            PTMono      : "/font/PTMono.css",
+            Roboto      : "/font/Roboto.css",
+            RobotoSlab  : "/font/RobotoSlab.css",
+            Rosario     : "/font/Rosario.css",
+            UbuntuMono  : "/font/UbuntuMono.css"
+        },
+
+        Suffix : {
+            about : "你知道的越多,你不知道的越多"
+        },
+            
+        Theme : {
+            url  : "https://fadeway32.gitee.io/",
+            name : "fadeway32"
+        }  
+    };
+</script>
+    <script type="text/javascript" src="/js/home-docs.js"></script>
+    <script type="text/javascript" src="/js/index.js"></script>
+</body>
+</html>
