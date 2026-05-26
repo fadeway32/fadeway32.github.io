@@ -102,7 +102,9 @@
 
 	function initBoxEvents() {
 		$('.menu-link .image').click(function() {
-			$('.image-box').append('<img src="' + $(this).attr('data') + '">');
+			var img = document.createElement('img');
+			img.src = $(this).attr('data');
+			$('.image-box').append(img);
 			$('.menu-link a').addClass('blur');
 			$('.box').fadeIn(300, function() {
 				$('.image-box').addClass('show');

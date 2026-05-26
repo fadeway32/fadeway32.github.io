@@ -1,3 +1,17 @@
+function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+}
+
+function sanitizeUrl(url) {
+    var stripped = url.replace(/^\s+/, '').toLowerCase();
+    if (stripped.indexOf('javascript:') === 0 || stripped.indexOf('data:') === 0) {
+        return '#';
+    }
+    return escapeHtml(url);
+}
+
 $(document).ready(function () {
     let searchSettings = window.config.Search;
     let isSearchSettingsValid = searchSettings.applicationID &&
@@ -43,13 +57,13 @@ $(document).ready(function () {
                     if (link.includes("github.com")){
                         const pathIndex  =  link.indexOf("github.com/") + "github.com/".length;
                         const newPath = "https://"+link.substring(pathIndex);
-                        return ('<a href="' + newPath + '" class="search-hit-link">' + data._highlightResult.title.value + '</a>');
+                        return ('<a href="' + sanitizeUrl(newPath) + '" class="search-hit-link">' + data._highlightResult.title.value + '</a>');
 
                     }
-                    return ('<a href="' + link + '" class="search-hit-link">' + data._highlightResult.title.value + '</a>');
+                    return ('<a href="' + sanitizeUrl(link) + '" class="search-hit-link">' + data._highlightResult.title.value + '</a>');
                 },
                 empty: function (data) {
-                    return ('<div id="search-hits-empty" class="search-hits-empty">' + searchSettings.labels.empty.replace(/\$\{query}/, data.query) + '</div>');
+                    return ('<div id="search-hits-empty" class="search-hits-empty">' + searchSettings.labels.empty.replace(/\$\{query}/, escapeHtml(data.query)) + '</div>');
                 }
             },
             cssClasses: {

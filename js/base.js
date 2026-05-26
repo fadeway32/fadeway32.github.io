@@ -822,8 +822,11 @@ function Base() {
                 });
 
                 $('code-box button').click(function () {
+                    var codeId = $(this).attr('code-id');
                     $(this).find('i').removeClass('icon-copy').addClass('icon-check');
-                    setTimeout('$("code-box button[code-id=' + $(this).attr("code-id") + '] i").removeClass("icon-check").addClass("icon-copy")', 1500);
+                    setTimeout(function () {
+                        $('code-box button[code-id=' + codeId + '] i').removeClass('icon-check').addClass('icon-copy');
+                    }, 1500);
                 });
 
                 $('code-box').on({
