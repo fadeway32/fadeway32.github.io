@@ -1,0 +1,1848 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <!--    <meta name="referrer" content="origin">-->
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>
+        
+            MCP、Function Calling 与 Agent
+        
+    </title>
+    <link rel="shortcut icon" href="#"/>
+
+    <link type="text/css" rel="stylesheet" href="/font/LongCang.css">
+    <link type="text/css" rel="stylesheet" href="/font/Monda.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSansSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSerifSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/Playball.css">
+    <link type="text/css" rel="stylesheet" href="/font/PTMono.css">
+    <link type="text/css" rel="stylesheet" href="/font/Roboto.css">
+    <link type="text/css" rel="stylesheet" href="/font/RobotoSlab.css">
+    <link type="text/css" rel="stylesheet" href="/font/Rosario.css">
+    <link type="text/css" rel="stylesheet" href="/font/UbuntuMono.css">
+
+    <link type="text/css" rel="stylesheet" href="/css/base.css">
+    <link type="text/css" rel="stylesheet" href="/css/code.css">
+
+    <script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+    <a id="cover"></a>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
+<header>
+    <meta name="referrer" content="no-referrer">
+</header>
+<div id="header" class="header">
+    <div class="vertical">
+        <div class="inner">
+            
+                <h1 class="header-subtitle">MCP、Function Calling 与 Agent</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2026-01-23
+                        </span>
+                        
+                            <span id="/article/1773903578/" class="leancloud_visitors" data-flag-title="MCP、Function Calling 与 Agent">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1773903578/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">AI</span>
+                        
+                    
+                </div>
+            
+        </div>
+    </div>
+    
+</div>
+<div id="container"
+
+>
+    
+        <!-- 文章页面 -->
+        
+        <div id="article" data-doc-title="MCP、Function Calling 与 Agent" data-doc-path="/article/1773903578/"
+             data-doc-url="/article/1773903578/" data-doc-date="2026-01-23">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="MCP、Function-Calling-与-Agent：原理、使用与高频面试题梳理"><a href="#MCP、Function-Calling-与-Agent：原理、使用与高频面试题梳理" class="headerlink" title="MCP、Function Calling 与 Agent：原理、使用与高频面试题梳理"></a>MCP、Function Calling 与 Agent：原理、使用与高频面试题梳理</h1><blockquote>
+<p>面向准备 AI Agent &#x2F; LLM 应用工程师面试的中文复习文档。<br>核对日期：2026-01-23。MCP 官方 <code>latest</code> 当前指向 <code>2025-11-25</code>。<br>关键词：MCP、Function Calling、Tools、Agent Loop、RAG、Memory、Guardrails、Human-in-the-loop。</p>
+</blockquote>
+<h2 id="0-参考资料"><a href="#0-参考资料" class="headerlink" title="0. 参考资料"></a>0. 参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://modelcontextprotocol.io/specification/latest">MCP Specification latest</a></li>
+<li><a target="_blank" rel="noopener" href="https://modelcontextprotocol.io/specification/2025-11-25/architecture">MCP Architecture</a></li>
+<li><a target="_blank" rel="noopener" href="https://modelcontextprotocol.io/specification/2025-11-25/server/tools">MCP Tools</a></li>
+<li><a target="_blank" rel="noopener" href="https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle">MCP Lifecycle</a></li>
+<li><a target="_blank" rel="noopener" href="https://modelcontextprotocol.io/specification/2025-11-25/basic/transports">MCP Transports</a></li>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/function-calling">OpenAI Function Calling</a></li>
+<li><a target="_blank" rel="noopener" href="https://openai.github.io/openai-agents-js/guides/tools/">OpenAI Agents SDK Tools</a></li>
+<li><a target="_blank" rel="noopener" href="https://openai.github.io/openai-agents-js/guides/agents/">OpenAI Agents SDK Agents</a></li>
+</ul>
+<h2 id="1-一句话总览"><a href="#1-一句话总览" class="headerlink" title="1. 一句话总览"></a>1. 一句话总览</h2><p>MCP 是把外部上下文、工具和提示词接入 LLM 应用的标准协议；Function Calling 是模型通过结构化 JSON 参数“请求应用调用工具”的机制；Agent 是围绕目标不断观察、推理、调用工具、处理结果并终止的运行范式。</p>
+<p>面试中最容易混淆的是：模型不会真的执行函数，模型只生成工具调用意图和参数；真正执行工具的是应用、SDK、MCP client&#x2F;server 或托管工具运行时。MCP 也不是某个 Agent 框架，它更像一套“外部能力接入协议”。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">flowchart LR</span><br><span class="line">    U[&quot;用户目标&quot;] --&gt; H[&quot;Host / Agent App&quot;]</span><br><span class="line">    H --&gt; M[&quot;LLM&quot;]</span><br><span class="line">    M --&gt;|&quot;Function Calling: 生成 tool_call + args&quot;| H</span><br><span class="line">    H --&gt;|&quot;执行本地函数 / API&quot;| T[&quot;Function Tool&quot;]</span><br><span class="line">    H --&gt;|&quot;MCP Client: tools/list, tools/call&quot;| S[&quot;MCP Server&quot;]</span><br><span class="line">    S --&gt; R[&quot;Resources / Tools / Prompts&quot;]</span><br><span class="line">    T --&gt; H</span><br><span class="line">    S --&gt; H</span><br><span class="line">    H --&gt;|&quot;整理工具结果&quot;| M</span><br><span class="line">    M --&gt;|&quot;最终回答或继续调用&quot;| H</span><br><span class="line">    H --&gt; U</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-1-三者关系速记"><a href="#1-1-三者关系速记" class="headerlink" title="1.1 三者关系速记"></a>1.1 三者关系速记</h3><table>
+<thead>
+<tr>
+<th>概念</th>
+<th>核心问题</th>
+<th>谁拥有它</th>
+<th>典型接口</th>
+<th>面试表达</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>MCP</td>
+<td>外部系统如何标准化暴露上下文和工具</td>
+<td>Host、Client、Server</td>
+<td><code>initialize</code>、<code>tools/list</code>、<code>tools/call</code>、<code>resources/list</code></td>
+<td>“协议层，解决连接和互操作”</td>
+</tr>
+<tr>
+<td>Function Calling</td>
+<td>模型如何结构化地请求调用函数</td>
+<td>模型 API 与应用运行时</td>
+<td><code>tools</code>、function schema、<code>tool_call</code>、<code>function_call_output</code></td>
+<td>“调用意图生成机制，不等于执行”</td>
+</tr>
+<tr>
+<td>Agent</td>
+<td>如何把模型、工具、状态和目标组织成可运行任务</td>
+<td>应用 &#x2F; SDK &#x2F; 平台</td>
+<td>Agent loop、tool registry、memory、guardrails</td>
+<td>“运行范式，解决任务闭环”</td>
+</tr>
+</tbody></table>
+<h3 id="1-2-面试前-30-秒答案"><a href="#1-2-面试前-30-秒答案" class="headerlink" title="1.2 面试前 30 秒答案"></a>1.2 面试前 30 秒答案</h3><p>如果被问“你怎么理解 MCP、Function Calling 和 Agent”，可以这样答：</p>
+<p>MCP 是 LLM 应用接入外部上下文和工具的开放协议，定义 Host、Client、Server 之间用 JSON-RPC 通信，服务端暴露 Resources、Prompts、Tools，客户端可以提供 Sampling、Roots、Elicitation 等能力。Function Calling 是模型 API 里的工具调用机制：应用把函数的 JSON Schema 提供给模型，模型选择函数并生成结构化参数，应用执行函数后把结果回传。Agent 则是更上层的任务执行范式，它把模型推理、工具调用、状态管理、错误恢复、权限控制和终止条件串成循环。三者可以组合：Agent App 作为 Host，通过 MCP Client 发现远端工具，再把这些工具映射成模型可调用的 function tools。</p>
+<h3 id="1-3-常见误区"><a href="#1-3-常见误区" class="headerlink" title="1.3 常见误区"></a>1.3 常见误区</h3><ul>
+<li>误区 1：Function Calling 会自动执行函数。实际是模型生成调用请求，应用负责执行。</li>
+<li>误区 2：MCP Server 能看到完整对话。规范设计上 Host 负责隔离，Server 应只拿到必要上下文。</li>
+<li>误区 3：Agent 就是“多次调用 LLM”。真正工程化 Agent 还需要状态、工具、权限、恢复、观测和终止。</li>
+<li>误区 4：工具越多越强。工具过多会增加选择难度、token 成本、误调用和权限风险。</li>
+<li>误区 5：RAG、MCP、Function Calling 是竞争关系。它们常常互补：RAG 提供知识检索，MCP 提供接入协议，Function Calling 提供调用格式。</li>
+</ul>
+<h2 id="2-MCP-原理与使用"><a href="#2-MCP-原理与使用" class="headerlink" title="2. MCP 原理与使用"></a>2. MCP 原理与使用</h2><h3 id="2-1-MCP-是什么"><a href="#2-1-MCP-是什么" class="headerlink" title="2.1 MCP 是什么"></a>2.1 MCP 是什么</h3><p>MCP，全称 Model Context Protocol，是一个开放协议，用来让 LLM 应用和外部数据源、工具、工作流进行标准化集成。它的目标不是替代模型 API，而是让不同应用和工具之间有统一的通信方式。</p>
+<p>MCP 使用 JSON-RPC 2.0 消息，具有状态化连接、生命周期、能力协商、错误处理、取消、进度、日志等协议能力。它借鉴了 Language Server Protocol 的思想：不是每个 IDE 都为每种语言重写一套能力，而是通过协议把语言能力标准化；MCP 类似地把 AI 应用的外部上下文和工具接入标准化。</p>
+<h3 id="2-2-Host-x2F-Client-x2F-Server"><a href="#2-2-Host-x2F-Client-x2F-Server" class="headerlink" title="2.2 Host &#x2F; Client &#x2F; Server"></a>2.2 Host &#x2F; Client &#x2F; Server</h3><table>
+<thead>
+<tr>
+<th>角色</th>
+<th>职责</th>
+<th>例子</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Host</td>
+<td>LLM 应用外壳，管理用户、模型、权限、多个 client</td>
+<td>AI IDE、桌面助手、聊天应用、Agent 平台</td>
+</tr>
+<tr>
+<td>Client</td>
+<td>Host 内部连接某个 MCP Server 的连接器，通常一个 client 对一个 server</td>
+<td>文件系统 server client、GitHub server client</td>
+</tr>
+<tr>
+<td>Server</td>
+<td>暴露资源、工具、提示词等能力的服务</td>
+<td>数据库 MCP server、浏览器 MCP server、CRM MCP server</td>
+</tr>
+</tbody></table>
+<p>关键点：</p>
+<ul>
+<li>一个 Host 可以管理多个 Client。</li>
+<li>每个 Client 通常维护到一个 Server 的隔离会话。</li>
+<li>Server 应聚焦具体能力，不应拥有完整对话上下文。</li>
+<li>Host 负责用户授权、策略控制、上下文聚合和安全边界。</li>
+</ul>
+<h3 id="2-3-生命周期"><a href="#2-3-生命周期" class="headerlink" title="2.3 生命周期"></a>2.3 生命周期</h3><p>MCP 连接通常分三段：</p>
+<ol>
+<li>Initialization：客户端发送 <code>initialize</code>，包含协议版本、客户端能力和客户端信息；服务端返回协议版本、服务端能力和服务端信息。</li>
+<li>Operation：双方按能力协商结果进行正常 JSON-RPC 通信。</li>
+<li>Shutdown：连接关闭或会话终止。</li>
+</ol>
+<p>能力协商是 MCP 的关键。比如服务端只有声明 <code>tools</code> capability，客户端才应该调用工具相关接口；客户端只有声明 <code>sampling</code>，服务端才可以发起采样请求。</p>
+<h3 id="2-4-Transports"><a href="#2-4-Transports" class="headerlink" title="2.4 Transports"></a>2.4 Transports</h3><p>MCP 当前标准 transport 主要包括：</p>
+<table>
+<thead>
+<tr>
+<th>Transport</th>
+<th>适用场景</th>
+<th>特点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>stdio</td>
+<td>本地工具、IDE 插件、本地 CLI server</td>
+<td>client 启动 server 子进程，通过 stdin&#x2F;stdout 传 JSON-RPC</td>
+</tr>
+<tr>
+<td>Streamable HTTP</td>
+<td>远程服务、多客户端连接、可认证 API</td>
+<td>单一 HTTP endpoint，POST&#x2F;GET，支持 SSE 流式消息</td>
+</tr>
+<tr>
+<td>Custom Transport</td>
+<td>特殊环境</td>
+<td>必须保持 JSON-RPC 消息和生命周期语义</td>
+</tr>
+</tbody></table>
+<p>安全上，Streamable HTTP 要特别关注 Origin 校验、认证、localhost 绑定、会话 ID 保护和 DNS rebinding 风险。</p>
+<h3 id="2-5-Server-Features：Resources、Prompts、Tools"><a href="#2-5-Server-Features：Resources、Prompts、Tools" class="headerlink" title="2.5 Server Features：Resources、Prompts、Tools"></a>2.5 Server Features：Resources、Prompts、Tools</h3><table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>含义</th>
+<th>谁主要使用</th>
+<th>类比</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Resources</td>
+<td>可读取的上下文和数据</td>
+<td>用户或模型</td>
+<td>文件、文档、数据库记录、网页</td>
+</tr>
+<tr>
+<td>Prompts</td>
+<td>模板化消息和工作流</td>
+<td>用户或 Host</td>
+<td>预设 prompt、任务模板</td>
+</tr>
+<tr>
+<td>Tools</td>
+<td>模型可调用的动作</td>
+<td>模型经 Host 控制</td>
+<td>API 调用、数据库查询、计算、文件操作</td>
+</tr>
+</tbody></table>
+<p>Resources 偏“读上下文”，Tools 偏“执行动作”，Prompts 偏“复用任务模板”。面试中要强调：Tool 可能产生副作用，因此需要更强权限控制。</p>
+<h3 id="2-6-Client-Features：Sampling、Roots、Elicitation"><a href="#2-6-Client-Features：Sampling、Roots、Elicitation" class="headerlink" title="2.6 Client Features：Sampling、Roots、Elicitation"></a>2.6 Client Features：Sampling、Roots、Elicitation</h3><table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>含义</th>
+<th>面试重点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Sampling</td>
+<td>Server 请求 Client 代表它调用 LLM</td>
+<td>必须受用户和 Host 控制，避免 Server 任意消耗模型或泄露上下文</td>
+</tr>
+<tr>
+<td>Roots</td>
+<td>Client 告诉 Server 可操作的 URI &#x2F; 文件系统边界</td>
+<td>限制 Server 可访问范围</td>
+</tr>
+<tr>
+<td>Elicitation</td>
+<td>Server 请求 Client 向用户补充信息</td>
+<td>适合缺字段、表单补全、用户确认</td>
+</tr>
+</tbody></table>
+<p>MCP 的一个设计原则是 Server 不应该直接读取整个对话，也不应该越过 Host 做用户交互。Sampling 和 Elicitation 都是通过 Client&#x2F;Host 受控完成。</p>
+<h3 id="2-7-Tools-协议消息"><a href="#2-7-Tools-协议消息" class="headerlink" title="2.7 Tools 协议消息"></a>2.7 Tools 协议消息</h3><h4 id="tools-list"><a href="#tools-list" class="headerlink" title="tools/list"></a><code>tools/list</code></h4><p>客户端发送 <code>tools/list</code> 发现服务端工具。返回值包含工具列表、分页 cursor 等。每个工具通常包括：</p>
+<ul>
+<li><code>name</code>：工具唯一标识。</li>
+<li><code>title</code>：面向 UI 的可选名称。</li>
+<li><code>description</code>：说明工具做什么、何时使用。</li>
+<li><code>inputSchema</code>：JSON Schema 参数定义。</li>
+<li><code>outputSchema</code>：可选，结构化输出定义。</li>
+<li><code>annotations</code>：可选工具行为提示，但不应盲目信任。</li>
+<li><code>execution</code>：可选执行属性，例如 task support。</li>
+</ul>
+<h4 id="tools-call"><a href="#tools-call" class="headerlink" title="tools/call"></a><code>tools/call</code></h4><p>客户端发送 <code>tools/call</code> 调用工具，参数包含工具名和 arguments。服务端返回 tool result，可能包括：</p>
+<ul>
+<li><code>content</code>：非结构化内容块，如 text、image、audio、resource link、embedded resource。</li>
+<li><code>structuredContent</code>：结构化 JSON 对象。</li>
+<li><code>isError</code>：工具执行错误标记。</li>
+</ul>
+<p>面试重点：MCP tool result 可以同时给自然语言可读内容和结构化内容。若工具定义了 <code>outputSchema</code>，结构化结果应符合 schema，客户端也应做校验。</p>
+<h3 id="2-8-MCP-工具错误"><a href="#2-8-MCP-工具错误" class="headerlink" title="2.8 MCP 工具错误"></a>2.8 MCP 工具错误</h3><p>MCP Tools 有两类错误：</p>
+<table>
+<thead>
+<tr>
+<th>错误类型</th>
+<th>例子</th>
+<th>是否适合回传给模型自修复</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Protocol Error</td>
+<td>未知工具、JSON-RPC 格式错误、请求不符合 schema</td>
+<td>通常较难自修复</td>
+</tr>
+<tr>
+<td>Tool Execution Error</td>
+<td>参数值非法、API 失败、业务规则失败</td>
+<td>适合回传给模型，让模型调整参数重试</td>
+</tr>
+</tbody></table>
+<p>工程实践中，工具执行错误应该返回足够具体但不泄露敏感信息的提示。</p>
+<h3 id="2-9-MCP-安全边界"><a href="#2-9-MCP-安全边界" class="headerlink" title="2.9 MCP 安全边界"></a>2.9 MCP 安全边界</h3><p>MCP 安全要点：</p>
+<ul>
+<li>Host 负责用户授权和安全策略。</li>
+<li>Tool 调用前应让用户看见工具名、参数和影响范围。</li>
+<li>Server 必须验证输入、控制权限、限流、清洗输出。</li>
+<li>Client 应对敏感操作进行确认、设置超时、记录审计日志。</li>
+<li>Tool annotations 来自非可信 server 时不能直接相信。</li>
+<li>Resources 和 tool output 可能包含 prompt injection，进入模型前要做隔离和标注。</li>
+</ul>
+<h3 id="2-10-MCP-使用步骤"><a href="#2-10-MCP-使用步骤" class="headerlink" title="2.10 MCP 使用步骤"></a>2.10 MCP 使用步骤</h3><p>一个典型接入流程：</p>
+<ol>
+<li>选择 transport：本地 stdio 或远程 Streamable HTTP。</li>
+<li>Host 创建 MCP Client 并连接 Server。</li>
+<li>发送 <code>initialize</code>，完成版本和能力协商。</li>
+<li>调用 <code>tools/list</code>、<code>resources/list</code> 或 <code>prompts/list</code> 发现能力。</li>
+<li>将可用工具映射到 Agent 的 tool registry 或模型 API 的 function tools。</li>
+<li>模型产生工具调用意图后，Host 决定是否允许调用。</li>
+<li>Client 发送 <code>tools/call</code> 给 MCP Server。</li>
+<li>Host 将结果整理后回传模型。</li>
+<li>记录调用链路、延迟、错误、权限决策。</li>
+</ol>
+<h2 id="3-Function-Calling-原理与使用"><a href="#3-Function-Calling-原理与使用" class="headerlink" title="3. Function Calling 原理与使用"></a>3. Function Calling 原理与使用</h2><h3 id="3-1-Function-Calling-是什么"><a href="#3-1-Function-Calling-是什么" class="headerlink" title="3.1 Function Calling 是什么"></a>3.1 Function Calling 是什么</h3><p>Function Calling 是模型 API 支持的一种工具调用方式。应用把工具定义传给模型，工具定义通常包含函数名、描述、参数 JSON Schema、严格模式等。模型根据上下文决定是否调用某个工具，并生成符合 schema 的参数。</p>
+<p>关键点：模型输出的是“调用请求”，不是执行结果。应用必须解析调用请求、执行真实函数或 API，再把工具结果作为后续输入回传模型。</p>
+<h3 id="3-2-基本流程"><a href="#3-2-基本流程" class="headerlink" title="3.2 基本流程"></a>3.2 基本流程</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">sequenceDiagram</span><br><span class="line">    participant App as 应用</span><br><span class="line">    participant LLM as 模型</span><br><span class="line">    participant Tool as 本地函数/API</span><br><span class="line">    App-&gt;&gt;LLM: 输入 + tools schema</span><br><span class="line">    LLM--&gt;&gt;App: function_call(name, arguments, call_id)</span><br><span class="line">    App-&gt;&gt;App: 校验参数、权限判断</span><br><span class="line">    App-&gt;&gt;Tool: 执行真实函数</span><br><span class="line">    Tool--&gt;&gt;App: 返回结果</span><br><span class="line">    App-&gt;&gt;LLM: function_call_output(call_id, output)</span><br><span class="line">    LLM--&gt;&gt;App: 最终回答或继续调用工具</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-3-Function-Schema"><a href="#3-3-Function-Schema" class="headerlink" title="3.3 Function Schema"></a>3.3 Function Schema</h3><p>典型字段：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>含义</th>
+<th>建议</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>type</code></td>
+<td>通常是 <code>function</code></td>
+<td>固定声明</td>
+</tr>
+<tr>
+<td><code>name</code></td>
+<td>函数名</td>
+<td>短、唯一、语义明确</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>何时调用、做什么</td>
+<td>写清边界和禁止场景</td>
+</tr>
+<tr>
+<td><code>parameters</code></td>
+<td>JSON Schema 参数</td>
+<td>尽量收紧类型、枚举、必填、<code>additionalProperties</code></td>
+</tr>
+<tr>
+<td><code>strict</code></td>
+<td>是否严格校验</td>
+<td>高可靠场景建议开启</td>
+</tr>
+</tbody></table>
+<p>好的 schema 会显著影响工具选择和参数质量。差的 schema 常见问题是描述含糊、参数过宽、多个工具语义重叠、没有枚举约束、返回格式不稳定。</p>
+<h3 id="3-4-tool-choice"><a href="#3-4-tool-choice" class="headerlink" title="3.4 tool_choice"></a>3.4 <code>tool_choice</code></h3><p><code>tool_choice</code> 用来控制模型是否、何时、必须调用工具。不同 API&#x2F;SDK 具体写法可能不同，但常见策略包括：</p>
+<ul>
+<li><code>auto</code>：模型自行决定是否调用。</li>
+<li><code>none</code>：禁止调用工具。</li>
+<li>指定某个工具：强制调用特定工具。</li>
+<li>required 类策略：要求至少调用工具。</li>
+</ul>
+<p>工程上不要滥用强制调用。强制调用适合表单抽取、必须查实时数据、必须执行校验等场景；开放问答、总结、闲聊通常保持自动或禁用工具更合适。</p>
+<h3 id="3-5-结构化输出与-Function-Calling-的区别"><a href="#3-5-结构化输出与-Function-Calling-的区别" class="headerlink" title="3.5 结构化输出与 Function Calling 的区别"></a>3.5 结构化输出与 Function Calling 的区别</h3><p>结构化输出关注“最终答案必须是某个 JSON 结构”；Function Calling 关注“中间过程是否调用工具”。两者可以组合：Agent 先调用工具查数据，最后要求模型输出结构化报告。</p>
+<h3 id="3-6-并行和多步工具调用"><a href="#3-6-并行和多步工具调用" class="headerlink" title="3.6 并行和多步工具调用"></a>3.6 并行和多步工具调用</h3><p>模型可能一次返回多个 tool call，也可能多轮调用。应用要处理：</p>
+<ul>
+<li>多个调用的 <code>call_id</code> 对应关系。</li>
+<li>并行执行是否安全。</li>
+<li>工具之间是否有依赖。</li>
+<li>某个工具失败时是否继续其他工具。</li>
+<li>是否允许模型基于工具错误自我修正。</li>
+</ul>
+<p>有副作用的工具通常不应盲目并行，例如扣款、发邮件、删除文件。只读查询工具更适合并行。</p>
+<h3 id="3-7-常见失败模式"><a href="#3-7-常见失败模式" class="headerlink" title="3.7 常见失败模式"></a>3.7 常见失败模式</h3><table>
+<thead>
+<tr>
+<th>失败模式</th>
+<th>原因</th>
+<th>修复</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>选错工具</td>
+<td>工具描述重叠或 prompt 不清</td>
+<td>收紧描述，减少工具数量，增加反例</td>
+</tr>
+<tr>
+<td>参数缺失</td>
+<td>schema 太宽或用户信息不足</td>
+<td>required、枚举、Elicitation&#x2F;human confirmation</td>
+</tr>
+<tr>
+<td>参数幻觉</td>
+<td>模型补全了不存在的数据</td>
+<td>明确缺失时追问，不允许猜测关键字段</td>
+</tr>
+<tr>
+<td>工具结果误读</td>
+<td>输出格式混乱</td>
+<td>使用结构化结果和 output schema</td>
+</tr>
+<tr>
+<td>无限循环</td>
+<td>终止条件缺失</td>
+<td>max turns、预算、重复调用检测</td>
+</tr>
+<tr>
+<td>权限事故</td>
+<td>工具可直接产生副作用</td>
+<td>审批、dry run、最小权限、审计</td>
+</tr>
+</tbody></table>
+<h2 id="4-Agent-原理"><a href="#4-Agent-原理" class="headerlink" title="4. Agent 原理"></a>4. Agent 原理</h2><h3 id="4-1-Agent-是什么"><a href="#4-1-Agent-是什么" class="headerlink" title="4.1 Agent 是什么"></a>4.1 Agent 是什么</h3><p>Agent 是一个围绕目标执行任务的系统。它通常包含：</p>
+<ul>
+<li>模型：负责理解、推理、规划、生成调用。</li>
+<li>工具：外部 API、本地函数、MCP server、托管工具等。</li>
+<li>状态：对话历史、运行上下文、任务进度、短期记忆。</li>
+<li>记忆：长期偏好、用户画像、知识库、历史决策。</li>
+<li>控制器：循环调度、权限、终止条件、错误恢复。</li>
+<li>观测：日志、trace、token、延迟、工具调用记录。</li>
+<li>保护：guardrails、输入输出校验、人工审批。</li>
+</ul>
+<h3 id="4-2-Agent-Loop"><a href="#4-2-Agent-Loop" class="headerlink" title="4.2 Agent Loop"></a>4.2 Agent Loop</h3><p>常见 Agent loop：</p>
+<ol>
+<li>Receive：接收用户目标和上下文。</li>
+<li>Think&#x2F;Plan：模型判断是否需要分解任务。</li>
+<li>Act：选择工具或直接回答。</li>
+<li>Observe：读取工具结果。</li>
+<li>Reflect&#x2F;Repair：必要时修正参数、换工具、补充查询。</li>
+<li>Finish：满足终止条件后输出结果。</li>
+</ol>
+<p>伪代码：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">state = init(user_goal)</span><br><span class="line">for turn in range(max_turns):</span><br><span class="line">    decision = model(state, tools)</span><br><span class="line">    if decision.type == &quot;final&quot;:</span><br><span class="line">        return decision.answer</span><br><span class="line">    if decision.type == &quot;tool_call&quot;:</span><br><span class="line">        if not policy.allow(decision.tool, decision.args):</span><br><span class="line">            state.add(&quot;tool denied&quot;)</span><br><span class="line">            continue</span><br><span class="line">        result = execute_tool(decision.tool, decision.args)</span><br><span class="line">        state.add_observation(result)</span><br><span class="line">return fail(&quot;max turns exceeded&quot;)</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-3-Planner-x2F-Executor"><a href="#4-3-Planner-x2F-Executor" class="headerlink" title="4.3 Planner &#x2F; Executor"></a>4.3 Planner &#x2F; Executor</h3><p>Planner 负责拆解任务、决定策略；Executor 负责执行具体工具调用。简单任务可以一个模型同时做规划和执行；复杂任务可拆成多 Agent 或 manager&#x2F;worker 模式。</p>
+<p>设计取舍：</p>
+<ul>
+<li>单 Agent：简单、成本低、上下文集中，但复杂任务容易混乱。</li>
+<li>Planner + Executor：可控、可观测，但延迟和实现复杂度更高。</li>
+<li>多 Agent：职责清晰，适合专业化任务，但协调成本和错误传播风险更高。</li>
+</ul>
+<h3 id="4-4-Memory"><a href="#4-4-Memory" class="headerlink" title="4.4 Memory"></a>4.4 Memory</h3><p>Memory 可分为：</p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>用途</th>
+<th>风险</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>短期记忆</td>
+<td>当前任务状态和对话上下文</td>
+<td>上下文过长、噪声累积</td>
+</tr>
+<tr>
+<td>长期记忆</td>
+<td>用户偏好、历史事实</td>
+<td>过期、隐私、误写入</td>
+</tr>
+<tr>
+<td>工作记忆</td>
+<td>中间计划、草稿、工具结果</td>
+<td>需要压缩和清理</td>
+</tr>
+<tr>
+<td>外部知识记忆</td>
+<td>向量库、文档库、数据库</td>
+<td>检索质量和权限控制</td>
+</tr>
+</tbody></table>
+<p>面试要点：Memory 不是把所有历史塞进 prompt，而是存储、检索、压缩、校验和过期策略的组合。</p>
+<h3 id="4-5-RAG-与-Agent"><a href="#4-5-RAG-与-Agent" class="headerlink" title="4.5 RAG 与 Agent"></a>4.5 RAG 与 Agent</h3><p>RAG 是 Retrieval-Augmented Generation，核心是检索外部知识再生成。Agent 可以把 RAG 当作一个工具，也可以在执行过程中多次检索、交叉验证、基于结果决定下一步。</p>
+<p>RAG 解决“知识在哪里”，Agent 解决“任务怎么推进”。MCP 可以标准化暴露检索工具或资源。</p>
+<h3 id="4-6-Guardrails"><a href="#4-6-Guardrails" class="headerlink" title="4.6 Guardrails"></a>4.6 Guardrails</h3><p>Guardrails 是 Agent 的安全和质量控制层，包括：</p>
+<ul>
+<li>输入校验：识别越权、敏感、恶意 prompt。</li>
+<li>工具参数校验：schema、业务规则、权限。</li>
+<li>输出校验：格式、事实、合规、敏感信息。</li>
+<li>人工审批：高影响操作前暂停。</li>
+<li>运行预算：max turns、超时、token、费用。</li>
+<li>审计：记录谁在何时调用了什么工具。</li>
+</ul>
+<h3 id="4-7-终止条件"><a href="#4-7-终止条件" class="headerlink" title="4.7 终止条件"></a>4.7 终止条件</h3><p>常见终止条件：</p>
+<ul>
+<li>模型输出 final answer。</li>
+<li>达到最大轮数或最大工具调用次数。</li>
+<li>达到时间、token、费用预算。</li>
+<li>工具返回不可恢复错误。</li>
+<li>用户拒绝授权。</li>
+<li>检测到重复调用或循环。</li>
+<li>输出通过结构化校验和业务验收。</li>
+</ul>
+<h2 id="5-Python-TypeScript-示例"><a href="#5-Python-TypeScript-示例" class="headerlink" title="5. Python + TypeScript 示例"></a>5. Python + TypeScript 示例</h2><blockquote>
+<p>示例用于解释工程形态，不绑定某一家 SDK 的所有细节。真实项目应以所用 SDK 的当前文档为准。</p>
+</blockquote>
+<h3 id="5-1-Python：Responses-API-Function-Calling-基础循环"><a href="#5-1-Python：Responses-API-Function-Calling-基础循环" class="headerlink" title="5.1 Python：Responses API Function Calling 基础循环"></a>5.1 Python：Responses API Function Calling 基础循环</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> __future__ <span class="keyword">import</span> annotations</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> json</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Any</span></span><br><span class="line"><span class="keyword">from</span> openai <span class="keyword">import</span> OpenAI</span><br><span class="line"></span><br><span class="line">client = OpenAI()</span><br><span class="line"></span><br><span class="line">tools = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;name&quot;</span>: <span class="string">&quot;get_order_status&quot;</span>,</span><br><span class="line">        <span class="string">&quot;description&quot;</span>: <span class="string">&quot;查询订单状态。只在用户提供明确 order_id 时调用。&quot;</span>,</span><br><span class="line">        <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">            <span class="string">&quot;properties&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;order_id&quot;</span>: &#123;</span><br><span class="line">                    <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span>,</span><br><span class="line">                    <span class="string">&quot;description&quot;</span>: <span class="string">&quot;订单号，例如 OD20260608001&quot;</span>,</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;,</span><br><span class="line">            <span class="string">&quot;required&quot;</span>: [<span class="string">&quot;order_id&quot;</span>],</span><br><span class="line">            <span class="string">&quot;additionalProperties&quot;</span>: <span class="literal">False</span>,</span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="string">&quot;strict&quot;</span>: <span class="literal">True</span>,</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_order_status</span>(<span class="params">order_id: <span class="built_in">str</span></span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>]:</span><br><span class="line">    <span class="comment"># 真实项目中这里会查数据库或调用订单 API。</span></span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="string">&quot;order_id&quot;</span>: order_id,</span><br><span class="line">        <span class="string">&quot;status&quot;</span>: <span class="string">&quot;shipped&quot;</span>,</span><br><span class="line">        <span class="string">&quot;eta&quot;</span>: <span class="string">&quot;2026-06-10&quot;</span>,</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">dispatch_tool</span>(<span class="params">name: <span class="built_in">str</span>, arguments: <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>]</span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>]:</span><br><span class="line">    <span class="keyword">if</span> name == <span class="string">&quot;get_order_status&quot;</span>:</span><br><span class="line">        <span class="keyword">return</span> get_order_status(arguments[<span class="string">&quot;order_id&quot;</span>])</span><br><span class="line">    <span class="keyword">raise</span> ValueError(<span class="string">f&quot;Unknown tool: <span class="subst">&#123;name&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">input_items: <span class="built_in">list</span>[<span class="type">Any</span>] = [</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;帮我查一下订单 OD20260608001 到哪了&quot;</span>&#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">5</span>):</span><br><span class="line">    response = client.responses.create(</span><br><span class="line">        model=<span class="string">&quot;gpt-5.5&quot;</span>,</span><br><span class="line">        <span class="built_in">input</span>=input_items,</span><br><span class="line">        tools=tools,</span><br><span class="line">        instructions=<span class="string">&quot;你是客服助手。需要实时订单状态时必须调用工具，不要猜测。&quot;</span>,</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 对 reasoning models，带工具调用的响应中返回的 reasoning items 也要保留回传。</span></span><br><span class="line">    input_items += response.output</span><br><span class="line"></span><br><span class="line">    tool_calls = [item <span class="keyword">for</span> item <span class="keyword">in</span> response.output <span class="keyword">if</span> item.<span class="built_in">type</span> == <span class="string">&quot;function_call&quot;</span>]</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> tool_calls:</span><br><span class="line">        <span class="built_in">print</span>(response.output_text)</span><br><span class="line">        <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> call <span class="keyword">in</span> tool_calls:</span><br><span class="line">        args = json.loads(call.arguments)</span><br><span class="line">        result = dispatch_tool(call.name, args)</span><br><span class="line">        input_items.append(</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function_call_output&quot;</span>,</span><br><span class="line">                <span class="string">&quot;call_id&quot;</span>: call.call_id,</span><br><span class="line">                <span class="string">&quot;output&quot;</span>: json.dumps(result, ensure_ascii=<span class="literal">False</span>),</span><br><span class="line">            &#125;</span><br><span class="line">        )</span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    <span class="keyword">raise</span> RuntimeError(<span class="string">&quot;Agent exceeded max tool turns&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>要点：</p>
+<ul>
+<li><code>tools</code> 只是告诉模型有哪些可调用工具。</li>
+<li><code>dispatch_tool</code> 才是真正执行函数的位置。</li>
+<li><code>call_id</code> 用于把工具结果和模型的某次调用对应起来。</li>
+<li>必须设置最大轮数，避免无限循环。</li>
+</ul>
+<h3 id="5-2-TypeScript：Agents-SDK-风格-Function-Tool"><a href="#5-2-TypeScript：Agents-SDK-风格-Function-Tool" class="headerlink" title="5.2 TypeScript：Agents SDK 风格 Function Tool"></a>5.2 TypeScript：Agents SDK 风格 Function Tool</h3><figure class="highlight ts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> &#123; <span class="title class_">Agent</span>, run, tool &#125; <span class="keyword">from</span> <span class="string">&quot;@openai/agents&quot;</span>;</span><br><span class="line"><span class="keyword">import</span> &#123; z &#125; <span class="keyword">from</span> <span class="string">&quot;zod&quot;</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> getOrderStatus = <span class="title function_">tool</span>(&#123;</span><br><span class="line">  <span class="attr">name</span>: <span class="string">&quot;get_order_status&quot;</span>,</span><br><span class="line">  <span class="attr">description</span>: <span class="string">&quot;查询订单状态。只在用户给出明确 orderId 时调用。&quot;</span>,</span><br><span class="line">  <span class="attr">parameters</span>: z.<span class="title function_">object</span>(&#123;</span><br><span class="line">    <span class="attr">orderId</span>: z.<span class="title function_">string</span>().<span class="title function_">describe</span>(<span class="string">&quot;订单号，例如 OD20260608001&quot;</span>),</span><br><span class="line">  &#125;),</span><br><span class="line">  <span class="keyword">async</span> <span class="title function_">execute</span>(<span class="params">&#123; orderId &#125;</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">      orderId,</span><br><span class="line">      <span class="attr">status</span>: <span class="string">&quot;shipped&quot;</span>,</span><br><span class="line">      <span class="attr">eta</span>: <span class="string">&quot;2026-06-10&quot;</span>,</span><br><span class="line">    &#125;;</span><br><span class="line">  &#125;,</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> supportAgent = <span class="keyword">new</span> <span class="title class_">Agent</span>(&#123;</span><br><span class="line">  <span class="attr">name</span>: <span class="string">&quot;Support Agent&quot;</span>,</span><br><span class="line">  <span class="attr">instructions</span>: <span class="string">&quot;你是客服助手。不要猜测订单状态，必要时调用工具。&quot;</span>,</span><br><span class="line">  <span class="attr">tools</span>: [getOrderStatus],</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> result = <span class="keyword">await</span> <span class="title function_">run</span>(</span><br><span class="line">  supportAgent,</span><br><span class="line">  <span class="string">&quot;请帮我查询订单 OD20260608001 的配送进度&quot;</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(result.<span class="property">finalOutput</span>);</span><br></pre></td></tr></table></figure>
+
+<p>要点：</p>
+<ul>
+<li>SDK 把本地函数包装成模型可见工具。</li>
+<li>Zod schema 既约束参数，也帮助模型理解参数。</li>
+<li>Agent SDK 还可以接入 hosted tools、MCP servers、agents as tools、guardrails 等。</li>
+</ul>
+<h3 id="5-3-Python：MCP-Server-暴露工具的基本形态"><a href="#5-3-Python：MCP-Server-暴露工具的基本形态" class="headerlink" title="5.3 Python：MCP Server 暴露工具的基本形态"></a>5.3 Python：MCP Server 暴露工具的基本形态</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> mcp.server.fastmcp <span class="keyword">import</span> FastMCP</span><br><span class="line"></span><br><span class="line">mcp = FastMCP(<span class="string">&quot;orders&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@mcp.tool()</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_order_status</span>(<span class="params">order_id: <span class="built_in">str</span></span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;查询订单状态。order_id 必须是明确订单号。&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="string">&quot;order_id&quot;</span>: order_id,</span><br><span class="line">        <span class="string">&quot;status&quot;</span>: <span class="string">&quot;shipped&quot;</span>,</span><br><span class="line">        <span class="string">&quot;eta&quot;</span>: <span class="string">&quot;2026-06-10&quot;</span>,</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    mcp.run()</span><br></pre></td></tr></table></figure>
+
+<p>要点：</p>
+<ul>
+<li>MCP Server 暴露的是协议能力，不直接等同于模型 API 工具。</li>
+<li>Host 需要通过 MCP Client 连接该 Server，发现工具，再决定是否映射给模型。</li>
+<li>Server 仍要做鉴权、输入校验、限流、输出清洗。</li>
+</ul>
+<h3 id="5-4-TypeScript：MCP-Server-Tool-与结构化输出"><a href="#5-4-TypeScript：MCP-Server-Tool-与结构化输出" class="headerlink" title="5.4 TypeScript：MCP Server Tool 与结构化输出"></a>5.4 TypeScript：MCP Server Tool 与结构化输出</h3><figure class="highlight ts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> &#123; <span class="title class_">McpServer</span> &#125; <span class="keyword">from</span> <span class="string">&quot;@modelcontextprotocol/sdk/server/mcp.js&quot;</span>;</span><br><span class="line"><span class="keyword">import</span> &#123; <span class="title class_">StdioServerTransport</span> &#125; <span class="keyword">from</span> <span class="string">&quot;@modelcontextprotocol/sdk/server/stdio.js&quot;</span>;</span><br><span class="line"><span class="keyword">import</span> &#123; z &#125; <span class="keyword">from</span> <span class="string">&quot;zod&quot;</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> server = <span class="keyword">new</span> <span class="title class_">McpServer</span>(&#123;</span><br><span class="line">  <span class="attr">name</span>: <span class="string">&quot;orders&quot;</span>,</span><br><span class="line">  <span class="attr">version</span>: <span class="string">&quot;1.0.0&quot;</span>,</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">server.<span class="title function_">registerTool</span>(</span><br><span class="line">  <span class="string">&quot;get_order_status&quot;</span>,</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="attr">title</span>: <span class="string">&quot;Order Status&quot;</span>,</span><br><span class="line">    <span class="attr">description</span>: <span class="string">&quot;查询订单状态。orderId 必须是明确订单号。&quot;</span>,</span><br><span class="line">    <span class="attr">inputSchema</span>: &#123;</span><br><span class="line">      <span class="attr">orderId</span>: z.<span class="title function_">string</span>(),</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">outputSchema</span>: &#123;</span><br><span class="line">      <span class="attr">orderId</span>: z.<span class="title function_">string</span>(),</span><br><span class="line">      <span class="attr">status</span>: z.<span class="title function_">enum</span>([<span class="string">&quot;pending&quot;</span>, <span class="string">&quot;paid&quot;</span>, <span class="string">&quot;shipped&quot;</span>, <span class="string">&quot;delivered&quot;</span>, <span class="string">&quot;cancelled&quot;</span>]),</span><br><span class="line">      <span class="attr">eta</span>: z.<span class="title function_">string</span>().<span class="title function_">optional</span>(),</span><br><span class="line">    &#125;,</span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="keyword">async</span> (&#123; orderId &#125;) =&gt; &#123;</span><br><span class="line">    <span class="keyword">const</span> structuredContent = &#123;</span><br><span class="line">      orderId,</span><br><span class="line">      <span class="attr">status</span>: <span class="string">&quot;shipped&quot;</span> <span class="keyword">as</span> <span class="keyword">const</span>,</span><br><span class="line">      <span class="attr">eta</span>: <span class="string">&quot;2026-06-10&quot;</span>,</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">      <span class="attr">content</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">          <span class="attr">type</span>: <span class="string">&quot;text&quot;</span>,</span><br><span class="line">          <span class="attr">text</span>: <span class="title class_">JSON</span>.<span class="title function_">stringify</span>(structuredContent),</span><br><span class="line">        &#125;,</span><br><span class="line">      ],</span><br><span class="line">      structuredContent,</span><br><span class="line">    &#125;;</span><br><span class="line">  &#125;</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> transport = <span class="keyword">new</span> <span class="title class_">StdioServerTransport</span>();</span><br><span class="line"><span class="keyword">await</span> server.<span class="title function_">connect</span>(transport);</span><br></pre></td></tr></table></figure>
+
+<p>要点：</p>
+<ul>
+<li><code>inputSchema</code> 描述入参。</li>
+<li><code>outputSchema</code> 描述结构化结果。</li>
+<li><code>structuredContent</code> 给客户端和模型更稳定的解析依据。</li>
+<li><code>content</code> 仍可保留兼容性文本。</li>
+</ul>
+<h3 id="5-5-Agent-工具编排伪实战"><a href="#5-5-Agent-工具编排伪实战" class="headerlink" title="5.5 Agent 工具编排伪实战"></a>5.5 Agent 工具编排伪实战</h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">用户：分析过去一周客服投诉，找出前三类问题，并给出处理建议。</span><br><span class="line"></span><br><span class="line">Agent:</span><br><span class="line">1. 调用 ticket_search 查询过去一周工单。</span><br><span class="line">2. 调用 classify_complaints 对工单分类。</span><br><span class="line">3. 调用 policy_lookup 查询每类问题的处理政策。</span><br><span class="line">4. 如果某类样本不足，继续检索或说明置信度。</span><br><span class="line">5. 输出结构化报告：问题类别、数量、证据、建议、风险。</span><br></pre></td></tr></table></figure>
+
+<p>工程上这类任务不要只靠模型自由发挥，最好给 Agent 明确的步骤、工具边界、输出 schema、最大调用次数和失败处理策略。</p>
+<h2 id="6-高频面试题库"><a href="#6-高频面试题库" class="headerlink" title="6. 高频面试题库"></a>6. 高频面试题库</h2><h3 id="A-基础概念"><a href="#A-基础概念" class="headerlink" title="A. 基础概念"></a>A. 基础概念</h3><h3 id="Q1：MCP-是什么？"><a href="#Q1：MCP-是什么？" class="headerlink" title="Q1：MCP 是什么？"></a>Q1：MCP 是什么？</h3><p>参考答案：MCP 是 Model Context Protocol，一个用于 LLM 应用和外部数据源、工具、提示词工作流之间通信的开放协议。它通过 JSON-RPC、生命周期、能力协商和标准 primitives，让 Host 可以接入多个 Server 暴露的 Resources、Prompts、Tools。</p>
+<p>表达要点：协议层、上下文接入、Host&#x2F;Client&#x2F;Server、JSON-RPC、能力协商。</p>
+<p>常见误区：把 MCP 当成模型、Agent 框架或单纯的函数调用 API。</p>
+<h3 id="Q2：Function-Calling-是什么？"><a href="#Q2：Function-Calling-是什么？" class="headerlink" title="Q2：Function Calling 是什么？"></a>Q2：Function Calling 是什么？</h3><p>参考答案：Function Calling 是模型 API 中让模型生成结构化工具调用请求的机制。应用提供工具 schema，模型返回函数名和参数，应用执行函数后把结果回传模型。</p>
+<p>表达要点：模型只生成调用意图；应用执行；参数由 JSON Schema 约束。</p>
+<p>常见误区：认为模型能直接访问数据库或直接运行代码。</p>
+<h3 id="Q3：Agent-是什么？"><a href="#Q3：Agent-是什么？" class="headerlink" title="Q3：Agent 是什么？"></a>Q3：Agent 是什么？</h3><p>参考答案：Agent 是一种任务执行系统，把 LLM、工具、状态、记忆、策略、权限和终止条件组合成循环，使系统能围绕目标多步行动并产出结果。</p>
+<p>表达要点：目标驱动、多步循环、工具调用、状态管理、终止条件。</p>
+<p>常见误区：把 Agent 简化成“一个 prompt”或“自动聊天机器人”。</p>
+<h3 id="Q4：MCP、Function-Calling、Agent-的区别？"><a href="#Q4：MCP、Function-Calling、Agent-的区别？" class="headerlink" title="Q4：MCP、Function Calling、Agent 的区别？"></a>Q4：MCP、Function Calling、Agent 的区别？</h3><p>参考答案：MCP 是工具和上下文接入协议；Function Calling 是模型请求调用工具的结构化输出机制；Agent 是使用模型和工具完成任务的运行范式。三者可以组合，但层次不同。</p>
+<p>表达要点：协议、机制、范式三层区分。</p>
+<p>常见误区：把 MCP 和 Function Calling 视为互斥方案。</p>
+<h3 id="Q5：为什么需要-MCP？"><a href="#Q5：为什么需要-MCP？" class="headerlink" title="Q5：为什么需要 MCP？"></a>Q5：为什么需要 MCP？</h3><p>参考答案：没有 MCP 时，每个 Agent 应用都要为每个外部系统写专用连接方式。MCP 提供统一协议，让工具和上下文 server 可以被多个 Host 复用，并通过能力协商和安全边界降低集成复杂度。</p>
+<p>表达要点：标准化、复用、互操作、隔离、安全。</p>
+<p>常见误区：只从“省代码”角度理解，而忽略权限和生态互操作。</p>
+<h3 id="Q6：为什么需要-Function-Calling？"><a href="#Q6：为什么需要-Function-Calling？" class="headerlink" title="Q6：为什么需要 Function Calling？"></a>Q6：为什么需要 Function Calling？</h3><p>参考答案：自然语言输出不稳定，难以直接驱动系统动作。Function Calling 用 schema 约束模型输出，使应用能可靠解析工具名和参数，从而接入实时数据、业务系统和外部 API。</p>
+<p>表达要点：结构化、可校验、可执行、连接外部系统。</p>
+<p>常见误区：认为它能完全消除幻觉；实际仍需校验和权限控制。</p>
+<h3 id="Q7：为什么需要-Agent？"><a href="#Q7：为什么需要-Agent？" class="headerlink" title="Q7：为什么需要 Agent？"></a>Q7：为什么需要 Agent？</h3><p>参考答案：单次 LLM 调用适合简单问答，但复杂任务需要多步计划、工具调用、错误恢复和状态跟踪。Agent 提供任务闭环，让系统能根据观察结果继续行动，直到满足目标或终止条件。</p>
+<p>表达要点：多步任务、闭环、状态、恢复、终止。</p>
+<p>常见误区：把 Agent 设计成无限自主，不设预算和边界。</p>
+<h3 id="Q8：Tool-和-Resource-的区别？"><a href="#Q8：Tool-和-Resource-的区别？" class="headerlink" title="Q8：Tool 和 Resource 的区别？"></a>Q8：Tool 和 Resource 的区别？</h3><p>参考答案：Resource 通常是可读取的上下文或数据，偏“读”；Tool 是可被模型触发的动作，可能查询、计算或产生副作用，偏“做”。Tool 的权限和审计要求更高。</p>
+<p>表达要点：读 vs 动作；副作用；安全等级不同。</p>
+<p>常见误区：把所有数据访问都做成 Tool，导致权限和调用复杂度上升。</p>
+<h3 id="Q9：Prompt-在-MCP-中是什么？"><a href="#Q9：Prompt-在-MCP-中是什么？" class="headerlink" title="Q9：Prompt 在 MCP 中是什么？"></a>Q9：Prompt 在 MCP 中是什么？</h3><p>参考答案：Prompt 是服务端提供的模板化消息或工作流，用于让用户或 Host 快速启动某类任务。它不是模型参数，而是可复用的任务模板。</p>
+<p>表达要点：模板、工作流、可发现、可复用。</p>
+<p>常见误区：把 Prompt 当成系统提示词的唯一来源。</p>
+<h3 id="Q10：工具调用和结构化输出有什么区别？"><a href="#Q10：工具调用和结构化输出有什么区别？" class="headerlink" title="Q10：工具调用和结构化输出有什么区别？"></a>Q10：工具调用和结构化输出有什么区别？</h3><p>参考答案：工具调用是中间动作，模型输出调用请求，应用执行后再回传；结构化输出通常约束最终答案格式。两者可以结合使用。</p>
+<p>表达要点：中间动作 vs 最终格式。</p>
+<p>常见误区：用结构化输出替代真正的工具执行。</p>
+<h3 id="Q11：什么是-tool-registry？"><a href="#Q11：什么是-tool-registry？" class="headerlink" title="Q11：什么是 tool registry？"></a>Q11：什么是 tool registry？</h3><p>参考答案：tool registry 是应用或 Agent 维护的可用工具目录，包含工具名、描述、schema、权限、执行器、超时和审计配置。模型看到的是其中一部分工具定义。</p>
+<p>表达要点：注册、发现、执行映射、权限策略。</p>
+<p>常见误区：只维护函数列表，不维护权限和运行时策略。</p>
+<h3 id="Q12：LLM-工具调用的本质是什么？"><a href="#Q12：LLM-工具调用的本质是什么？" class="headerlink" title="Q12：LLM 工具调用的本质是什么？"></a>Q12：LLM 工具调用的本质是什么？</h3><p>参考答案：本质是模型在上下文中基于工具描述和 schema 做路由与参数生成，然后由外部运行时执行真实动作。它是一种“语言模型决策 + 程序执行”的组合。</p>
+<p>表达要点：模型决策、程序执行、schema 约束。</p>
+<p>常见误区：把模型生成的参数天然当作可信输入。</p>
+<h3 id="Q13：Agent-和-Workflow-的区别？"><a href="#Q13：Agent-和-Workflow-的区别？" class="headerlink" title="Q13：Agent 和 Workflow 的区别？"></a>Q13：Agent 和 Workflow 的区别？</h3><p>参考答案：Workflow 通常是预定义流程，步骤和分支较固定；Agent 更依赖模型根据上下文动态决定下一步。实际工程中常用“workflow 外壳 + agent 局部决策”的混合模式。</p>
+<p>表达要点：固定流程 vs 动态决策；混合设计。</p>
+<p>常见误区：所有任务都用完全自治 Agent。</p>
+<h3 id="Q14：什么任务不适合-Agent？"><a href="#Q14：什么任务不适合-Agent？" class="headerlink" title="Q14：什么任务不适合 Agent？"></a>Q14：什么任务不适合 Agent？</h3><p>参考答案：强确定性、低容错、固定规则、强合规或高频低延迟任务通常不适合完全开放式 Agent。比如核心交易扣款、权限变更、生产删除操作，应使用显式 workflow 和审批。</p>
+<p>表达要点：确定性、高风险、低延迟、合规。</p>
+<p>常见误区：为展示 AI 能力而把简单规则系统复杂化。</p>
+<h3 id="Q15：什么是-human-in-the-loop？"><a href="#Q15：什么是-human-in-the-loop？" class="headerlink" title="Q15：什么是 human-in-the-loop？"></a>Q15：什么是 human-in-the-loop？</h3><p>参考答案：human-in-the-loop 是在关键节点让用户或审核员参与决策，例如授权工具调用、确认高影响操作、纠正模型计划或审核最终输出。</p>
+<p>表达要点：审批、确认、纠偏、安全。</p>
+<p>常见误区：只在 UI 上显示日志，不给用户真正拒绝或修改的能力。</p>
+<h3 id="B-MCP-协议原理"><a href="#B-MCP-协议原理" class="headerlink" title="B. MCP 协议原理"></a>B. MCP 协议原理</h3><h3 id="Q16：MCP-的-Host、Client、Server-分别做什么？"><a href="#Q16：MCP-的-Host、Client、Server-分别做什么？" class="headerlink" title="Q16：MCP 的 Host、Client、Server 分别做什么？"></a>Q16：MCP 的 Host、Client、Server 分别做什么？</h3><p>参考答案：Host 是 LLM 应用容器，管理模型、用户授权、上下文聚合和多个 client；Client 是 Host 内部到某个 Server 的连接器；Server 暴露特定资源、工具和提示词能力。</p>
+<p>表达要点：Host 管总控；Client 维护连接；Server 提供能力。</p>
+<p>常见误区：把 Client 当成最终用户，或把 Server 当成模型运行环境。</p>
+<h3 id="Q17：为什么-MCP-中-Client-与-Server-通常是一对一连接？"><a href="#Q17：为什么-MCP-中-Client-与-Server-通常是一对一连接？" class="headerlink" title="Q17：为什么 MCP 中 Client 与 Server 通常是一对一连接？"></a>Q17：为什么 MCP 中 Client 与 Server 通常是一对一连接？</h3><p>参考答案：一对一连接有利于隔离会话、权限、上下文和通知，避免一个 Server 看到另一个 Server 的数据，也方便 Host 对不同 Server 设置不同策略。</p>
+<p>表达要点：隔离、安全、生命周期清晰。</p>
+<p>常见误区：为了省连接把多个 Server 混在同一通道里。</p>
+<h3 id="Q18：MCP-为什么使用-JSON-RPC？"><a href="#Q18：MCP-为什么使用-JSON-RPC？" class="headerlink" title="Q18：MCP 为什么使用 JSON-RPC？"></a>Q18：MCP 为什么使用 JSON-RPC？</h3><p>参考答案：JSON-RPC 简单、语言无关、适合请求、响应和通知模型，也易于在 stdio、HTTP、SSE 等 transport 上承载。它比自定义文本协议更易验证和互操作。</p>
+<p>表达要点：标准消息格式、请求响应通知、跨语言。</p>
+<p>常见误区：把 JSON-RPC 当成只能走 HTTP 的协议。</p>
+<h3 id="Q19：MCP-初始化阶段做什么？"><a href="#Q19：MCP-初始化阶段做什么？" class="headerlink" title="Q19：MCP 初始化阶段做什么？"></a>Q19：MCP 初始化阶段做什么？</h3><p>参考答案：初始化阶段通过 <code>initialize</code> 交换协议版本、能力和实现信息。服务端响应后，客户端发送 <code>notifications/initialized</code> 表示进入正常操作。</p>
+<p>表达要点：版本协商、能力协商、实现信息、initialized notification。</p>
+<p>常见误区：连接建立后直接调用工具，不检查能力。</p>
+<h3 id="Q20：能力协商有什么价值？"><a href="#Q20：能力协商有什么价值？" class="headerlink" title="Q20：能力协商有什么价值？"></a>Q20：能力协商有什么价值？</h3><p>参考答案：能力协商让双方明确本会话可用功能，例如服务端是否支持 tools、resources subscriptions，客户端是否支持 sampling、roots、elicitation。这样可以保持扩展性和兼容性。</p>
+<p>表达要点：可用功能声明、扩展、兼容。</p>
+<p>常见误区：只靠接口是否报错判断能力。</p>
+<h3 id="Q21：MCP-的-stdio-transport-怎么工作？"><a href="#Q21：MCP-的-stdio-transport-怎么工作？" class="headerlink" title="Q21：MCP 的 stdio transport 怎么工作？"></a>Q21：MCP 的 stdio transport 怎么工作？</h3><p>参考答案：Client 启动 MCP Server 子进程，Server 从 stdin 读取 JSON-RPC 消息，从 stdout 写回 JSON-RPC 消息，stderr 可用于日志，但 stdout 不能混入非协议内容。</p>
+<p>表达要点：本地子进程、stdin&#x2F;stdout、换行分隔、stdout 只放协议消息。</p>
+<p>常见误区：在 stdout 打印调试日志导致协议解析失败。</p>
+<h3 id="Q22：Streamable-HTTP-transport-适合什么场景？"><a href="#Q22：Streamable-HTTP-transport-适合什么场景？" class="headerlink" title="Q22：Streamable HTTP transport 适合什么场景？"></a>Q22：Streamable HTTP transport 适合什么场景？</h3><p>参考答案：适合远程 MCP Server、多客户端连接、需要认证和会话管理的服务。它使用单一 MCP endpoint，支持 POST&#x2F;GET 和可选 SSE 流式消息。</p>
+<p>表达要点：远程、HTTP endpoint、SSE、session。</p>
+<p>常见误区：仍按旧 HTTP+SSE 两端点方案设计新服务。</p>
+<h3 id="Q23：Streamable-HTTP-有哪些安全注意点？"><a href="#Q23：Streamable-HTTP-有哪些安全注意点？" class="headerlink" title="Q23：Streamable HTTP 有哪些安全注意点？"></a>Q23：Streamable HTTP 有哪些安全注意点？</h3><p>参考答案：要校验 Origin 防 DNS rebinding，本地服务绑定 localhost，远程服务做认证和授权，保护 <code>MCP-Session-Id</code>，必要时限制跨域和网络来源。</p>
+<p>表达要点：Origin、认证、localhost、session id。</p>
+<p>常见误区：本地调试 server 监听 <code>0.0.0.0</code> 且无认证。</p>
+<h3 id="Q24：tools-list-的作用是什么？"><a href="#Q24：tools-list-的作用是什么？" class="headerlink" title="Q24：tools/list 的作用是什么？"></a>Q24：<code>tools/list</code> 的作用是什么？</h3><p>参考答案：<code>tools/list</code> 用于让 Client 发现 Server 当前可用工具，工具定义包含名称、描述、输入 schema、可选输出 schema 等。</p>
+<p>表达要点：发现工具、分页、schema、listChanged。</p>
+<p>常见误区：把工具列表硬编码在 Host，忽略动态变化。</p>
+<h3 id="Q25：tools-call-的作用是什么？"><a href="#Q25：tools-call-的作用是什么？" class="headerlink" title="Q25：tools/call 的作用是什么？"></a>Q25：<code>tools/call</code> 的作用是什么？</h3><p>参考答案：<code>tools/call</code> 是 Client 请求 Server 执行某个工具的方法，参数包含工具名和 arguments，返回 tool result。</p>
+<p>表达要点：调用工具、arguments、content、structuredContent、isError。</p>
+<p>常见误区：让模型直接向 MCP Server 发请求，绕过 Host 权限。</p>
+<h3 id="Q26：MCP-Tool-的-inputSchema-有什么要求？"><a href="#Q26：MCP-Tool-的-inputSchema-有什么要求？" class="headerlink" title="Q26：MCP Tool 的 inputSchema 有什么要求？"></a>Q26：MCP Tool 的 <code>inputSchema</code> 有什么要求？</h3><p>参考答案：<code>inputSchema</code> 是 JSON Schema，用来定义工具参数。它必须是有效 JSON Schema 对象，不能是 <code>null</code>。无参数工具也应显式声明空对象 schema。</p>
+<p>表达要点：JSON Schema、参数约束、无参数工具。</p>
+<p>常见误区：用自然语言描述参数而不提供结构化 schema。</p>
+<h3 id="Q27：MCP-Tool-的-outputSchema-有什么价值？"><a href="#Q27：MCP-Tool-的-outputSchema-有什么价值？" class="headerlink" title="Q27：MCP Tool 的 outputSchema 有什么价值？"></a>Q27：MCP Tool 的 <code>outputSchema</code> 有什么价值？</h3><p>参考答案：<code>outputSchema</code> 描述结构化输出格式，帮助客户端验证结果，也让模型和程序更稳定地解析工具输出。它与 <code>structuredContent</code> 配合效果最好。</p>
+<p>表达要点：结构化结果、校验、类型信息、解析稳定。</p>
+<p>常见误区：只返回一段文本，让模型自行猜字段。</p>
+<h3 id="Q28：structuredContent-是什么？"><a href="#Q28：structuredContent-是什么？" class="headerlink" title="Q28：structuredContent 是什么？"></a>Q28：<code>structuredContent</code> 是什么？</h3><p>参考答案：<code>structuredContent</code> 是 tool result 中的结构化 JSON 对象。它适合承载可机器解析的数据，通常也会把序列化 JSON 放在 text content 中以兼容旧客户端。</p>
+<p>表达要点：结构化 JSON、兼容性、和 outputSchema 配合。</p>
+<p>常见误区：把它当成自然语言回答字段。</p>
+<h3 id="Q29：MCP-tool-result-里的-content-可以有哪些类型？"><a href="#Q29：MCP-tool-result-里的-content-可以有哪些类型？" class="headerlink" title="Q29：MCP tool result 里的 content 可以有哪些类型？"></a>Q29：MCP tool result 里的 <code>content</code> 可以有哪些类型？</h3><p>参考答案：可以有 text、image、audio、resource link、embedded resource 等内容块。不同内容块可带 annotations，用于说明 audience、priority 等元信息。</p>
+<p>表达要点：多模态内容块、resource link、embedded resource。</p>
+<p>常见误区：认为工具结果只能是字符串。</p>
+<h3 id="Q30：Protocol-Error-和-Tool-Execution-Error-区别？"><a href="#Q30：Protocol-Error-和-Tool-Execution-Error-区别？" class="headerlink" title="Q30：Protocol Error 和 Tool Execution Error 区别？"></a>Q30：Protocol Error 和 Tool Execution Error 区别？</h3><p>参考答案：Protocol Error 是协议层错误，如未知方法、请求格式错误；Tool Execution Error 是工具执行失败，如业务校验失败、API 失败，通常通过 <code>isError: true</code> 放在工具结果中。</p>
+<p>表达要点：协议结构问题 vs 业务执行问题。</p>
+<p>常见误区：所有错误都用 JSON-RPC error，导致模型难以自我修复。</p>
+<h3 id="Q31：MCP-中-Sampling-是什么？"><a href="#Q31：MCP-中-Sampling-是什么？" class="headerlink" title="Q31：MCP 中 Sampling 是什么？"></a>Q31：MCP 中 Sampling 是什么？</h3><p>参考答案：Sampling 允许 Server 通过 Client 请求 LLM 生成内容，但必须由 Client&#x2F;Host 控制模型、prompt、权限和用户审批，避免 Server 任意访问模型或上下文。</p>
+<p>表达要点：Server 发起、Client 控制、LLM 调用、安全。</p>
+<p>常见误区：让 MCP Server 直接拿完整对话去调用模型。</p>
+<h3 id="Q32：MCP-中-Roots-是什么？"><a href="#Q32：MCP-中-Roots-是什么？" class="headerlink" title="Q32：MCP 中 Roots 是什么？"></a>Q32：MCP 中 Roots 是什么？</h3><p>参考答案：Roots 是 Client 提供给 Server 的 URI 或文件系统边界，告诉 Server 可以在哪些范围内操作或检索。</p>
+<p>表达要点：边界、最小权限、文件系统范围。</p>
+<p>常见误区：给 Server 整个磁盘或整个组织数据权限。</p>
+<h3 id="Q33：MCP-中-Elicitation-是什么？"><a href="#Q33：MCP-中-Elicitation-是什么？" class="headerlink" title="Q33：MCP 中 Elicitation 是什么？"></a>Q33：MCP 中 Elicitation 是什么？</h3><p>参考答案：Elicitation 是 Server 通过 Client 向用户请求补充信息的能力，比如缺少字段、需要表单输入或需要用户打开某个 URL。</p>
+<p>表达要点：Server 请求、Client 展示、用户补充。</p>
+<p>常见误区：Server 直接弹窗或绕过 Host 与用户交互。</p>
+<h3 id="Q34：MCP-Server-是否应该保存用户隐私数据？"><a href="#Q34：MCP-Server-是否应该保存用户隐私数据？" class="headerlink" title="Q34：MCP Server 是否应该保存用户隐私数据？"></a>Q34：MCP Server 是否应该保存用户隐私数据？</h3><p>参考答案：默认不应保存超出任务所需的数据。Server 只应接收必要上下文，遵循最小权限、明确授权、访问控制和数据保留策略。</p>
+<p>表达要点：最小权限、数据最小化、授权、保留策略。</p>
+<p>常见误区：为了“更聪明”把所有对话和工具结果都持久化。</p>
+<h3 id="Q35：如何把-MCP-工具接入模型-Function-Calling？"><a href="#Q35：如何把-MCP-工具接入模型-Function-Calling？" class="headerlink" title="Q35：如何把 MCP 工具接入模型 Function Calling？"></a>Q35：如何把 MCP 工具接入模型 Function Calling？</h3><p>参考答案：Host 通过 MCP Client 调用 <code>tools/list</code> 获取工具定义，将 MCP 工具映射为模型 API 可见的 function tools；模型返回 tool call 后，Host 再通过 MCP Client 调用 <code>tools/call</code>，最后把结果回传模型。</p>
+<p>表达要点：发现、映射、调用、回传；Host 控制中间过程。</p>
+<p>常见误区：以为 MCP Server 自动变成模型内置工具。</p>
+<h3 id="C-Function-Calling-面试题"><a href="#C-Function-Calling-面试题" class="headerlink" title="C. Function Calling 面试题"></a>C. Function Calling 面试题</h3><h3 id="Q36：Function-Calling-的完整调用链是什么？"><a href="#Q36：Function-Calling-的完整调用链是什么？" class="headerlink" title="Q36：Function Calling 的完整调用链是什么？"></a>Q36：Function Calling 的完整调用链是什么？</h3><p>参考答案：应用发送用户输入和 tools schema 给模型；模型返回 function call；应用解析和校验参数；应用执行函数；应用把 <code>function_call_output</code> 或 tool message 回传；模型基于结果生成最终答案或继续调用。</p>
+<p>表达要点：schema、tool call、执行、结果回传、继续循环。</p>
+<p>常见误区：忘记第二次模型调用，导致只有工具结果没有最终回答。</p>
+<h3 id="Q37：函数描述应该怎么写？"><a href="#Q37：函数描述应该怎么写？" class="headerlink" title="Q37：函数描述应该怎么写？"></a>Q37：函数描述应该怎么写？</h3><p>参考答案：描述应说明工具做什么、何时用、何时不要用、输入要求和副作用。多个工具相似时，要写清边界和差异。</p>
+<p>表达要点：清晰、边界、反例、副作用。</p>
+<p>常见误区：描述写成“useful tool”这类泛化词。</p>
+<h3 id="Q38：为什么-JSON-Schema-很重要？"><a href="#Q38：为什么-JSON-Schema-很重要？" class="headerlink" title="Q38：为什么 JSON Schema 很重要？"></a>Q38：为什么 JSON Schema 很重要？</h3><p>参考答案：JSON Schema 约束参数类型、必填字段、枚举、嵌套结构和额外字段，有助于提升参数可解析性、减少幻觉和便于应用校验。</p>
+<p>表达要点：类型、必填、枚举、校验、稳定性。</p>
+<p>常见误区：只在 prompt 里要求格式，不做 schema 校验。</p>
+<h3 id="Q39：strict-true-的意义是什么？"><a href="#Q39：strict-true-的意义是什么？" class="headerlink" title="Q39：strict: true 的意义是什么？"></a>Q39：<code>strict: true</code> 的意义是什么？</h3><p>参考答案：严格模式要求模型生成更符合 schema 的调用参数，并让 SDK 或 API 对不合法参数更早报错或拒绝。它提升可靠性，但 schema 必须设计得足够准确。</p>
+<p>表达要点：严格参数、可靠性、schema 质量。</p>
+<p>常见误区：开启 strict 后就不做业务校验。</p>
+<h3 id="Q40：call-id-有什么作用？"><a href="#Q40：call-id-有什么作用？" class="headerlink" title="Q40：call_id 有什么作用？"></a>Q40：<code>call_id</code> 有什么作用？</h3><p>参考答案：<code>call_id</code> 用于关联某次模型生成的工具调用和应用回传的工具执行结果。多个并行 tool call 时尤其重要。</p>
+<p>表达要点：关联、并行、多轮。</p>
+<p>常见误区：只按工具名回传结果，导致结果匹配错乱。</p>
+<h3 id="Q41：工具结果应该返回自然语言还是-JSON？"><a href="#Q41：工具结果应该返回自然语言还是-JSON？" class="headerlink" title="Q41：工具结果应该返回自然语言还是 JSON？"></a>Q41：工具结果应该返回自然语言还是 JSON？</h3><p>参考答案：优先返回结构化 JSON，必要时附带简短自然语言解释。结构化结果便于模型和程序解析，自然语言便于最终表达和兼容。</p>
+<p>表达要点：结构化优先、兼容文本。</p>
+<p>常见误区：返回长篇日志，让模型在噪声中找关键字段。</p>
+<h3 id="Q42：如何防止模型调用不存在的工具？"><a href="#Q42：如何防止模型调用不存在的工具？" class="headerlink" title="Q42：如何防止模型调用不存在的工具？"></a>Q42：如何防止模型调用不存在的工具？</h3><p>参考答案：应用端必须根据 tool registry 校验工具名。未知工具应作为错误处理，不应动态执行任意函数名。</p>
+<p>表达要点：白名单、registry、拒绝未知工具。</p>
+<p>常见误区：用反射按模型返回的名称直接调用函数。</p>
+<h3 id="Q43：如何处理模型生成的非法参数？"><a href="#Q43：如何处理模型生成的非法参数？" class="headerlink" title="Q43：如何处理模型生成的非法参数？"></a>Q43：如何处理模型生成的非法参数？</h3><p>参考答案：先做 schema 校验和业务校验。可恢复错误以工具错误形式回传模型，让模型修正；不可恢复或高风险错误应中止或请求用户补充。</p>
+<p>表达要点：schema 校验、业务校验、自修复、用户补充。</p>
+<p>常见误区：自动补默认值导致业务含义错误。</p>
+<h3 id="Q44：什么时候应该强制调用工具？"><a href="#Q44：什么时候应该强制调用工具？" class="headerlink" title="Q44：什么时候应该强制调用工具？"></a>Q44：什么时候应该强制调用工具？</h3><p>参考答案：当回答必须依赖实时数据、数据库状态、权限校验、外部计算或结构化抽取时可以强制调用。开放式解释、常识问答或工具不必要场景不应强制。</p>
+<p>表达要点：实时、必须、校验、抽取。</p>
+<p>常见误区：所有问题都强制工具调用，增加延迟和误用。</p>
+<h3 id="Q45：什么时候禁止调用工具？"><a href="#Q45：什么时候禁止调用工具？" class="headerlink" title="Q45：什么时候禁止调用工具？"></a>Q45：什么时候禁止调用工具？</h3><p>参考答案：当用户只是要求解释概念、总结已给文本，或上下文不允许外部访问时可禁止调用。安全审查阶段也可能先禁止工具。</p>
+<p>表达要点：纯生成、隐私、安全、节省成本。</p>
+<p>常见误区：让模型在敏感 prompt 中自由使用外部工具。</p>
+<h3 id="Q46：如何处理多个-tool-call？"><a href="#Q46：如何处理多个-tool-call？" class="headerlink" title="Q46：如何处理多个 tool call？"></a>Q46：如何处理多个 tool call？</h3><p>参考答案：先判断工具是否只读、是否相互依赖、是否有副作用。只读无依赖可并行；有依赖按顺序执行；有副作用需审批和幂等保护。</p>
+<p>表达要点：并行、依赖、副作用、幂等。</p>
+<p>常见误区：所有工具调用无脑并发。</p>
+<h3 id="Q47：Function-Calling-会不会产生幻觉？"><a href="#Q47：Function-Calling-会不会产生幻觉？" class="headerlink" title="Q47：Function Calling 会不会产生幻觉？"></a>Q47：Function Calling 会不会产生幻觉？</h3><p>参考答案：会。模型可能选错工具、编造参数或误读结果。Function Calling 降低的是输出格式不稳定，不是彻底消除推理错误。</p>
+<p>表达要点：格式可靠性提高，语义仍需校验。</p>
+<p>常见误区：把工具调用结果当成天然事实，不检查来源和权限。</p>
+<h3 id="Q48：工具参数中缺少必要信息怎么办？"><a href="#Q48：工具参数中缺少必要信息怎么办？" class="headerlink" title="Q48：工具参数中缺少必要信息怎么办？"></a>Q48：工具参数中缺少必要信息怎么办？</h3><p>参考答案：不应让模型猜关键字段。可以让模型追问用户，或通过 MCP Elicitation &#x2F; UI 表单补充信息，再调用工具。</p>
+<p>表达要点：追问、补字段、不猜测。</p>
+<p>常见误区：根据上下文猜身份证、订单号、账户等关键字段。</p>
+<h3 id="Q49：Function-Calling-和-API-调用有什么区别？"><a href="#Q49：Function-Calling-和-API-调用有什么区别？" class="headerlink" title="Q49：Function Calling 和 API 调用有什么区别？"></a>Q49：Function Calling 和 API 调用有什么区别？</h3><p>参考答案：API 调用是应用代码直接调用外部接口；Function Calling 是模型决定要调用哪个工具以及生成参数，然后应用再执行 API 调用。</p>
+<p>表达要点：模型决策层 vs 程序执行层。</p>
+<p>常见误区：把 function schema 当作真实 HTTP API。</p>
+<h3 id="Q50：如何设计工具返回错误？"><a href="#Q50：如何设计工具返回错误？" class="headerlink" title="Q50：如何设计工具返回错误？"></a>Q50：如何设计工具返回错误？</h3><p>参考答案：错误应简洁、可操作、无敏感泄露。例如说明哪个字段非法、允许范围是什么、是否可重试。不要把完整栈、token、内部 SQL 返回给模型。</p>
+<p>表达要点：可操作、脱敏、可重试信息。</p>
+<p>常见误区：返回“failed”导致模型无法修正。</p>
+<h3 id="Q51：如何避免工具调用无限循环？"><a href="#Q51：如何避免工具调用无限循环？" class="headerlink" title="Q51：如何避免工具调用无限循环？"></a>Q51：如何避免工具调用无限循环？</h3><p>参考答案：设置最大轮数、最大工具调用次数、重复调用检测、预算限制；如果同一工具同一参数多次失败，应中止或请求人工介入。</p>
+<p>表达要点：max turns、重复检测、预算、失败策略。</p>
+<p>常见误区：只相信模型会自己停下来。</p>
+<h3 id="Q52：工具-schema-太多会怎样？"><a href="#Q52：工具-schema-太多会怎样？" class="headerlink" title="Q52：工具 schema 太多会怎样？"></a>Q52：工具 schema 太多会怎样？</h3><p>参考答案：工具过多会增加 token 成本、选择难度和误调用概率。应按场景动态暴露工具，使用 namespace 或工具检索，保持工具职责单一。</p>
+<p>表达要点：动态工具集、namespace、职责单一。</p>
+<p>常见误区：把全公司 API 一次性塞给模型。</p>
+<h3 id="Q53：如何做工具版本管理？"><a href="#Q53：如何做工具版本管理？" class="headerlink" title="Q53：如何做工具版本管理？"></a>Q53：如何做工具版本管理？</h3><p>参考答案：工具名或 schema 变更要考虑兼容性。破坏性变更可使用版本后缀或新工具名，旧工具保留一段时间；同时更新描述、测试和审计。</p>
+<p>表达要点：兼容、版本、灰度、测试。</p>
+<p>常见误区：直接改参数名，导致模型和客户端调用失败。</p>
+<h3 id="Q54：为什么工具输入必须再校验？"><a href="#Q54：为什么工具输入必须再校验？" class="headerlink" title="Q54：为什么工具输入必须再校验？"></a>Q54：为什么工具输入必须再校验？</h3><p>参考答案：模型输出不可信，用户输入也不可信。即使 schema 校验通过，也可能违反业务规则、权限规则或安全策略。</p>
+<p>表达要点：模型不可信、业务校验、权限校验。</p>
+<p>常见误区：schema 校验等于安全校验。</p>
+<h3 id="Q55：Function-Calling-与-MCP-Tool-有什么映射关系？"><a href="#Q55：Function-Calling-与-MCP-Tool-有什么映射关系？" class="headerlink" title="Q55：Function Calling 与 MCP Tool 有什么映射关系？"></a>Q55：Function Calling 与 MCP Tool 有什么映射关系？</h3><p>参考答案：Function Calling 的 function schema 可由 MCP Tool 的 <code>inputSchema</code>、描述和名称映射而来；模型生成 function call 后，应用再通过 MCP <code>tools/call</code> 执行真实 MCP Tool。</p>
+<p>表达要点：schema 映射、Host 执行、MCP Client 中转。</p>
+<p>常见误区：把 MCP <code>tools/call</code> 暴露给模型直接生成 JSON-RPC。</p>
+<h3 id="D-Agent-原理面试题"><a href="#D-Agent-原理面试题" class="headerlink" title="D. Agent 原理面试题"></a>D. Agent 原理面试题</h3><h3 id="Q56：Agent-loop-的核心步骤？"><a href="#Q56：Agent-loop-的核心步骤？" class="headerlink" title="Q56：Agent loop 的核心步骤？"></a>Q56：Agent loop 的核心步骤？</h3><p>参考答案：接收目标，构建上下文，模型决策，工具调用，观察结果，更新状态，必要时继续循环，满足终止条件后输出。</p>
+<p>表达要点：observe-think-act-observe-finish。</p>
+<p>常见误区：没有状态更新和终止条件。</p>
+<h3 id="Q57：Agent-如何做规划？"><a href="#Q57：Agent-如何做规划？" class="headerlink" title="Q57：Agent 如何做规划？"></a>Q57：Agent 如何做规划？</h3><p>参考答案：简单任务可隐式规划；复杂任务可显式生成 plan，拆分子任务，逐步执行并根据观察修正。工程上要限制计划粒度和最大步骤。</p>
+<p>表达要点：显式&#x2F;隐式规划、子任务、修正、限制。</p>
+<p>常见误区：让模型生成很长计划但不验证执行。</p>
+<h3 id="Q58：Planner-x2F-Executor-架构有什么优缺点？"><a href="#Q58：Planner-x2F-Executor-架构有什么优缺点？" class="headerlink" title="Q58：Planner&#x2F;Executor 架构有什么优缺点？"></a>Q58：Planner&#x2F;Executor 架构有什么优缺点？</h3><p>参考答案：优点是职责清晰、可观测、便于控制；缺点是延迟高、成本高、可能出现计划和执行脱节。适合复杂或高风险任务。</p>
+<p>表达要点：职责、可控、成本、脱节风险。</p>
+<p>常见误区：简单任务也上复杂架构。</p>
+<h3 id="Q59：Agent-如何选择工具？"><a href="#Q59：Agent-如何选择工具？" class="headerlink" title="Q59：Agent 如何选择工具？"></a>Q59：Agent 如何选择工具？</h3><p>参考答案：模型基于工具名称、描述、schema、上下文和指令选择工具。系统可通过动态工具暴露、工具分组、路由器模型和规则策略辅助选择。</p>
+<p>表达要点：描述、schema、动态暴露、路由。</p>
+<p>常见误区：只靠工具名，不写清楚使用边界。</p>
+<h3 id="Q60：Agent-的状态包括什么？"><a href="#Q60：Agent-的状态包括什么？" class="headerlink" title="Q60：Agent 的状态包括什么？"></a>Q60：Agent 的状态包括什么？</h3><p>参考答案：状态包括用户目标、对话历史、已执行步骤、工具结果、错误、预算、权限决策、短期记忆和最终输出草稿。</p>
+<p>表达要点：任务状态、工具观察、预算、权限。</p>
+<p>常见误区：只保存聊天消息，不保存工具调用和决策。</p>
+<h3 id="Q61：短期记忆和长期记忆区别？"><a href="#Q61：短期记忆和长期记忆区别？" class="headerlink" title="Q61：短期记忆和长期记忆区别？"></a>Q61：短期记忆和长期记忆区别？</h3><p>参考答案：短期记忆服务当前任务，通常存在上下文或运行状态中；长期记忆跨会话保存偏好、历史事实或用户信息，需要检索、更新、过期和隐私控制。</p>
+<p>表达要点：当前任务 vs 跨会话；检索和隐私。</p>
+<p>常见误区：把所有对话永久写入长期记忆。</p>
+<h3 id="Q62：Agent-如何使用-RAG？"><a href="#Q62：Agent-如何使用-RAG？" class="headerlink" title="Q62：Agent 如何使用 RAG？"></a>Q62：Agent 如何使用 RAG？</h3><p>参考答案：Agent 可以把检索作为工具，在需要外部知识时查询文档库，再基于检索结果回答或继续行动。复杂任务可多轮检索、重排、交叉验证。</p>
+<p>表达要点：检索工具、上下文增强、多轮验证。</p>
+<p>常见误区：一次检索结果不管质量直接生成。</p>
+<h3 id="Q63：Agent-如何避免上下文爆炸？"><a href="#Q63：Agent-如何避免上下文爆炸？" class="headerlink" title="Q63：Agent 如何避免上下文爆炸？"></a>Q63：Agent 如何避免上下文爆炸？</h3><p>参考答案：使用摘要、状态压缩、检索式记忆、只保留关键工具结果、窗口裁剪和结构化 scratchpad。不要把所有日志原样塞回模型。</p>
+<p>表达要点：压缩、检索、裁剪、结构化。</p>
+<p>常见误区：上下文越多越好。</p>
+<h3 id="Q64：Agent-如何处理工具失败？"><a href="#Q64：Agent-如何处理工具失败？" class="headerlink" title="Q64：Agent 如何处理工具失败？"></a>Q64：Agent 如何处理工具失败？</h3><p>参考答案：根据失败类型决定重试、改参数、换工具、请求用户补充或中止。要限制重试次数，并记录错误链路。</p>
+<p>表达要点：分类处理、重试限制、错误链路。</p>
+<p>常见误区：失败后让模型无限尝试。</p>
+<h3 id="Q65：Agent-如何做权限控制？"><a href="#Q65：Agent-如何做权限控制？" class="headerlink" title="Q65：Agent 如何做权限控制？"></a>Q65：Agent 如何做权限控制？</h3><p>参考答案：在工具执行前进行策略检查，包括用户身份、工具权限、参数范围、副作用级别和审批状态。模型建议不能绕过应用权限。</p>
+<p>表达要点：执行前检查、最小权限、审批。</p>
+<p>常见误区：在 prompt 里说“不要越权”就算权限控制。</p>
+<h3 id="Q66：Agent-如何保证输出质量？"><a href="#Q66：Agent-如何保证输出质量？" class="headerlink" title="Q66：Agent 如何保证输出质量？"></a>Q66：Agent 如何保证输出质量？</h3><p>参考答案：可用结构化输出、引用证据、工具结果校验、事实检查、输出 guardrails、评测集和人工审核。高风险场景要保留来源和置信度。</p>
+<p>表达要点：结构化、证据、校验、评测。</p>
+<p>常见误区：只看单次 demo 表现。</p>
+<h3 id="Q67：多-Agent-适合什么场景？"><a href="#Q67：多-Agent-适合什么场景？" class="headerlink" title="Q67：多 Agent 适合什么场景？"></a>Q67：多 Agent 适合什么场景？</h3><p>参考答案：适合任务可明显分工、需要不同专业能力或上下文隔离的场景，如研究、写作、代码审查、客服分流。简单任务不需要多 Agent。</p>
+<p>表达要点：分工、专业化、隔离、协调成本。</p>
+<p>常见误区：用多个 Agent 增加复杂度但没有收益。</p>
+<h3 id="Q68：Agent-as-Tool-和-Handoff-有什么区别？"><a href="#Q68：Agent-as-Tool-和-Handoff-有什么区别？" class="headerlink" title="Q68：Agent as Tool 和 Handoff 有什么区别？"></a>Q68：Agent as Tool 和 Handoff 有什么区别？</h3><p>参考答案：Agent as Tool 是主 Agent 把子 Agent 当作一个工具调用，控制权仍在主 Agent；Handoff 更像把对话或任务控制权转交给另一个 Agent。</p>
+<p>表达要点：调用子能力 vs 转交控制权。</p>
+<p>常见误区：所有分工都用 handoff，导致上下文和责任不清。</p>
+<h3 id="Q69：如何设置-Agent-终止条件？"><a href="#Q69：如何设置-Agent-终止条件？" class="headerlink" title="Q69：如何设置 Agent 终止条件？"></a>Q69：如何设置 Agent 终止条件？</h3><p>参考答案：终止条件包括模型 final answer、任务验收通过、最大轮数、超时、预算耗尽、重复调用、不可恢复错误或用户拒绝授权。</p>
+<p>表达要点：成功和失败都要有终止。</p>
+<p>常见误区：只设置成功终止，不设置失败终止。</p>
+<h3 id="Q70：Agent-的可观测性要记录什么？"><a href="#Q70：Agent-的可观测性要记录什么？" class="headerlink" title="Q70：Agent 的可观测性要记录什么？"></a>Q70：Agent 的可观测性要记录什么？</h3><p>参考答案：记录输入、模型输出、工具调用、参数、结果摘要、错误、延迟、token、费用、审批、trace id 和最终结果。敏感信息要脱敏。</p>
+<p>表达要点：trace、tool logs、metrics、脱敏。</p>
+<p>常见误区：只记录最终回答，无法 debug 中间过程。</p>
+<h3 id="Q71：Agent-的评测怎么做？"><a href="#Q71：Agent-的评测怎么做？" class="headerlink" title="Q71：Agent 的评测怎么做？"></a>Q71：Agent 的评测怎么做？</h3><p>参考答案：要覆盖任务成功率、工具选择正确率、参数正确率、事实准确率、安全拒答、成本延迟和用户满意度。可用离线 golden set、模拟工具、在线 A&#x2F;B 和人工抽检。</p>
+<p>表达要点：多指标、离线在线、模拟工具。</p>
+<p>常见误区：只用 BLEU 或只看人工主观印象。</p>
+<h3 id="Q72：Agent-和传统后端服务如何结合？"><a href="#Q72：Agent-和传统后端服务如何结合？" class="headerlink" title="Q72：Agent 和传统后端服务如何结合？"></a>Q72：Agent 和传统后端服务如何结合？</h3><p>参考答案：Agent 负责理解和动态决策，传统后端负责确定性业务逻辑、权限、数据一致性和事务。关键操作应落在后端服务中执行。</p>
+<p>表达要点：LLM 决策，后端执行和约束。</p>
+<p>常见误区：让 Agent 直接操作数据库绕过服务层。</p>
+<h3 id="Q73：Agent-如何处理实时数据？"><a href="#Q73：Agent-如何处理实时数据？" class="headerlink" title="Q73：Agent 如何处理实时数据？"></a>Q73：Agent 如何处理实时数据？</h3><p>参考答案：通过工具调用查询实时系统，不应依赖模型训练知识。工具返回数据要带时间戳、来源和有效期，模型回答中说明数据时点。</p>
+<p>表达要点：工具实时查询、时间戳、来源。</p>
+<p>常见误区：用模型记忆回答库存、价格、状态等实时问题。</p>
+<h3 id="Q74：Agent-中反思机制有什么风险？"><a href="#Q74：Agent-中反思机制有什么风险？" class="headerlink" title="Q74：Agent 中反思机制有什么风险？"></a>Q74：Agent 中反思机制有什么风险？</h3><p>参考答案：反思可帮助修正错误，但也会增加成本、延迟和自我确认偏差。工程上应基于明确触发条件使用，如校验失败或高风险输出。</p>
+<p>表达要点：收益、成本、触发条件。</p>
+<p>常见误区：每一步都反思，导致效率低且未必更准。</p>
+<h3 id="Q75：如何防止-Agent-自主做高风险操作？"><a href="#Q75：如何防止-Agent-自主做高风险操作？" class="headerlink" title="Q75：如何防止 Agent 自主做高风险操作？"></a>Q75：如何防止 Agent 自主做高风险操作？</h3><p>参考答案：把高风险工具设为需要审批，使用 dry run 展示影响，加入幂等键和回滚方案，限制参数范围，并在服务端再次校验权限。</p>
+<p>表达要点：审批、dry run、幂等、回滚、服务端校验。</p>
+<p>常见误区：只依赖模型“谨慎行事”的提示。</p>
+<h3 id="E-工程实践与系统设计"><a href="#E-工程实践与系统设计" class="headerlink" title="E. 工程实践与系统设计"></a>E. 工程实践与系统设计</h3><h3 id="Q76：设计一个企业知识库-Agent，你会怎么做？"><a href="#Q76：设计一个企业知识库-Agent，你会怎么做？" class="headerlink" title="Q76：设计一个企业知识库 Agent，你会怎么做？"></a>Q76：设计一个企业知识库 Agent，你会怎么做？</h3><p>参考答案：使用 RAG 检索文档，按用户权限过滤索引或结果，工具化检索、文档读取和引用生成，最终输出带来源。可用 MCP 暴露文档资源和检索工具。</p>
+<p>表达要点：权限过滤、检索、引用、MCP resources&#x2F;tools。</p>
+<p>常见误区：先检索再过滤权限，可能泄露摘要或元数据。</p>
+<h3 id="Q77：设计一个客服-Agent，你会提供哪些工具？"><a href="#Q77：设计一个客服-Agent，你会提供哪些工具？" class="headerlink" title="Q77：设计一个客服 Agent，你会提供哪些工具？"></a>Q77：设计一个客服 Agent，你会提供哪些工具？</h3><p>参考答案：订单查询、用户资料读取、知识库检索、工单创建、退款申请 dry run、人工转接。写操作和退款类工具需要审批或业务规则限制。</p>
+<p>表达要点：读写分离、审批、人工转接。</p>
+<p>常见误区：让 Agent 直接退款或改地址。</p>
+<h3 id="Q78：如何为-Agent-设计工具粒度？"><a href="#Q78：如何为-Agent-设计工具粒度？" class="headerlink" title="Q78：如何为 Agent 设计工具粒度？"></a>Q78：如何为 Agent 设计工具粒度？</h3><p>参考答案：工具应职责单一但不要过碎。一个工具完成一个稳定业务动作，参数明确，返回结构化结果。多个强相关小动作可封装成后端 workflow。</p>
+<p>表达要点：单一职责、稳定动作、不要过碎。</p>
+<p>常见误区：把底层 CRUD 全暴露给模型。</p>
+<h3 id="Q79：如何做动态工具加载？"><a href="#Q79：如何做动态工具加载？" class="headerlink" title="Q79：如何做动态工具加载？"></a>Q79：如何做动态工具加载？</h3><p>参考答案：根据用户意图、权限、任务阶段和上下文选择工具子集。可使用工具检索、namespace、MCP <code>tools/list</code> 动态发现，减少 token 和误调用。</p>
+<p>表达要点：权限、意图、阶段、工具检索。</p>
+<p>常见误区：全量工具常驻上下文。</p>
+<h3 id="Q80：如何设计工具的幂等性？"><a href="#Q80：如何设计工具的幂等性？" class="headerlink" title="Q80：如何设计工具的幂等性？"></a>Q80：如何设计工具的幂等性？</h3><p>参考答案：对写操作使用 idempotency key、操作预览、确认令牌和状态检查，避免重复调用导致重复扣款、重复发送或重复创建。</p>
+<p>表达要点：幂等键、预览、确认、状态检查。</p>
+<p>常见误区：只在前端按钮防重复，不在服务端防重复。</p>
+<h3 id="Q81：如何处理工具调用超时？"><a href="#Q81：如何处理工具调用超时？" class="headerlink" title="Q81：如何处理工具调用超时？"></a>Q81：如何处理工具调用超时？</h3><p>参考答案：为每个工具设置超时，区分可重试和不可重试；返回可操作错误给模型；长任务可用异步任务、进度通知或 task support。</p>
+<p>表达要点：超时、重试、异步、进度。</p>
+<p>常见误区：让模型一直等待，阻塞整个 Agent loop。</p>
+<h3 id="Q82：如何做成本控制？"><a href="#Q82：如何做成本控制？" class="headerlink" title="Q82：如何做成本控制？"></a>Q82：如何做成本控制？</h3><p>参考答案：限制 max turns、动态工具子集、压缩上下文、缓存检索结果、并行只读工具、选择合适模型、监控 token 和工具费用。</p>
+<p>表达要点：轮数、上下文、缓存、模型选择、监控。</p>
+<p>常见误区：只优化模型单价，不优化调用次数。</p>
+<h3 id="Q83：如何做延迟优化？"><a href="#Q83：如何做延迟优化？" class="headerlink" title="Q83：如何做延迟优化？"></a>Q83：如何做延迟优化？</h3><p>参考答案：减少不必要工具、并行只读调用、缓存、流式输出、预取上下文、使用小模型路由和大模型处理复杂任务。</p>
+<p>表达要点：并行、缓存、路由、流式。</p>
+<p>常见误区：所有步骤串行等待。</p>
+<h3 id="Q84：如何做工具调用审计？"><a href="#Q84：如何做工具调用审计？" class="headerlink" title="Q84：如何做工具调用审计？"></a>Q84：如何做工具调用审计？</h3><p>参考答案：记录用户、会话、工具名、参数摘要、权限决策、审批人、结果摘要、错误、时间、trace id。敏感字段脱敏或加密。</p>
+<p>表达要点：谁、何时、调用什么、为何允许、结果如何。</p>
+<p>常见误区：记录完整明文参数，造成二次泄露。</p>
+<h3 id="Q85：如何上线-Agent-功能？"><a href="#Q85：如何上线-Agent-功能？" class="headerlink" title="Q85：如何上线 Agent 功能？"></a>Q85：如何上线 Agent 功能？</h3><p>参考答案：先离线评测，再灰度发布；只读工具先上线，写工具加审批；监控成功率、拒绝率、工具错误、成本、延迟和用户反馈；保留回滚开关。</p>
+<p>表达要点：离线、灰度、只读先行、监控、回滚。</p>
+<p>常见误区：直接给全量用户开放写操作。</p>
+<h3 id="Q86：如何处理模型版本变化？"><a href="#Q86：如何处理模型版本变化？" class="headerlink" title="Q86：如何处理模型版本变化？"></a>Q86：如何处理模型版本变化？</h3><p>参考答案：建立评测集和回归测试，记录模型版本，灰度切换，对工具选择率、参数错误率和安全指标做对比，必要时调整 prompt 和 schema。</p>
+<p>表达要点：版本记录、评测、灰度、回归。</p>
+<p>常见误区：换模型后只看几个样例。</p>
+<h3 id="Q87：如何设计-Agent-的-fallback？"><a href="#Q87：如何设计-Agent-的-fallback？" class="headerlink" title="Q87：如何设计 Agent 的 fallback？"></a>Q87：如何设计 Agent 的 fallback？</h3><p>参考答案：fallback 包括降级到普通问答、切换备用工具、请求人工介入、返回部分结果、提示用户补充信息。关键是不要假装完成。</p>
+<p>表达要点：降级、备用、人工、部分结果、诚实失败。</p>
+<p>常见误区：工具失败后模型编造结果。</p>
+<h3 id="Q88：如何处理并发会话？"><a href="#Q88：如何处理并发会话？" class="headerlink" title="Q88：如何处理并发会话？"></a>Q88：如何处理并发会话？</h3><p>参考答案：每个会话维护独立状态和权限上下文；工具调用使用 trace id 和 idempotency key；共享资源操作由后端事务和锁控制。</p>
+<p>表达要点：会话隔离、trace、幂等、事务。</p>
+<p>常见误区：把全局变量当作 Agent 状态。</p>
+<h3 id="Q89：如何处理敏感信息？"><a href="#Q89：如何处理敏感信息？" class="headerlink" title="Q89：如何处理敏感信息？"></a>Q89：如何处理敏感信息？</h3><p>参考答案：输入和工具结果做数据分级、脱敏、最小化传递；敏感工具需要审批；日志加密或脱敏；长期记忆写入前需要明确策略。</p>
+<p>表达要点：分级、脱敏、最小化、审批、日志保护。</p>
+<p>常见误区：把完整用户资料放进 prompt。</p>
+<h3 id="Q90：如何把-MCP-Server-纳入企业权限体系？"><a href="#Q90：如何把-MCP-Server-纳入企业权限体系？" class="headerlink" title="Q90：如何把 MCP Server 纳入企业权限体系？"></a>Q90：如何把 MCP Server 纳入企业权限体系？</h3><p>参考答案：远程 server 使用认证授权，server 端校验用户和 scope，Host 端做策略控制，工具级权限配置，审计所有调用。Resources 也要按用户权限过滤。</p>
+<p>表达要点：双端权限、scope、工具级策略、审计。</p>
+<p>常见误区：只在 Host 端过滤，Server 端完全信任调用方。</p>
+<h3 id="F-安全、Debug-与辨析"><a href="#F-安全、Debug-与辨析" class="headerlink" title="F. 安全、Debug 与辨析"></a>F. 安全、Debug 与辨析</h3><h3 id="Q91：什么是-prompt-injection？"><a href="#Q91：什么是-prompt-injection？" class="headerlink" title="Q91：什么是 prompt injection？"></a>Q91：什么是 prompt injection？</h3><p>参考答案：prompt injection 是外部内容或用户输入试图覆盖系统指令、诱导模型泄露数据或误用工具的攻击。RAG 文档、网页、工具结果都可能携带注入内容。</p>
+<p>表达要点：外部内容不可信、指令隔离、工具风险。</p>
+<p>常见误区：只防用户输入，不防检索文档和工具输出。</p>
+<h3 id="Q92：如何防-prompt-injection？"><a href="#Q92：如何防-prompt-injection？" class="headerlink" title="Q92：如何防 prompt injection？"></a>Q92：如何防 prompt injection？</h3><p>参考答案：区分指令和数据，对外部内容加边界标注；工具权限最小化；敏感操作审批；不要让检索内容决定安全策略；输出和工具参数做校验。</p>
+<p>表达要点：隔离、最小权限、审批、校验。</p>
+<p>常见误区：靠一句“忽略恶意指令”解决。</p>
+<h3 id="Q93：工具结果能否直接信任？"><a href="#Q93：工具结果能否直接信任？" class="headerlink" title="Q93：工具结果能否直接信任？"></a>Q93：工具结果能否直接信任？</h3><p>参考答案：不能。工具可能返回错误、过期数据、被污染数据或包含注入文本。应用应验证结构、来源、权限和时间戳。</p>
+<p>表达要点：结构校验、来源、时间、权限。</p>
+<p>常见误区：工具输出进模型前不做任何处理。</p>
+<h3 id="Q94：如何-debug-Agent-选错工具？"><a href="#Q94：如何-debug-Agent-选错工具？" class="headerlink" title="Q94：如何 debug Agent 选错工具？"></a>Q94：如何 debug Agent 选错工具？</h3><p>参考答案：查看当轮 prompt、工具列表、工具描述、schema、模型输出和上下文；减少重叠工具；增强描述边界；用测试集统计工具选择率。</p>
+<p>表达要点：trace、工具描述、上下文、测试集。</p>
+<p>常见误区：只改系统 prompt，不看工具 schema。</p>
+<h3 id="Q95：如何-debug-参数生成错误？"><a href="#Q95：如何-debug-参数生成错误？" class="headerlink" title="Q95：如何 debug 参数生成错误？"></a>Q95：如何 debug 参数生成错误？</h3><p>参考答案：检查 schema 是否精确、字段描述是否清晰、required 和 enum 是否合理、用户信息是否充足、上下文是否有冲突。应用端给出可操作错误帮助模型修正。</p>
+<p>表达要点：schema、字段描述、上下文、错误反馈。</p>
+<p>常见误区：在执行器里静默修正所有参数。</p>
+<h3 id="Q96：如何-debug-Agent-循环不停止？"><a href="#Q96：如何-debug-Agent-循环不停止？" class="headerlink" title="Q96：如何 debug Agent 循环不停止？"></a>Q96：如何 debug Agent 循环不停止？</h3><p>参考答案：检查终止条件、工具错误是否可恢复、模型是否收到工具结果、是否重复同一调用、是否缺少最终回答指令。加 max turns 和重复检测。</p>
+<p>表达要点：终止、结果回传、重复检测。</p>
+<p>常见误区：继续提高 max turns 试图让它自然结束。</p>
+<h3 id="Q97：如何-debug-最终回答与工具结果不一致？"><a href="#Q97：如何-debug-最终回答与工具结果不一致？" class="headerlink" title="Q97：如何 debug 最终回答与工具结果不一致？"></a>Q97：如何 debug 最终回答与工具结果不一致？</h3><p>参考答案：检查工具结果是否结构化、是否被长上下文稀释、是否有冲突来源、模型是否被要求引用证据。可让最终输出基于固定字段生成。</p>
+<p>表达要点：结构化、证据、冲突处理、字段约束。</p>
+<p>常见误区：只要求“请准确回答”。</p>
+<h3 id="Q98：MCP-相比插件系统的优势是什么？"><a href="#Q98：MCP-相比插件系统的优势是什么？" class="headerlink" title="Q98：MCP 相比插件系统的优势是什么？"></a>Q98：MCP 相比插件系统的优势是什么？</h3><p>参考答案：MCP 提供标准化协议、能力协商、生命周期、transport 和 primitives，使不同 Host 与 Server 可互操作。传统插件系统往往绑定单一应用或平台。</p>
+<p>表达要点：开放协议、互操作、可组合。</p>
+<p>常见误区：认为 MCP 只是换了名字的插件。</p>
+<h3 id="Q99：MCP-相比-REST-API-有什么不同？"><a href="#Q99：MCP-相比-REST-API-有什么不同？" class="headerlink" title="Q99：MCP 相比 REST API 有什么不同？"></a>Q99：MCP 相比 REST API 有什么不同？</h3><p>参考答案：REST API 是通用 Web API 风格；MCP 是面向 LLM 应用的上下文和工具协议，内置工具发现、资源、提示词、能力协商、采样和用户交互等语义。</p>
+<p>表达要点：REST 是接口风格，MCP 是 AI 应用接入协议。</p>
+<p>常见误区：认为 MCP Server 不需要认证，因为它不是 REST。</p>
+<h3 id="Q100：Function-Calling-相比直接生成-JSON-有什么优势？"><a href="#Q100：Function-Calling-相比直接生成-JSON-有什么优势？" class="headerlink" title="Q100：Function Calling 相比直接生成 JSON 有什么优势？"></a>Q100：Function Calling 相比直接生成 JSON 有什么优势？</h3><p>参考答案：Function Calling 有明确工具列表、函数名、参数 schema、调用 ID 和运行时回传机制，更适合多轮工具执行。直接 JSON 更适合最终结构化输出。</p>
+<p>表达要点：工具语义、call id、多轮执行。</p>
+<p>常见误区：用直接 JSON 模拟复杂工具编排。</p>
+<h3 id="Q101：RAG-与-Function-Calling-的关系？"><a href="#Q101：RAG-与-Function-Calling-的关系？" class="headerlink" title="Q101：RAG 与 Function Calling 的关系？"></a>Q101：RAG 与 Function Calling 的关系？</h3><p>参考答案：RAG 可以实现为一个或多个 Function Tool，例如 <code>search_docs</code> 和 <code>read_doc</code>。Function Calling 提供调用检索工具的方式，RAG 提供知识增强能力。</p>
+<p>表达要点：RAG 是能力，Function Calling 是调用机制。</p>
+<p>常见误区：把二者视为只能选一个。</p>
+<h3 id="Q102：RAG-与-MCP-的关系？"><a href="#Q102：RAG-与-MCP-的关系？" class="headerlink" title="Q102：RAG 与 MCP 的关系？"></a>Q102：RAG 与 MCP 的关系？</h3><p>参考答案：MCP Server 可以暴露文档 Resources、检索 Tools 或 Prompt 模板，从而把 RAG 系统标准化接入多个 Host。</p>
+<p>表达要点：MCP 标准化暴露 RAG 能力。</p>
+<p>常见误区：认为用了 MCP 就不需要检索质量优化。</p>
+<h3 id="Q103：Agent-如何处理合规审计？"><a href="#Q103：Agent-如何处理合规审计？" class="headerlink" title="Q103：Agent 如何处理合规审计？"></a>Q103：Agent 如何处理合规审计？</h3><p>参考答案：要有权限策略、人工审批、工具调用日志、模型版本记录、数据脱敏、结果留痕和回滚路径。高风险行业还需要评测和人工复核。</p>
+<p>表达要点：策略、日志、版本、脱敏、复核。</p>
+<p>常见误区：只保存聊天记录作为审计。</p>
+<h3 id="Q104：工具调用结果要不要进入长期记忆？"><a href="#Q104：工具调用结果要不要进入长期记忆？" class="headerlink" title="Q104：工具调用结果要不要进入长期记忆？"></a>Q104：工具调用结果要不要进入长期记忆？</h3><p>参考答案：默认不要。只有明确有长期价值、用户授权且通过隐私策略的数据才应写入长期记忆，并应支持过期和删除。</p>
+<p>表达要点：授权、价值、隐私、过期。</p>
+<p>常见误区：把所有工具结果都写入 memory。</p>
+<h3 id="Q105：如何回答“Agent-是否可靠”？"><a href="#Q105：如何回答“Agent-是否可靠”？" class="headerlink" title="Q105：如何回答“Agent 是否可靠”？"></a>Q105：如何回答“Agent 是否可靠”？</h3><p>参考答案：Agent 的可靠性来自工程约束，而不是模型本身。需要 schema、工具校验、权限控制、状态管理、评测、监控、fallback 和人工审批共同保证。</p>
+<p>表达要点：工程系统可靠性、分层防护。</p>
+<p>常见误区：只讨论模型准确率。</p>
+<h3 id="Q106：如何回答“工具越多越好吗”？"><a href="#Q106：如何回答“工具越多越好吗”？" class="headerlink" title="Q106：如何回答“工具越多越好吗”？"></a>Q106：如何回答“工具越多越好吗”？</h3><p>参考答案：不是。工具越多，模型选择成本和误调用风险越高。应按任务动态暴露最小必要工具集，并保持工具职责清晰。</p>
+<p>表达要点：最小必要、动态暴露、选择风险。</p>
+<p>常见误区：把工具数量当作 Agent 能力指标。</p>
+<h3 id="Q107：如何回答“Agent-会替代后端吗”？"><a href="#Q107：如何回答“Agent-会替代后端吗”？" class="headerlink" title="Q107：如何回答“Agent 会替代后端吗”？"></a>Q107：如何回答“Agent 会替代后端吗”？</h3><p>参考答案：不会。Agent 适合自然语言理解和动态决策，后端仍负责确定性业务逻辑、数据一致性、权限、事务和合规。Agent 应调用后端，而不是替代后端。</p>
+<p>表达要点：Agent 决策，后端约束执行。</p>
+<p>常见误区：让模型直接写数据库。</p>
+<h3 id="Q108：如何回答“怎么降低-Agent-幻觉”？"><a href="#Q108：如何回答“怎么降低-Agent-幻觉”？" class="headerlink" title="Q108：如何回答“怎么降低 Agent 幻觉”？"></a>Q108：如何回答“怎么降低 Agent 幻觉”？</h3><p>参考答案：使用工具查询事实、RAG 引用来源、结构化输出、事实校验、检索重排、拒答策略、评测集和人工审核。幻觉不能靠单句 prompt 根除。</p>
+<p>表达要点：工具、证据、校验、评测、拒答。</p>
+<p>常见误区：把 temperature 调低当作唯一方案。</p>
+<h3 id="Q109：如何回答“怎么判断该用-Agent-还是普通-Workflow”？"><a href="#Q109：如何回答“怎么判断该用-Agent-还是普通-Workflow”？" class="headerlink" title="Q109：如何回答“怎么判断该用 Agent 还是普通 Workflow”？"></a>Q109：如何回答“怎么判断该用 Agent 还是普通 Workflow”？</h3><p>参考答案：如果流程固定、规则明确、容错低，用 Workflow；如果目标开放、路径不确定、需要根据中间结果动态决策，可用 Agent。很多生产系统采用混合模式。</p>
+<p>表达要点：固定 vs 动态；混合模式。</p>
+<p>常见误区：所有 AI 功能都做成 Agent。</p>
+<h3 id="Q110：如何回答“Agent-失败时应该怎么办”？"><a href="#Q110：如何回答“Agent-失败时应该怎么办”？" class="headerlink" title="Q110：如何回答“Agent 失败时应该怎么办”？"></a>Q110：如何回答“Agent 失败时应该怎么办”？</h3><p>参考答案：应识别失败类型，能重试则有限重试，不能重试则降级、请求用户补充、转人工或返回部分结果。不要编造完成状态。</p>
+<p>表达要点：分类、有限重试、降级、人工、诚实失败。</p>
+<p>常见误区：失败后让模型生成一个看似完整的答案。</p>
+<h2 id="7-核心对比表"><a href="#7-核心对比表" class="headerlink" title="7. 核心对比表"></a>7. 核心对比表</h2><h3 id="7-1-MCP-vs-Function-Calling-vs-Agent"><a href="#7-1-MCP-vs-Function-Calling-vs-Agent" class="headerlink" title="7.1 MCP vs Function Calling vs Agent"></a>7.1 MCP vs Function Calling vs Agent</h3><table>
+<thead>
+<tr>
+<th>维度</th>
+<th>MCP</th>
+<th>Function Calling</th>
+<th>Agent</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>层次</td>
+<td>协议层</td>
+<td>模型调用机制</td>
+<td>应用运行范式</td>
+</tr>
+<tr>
+<td>解决问题</td>
+<td>外部能力如何标准接入</td>
+<td>模型如何结构化请求工具</td>
+<td>如何多步完成任务</td>
+</tr>
+<tr>
+<td>核心对象</td>
+<td>Host、Client、Server</td>
+<td>tools、function schema、tool call</td>
+<td>model、tools、state、policy</td>
+</tr>
+<tr>
+<td>通信格式</td>
+<td>JSON-RPC</td>
+<td>模型 API 消息</td>
+<td>由应用&#x2F;SDK 定义</td>
+</tr>
+<tr>
+<td>是否执行工具</td>
+<td>Server 执行其暴露的工具</td>
+<td>应用执行函数</td>
+<td>控制器调度工具执行</td>
+</tr>
+<tr>
+<td>安全重点</td>
+<td>Server 隔离、权限、授权</td>
+<td>参数校验、执行审批</td>
+<td>全链路策略、预算、审计</td>
+</tr>
+</tbody></table>
+<h3 id="7-2-Tools-vs-Resources-vs-Prompts"><a href="#7-2-Tools-vs-Resources-vs-Prompts" class="headerlink" title="7.2 Tools vs Resources vs Prompts"></a>7.2 Tools vs Resources vs Prompts</h3><table>
+<thead>
+<tr>
+<th>项目</th>
+<th>Tools</th>
+<th>Resources</th>
+<th>Prompts</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>主要用途</td>
+<td>执行动作</td>
+<td>提供上下文数据</td>
+<td>提供任务模板</td>
+</tr>
+<tr>
+<td>副作用</td>
+<td>可能有</td>
+<td>通常无</td>
+<td>通常无</td>
+</tr>
+<tr>
+<td>模型控制</td>
+<td>常由模型触发</td>
+<td>由 Host 或模型读取</td>
+<td>由用户&#x2F;Host 选择</td>
+</tr>
+<tr>
+<td>风险</td>
+<td>越权、误操作、数据外泄</td>
+<td>敏感数据泄露、注入</td>
+<td>指令冲突、模板过时</td>
+</tr>
+</tbody></table>
+<h3 id="7-3-Agent、Workflow、RAG"><a href="#7-3-Agent、Workflow、RAG" class="headerlink" title="7.3 Agent、Workflow、RAG"></a>7.3 Agent、Workflow、RAG</h3><table>
+<thead>
+<tr>
+<th>项目</th>
+<th>Agent</th>
+<th>Workflow</th>
+<th>RAG</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>核心</td>
+<td>动态决策和工具循环</td>
+<td>固定流程编排</td>
+<td>检索增强生成</td>
+</tr>
+<tr>
+<td>优点</td>
+<td>灵活处理开放任务</td>
+<td>稳定、可控、易审计</td>
+<td>降低知识过时和事实幻觉</td>
+</tr>
+<tr>
+<td>缺点</td>
+<td>成本和不确定性高</td>
+<td>不灵活</td>
+<td>依赖检索质量</td>
+</tr>
+<tr>
+<td>组合方式</td>
+<td>Agent 调用 Workflow&#x2F;RAG</td>
+<td>Workflow 中嵌入 Agent</td>
+<td>RAG 作为 Agent 工具</td>
+</tr>
+</tbody></table>
+<h2 id="8-面试前-10-分钟背诵卡"><a href="#8-面试前-10-分钟背诵卡" class="headerlink" title="8. 面试前 10 分钟背诵卡"></a>8. 面试前 10 分钟背诵卡</h2><ol>
+<li>MCP 是协议，不是 Agent 框架；Function Calling 是调用机制，不是真正执行；Agent 是运行范式，不是单次 prompt。</li>
+<li>MCP 架构：Host 管控，Client 连接，Server 暴露 Resources、Prompts、Tools。</li>
+<li>MCP 通过 <code>initialize</code> 做版本和能力协商；正常操作前不要假设工具可用。</li>
+<li>MCP transport：stdio 适合本地子进程；Streamable HTTP 适合远程和多连接。</li>
+<li>MCP tool：<code>tools/list</code> 发现，<code>tools/call</code> 调用；<code>inputSchema</code> 定义入参，<code>outputSchema</code> 和 <code>structuredContent</code> 提升结果可靠性。</li>
+<li>Function Calling：应用传 tools schema，模型返回 tool call，应用执行，结果带 <code>call_id</code> 回传。</li>
+<li>模型输出的工具参数永远不可信，必须 schema 校验、业务校验、权限校验。</li>
+<li>Agent loop：目标、推理、行动、观察、修正、终止。</li>
+<li>Agent 工程重点：状态、工具、权限、预算、错误恢复、可观测性、评测。</li>
+<li>安全重点：最小权限、human-in-the-loop、prompt injection 防护、工具审计、敏感信息脱敏。</li>
+</ol>
+<h2 id="9-可直接套用的面试回答模板"><a href="#9-可直接套用的面试回答模板" class="headerlink" title="9. 可直接套用的面试回答模板"></a>9. 可直接套用的面试回答模板</h2><h3 id="9-1-解释三者关系"><a href="#9-1-解释三者关系" class="headerlink" title="9.1 解释三者关系"></a>9.1 解释三者关系</h3><p>MCP、Function Calling 和 Agent 是三个层次。MCP 是协议层，负责把外部资源、工具和提示词以标准方式接入 LLM 应用；Function Calling 是模型 API 层的结构化工具调用机制，模型生成函数名和参数，但应用负责执行；Agent 是应用层的运行范式，负责围绕目标循环调用模型和工具、维护状态、处理错误并终止。实际系统里，Agent Host 可以通过 MCP Client 发现 MCP Server 的工具，再把它们映射成模型可调用的 function tools。</p>
+<h3 id="9-2-解释工具调用安全"><a href="#9-2-解释工具调用安全" class="headerlink" title="9.2 解释工具调用安全"></a>9.2 解释工具调用安全</h3><p>工具调用安全不能只靠 prompt。我的设计会分三层：第一层是工具 schema 和业务校验，保证参数合法；第二层是权限和审批，高风险工具必须 human-in-the-loop；第三层是运行时审计和限制，包括超时、限流、幂等、日志、敏感信息脱敏。对于 MCP，还要保证 Server 只拿到必要上下文，Client&#x2F;Host 负责隔离不同 Server。</p>
+<h3 id="9-3-解释-Agent-可靠性"><a href="#9-3-解释-Agent-可靠性" class="headerlink" title="9.3 解释 Agent 可靠性"></a>9.3 解释 Agent 可靠性</h3><p>Agent 可靠性来自系统工程，而不是模型单点能力。需要限制工具集、设计清晰 schema、使用结构化输出、设置 max turns、对工具错误做分类恢复、对高风险操作加审批，并通过 trace 和评测集持续监控工具选择率、参数错误率、任务成功率、成本和延迟。</p>
+<h3 id="9-4-解释何时不用-Agent"><a href="#9-4-解释何时不用-Agent" class="headerlink" title="9.4 解释何时不用 Agent"></a>9.4 解释何时不用 Agent</h3><p>如果任务流程固定、规则明确、容错率低或存在强事务要求，我会优先用传统 workflow 或后端服务，只在自然语言理解、检索总结、复杂分流等局部引入 LLM。Agent 更适合路径不确定、需要动态决策的任务，不适合无边界地接管核心业务操作。</p>
+<h2 id="10-最后复盘"><a href="#10-最后复盘" class="headerlink" title="10. 最后复盘"></a>10. 最后复盘</h2><p>面试中回答 MCP、Function Calling、Agent 时，最重要的是把“边界”说清楚：</p>
+<ul>
+<li>模型负责推理和生成调用意图。</li>
+<li>应用负责执行、权限、状态和审计。</li>
+<li>MCP Server 负责按协议暴露特定能力。</li>
+<li>Agent 负责把这些组件编排成任务闭环。</li>
+</ul>
+<p>能把这四句话说清，再结合 schema、tool result、human-in-the-loop、prompt injection、max turns、trace 和评测，基本就能覆盖大多数 AI Agent 工程面试追问。</p>
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1773903578/" target="_blank">MCP、Function Calling 与 Agent</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
+                        
+                            <a href="/category/Web/">Web</a>
+                        
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
+                        
+                            <a href="/tag/AI/">AI</a>
+                        
+                    </div>
+                
+                <div class="article-prev-next">
+                    
+                    
+                        <a href="/article/1763903578/" class="next-prefix">» </a> 下一篇：    <a href="/article/1763903578/" title="发布于 2025-09-23 01:43">大数据开发</a>
+                    
+                </div>
+            </div>
+            
+    <div class="article-comments">
+        
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
+    
+</div>
+
+    <div id="footer"></div>
+    <div id="sidebar">
+    <div class="menu-wrap" style="display:none;">
+        
+            <div class="menu-notice">
+                <span class="iconfont icon-notice"></span>
+                <div class="notice">
+                    <span>简单地活着，肆意而又精彩！</span>
+                </div>
+            </div>
+        
+        <nav class="menu">
+            <div class="menu-introduce"> 
+                <div class="introduce-avatar">
+                    <img src="/image/sidebar/avatar.jpg">
+                </div> 
+                <div class="introduce-info"> 
+                    <div class="introduce-user"><span>Live For Code</span></div>
+                </div> 
+            </div> 
+            <div class="menu-list">
+                <ul>
+                    
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                    
+                        <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
+                    
+                        <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
+                    
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                    
+                        <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
+                    
+                        <li class=""><a href="/about" class="" target="_self"><span class="iconfont icon-about-fill"></span>关于</a></li>
+                    
+                        <li class=""><a href="/atom.xml" class="" target="_blank"><span class="iconfont icon-rss"></span>订阅</a></li>
+                    
+                        <li class=""><a href="/comment" class="" target="_self"><span class="iconfont icon-comments-fill"></span>留言板</a></li>
+                    
+                        <li class=""><a href="/friend" class="" target="_self"><span class="iconfont icon-link"></span>友情链接</a></li>
+                    
+                </ul> 
+            </div> 
+            <div class="menu-link">
+                <div class="box">
+                    <div class="image-box"></div>
+                </div>
+                
+                    <a name="知乎" href="https://www.zhihu.com/people/wo-xin-de-love" class="" target="_blank" data=""><span class="iconfont icon-zhihu"></span></a>
+                
+                    <a name="微博" href="https://weibo.com/u/3939432776" class="" target="_blank" data=""><span class="iconfont icon-weibo"></span></a>
+                
+                    <a name="QQ" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"><span class="iconfont icon-qq"></span></a>
+                
+                    <a name="微信" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"><span class="iconfont icon-wechat"></span></a>
+                
+                    <a name="GitHub" href="https://github.com/first19326" class="" target="_blank" data=""><span class="iconfont icon-github"></span></a>
+                
+            </div> 
+        </nav>
+        <button class="menu-button-close"></button>
+        <div class="morph-shape" id="morph-shape" data-morph-open="M-7.312,0H15c0,0,66,113.339,66,399.5C81,664.006,15,800,15,800H-7.312V0z;M-7.312,0H100c0,0,0,113.839,0,400c0,264.506,0,400,0,400H-7.312V0z">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 800" preserveAspectRatio="none">
+                <path d="M-7.312,0H0c0,0,0,113.839,0,400c0,264.506,0,400,0,400h-7.312V0z"/>
+            </svg>
+        </div>
+    </div>
+    <button class="menu-button-open">MENU</button>
+    <div class="menu-cover"></div>
+</div>
+    
+<div id="tools">
+    <div class="progressbar-top"></div>
+
+    <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
+    <script type="text/javascript" src="/js/APlayer.min.js"></script>
+    <script type="text/javascript" src="/js/Meting.min.js"></script>
+    <meting-js id="3778678" lrcshow="false" server="netease"
+               type="playlist" fixed="true" autoplay="false"
+               loop="all" order="random" preload="auto"
+               volume="0.67" mutex="true"></meting-js>
+
+    <script type="text/javascript">
+        (function () {
+            var toolsRoot = document.getElementById('tools');
+            if (!toolsRoot || typeof APlayer === 'undefined') {
+                return;
+            }
+
+            var metingElement = toolsRoot.querySelector('meting-js');
+            var targetVolume = 0.67;
+            var autoplayEnabled = true;
+            var introAudio = {
+                name: "知我",
+                artist: "国风堂 / 哦漏",
+                cover: "/image/header/home.jpg",
+                url: "/music/song/知我.mp3",
+                lrc: ""
+            };
+            var introIndex = -1;
+            var introRemoved = false;
+            var metingPlayer = null;
+            var initTimer = null;
+
+            function restoreAudio(audio) {
+                if (!audio) {
+                    return;
+                }
+
+                audio.muted = false;
+                audio.defaultMuted = false;
+                audio.removeAttribute('muted');
+                audio.removeAttribute('autoplay');
+                audio.volume = targetVolume;
+            }
+
+            function attemptPlay(player, muted) {
+                if (!player || !player.audio) {
+                    return;
+                }
+
+                var audio = player.audio;
+                if (typeof muted === 'boolean') {
+                    audio.muted = muted;
+                    audio.defaultMuted = muted;
+                    if (muted) {
+                        audio.setAttribute('muted', 'muted');
+                        audio.setAttribute('autoplay', 'autoplay');
+                        audio.volume = 0;
+                    }
+                }
+
+                var result = audio.play();
+                if (result && typeof result.catch === 'function') {
+                    result.catch(function () {
+                        if (player && player.setUIPaused) {
+                            player.setUIPaused();
+                        }
+                    });
+                }
+            }
+
+            function startMutedAutoplay(player) {
+                if (!player || !player.audio) {
+                    return;
+                }
+
+                var audio = player.audio;
+                audio.muted = true;
+                audio.defaultMuted = true;
+                audio.setAttribute('muted', 'muted');
+                audio.setAttribute('autoplay', 'autoplay');
+                audio.volume = 0;
+
+                var clearMute = function () {
+                    restoreAudio(audio);
+                };
+
+                audio.addEventListener('playing', function () {
+                    window.setTimeout(clearMute, 120);
+                }, {once: true});
+
+                ['loadedmetadata', 'canplay', 'canplaythrough'].forEach(function (eventName) {
+                    audio.addEventListener(eventName, function resumeOnReady() {
+                        if (audio.paused) {
+                            attemptPlay(player, true);
+                        }
+                    }, {once: true});
+                });
+
+                [0, 250, 1200, 2500].forEach(function (delay) {
+                    window.setTimeout(function () {
+                        if (audio.paused) {
+                            attemptPlay(player, true);
+                        }
+                    }, delay);
+                });
+
+                attemptPlay(player, true);
+            }
+
+            function showPlayerControls(player) {
+                if (player && player.setMode) {
+                    player.setMode('normal');
+                }
+                if (player && player.template && player.template.info) {
+                    player.template.info.style.display = 'block';
+                }
+            }
+
+            function resetRandomOrder(player) {
+                if (!player || !player.list || !player.list.audios) {
+                    return;
+                }
+
+                var order = [];
+                for (var i = 0; i < player.list.audios.length; i++) {
+                    order.push(i);
+                }
+                for (var j = order.length - 1; j > 0; j--) {
+                    var randomIndex = Math.floor(Math.random() * (j + 1));
+                    var item = order[j];
+                    order[j] = order[randomIndex];
+                    order[randomIndex] = item;
+                }
+                player.randomOrder = order;
+            }
+
+            function removeIntroAfterLeaving(player) {
+                if (introRemoved || introIndex < 0 || !player || !player.list || player.list.index === introIndex) {
+                    return;
+                }
+
+                player.removeAudio(introIndex);
+                introRemoved = true;
+                introIndex = -1;
+
+                if (player.options && player.options.order === 'random') {
+                    resetRandomOrder(player);
+                }
+            }
+
+            function initIntro(player) {
+                if (!player || !player.list || !player.list.audios || !player.addAudio || !introAudio.url) {
+                    return;
+                }
+
+                metingPlayer = player;
+                showPlayerControls(player);
+
+                player.addAudio(introAudio);
+                introIndex = player.list.audios.length - 1;
+                player.list.switch(introIndex);
+                showPlayerControls(player);
+
+                player.on('listswitch', function () {
+                    window.setTimeout(function () {
+                        removeIntroAfterLeaving(player);
+                    }, 0);
+                });
+                player.on('ended', function () {
+                    window.setTimeout(function () {
+                        removeIntroAfterLeaving(player);
+                    }, 0);
+                });
+
+                if (autoplayEnabled) {
+                    startMutedAutoplay(player);
+                }
+
+                document.addEventListener('click', function resumeMusic() {
+                    if (player && player.audio && player.audio.paused) {
+                        restoreAudio(player.audio);
+                        attemptPlay(player, false);
+                    }
+                    document.removeEventListener('click', resumeMusic);
+                });
+
+                window.__liveForCodeMusic = {
+                    player: player,
+                    meting: metingElement
+                };
+            }
+
+            initTimer = window.setInterval(function () {
+                if (metingElement && metingElement.aplayer) {
+                    window.clearInterval(initTimer);
+                    initIntro(metingElement.aplayer);
+                }
+            }, 100);
+        })();
+    </script>
+    
+    <div class="wrap-right">
+        <div class="setting">
+            <div class="iconbox mode">
+                <div class="light">
+                    <span class="iconfont icon-daymode"></span>
+                    <span class="icontext">浅色模式</span>
+                </div>
+                <div class="dark">
+                    <span class="iconfont icon-nightmode-fill"></span>
+                    <span class="icontext">深色模式</span>
+                </div>
+            </div>
+            <div class="iconbox bottom">
+                <div style="display: inline-block; transform: rotate(180deg);">
+                    <span class="iconfont icon-top"></span>
+                </div>
+                <span class="icontext">跳至底部</span>
+            </div>
+        </div>
+        <div class="iconbox set">
+            <div style="display: inline-block;">
+                <span class="iconfont icon-setting"></span>
+            </div>
+            <span class="icontext">设置</span>
+        </div>
+        <div class="iconbox top">
+            <span class="iconfont icon-top"></span>
+            <span class="icontext">返回顶部</span>
+        </div>
+    </div>
+    <div class="loading"></div>
+</div>
+
+    <script>
+    window.config = {
+        GitHubUserName     : "first19326",
+        GitHubRepositories : "Hexo-LiveForCode",
+
+        User             : "Live For Code",
+        UserAvatar       : "/image/sidebar/avatar.jpg",
+        WebsiteStartDate : "2020-01-01",
+
+        WebsiteTitleBlur         : "(◍´꒳`◍) Hi, Live For Code",
+        WebsiteTitleBlurTimeOut  : 500,
+        WebsiteTitleFocus        : "(*´∇｀*) 欢迎回来!",
+        WebsiteTitleFocusTimeOut : 1000,
+        WebsiteFavicon           : "/image/website/logo.png",
+
+        ProgressBar : {
+            id       : "topProgressBar",
+            color    : "#77B6FF",
+            height   : "2px",
+            duration : 0.2
+        },
+
+        Loading: {
+            rebound : {
+                tension  : 16,
+                friction : 5
+            },
+            spinner : {
+                id     : "spinner",
+                radius : 90,
+                sides  : 3,
+                depth  : 4,
+                colors : {
+                    background : "#F0F0F0",
+                    stroke     : "#272633",
+                    base       : "",
+                    child      : "#272633"
+                },
+                alwaysForward : true,
+                restAt        : 0.5,
+                renderBase    : false
+            }
+        },
+
+        HomeHeaderAnimationRendered : true,
+        HomeHeaderAnimation         : {
+            radius      : 15,
+            density     : 0.2,
+            color       : "rgba(255, 255, 255, .2)",
+            clearOffset : 0.3
+        },
+
+        BackAnimationRendered          : true,
+        IEBrowserBackAnimationRendered : false,
+        BackAnimation                  : {
+            colorSaturation  : "60%",
+            colorBrightness  : "50%",
+            colorAlpha       : 0.5,
+            colorCycleSpeed  : 5,
+            verticalPosition : "random",
+            horizontalSpeed  : 200,
+            ribbonCount      : 3,
+            strokeSize       : 0,
+            parallaxAmount   : -0.2,
+            animateSections  : true
+        },
+
+        HomeHeaderImage : [
+            
+                "/image/header/home.jpg",
+            
+                "/image/header/home.jpeg",
+            
+                "/image/header/2023-04-17-20-51-03.jpg",
+            
+                "/image/header/2023-04-17-20-54-07.jpg",
+            
+                "/image/header/2023-04-17-20-54-22.jpg",
+            
+                "/image/header/2023-04-17-20-55-25.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+        HomeBannerText  : "",
+
+        ArticleHeaderImage : [
+            
+                "/image/header/article.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+
+        OtherBannerText : "",
+
+        Error : {
+            icon    : "icon-swimming",
+            title   : "PAGE NOT FOUND",
+            content : [
+                
+                    "很抱歉，您访问的页面不存在！",
+                
+                    "可能是输入地址有误或该地址已变更。",
+                
+            ],
+            buttons : [
+                
+                    {
+                        icon  : "icon-home",
+                        text  : "返回首页",
+                        href  : "https://fadeway32.gitee.io/",
+                        class : ""
+                    },
+                
+            ]
+        },
+
+        MenuNotice : {
+            enable : true,
+            notice : "简单地活着，肆意而又精彩！",
+            speed  : 20
+        },
+        MenuList : [
+            
+                {
+                    name   : "首页",
+                    icon   : "icon-home-fill",
+                    href   : "/",
+                    type   : "index",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "分类",
+                    icon   : "icon-folder-fill",
+                    href   : "/category",
+                    type   : "category",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "标签",
+                    icon   : "icon-discount-fill",
+                    href   : "/tag",
+                    type   : "tag",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "归档",
+                    icon   : "icon-calendar-fill",
+                    href   : "/archive",
+                    type   : "archive",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "赞赏",
+                    icon   : "icon-heart-fill",
+                    href   : "/donate",
+                    type   : "donate",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "关于",
+                    icon   : "icon-about-fill",
+                    href   : "/about",
+                    type   : "about",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "订阅",
+                    icon   : "icon-rss",
+                    href   : "/atom.xml",
+                    type   : "",
+                    class  : "",
+                    target : "_blank"
+                },
+            
+                {
+                    name   : "留言板",
+                    icon   : "icon-comments-fill",
+                    href   : "/comment",
+                    type   : "comment",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "友情链接",
+                    icon   : "icon-link",
+                    href   : "/friend",
+                    type   : "friend",
+                    class  : "",
+                    target : "_self"
+                },
+            
+        ],
+        MenuLink : [
+            
+                
+                    {
+                        name   : "知乎",
+                        icon   : "icon-zhihu",
+                        href   : "https://www.zhihu.com/people/wo-xin-de-love",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "微博",
+                        icon   : "icon-weibo",
+                        href   : "https://weibo.com/u/3939432776",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "QQ",
+                        icon   : "icon-qq",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"
+                    },
+                
+                    {
+                        name   : "微信",
+                        icon   : "icon-wechat",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"
+                    },
+                
+                    {
+                        name   : "GitHub",
+                        icon   : "icon-github",
+                        href   : "https://github.com/first19326",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+            
+        ],
+
+        FooterStyle : 2,
+        BottomText  : "<div><span class='face'>ღゝ◡╹)ノ♡</span></div><div>【人生若只如初见<span><i class='iconfont icon-like-fill'></i></span>何事秋风悲画扇】</div><div>&copy; 2020-2022 WorstOne. All Rights Reserved.</div>",
+
+        ConsoleList : [
+            
+                
+                    [
+                        
+                            
+                                "Based on cnblogs theme SimpleMemory.",
+                            
+                                "",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "SimpleMemory Author:",
+                            
+                                "BNDong",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "Theme:",
+                            
+                                "LiveForCode",
+                            
+                        
+                    ],
+                
+            
+        ],
+
+        FontIconExtend : "",
+
+        Donate : {
+            paypal  : "",
+            bitcoin : "",
+            alipay  : "/image/donate/alipay.png",
+            wechat  : "/image/donate/wechat.png"
+        },
+
+        Search : {
+            applicationID : "854JXVO35S",
+            apiKey        : "1945575867b066df2d460a4a97e23421",
+            indexName     : "hexo2",
+            hits          : {
+                page : 30
+            },
+            labels        : {
+                placeholder : "搜索",
+                empty       : "未发现与 「${query}」 相关的内容",
+                stats       : "${hits} 条相关条目，使用了 ${time} 毫秒",
+            }
+        }, 
+
+        Valine : {
+            switch         : true,
+            el             : ".comments-content",
+            appId          : "srhKtvWPQTWYKh3qX8G8M7v0-gzGzoHsz",
+            appKey         : "8uVSP1q6UlALVC5igYfIfv2h",
+            serverURLs     : "",
+            placeholder    : "你是我一生只会遇见一次的惊喜...",
+            avatar         : "mm",
+            meta           : "nick,mail,link",
+            requiredFields : "nick,mail",
+            pageSize       : 5,
+            lang           : "zh-cn",
+            visitor        : true,
+            enableQQ       : true
+        },
+
+        Tocbot : {
+            switch                : true,
+            tocSelector           : ".toc",
+            contentSelector       : ".article-body",
+            headingSelector       : "h1, h2, h3, h4, h5",
+            headingsOffset        : 0,
+            scrollSmooth          : true,
+            scrollSmoothOffset    : -5,
+            positionFixedSelector : ".toc",
+            positionFixedClass    : "toc-fixed",
+            fixedSidebarOffset    : "",
+        },
+
+        Require : {
+            baseUrl     : "/js/",
+            waitSeconds : 100
+        },
+
+        Music : {
+            type : "Meting"
+        },
+        APlayer : {
+            container : ".aplayer",
+            fixed     : true,
+            autoplay  : true,
+            loop      : "all",
+            order     : "list",
+            preload   : "auto",
+            volume    : 0.67,
+            mutex     : true,
+            lrcType   : 0,
+            audio     : [
+                
+                    {
+                        name   : "知我",
+                        artist : "国风堂 / 哦漏",
+                        cover  : "/image/header/home.jpg",
+                        url    : "/music/song/知我.mp3",
+                        lrc    : ""
+                    },
+                
+            ]
+        },
+        Meting : {
+            id       : "3778678", 
+            lrcshow  : false, 
+            server   : "netease", 
+            type     : "playlist", 
+            fixed    : true, 
+            autoplay : true, 
+            loop     : "all", 
+            order    : "random", 
+            preload  : "auto", 
+            volume   : 0.67, 
+            mutex    : true
+        },
+
+        Mouse : {
+            enable  : true,
+            options : {
+                size  : 6,
+                sizeF : 24
+            }
+        },
+
+        LazyLoad : {
+            default : "/image/website/lazyload.svg"
+        },
+  
+        Style : {
+            aplayer          : "/css/APlayer.css",
+            archive          : "/css/archive.css",
+            base             : "/css/base.css",
+            clipboard        : "/css/clipboard.css",
+            code             : "/css/code.css",
+            donate           : "/css/donate.css",
+            fancybox         : "/css/jquery.fancybox.css",
+            footer           : "/css/footer.css",
+            iconfont         : "/iconfont/iconfont.css",
+            index            : "/css/index.css",
+            menuBubble       : "/css/menu-bubble.css",
+            mouse            : "/css/mouse.css",
+            page             : "/css/page.css",
+            post             : "/css/post.css",
+            search           : "/css/search.css",
+            tocbot           : "/css/tocbot.css",
+            valine           : "/css/valine.css"
+        },
+
+        Script: {
+            aplayer          : "/js/APlayer.min.js",
+            config           : "/js/require.config.js",
+            index            : "/js/index.js",
+            instantSearch    : "/js/instantsearch.min.js",
+            iscroll          : "/js/iscroll.js",
+            jQuery           : "/js/jquery-3.4.1.min.js",
+            loading          : "/js/loading.js",
+            meting           : "/js/Meting.min.js",
+            require          : "/js/require.min.js"
+        },
+
+        Font: {
+            LongCang    : "/font/LongCang.css",
+            Monda       : "/font/Monda.css",
+            NotoSansSC  : "/font/NotoSansSC.css",
+            NotoSerifSC : "/font/NotoSerifSC.css",
+            Playball    : "/font/Playball.css",
+            PTMono      : "/font/PTMono.css",
+            Roboto      : "/font/Roboto.css",
+            RobotoSlab  : "/font/RobotoSlab.css",
+            Rosario     : "/font/Rosario.css",
+            UbuntuMono  : "/font/UbuntuMono.css"
+        },
+
+        Suffix : {
+            about : "你知道的越多,你不知道的越多"
+        },
+            
+        Theme : {
+            url  : "https://fadeway32.gitee.io/",
+            name : "fadeway32"
+        }  
+    };
+</script>
+    <script type="text/javascript" src="/js/home-docs.js"></script>
+    <script type="text/javascript" src="/js/index.js"></script>
+</body>
+</html>

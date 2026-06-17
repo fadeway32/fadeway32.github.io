@@ -1,0 +1,2233 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <!--    <meta name="referrer" content="origin">-->
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>
+        
+            Flink
+        
+    </title>
+    <link rel="shortcut icon" href="#"/>
+
+    <link type="text/css" rel="stylesheet" href="/font/LongCang.css">
+    <link type="text/css" rel="stylesheet" href="/font/Monda.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSansSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSerifSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/Playball.css">
+    <link type="text/css" rel="stylesheet" href="/font/PTMono.css">
+    <link type="text/css" rel="stylesheet" href="/font/Roboto.css">
+    <link type="text/css" rel="stylesheet" href="/font/RobotoSlab.css">
+    <link type="text/css" rel="stylesheet" href="/font/Rosario.css">
+    <link type="text/css" rel="stylesheet" href="/font/UbuntuMono.css">
+
+    <link type="text/css" rel="stylesheet" href="/css/base.css">
+    <link type="text/css" rel="stylesheet" href="/css/code.css">
+
+    <script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+    <a id="cover"></a>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
+<header>
+    <meta name="referrer" content="no-referrer">
+</header>
+<div id="header" class="header">
+    <div class="vertical">
+        <div class="inner">
+            
+                <h1 class="header-subtitle">Flink</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2025-08-23
+                        </span>
+                        
+                            <span id="/article/1753903578/" class="leancloud_visitors" data-flag-title="Flink">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1753903578/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">Flink</span>
+                        
+                    
+                </div>
+            
+        </div>
+    </div>
+    
+</div>
+<div id="container"
+
+>
+    
+        <!-- 文章页面 -->
+        
+        <div id="article" data-doc-title="Flink" data-doc-path="/article/1753903578/"
+             data-doc-url="/article/1753903578/" data-doc-date="2025-08-23">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="Flink-全景深度梳理"><a href="#Flink-全景深度梳理" class="headerlink" title="Flink 全景深度梳理"></a>Flink 全景深度梳理</h1><blockquote>
+<p>版本基准说明  </p>
+<ol>
+<li>生产主线建议以 Flink 1.20 LTS &#x2F; 企业发行版为主。  </li>
+<li>截至 2025-08-23，官方下载页显示 Flink 2.2.0 为最新稳定版，技术前瞻与新能力可参考 2.2.0 stable。  </li>
+<li>1.13、1.17、1.20、2.x 的差异点单独放在文末版本章。  </li>
+<li>本文面向原理学习、实战落地、面试复习和生产规范四种用途。</li>
+</ol>
+</blockquote>
+<h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ol>
+<li>核心定位与核心特性总览</li>
+<li>项目使用场景深度梳理</li>
+<li>API 体系、实战指南与生产规范</li>
+<li>高频面试题详解</li>
+<li>版本差异、选型边界与演进建议</li>
+<li>参考资料</li>
+</ol>
+<hr>
+<h2 id="一、核心定位与核心特性总览"><a href="#一、核心定位与核心特性总览" class="headerlink" title="一、核心定位与核心特性总览"></a>一、核心定位与核心特性总览</h2><h3 id="1-1-Flink-的一句话定义"><a href="#1-1-Flink-的一句话定义" class="headerlink" title="1.1 Flink 的一句话定义"></a>1.1 Flink 的一句话定义</h3><p>Flink 是一个以<strong>流处理为第一原生模型</strong>的分布式计算引擎，擅长处理高吞吐、低延迟、高可靠、强一致的数据流任务，并通过统一的运行时与 API 把批处理、流处理、状态计算、事件驱动计算和 SQL 分析整合在同一套体系里。</p>
+<h3 id="1-2-正确理解-Flink-的产品定位"><a href="#1-2-正确理解-Flink-的产品定位" class="headerlink" title="1.2 正确理解 Flink 的产品定位"></a>1.2 正确理解 Flink 的产品定位</h3><ul>
+<li>它不是单纯的消息消费框架。</li>
+<li>它不是离线数仓替代品。</li>
+<li>它不是数据库。</li>
+<li>它是实时计算核心引擎，常作为“实时数据管道、实时数仓、实时风控、实时特征工程”的计算层。</li>
+</ul>
+<h3 id="1-3-设计目标"><a href="#1-3-设计目标" class="headerlink" title="1.3 设计目标"></a>1.3 设计目标</h3><ul>
+<li>统一批流编程模型。</li>
+<li>在流式执行中提供端到端 Exactly-Once。</li>
+<li>提供强状态管理能力。</li>
+<li>支持事件时间、乱序和迟到数据。</li>
+<li>允许复杂流处理、窗口计算、CEP、异步 I&#x2F;O 和 SQL 分析并存。</li>
+</ul>
+<h3 id="1-4-核心架构"><a href="#1-4-核心架构" class="headerlink" title="1.4 核心架构"></a>1.4 核心架构</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">flowchart LR</span><br><span class="line">  A[Source: Kafka / CDC / File / Custom] --&gt; B[Stream Operators]</span><br><span class="line">  B --&gt; C[Keyed State / Operator State / Broadcast State]</span><br><span class="line">  C --&gt; D[Checkpoint / Savepoint]</span><br><span class="line">  B --&gt; E[Window / CEP / Async IO / SQL]</span><br><span class="line">  E --&gt; F[Sink: Kafka / DB / Lakehouse / ES / Redis]</span><br><span class="line">  G[JobManager] --- B</span><br><span class="line">  H[TaskManager] --- B</span><br><span class="line">  I[ResourceManager] --- G</span><br><span class="line">  J[Dispatcher / REST] --- G</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-5-核心组件职责"><a href="#1-5-核心组件职责" class="headerlink" title="1.5 核心组件职责"></a>1.5 核心组件职责</h3><table>
+<thead>
+<tr>
+<th>组件</th>
+<th>作用</th>
+<th>面试高频点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>JobManager</td>
+<td>负责任务调度、Checkpoint 协调、失败恢复、元数据管理</td>
+<td>任务提交流程、恢复流程、HA</td>
+</tr>
+<tr>
+<td>TaskManager</td>
+<td>执行算子、维护网络栈、状态访问和定时器</td>
+<td>Slot、算子链、反压</td>
+</tr>
+<tr>
+<td>ResourceManager</td>
+<td>申请和释放集群资源</td>
+<td>与 YARN &#x2F; K8s 的关系</td>
+</tr>
+<tr>
+<td>Dispatcher</td>
+<td>接收作业提交、启动 JobMaster、转发 REST 请求</td>
+<td>Session &#x2F; Application 模式</td>
+</tr>
+</tbody></table>
+<h3 id="1-6-核心技术特性"><a href="#1-6-核心技术特性" class="headerlink" title="1.6 核心技术特性"></a>1.6 核心技术特性</h3><table>
+<thead>
+<tr>
+<th>特性</th>
+<th>说明</th>
+<th>生产价值</th>
+<th>常见坑</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>流批一体</td>
+<td>同一套引擎支持流与批</td>
+<td>口径统一、代码复用</td>
+<td>把离线批处理硬搬到流里</td>
+</tr>
+<tr>
+<td>Exactly-Once</td>
+<td>端到端精确一次</td>
+<td>强一致写入</td>
+<td>Sink 不支持事务时语义会降级</td>
+</tr>
+<tr>
+<td>状态管理</td>
+<td>Keyed State、Operator State 等</td>
+<td>支撑去重、聚合、维表、规则</td>
+<td>状态过大、TTL 失配</td>
+</tr>
+<tr>
+<td>事件时间</td>
+<td>按业务发生时间处理</td>
+<td>解决乱序、迟到</td>
+<td>水印不推进</td>
+</tr>
+<tr>
+<td>Watermark</td>
+<td>描述事件进度</td>
+<td>触发窗口和状态清理</td>
+<td>单分区慢拖全局</td>
+</tr>
+<tr>
+<td>窗口机制</td>
+<td>滚动、滑动、会话、全局</td>
+<td>指标、聚合、时段分析</td>
+<td>window size 与 lateness 误配</td>
+</tr>
+<tr>
+<td>容错恢复</td>
+<td>Checkpoint &#x2F; Savepoint</td>
+<td>作业可恢复、可升级</td>
+<td>读写侧一致性不闭环</td>
+</tr>
+<tr>
+<td>异步处理</td>
+<td>Async I&#x2F;O</td>
+<td>提升外部查询吞吐</td>
+<td>超时、乱序、背压</td>
+</tr>
+<tr>
+<td>CEP</td>
+<td>模式匹配</td>
+<td>风控、流程监控</td>
+<td>状态爆炸、时间边界错配</td>
+</tr>
+<tr>
+<td>动态扩缩容</td>
+<td>重分配并重启</td>
+<td>成本优化</td>
+<td>Key 分布不均</td>
+</tr>
+<tr>
+<td>多 API</td>
+<td>DataStream &#x2F; Table &#x2F; SQL &#x2F; CEP</td>
+<td>分层开发</td>
+<td>选错层导致复杂度上升</td>
+</tr>
+</tbody></table>
+<h3 id="1-7-Flink-与同类引擎的边界"><a href="#1-7-Flink-与同类引擎的边界" class="headerlink" title="1.7 Flink 与同类引擎的边界"></a>1.7 Flink 与同类引擎的边界</h3><table>
+<thead>
+<tr>
+<th>引擎</th>
+<th>处理模型</th>
+<th>优势</th>
+<th>局限</th>
+<th>典型适用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Flink</td>
+<td>原生流，批是流的特例</td>
+<td>低延迟、强状态、精确一次、事件时间</td>
+<td>学习曲线较高，运维要求强</td>
+<td>实时 ETL、风控、数仓、特征工程、CEP</td>
+</tr>
+<tr>
+<td>Spark Structured Streaming</td>
+<td>微批为主，支持连续处理</td>
+<td>与 Spark 生态融合、批流统一体验好</td>
+<td>毫秒级极低延迟不占优</td>
+<td>以离线 Spark 生态为核心的准实时任务</td>
+</tr>
+<tr>
+<td>Storm</td>
+<td>真正流式，组件轻</td>
+<td>低延迟、简单</td>
+<td>生态弱、状态与一致性能力弱</td>
+<td>早期超低延迟简单流处理</td>
+</tr>
+<tr>
+<td>Kafka Streams</td>
+<td>嵌入式流处理库</td>
+<td>与 Kafka 深度集成、部署简单</td>
+<td>仅适合 Kafka 中心化轻量场景</td>
+<td>Kafka 内部流转、轻量聚合、拓扑处理</td>
+</tr>
+<tr>
+<td>Hive</td>
+<td>离线 SQL 数仓</td>
+<td>成本低、SQL 习惯强</td>
+<td>不适合实时与复杂状态</td>
+<td>传统离线仓库、离线报表</td>
+</tr>
+<tr>
+<td>ClickHouse</td>
+<td>OLAP 分析数据库</td>
+<td>高速聚合、交互式查询</td>
+<td>不是流处理引擎</td>
+<td>实时写入后的分析查询、看板、宽表分析</td>
+</tr>
+</tbody></table>
+<h3 id="1-8-选型边界"><a href="#1-8-选型边界" class="headerlink" title="1.8 选型边界"></a>1.8 选型边界</h3><ul>
+<li>需要<strong>低延迟 + 事件时间 + 复杂状态 + Exactly-Once</strong>，优先 Flink。</li>
+<li>仅 Kafka 内部拓扑转发或轻量聚合，可优先 Kafka Streams。</li>
+<li>主要是离线批量 SQL，优先 Hive &#x2F; Spark Batch。</li>
+<li>主要是分析查询而非流式处理，优先 ClickHouse。</li>
+<li>早期老系统若已用 Storm 且需求简单，可逐步迁移，不建议继续新建复杂拓扑。</li>
+</ul>
+<h3 id="1-9-一个容易被问到的本质问题"><a href="#1-9-一个容易被问到的本质问题" class="headerlink" title="1.9 一个容易被问到的本质问题"></a>1.9 一个容易被问到的本质问题</h3><blockquote>
+<p>Flink 为什么能成为实时计算核心引擎？</p>
+</blockquote>
+<p>核心原因不是“能跑流”，而是它同时把下面四件事做成了统一体系：</p>
+<ol>
+<li>事件驱动的数据流执行。</li>
+<li>可靠状态与容错。</li>
+<li>事件时间与乱序处理。</li>
+<li>端到端一致性与多种输出连接器。</li>
+</ol>
+<p>这四件事组合起来，才让它适合生产级实时系统。</p>
+<hr>
+<h2 id="二、项目使用场景深度梳理"><a href="#二、项目使用场景深度梳理" class="headerlink" title="二、项目使用场景深度梳理"></a>二、项目使用场景深度梳理</h2><h3 id="2-1-场景选择总原则"><a href="#2-1-场景选择总原则" class="headerlink" title="2.1 场景选择总原则"></a>2.1 场景选择总原则</h3><ul>
+<li>业务是否要求“实时可见”。</li>
+<li>是否存在乱序、迟到、重复、去重、关联、规则匹配。</li>
+<li>是否需要跨源关联和持续状态。</li>
+<li>输出是否必须做到强一致或准强一致。</li>
+<li>是否需要可解释的实时口径统一。</li>
+</ul>
+<h3 id="2-2-场景通用链路"><a href="#2-2-场景通用链路" class="headerlink" title="2.2 场景通用链路"></a>2.2 场景通用链路</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">flowchart LR</span><br><span class="line">  A[采集层 Kafka / CDC / Log Agent / IoT Gateway] --&gt; B[清洗脱敏标准化]</span><br><span class="line">  B --&gt; C[实时计算 聚合 / 关联 / 规则 / 特征]</span><br><span class="line">  C --&gt; D[实时存储 OLAP / KV / Lakehouse / MQ]</span><br><span class="line">  C --&gt; E[告警 / 风控 / 推荐 / 画像]</span><br><span class="line">  D --&gt; F[查询分析 / 服务化]</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-3-核心主流场景"><a href="#2-3-核心主流场景" class="headerlink" title="2.3 核心主流场景"></a>2.3 核心主流场景</h3><h4 id="2-3-1-实时数据管道与-ETL"><a href="#2-3-1-实时数据管道与-ETL" class="headerlink" title="2.3.1 实时数据管道与 ETL"></a>2.3.1 实时数据管道与 ETL</h4><ul>
+<li>业务背景：日志、业务埋点、交易明细、CDC 变更要实时进入下游数据库、数仓、湖仓或 MQ。</li>
+<li>选型原因：Flink 负责流式清洗、标准化、脱敏、分流、维表补全和 Exactly-Once 落地。</li>
+<li>典型流程：Kafka &#x2F; CDC -&gt; Flink 清洗 -&gt; 分流 -&gt; 写入 Kafka &#x2F; HBase &#x2F; MySQL &#x2F; Iceberg &#x2F; Paimon &#x2F; Hudi。</li>
+<li>实现方案：<ul>
+<li>用 KafkaSource 或 CDC Source 采集。</li>
+<li>用 Map &#x2F; ProcessFunction &#x2F; SQL 做字段标准化。</li>
+<li>用 Side Output 分离脏数据。</li>
+<li>用事务型 Sink 或幂等写入保证一致性。</li>
+</ul>
+</li>
+<li>核心优势：链路短、时效高、口径统一。</li>
+<li>注意事项：<ul>
+<li>脏数据必须有旁路输出。</li>
+<li>Schema 演进要提前设计。</li>
+<li>下游写入能力不足时先做限流与缓冲。</li>
+</ul>
+</li>
+</ul>
+<h4 id="2-3-2-实时指标计算与监控"><a href="#2-3-2-实时指标计算与监控" class="headerlink" title="2.3.2 实时指标计算与监控"></a>2.3.2 实时指标计算与监控</h4><ul>
+<li>业务背景：PV &#x2F; UV、GMV、转化率、接口耗时、QPS、错误率要在秒级甚至亚秒级展示。</li>
+<li>选型原因：Flink 的事件时间 + 窗口 + 状态聚合非常适合指标连续计算。</li>
+<li>典型流程：埋点 -&gt; Kafka -&gt; Flink 聚合 -&gt; Redis &#x2F; ClickHouse &#x2F; Elasticsearch &#x2F; TSDB -&gt; 大屏或告警系统。</li>
+<li>实现方案：<ul>
+<li>按业务维度 KeyBy。</li>
+<li>用滚动窗口或滑动窗口计算分时指标。</li>
+<li>用广播状态分发动态阈值。</li>
+<li>用 Side Output 输出异常点。</li>
+</ul>
+</li>
+<li>核心优势：统一实时口径，支持迟到数据回补。</li>
+<li>注意事项：<ul>
+<li>UV 这类去重指标容易占大状态。</li>
+<li>大屏更适合读宽表或聚合结果，不要直接扫原始流。</li>
+</ul>
+</li>
+</ul>
+<h4 id="2-3-3-实时风控与反欺诈"><a href="#2-3-3-实时风控与反欺诈" class="headerlink" title="2.3.3 实时风控与反欺诈"></a>2.3.3 实时风控与反欺诈</h4><ul>
+<li>业务背景：交易、登录、支付、注册、评论等行为需要实时规则校验和异常识别。</li>
+<li>选型原因：Flink 的状态、CEP、广播规则、定时器和低延迟很适合风控链路。</li>
+<li>典型流程：事件进入 -&gt; 用户画像和设备画像补全 -&gt; 规则匹配 &#x2F; 评分 -&gt; 告警 &#x2F; 拦截 &#x2F; 人工复核。</li>
+<li>实现方案：<ul>
+<li>规则用 Broadcast State 动态下发。</li>
+<li>多事件链路用 CEP。</li>
+<li>维表查找用 Async I&#x2F;O 或 temporal join。</li>
+<li>高风险结果写回风控中心和消息队列。</li>
+</ul>
+</li>
+<li>核心优势：规则更新快、响应快、状态能力强。</li>
+<li>注意事项：<ul>
+<li>外部维表查询必须限超时。</li>
+<li>规则广播要有版本号。</li>
+<li>CEP 状态时间要控制，不然会膨胀。</li>
+</ul>
+</li>
+</ul>
+<h4 id="2-3-4-实时用户画像与推荐"><a href="#2-3-4-实时用户画像与推荐" class="headerlink" title="2.3.4 实时用户画像与推荐"></a>2.3.4 实时用户画像与推荐</h4><ul>
+<li>业务背景：用户行为流需要不断更新标签、兴趣、特征，服务推荐和营销。</li>
+<li>选型原因：Flink 可以持续生成在线特征，并与特征平台、推荐系统对接。</li>
+<li>典型流程：点击 &#x2F; 浏览 &#x2F; 收藏 &#x2F; 购买 -&gt; 实时特征工程 -&gt; 标签更新 -&gt; 特征库 &#x2F; 推荐服务。</li>
+<li>实现方案：<ul>
+<li>用窗口或 Keyed State 维护用户最近行为。</li>
+<li>用异步维表补全商品、内容、商家属性。</li>
+<li>用 SQL &#x2F; DataStream 输出在线特征。</li>
+</ul>
+</li>
+<li>核心优势：支持实时个性化。</li>
+<li>注意事项：<ul>
+<li>特征时效要定义清楚。</li>
+<li>在线特征和离线特征口径必须一致。</li>
+</ul>
+</li>
+</ul>
+<h4 id="2-3-5-物联网-x2F-车联网数据处理"><a href="#2-3-5-物联网-x2F-车联网数据处理" class="headerlink" title="2.3.5 物联网 &#x2F; 车联网数据处理"></a>2.3.5 物联网 &#x2F; 车联网数据处理</h4><ul>
+<li>业务背景：设备、传感器、车辆状态持续上报，需要实时监测、异常发现和轨迹分析。</li>
+<li>选型原因：事件时间、窗口聚合、状态维护、CEP 适合复杂时序流。</li>
+<li>典型流程：设备网关 -&gt; Kafka -&gt; Flink -&gt; 告警 &#x2F; 时序库 &#x2F; GIS &#x2F; 数据湖。</li>
+<li>实现方案：<ul>
+<li>按设备 ID、车辆 ID 分组。</li>
+<li>用水位线处理乱序。</li>
+<li>用会话窗口识别持续在线。</li>
+<li>用 CEP 找异常模式。</li>
+</ul>
+</li>
+<li>核心优势：适合高频时序数据和复杂轨迹逻辑。</li>
+<li>注意事项：<ul>
+<li>单设备高频流要防止热 Key。</li>
+<li>设备离线、重复上报、时间漂移是常见坑。</li>
+</ul>
+</li>
+</ul>
+<h4 id="2-3-6-日志与数据中心实时分析"><a href="#2-3-6-日志与数据中心实时分析" class="headerlink" title="2.3.6 日志与数据中心实时分析"></a>2.3.6 日志与数据中心实时分析</h4><ul>
+<li>业务背景：访问日志、应用日志、审计日志、系统日志需要实时聚合和预警。</li>
+<li>选型原因：Flink 可做实时清洗、分流、归档、统计、异常发现。</li>
+<li>典型流程：日志采集 -&gt; Kafka -&gt; Flink -&gt; ES &#x2F; ClickHouse &#x2F; Iceberg &#x2F; 告警平台。</li>
+<li>实现方案：<ul>
+<li>文本日志先结构化。</li>
+<li>错误码、用户行为、接口耗时分主题输出。</li>
+<li>质量校验结果单独旁路。</li>
+</ul>
+</li>
+<li>核心优势：兼顾统计、检索与预警。</li>
+<li>注意事项：<ul>
+<li>日志格式变化要兼容。</li>
+<li>不建议把全文检索交给 Flink，应该交给 Elasticsearch &#x2F; OpenSearch。</li>
+</ul>
+</li>
+</ul>
+<h3 id="2-4-特色-x2F-延伸场景"><a href="#2-4-特色-x2F-延伸场景" class="headerlink" title="2.4 特色 &#x2F; 延伸场景"></a>2.4 特色 &#x2F; 延伸场景</h3><h4 id="2-4-1-CEP-复杂事件处理"><a href="#2-4-1-CEP-复杂事件处理" class="headerlink" title="2.4.1 CEP 复杂事件处理"></a>2.4.1 CEP 复杂事件处理</h4><ul>
+<li>场景：交易 -&gt; 下单 -&gt; 支付 -&gt; 完成，或者“多次失败登录后立即高危操作”。</li>
+<li>价值：把“事件序列”变成“模式匹配”。</li>
+<li>优势：状态和时间控制更强，适合规则型监控和流程审计。</li>
+<li>局限：模式设计不合理会导致状态膨胀。</li>
+</ul>
+<h4 id="2-4-2-流批一体处理"><a href="#2-4-2-流批一体处理" class="headerlink" title="2.4.2 流批一体处理"></a>2.4.2 流批一体处理</h4><ul>
+<li>场景：离线全量 + 实时增量统一口径。</li>
+<li>价值：同一份业务逻辑既能离线跑历史，也能实时跑增量。</li>
+<li>典型做法：Flink SQL + Lakehouse 表格式 + 定期回补。</li>
+<li>局限：不要误以为“所有批任务都该上 Flink”。</li>
+</ul>
+<h4 id="2-4-3-实时数仓建设"><a href="#2-4-3-实时数仓建设" class="headerlink" title="2.4.3 实时数仓建设"></a>2.4.3 实时数仓建设</h4><ul>
+<li>场景：ODS -&gt; DWD -&gt; DWS -&gt; ADS 分层实时建模。</li>
+<li>价值：把数据口径沉淀在流式链路里。</li>
+<li>典型组合：<ul>
+<li>ODS 接 Kafka &#x2F; CDC。</li>
+<li>DWD 做清洗明细。</li>
+<li>DWS 做主题汇总。</li>
+<li>ADS 支撑报表和看板。</li>
+</ul>
+</li>
+</ul>
+<h4 id="2-4-4-数据湖计算引擎"><a href="#2-4-4-数据湖计算引擎" class="headerlink" title="2.4.4 数据湖计算引擎"></a>2.4.4 数据湖计算引擎</h4><ul>
+<li>场景：Iceberg &#x2F; Paimon &#x2F; Hudi 的实时写入、更新、删除和增量读取。</li>
+<li>价值：Flink 是湖仓里最常用的实时计算层。</li>
+<li>局限：表格式、分区、主键、更新语义要先设计。</li>
+</ul>
+<h4 id="2-4-5-机器学习实时特征工程"><a href="#2-4-5-机器学习实时特征工程" class="headerlink" title="2.4.5 机器学习实时特征工程"></a>2.4.5 机器学习实时特征工程</h4><ul>
+<li>场景：在线预测前的特征构造、特征更新和特征补齐。</li>
+<li>价值：把历史和实时行为持续变成可用特征。</li>
+<li>局限：训练特征和在线特征必须同源同口径。</li>
+</ul>
+<h4 id="2-4-6-跨源数据协同处理"><a href="#2-4-6-跨源数据协同处理" class="headerlink" title="2.4.6 跨源数据协同处理"></a>2.4.6 跨源数据协同处理</h4><ul>
+<li>场景：Kafka 事实流 + MySQL 维表 + HBase &#x2F; Redis 在线索引 + ES 查询。</li>
+<li>价值：Flink 充当统一“实时胶水层”。</li>
+<li>局限：多源外部依赖越多，超时和一致性越复杂。</li>
+</ul>
+<h3 id="2-5-不适用场景"><a href="#2-5-不适用场景" class="headerlink" title="2.5 不适用场景"></a>2.5 不适用场景</h3><ul>
+<li>纯静态批量分析，Hive &#x2F; Spark 更便宜。</li>
+<li>强事务 ACID 的在线业务存储层，应该用数据库。</li>
+<li>数据量很小、没有实时要求的简单脚本，不必上 Flink。</li>
+<li>需要全文检索，应该用 Elasticsearch &#x2F; OpenSearch。</li>
+<li>简单 Kafka 中转，不需要复杂状态时，Kafka Streams 可能更轻。</li>
+</ul>
+<h3 id="2-6-典型选型结论"><a href="#2-6-典型选型结论" class="headerlink" title="2.6 典型选型结论"></a>2.6 典型选型结论</h3><table>
+<thead>
+<tr>
+<th>场景</th>
+<th>优先引擎</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>实时 ETL</td>
+<td>Flink</td>
+<td>状态、窗口、Exactly-Once</td>
+</tr>
+<tr>
+<td>实时数仓</td>
+<td>Flink + Lakehouse</td>
+<td>统一口径、增量计算</td>
+</tr>
+<tr>
+<td>低延迟风控</td>
+<td>Flink</td>
+<td>CEP、广播规则、定时器</td>
+</tr>
+<tr>
+<td>纯离线报表</td>
+<td>Hive &#x2F; Spark</td>
+<td>成本低，批量更自然</td>
+</tr>
+<tr>
+<td>交互式 OLAP</td>
+<td>ClickHouse</td>
+<td>查询性能更强</td>
+</tr>
+<tr>
+<td>Kafka 内部轻量流转</td>
+<td>Kafka Streams</td>
+<td>部署简单、Kafka 原生</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="三、API-体系、实战指南与生产规范"><a href="#三、API-体系、实战指南与生产规范" class="headerlink" title="三、API 体系、实战指南与生产规范"></a>三、API 体系、实战指南与生产规范</h2><h3 id="3-1-分层-API-选型"><a href="#3-1-分层-API-选型" class="headerlink" title="3.1 分层 API 选型"></a>3.1 分层 API 选型</h3><table>
+<thead>
+<tr>
+<th>层级</th>
+<th>代表 API</th>
+<th>适用场景</th>
+<th>优点</th>
+<th>缺点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>底层</td>
+<td>ProcessFunction、KeyedProcessFunction</td>
+<td>定时器、侧输出、复杂自定义状态</td>
+<td>灵活</td>
+<td>开发成本高</td>
+</tr>
+<tr>
+<td>核心层</td>
+<td>DataStream API</td>
+<td>大多数实时应用</td>
+<td>可控、通用、可扩展</td>
+<td>需要编码更多逻辑</td>
+</tr>
+<tr>
+<td>高层</td>
+<td>Table API &#x2F; SQL</td>
+<td>指标、ETL、关联、建模</td>
+<td>简洁、易维护</td>
+<td>复杂控制流不如 DataStream</td>
+</tr>
+<tr>
+<td>特殊</td>
+<td>CEP</td>
+<td>事件模式</td>
+<td>对序列匹配友好</td>
+<td>复杂模式要谨慎</td>
+</tr>
+</tbody></table>
+<h3 id="3-2-选择原则"><a href="#3-2-选择原则" class="headerlink" title="3.2 选择原则"></a>3.2 选择原则</h3><ul>
+<li>需要精细控制事件、状态、定时器、侧输出，选 DataStream &#x2F; ProcessFunction。</li>
+<li>需要统一 SQL 逻辑、建模、易维护，优先 Table &#x2F; SQL。</li>
+<li>规则型多事件匹配，选 CEP。</li>
+<li>追求开发效率和 BI 友好，优先 SQL。</li>
+<li>需要读写外部系统的精细一致性，DataStream 更可控。</li>
+</ul>
+<h3 id="3-3-DataStream-API-高频开发模板"><a href="#3-3-DataStream-API-高频开发模板" class="headerlink" title="3.3 DataStream API 高频开发模板"></a>3.3 DataStream API 高频开发模板</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">StreamExecutionEnvironment</span> <span class="variable">env</span> <span class="operator">=</span> StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line">env.setParallelism(<span class="number">4</span>);</span><br><span class="line">env.enableCheckpointing(<span class="number">60000L</span>, CheckpointingMode.EXACTLY_ONCE);</span><br><span class="line">env.getCheckpointConfig().setCheckpointTimeout(<span class="number">10</span> * <span class="number">60</span> * <span class="number">1000L</span>);</span><br><span class="line">env.getCheckpointConfig().setMinPauseBetweenCheckpoints(<span class="number">30000L</span>);</span><br><span class="line">env.getCheckpointConfig().setMaxConcurrentCheckpoints(<span class="number">1</span>);</span><br><span class="line">env.getCheckpointConfig().setTolerableCheckpointFailureNumber(<span class="number">3</span>);</span><br><span class="line">env.setRestartStrategy(RestartStrategies.fixedDelayRestart(<span class="number">3</span>, Time.seconds(<span class="number">10</span>)));</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-4-时间语义"><a href="#3-4-时间语义" class="headerlink" title="3.4 时间语义"></a>3.4 时间语义</h3><table>
+<thead>
+<tr>
+<th>类型</th>
+<th>含义</th>
+<th>使用场景</th>
+<th>风险</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>处理时间</td>
+<td>系统处理时刻</td>
+<td>低要求的实时统计</td>
+<td>乱序会影响结果</td>
+</tr>
+<tr>
+<td>事件时间</td>
+<td>事件真实发生时间</td>
+<td>几乎所有业务分析</td>
+<td>需要水印</td>
+</tr>
+<tr>
+<td>注入时间</td>
+<td>介于两者之间的概念</td>
+<td>老版本 &#x2F; 特殊兼容</td>
+<td>现在较少作为首选</td>
+</tr>
+</tbody></table>
+<p>建议：</p>
+<ul>
+<li>业务分析、风控、画像、物联网都优先事件时间。</li>
+<li>只有纯简单、无乱序要求的任务才考虑处理时间。</li>
+</ul>
+<h3 id="3-5-Source-接入"><a href="#3-5-Source-接入" class="headerlink" title="3.5 Source 接入"></a>3.5 Source 接入</h3><h4 id="3-5-1-Kafka-Source"><a href="#3-5-1-Kafka-Source" class="headerlink" title="3.5.1 Kafka Source"></a>3.5.1 Kafka Source</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">KafkaSource&lt;String&gt; source = KafkaSource.&lt;String&gt;builder()</span><br><span class="line">    .setBootstrapServers(<span class="string">&quot;kafka-broker:9092&quot;</span>)</span><br><span class="line">    .setTopics(<span class="string">&quot;topic_orders&quot;</span>)</span><br><span class="line">    .setGroupId(<span class="string">&quot;flink-order-job&quot;</span>)</span><br><span class="line">    .setStartingOffsets(OffsetsInitializer.committedOffsets())</span><br><span class="line">    .setValueOnlyDeserializer(<span class="keyword">new</span> <span class="title class_">SimpleStringSchema</span>())</span><br><span class="line">    .build();</span><br><span class="line"></span><br><span class="line">DataStream&lt;String&gt; stream = env.fromSource(</span><br><span class="line">    source,</span><br><span class="line">    WatermarkStrategy.noWatermarks(),</span><br><span class="line">    <span class="string">&quot;kafka-source&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<p>要点：</p>
+<ul>
+<li>生产上优先用新 Source API。</li>
+<li>起始位点要明确：latest、earliest、committed 或指定 offsets。</li>
+<li>消费组与 checkpoint 恢复要统一规划。</li>
+</ul>
+<h4 id="3-5-2-CDC-Source"><a href="#3-5-2-CDC-Source" class="headerlink" title="3.5.2 CDC Source"></a>3.5.2 CDC Source</h4><ul>
+<li>MySQL CDC 常用于全量 + 增量一体采集。</li>
+<li>适合维表同步、数仓入湖、实时同步链路。</li>
+<li>注意主键、binlog 保留时间、DDL 演进与断点续传。</li>
+</ul>
+<h4 id="3-5-3-File-x2F-Socket-x2F-自定义-Source"><a href="#3-5-3-File-x2F-Socket-x2F-自定义-Source" class="headerlink" title="3.5.3 File &#x2F; Socket &#x2F; 自定义 Source"></a>3.5.3 File &#x2F; Socket &#x2F; 自定义 Source</h4><ul>
+<li>FileSource 适合文件增量和离线测试。</li>
+<li>Socket 适合演示和教学，不适合生产。</li>
+<li>自定义 Source 适合设备协议、专有消息总线或第三方 SDK。</li>
+</ul>
+<h3 id="3-6-核心转换算子"><a href="#3-6-核心转换算子" class="headerlink" title="3.6 核心转换算子"></a>3.6 核心转换算子</h3><ul>
+<li><code>map</code>：单条映射。</li>
+<li><code>flatMap</code>：一条进多条出。</li>
+<li><code>filter</code>：过滤。</li>
+<li><code>keyBy</code>：分键状态和分组计算。</li>
+<li><code>reduce</code>：增量归约。</li>
+<li><code>aggregate</code>：增量聚合，更通用。</li>
+<li><code>union</code>：多流合并。</li>
+<li><code>connect</code>：保留两边类型差异。</li>
+<li><code>join</code>：流间关联。</li>
+<li><code>AsyncDataStream</code>：异步外部查询。</li>
+</ul>
+<h4 id="异步-I-x2F-O-示例"><a href="#异步-I-x2F-O-示例" class="headerlink" title="异步 I&#x2F;O 示例"></a>异步 I&#x2F;O 示例</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">DataStream&lt;Result&gt; enriched = AsyncDataStream.unorderedWait(</span><br><span class="line">    orderStream,</span><br><span class="line">    <span class="keyword">new</span> <span class="title class_">OrderAsyncFunction</span>(),</span><br><span class="line">    <span class="number">1000</span>,</span><br><span class="line">    TimeUnit.MILLISECONDS,</span><br><span class="line">    <span class="number">100</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p>注意：</p>
+<ul>
+<li><code>unorderedWait</code> 吞吐通常更高。</li>
+<li><code>orderedWait</code> 保证顺序但延迟更高。</li>
+<li>外部系统慢时，异步队列也会撑满，最终形成反压。</li>
+</ul>
+<h3 id="3-7-窗口与水印"><a href="#3-7-窗口与水印" class="headerlink" title="3.7 窗口与水印"></a>3.7 窗口与水印</h3><table>
+<thead>
+<tr>
+<th>窗口</th>
+<th>适用</th>
+<th>特点</th>
+<th>常见坑</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>滚动窗口</td>
+<td>固定周期聚合</td>
+<td>简单稳定</td>
+<td>边界时间定义不清</td>
+</tr>
+<tr>
+<td>滑动窗口</td>
+<td>需要重叠统计</td>
+<td>可做近实时趋势</td>
+<td>状态和计算量更大</td>
+</tr>
+<tr>
+<td>会话窗口</td>
+<td>行为间隔驱动</td>
+<td>适合活跃度与会话</td>
+<td>gap 设得太大</td>
+</tr>
+<tr>
+<td>全局窗口</td>
+<td>自定义触发</td>
+<td>灵活</td>
+<td>若不配触发器会不触发</td>
+</tr>
+</tbody></table>
+<h4 id="水印生成建议"><a href="#水印生成建议" class="headerlink" title="水印生成建议"></a>水印生成建议</h4><ul>
+<li>固定延迟乱序：<code>forBoundedOutOfOrderness</code>。</li>
+<li>多分区不均衡：必要时用 idleness 避免某分区拖住全局。</li>
+<li>如果要兼顾迟到数据，搭配 <code>allowedLateness</code> 和侧输出。</li>
+</ul>
+<h4 id="窗口代码示例"><a href="#窗口代码示例" class="headerlink" title="窗口代码示例"></a>窗口代码示例</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">stream</span><br><span class="line">  .assignTimestampsAndWatermarks(</span><br><span class="line">      WatermarkStrategy.&lt;Order&gt;forBoundedOutOfOrderness(Duration.ofSeconds(<span class="number">5</span>))</span><br><span class="line">          .withTimestampAssigner((event, ts) -&gt; event.getEventTime()))</span><br><span class="line">  .keyBy(Order::getUserId)</span><br><span class="line">  .window(TumblingEventTimeWindows.of(Time.minutes(<span class="number">5</span>)))</span><br><span class="line">  .allowedLateness(Time.minutes(<span class="number">1</span>))</span><br><span class="line">  .sideOutputLateData(lateTag)</span><br><span class="line">  .aggregate(<span class="keyword">new</span> <span class="title class_">OrderAgg</span>(), <span class="keyword">new</span> <span class="title class_">OrderWindowResult</span>());</span><br></pre></td></tr></table></figure>
+
+<p>要点：</p>
+<ul>
+<li>水印是事件进度，不是消息到达顺序。</li>
+<li>允许迟到只是“窗口关闭后再接受一段时间”，不是无限重算。</li>
+<li>迟到数据要有旁路，避免静默丢失。</li>
+</ul>
+<h3 id="3-8-状态管理"><a href="#3-8-状态管理" class="headerlink" title="3.8 状态管理"></a>3.8 状态管理</h3><table>
+<thead>
+<tr>
+<th>状态类型</th>
+<th>适用场景</th>
+<th>特点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ValueState</td>
+<td>单值累计、标志位</td>
+<td>简单高频</td>
+</tr>
+<tr>
+<td>ListState</td>
+<td>记录明细、缓存片段</td>
+<td>易膨胀</td>
+</tr>
+<tr>
+<td>MapState</td>
+<td>维表局部缓存、分桶计数</td>
+<td>灵活</td>
+</tr>
+<tr>
+<td>ReducingState</td>
+<td>增量归约</td>
+<td>省内存</td>
+</tr>
+<tr>
+<td>AggregatingState</td>
+<td>自定义聚合</td>
+<td>通用</td>
+</tr>
+<tr>
+<td>Broadcast State</td>
+<td>动态规则下发</td>
+<td>常用于风控和配置</td>
+</tr>
+</tbody></table>
+<h4 id="状态-TTL"><a href="#状态-TTL" class="headerlink" title="状态 TTL"></a>状态 TTL</h4><ul>
+<li>适合清理过期用户会话、规则、缓存。</li>
+<li>TTL 不是万能内存控制器，不能替代正确建模。</li>
+<li>过短会导致状态频繁失效，过长会堆积历史垃圾。</li>
+</ul>
+<h4 id="状态后端"><a href="#状态后端" class="headerlink" title="状态后端"></a>状态后端</h4><table>
+<thead>
+<tr>
+<th>后端</th>
+<th>特点</th>
+<th>适用</th>
+<th>风险</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>HashMap &#x2F; Memory</td>
+<td>访问快</td>
+<td>小状态、测试</td>
+<td>容量有限</td>
+</tr>
+<tr>
+<td>RocksDB</td>
+<td>大状态、落盘</td>
+<td>海量状态作业</td>
+<td>IO 和 compaction 调优复杂</td>
+</tr>
+<tr>
+<td>文件系统快照</td>
+<td>依赖 checkpoint 存储</td>
+<td>恢复能力强</td>
+<td>存储成本与网络成本</td>
+</tr>
+</tbody></table>
+<p>建议：</p>
+<ul>
+<li>小状态、高 QPS、低延迟，优先内存型。</li>
+<li>海量 Key、长周期状态，优先 RocksDB。</li>
+<li>状态很大且 checkpoint 慢，要重点看增量 checkpoint、compaction 和序列化。</li>
+</ul>
+<h3 id="3-9-Checkpoint-x2F-Savepoint"><a href="#3-9-Checkpoint-x2F-Savepoint" class="headerlink" title="3.9 Checkpoint &#x2F; Savepoint"></a>3.9 Checkpoint &#x2F; Savepoint</h3><table>
+<thead>
+<tr>
+<th>项目</th>
+<th>Checkpoint</th>
+<th>Savepoint</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>目的</td>
+<td>故障恢复</td>
+<td>人工运维、升级、迁移</td>
+</tr>
+<tr>
+<td>触发</td>
+<td>自动</td>
+<td>手工</td>
+</tr>
+<tr>
+<td>生命周期</td>
+<td>通常自动清理</td>
+<td>需人为保留</td>
+</tr>
+<tr>
+<td>语义</td>
+<td>恢复点</td>
+<td>可控切换点</td>
+</tr>
+</tbody></table>
+<h4 id="端到端-Exactly-Once-的关键"><a href="#端到端-Exactly-Once-的关键" class="headerlink" title="端到端 Exactly-Once 的关键"></a>端到端 Exactly-Once 的关键</h4><ol>
+<li>Source 支持可恢复 offset。</li>
+<li>中间算子状态可 checkpoint。</li>
+<li>Sink 支持事务或幂等。</li>
+<li>恢复时 offset、状态、写入边界必须一致。</li>
+</ol>
+<h4 id="生产建议"><a href="#生产建议" class="headerlink" title="生产建议"></a>生产建议</h4><ul>
+<li>先保证 sink 的一致性能力，再谈端到端 Exactly-Once。</li>
+<li>Checkpoint 间隔不是越短越好。</li>
+<li>遇到大状态与高背压，先看对齐耗时和 checkpoint 体积。</li>
+</ul>
+<h3 id="3-10-Sink-设计"><a href="#3-10-Sink-设计" class="headerlink" title="3.10 Sink 设计"></a>3.10 Sink 设计</h3><table>
+<thead>
+<tr>
+<th>Sink</th>
+<th>适用</th>
+<th>一致性方式</th>
+<th>注意事项</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Kafka</td>
+<td>中转、解耦、回放</td>
+<td>事务 &#x2F; 幂等</td>
+<td>事务超时、分区数</td>
+</tr>
+<tr>
+<td>MySQL</td>
+<td>小规模结果表</td>
+<td>幂等 upsert &#x2F; 两阶段提交</td>
+<td>热点行、事务压力</td>
+</tr>
+<tr>
+<td>HBase</td>
+<td>明细在线查询</td>
+<td>幂等写</td>
+<td>RowKey 设计</td>
+</tr>
+<tr>
+<td>Redis</td>
+<td>在线缓存 &#x2F; 聚合结果</td>
+<td>幂等覆盖</td>
+<td>内存与过期策略</td>
+</tr>
+<tr>
+<td>Elasticsearch</td>
+<td>检索 &#x2F; 看板</td>
+<td>幂等写</td>
+<td>Mapping 和 Bulk</td>
+</tr>
+<tr>
+<td>文件 &#x2F; 对象存储</td>
+<td>落湖 &#x2F; 归档</td>
+<td>分桶与提交协议</td>
+<td>小文件问题</td>
+</tr>
+</tbody></table>
+<h4 id="两阶段提交思路"><a href="#两阶段提交思路" class="headerlink" title="两阶段提交思路"></a>两阶段提交思路</h4><ul>
+<li>预提交阶段写临时数据。</li>
+<li>Checkpoint 成功后提交。</li>
+<li>恢复时回滚未提交事务。</li>
+<li>适合强一致链路，但复杂度比普通幂等写更高。</li>
+</ul>
+<h3 id="3-11-Table-API-x2F-SQL-高手常用点"><a href="#3-11-Table-API-x2F-SQL-高手常用点" class="headerlink" title="3.11 Table API &#x2F; SQL 高手常用点"></a>3.11 Table API &#x2F; SQL 高手常用点</h3><h4 id="3-11-1-适合的场景"><a href="#3-11-1-适合的场景" class="headerlink" title="3.11.1 适合的场景"></a>3.11.1 适合的场景</h4><ul>
+<li>指标口径计算。</li>
+<li>实时维表关联。</li>
+<li>流批一体建模。</li>
+<li>简单 ETL 和聚合。</li>
+<li>统一数据研发接口。</li>
+</ul>
+<h4 id="3-11-2-示例"><a href="#3-11-2-示例" class="headerlink" title="3.11.2 示例"></a>3.11.2 示例</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> kafka_orders (</span><br><span class="line">  order_id STRING,</span><br><span class="line">  user_id STRING,</span><br><span class="line">  amount <span class="type">DECIMAL</span>(<span class="number">18</span>,<span class="number">2</span>),</span><br><span class="line">  event_time TIMESTAMP_LTZ(<span class="number">3</span>),</span><br><span class="line">  WATERMARK <span class="keyword">FOR</span> event_time <span class="keyword">AS</span> event_time <span class="operator">-</span> <span class="type">INTERVAL</span> <span class="string">&#x27;5&#x27;</span> <span class="keyword">SECOND</span></span><br><span class="line">) <span class="keyword">WITH</span> (</span><br><span class="line">  <span class="string">&#x27;connector&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;kafka&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;topic&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;orders&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;properties.bootstrap.servers&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;kafka-broker:9092&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;format&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;json&#x27;</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">SELECT</span> user_id, <span class="built_in">COUNT</span>(<span class="operator">*</span>) <span class="keyword">AS</span> cnt, <span class="built_in">SUM</span>(amount) <span class="keyword">AS</span> gmv</span><br><span class="line"><span class="keyword">FROM</span> kafka_orders</span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> TUMBLE(event_time, <span class="type">INTERVAL</span> <span class="string">&#x27;5&#x27;</span> <span class="keyword">MINUTE</span>), user_id;</span><br></pre></td></tr></table></figure>
+
+<h4 id="3-11-3-维表关联"><a href="#3-11-3-维表关联" class="headerlink" title="3.11.3 维表关联"></a>3.11.3 维表关联</h4><ul>
+<li>静态维表：普通 join 或广播。</li>
+<li>实时维表：temporal join。</li>
+<li>热点高频查询：异步查缓存或外部 KV。</li>
+<li>维表变更频繁：优先 CDC 同步到湖仓或 KV，再做关联。</li>
+</ul>
+<h4 id="3-11-4-UDF"><a href="#3-11-4-UDF" class="headerlink" title="3.11.4 UDF"></a>3.11.4 UDF</h4><ul>
+<li>ScalarFunction：最常见。</li>
+<li>TableFunction：一对多展开。</li>
+<li>AggregateFunction：自定义聚合。</li>
+<li>TableAggregateFunction：多结果聚合。</li>
+</ul>
+<p>注意：</p>
+<ul>
+<li>UDF 要尽量无副作用。</li>
+<li>避免在 UDF 内部做重 IO。</li>
+<li>保持可测试性和输入输出稳定。</li>
+</ul>
+<h3 id="3-12-高级功能"><a href="#3-12-高级功能" class="headerlink" title="3.12 高级功能"></a>3.12 高级功能</h3><h4 id="3-12-1-CEP"><a href="#3-12-1-CEP" class="headerlink" title="3.12.1 CEP"></a>3.12.1 CEP</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Pattern&lt;OrderEvent, ?&gt; pattern = Pattern.&lt;OrderEvent&gt;begin(<span class="string">&quot;create&quot;</span>)</span><br><span class="line">    .where(e -&gt; e.getType().equals(<span class="string">&quot;create&quot;</span>))</span><br><span class="line">    .followedBy(<span class="string">&quot;pay&quot;</span>)</span><br><span class="line">    .where(e -&gt; e.getType().equals(<span class="string">&quot;pay&quot;</span>))</span><br><span class="line">    .within(Time.minutes(<span class="number">10</span>));</span><br></pre></td></tr></table></figure>
+
+<p>要点：</p>
+<ul>
+<li>用于多事件模式匹配。</li>
+<li>注意重复匹配、贪婪匹配和超时侧输出。</li>
+<li>模式越复杂，状态压力越大。</li>
+</ul>
+<h4 id="3-12-2-Broadcast-State"><a href="#3-12-2-Broadcast-State" class="headerlink" title="3.12.2 Broadcast State"></a>3.12.2 Broadcast State</h4><ul>
+<li>适合动态规则、黑白名单、阈值配置。</li>
+<li>广播流负责规则更新，主流负责业务事件。</li>
+<li>要设计规则版本、灰度和回滚。</li>
+</ul>
+<h4 id="3-12-3-Side-Output"><a href="#3-12-3-Side-Output" class="headerlink" title="3.12.3 Side Output"></a>3.12.3 Side Output</h4><ul>
+<li>用于脏数据、迟到数据、异常数据、告警数据旁路输出。</li>
+<li>生产上几乎必备。</li>
+</ul>
+<h4 id="3-12-4-状态迁移"><a href="#3-12-4-状态迁移" class="headerlink" title="3.12.4 状态迁移"></a>3.12.4 状态迁移</h4><ul>
+<li>升级前先做 savepoint。</li>
+<li>确认序列化兼容。</li>
+<li>更换状态结构时要考虑迁移代码。</li>
+<li>大版本升级一定要先做预演。</li>
+</ul>
+<h3 id="3-13-高频集成方案"><a href="#3-13-高频集成方案" class="headerlink" title="3.13 高频集成方案"></a>3.13 高频集成方案</h3><table>
+<thead>
+<tr>
+<th>集成对象</th>
+<th>作用</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Kafka</td>
+<td>核心消息总线</td>
+<td>最常见数据入口与出口</td>
+</tr>
+<tr>
+<td>Flink CDC</td>
+<td>数据库实时采集</td>
+<td>全量 + 增量统一</td>
+</tr>
+<tr>
+<td>Canal &#x2F; Debezium</td>
+<td>CDC 采集替代方案</td>
+<td>生态各有侧重</td>
+</tr>
+<tr>
+<td>HBase</td>
+<td>在线明细查询</td>
+<td>适合宽表查询</td>
+</tr>
+<tr>
+<td>Redis</td>
+<td>在线结果缓存</td>
+<td>适合低延迟读</td>
+</tr>
+<tr>
+<td>Elasticsearch</td>
+<td>检索 &#x2F; 看板</td>
+<td>适合查询与聚合展示</td>
+</tr>
+<tr>
+<td>ClickHouse</td>
+<td>OLAP 分析</td>
+<td>适合高并发分析查询</td>
+</tr>
+<tr>
+<td>Iceberg &#x2F; Paimon &#x2F; Hudi</td>
+<td>湖仓</td>
+<td>适合实时入湖和增量查询</td>
+</tr>
+<tr>
+<td>Spark &#x2F; Hive &#x2F; Trino</td>
+<td>批与 SQL 协同</td>
+<td>做离线、交互式查询补位</td>
+</tr>
+<tr>
+<td>TensorFlow &#x2F; PyTorch</td>
+<td>特征工程 &#x2F; 推理</td>
+<td>主要做数据准备和在线特征</td>
+</tr>
+</tbody></table>
+<h3 id="3-14-部署与调度"><a href="#3-14-部署与调度" class="headerlink" title="3.14 部署与调度"></a>3.14 部署与调度</h3><table>
+<thead>
+<tr>
+<th>部署方式</th>
+<th>适合</th>
+<th>特点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Standalone</td>
+<td>小团队、测试、轻量场景</td>
+<td>简单</td>
+</tr>
+<tr>
+<td>YARN</td>
+<td>Hadoop 体系</td>
+<td>资源统一调度</td>
+</tr>
+<tr>
+<td>K8s</td>
+<td>云原生、弹性</td>
+<td>运维现代化</td>
+</tr>
+<tr>
+<td>Session 模式</td>
+<td>多作业共享集群</td>
+<td>适合平台化</td>
+</tr>
+<tr>
+<td>Application 模式</td>
+<td>每作业独立入口</td>
+<td>隔离性更好</td>
+</tr>
+</tbody></table>
+<p>调度与监控：</p>
+<ul>
+<li>Airflow &#x2F; Azkaban 负责任务编排。</li>
+<li>SQL Gateway 适合 SQL 提交与管理。</li>
+<li>Prometheus + Grafana 负责监控。</li>
+<li>日志、Checkpoint、Backpressure、Watermark 指标是排障核心。</li>
+</ul>
+<h3 id="3-15-并行度与分区"><a href="#3-15-并行度与分区" class="headerlink" title="3.15 并行度与分区"></a>3.15 并行度与分区</h3><ul>
+<li>并行度要和上游分区数、sink 吞吐、key 分布一起看。</li>
+<li>算子并行度不是越大越好。</li>
+<li>热点 key 要通过打散、预聚合、分桶、二级 key 等方式处理。</li>
+<li>过大的并行度会增加网络、状态和 checkpoint 压力。</li>
+</ul>
+<h3 id="3-16-性能优化清单"><a href="#3-16-性能优化清单" class="headerlink" title="3.16 性能优化清单"></a>3.16 性能优化清单</h3><ol>
+<li>检查反压来源。</li>
+<li>减少对象创建和序列化开销。</li>
+<li>合理使用异步 I&#x2F;O。</li>
+<li>控制状态规模。</li>
+<li>选择合适的窗口与聚合方式。</li>
+<li>优化 sink 批量写入与事务。</li>
+<li>避免不必要的 shuffle。</li>
+<li>让数据尽量在本地和同分区内处理。</li>
+</ol>
+<h3 id="3-17-生产运维高频命令思路"><a href="#3-17-生产运维高频命令思路" class="headerlink" title="3.17 生产运维高频命令思路"></a>3.17 生产运维高频命令思路</h3><ul>
+<li>提交作业：使用 <code>flink run</code> 或平台化提交。</li>
+<li>查看作业：看 Web UI、REST、日志。</li>
+<li>停止作业：优先走 savepoint 停止。</li>
+<li>扩缩容：通过 savepoint 迁移到新并行度。</li>
+<li>恢复：从 checkpoint 或 savepoint 重启。</li>
+<li>升级：先在预发做兼容验证。</li>
+<li>迁移：先验证 schema 和状态兼容。</li>
+</ul>
+<h3 id="3-18-代码规范"><a href="#3-18-代码规范" class="headerlink" title="3.18 代码规范"></a>3.18 代码规范</h3><ul>
+<li>算子命名清晰，避免 <code>map1</code>、<code>process2</code> 这种无意义名字。</li>
+<li>逻辑分层，采集、清洗、聚合、写入拆开。</li>
+<li>异常处理要明确，脏数据和业务异常不要混在一起。</li>
+<li>外部连接要统一关闭与复用。</li>
+<li>关键参数写进配置，不要硬编码。</li>
+<li>保持单元测试和小流量回放测试能力。</li>
+</ul>
+<hr>
+<h2 id="四、高频面试题详细梳理"><a href="#四、高频面试题详细梳理" class="headerlink" title="四、高频面试题详细梳理"></a>四、高频面试题详细梳理</h2><blockquote>
+<p>这一部分按“考察点 -&gt; 参考答案 -&gt; 答题思路 -&gt; 加分点”组织。<br>你可以把它当成面试速记卡。</p>
+</blockquote>
+<h3 id="4-1-基础概念类"><a href="#4-1-基础概念类" class="headerlink" title="4.1 基础概念类"></a>4.1 基础概念类</h3><h4 id="1-流处理和批处理有什么区别？"><a href="#1-流处理和批处理有什么区别？" class="headerlink" title="1. 流处理和批处理有什么区别？"></a>1. 流处理和批处理有什么区别？</h4><ul>
+<li>考察点：数据到达方式、延迟、状态、语义边界。</li>
+<li>参考答案：批处理先收集再计算，流处理边到边算。批处理更适合离线大吞吐分析，流处理更适合实时、持续和状态型任务。Flink 的特征是把批当成有界流来处理。</li>
+<li>答题思路：先说输入边界，再说延迟与状态，再说引擎定位。</li>
+<li>加分点：说明“流批一体”的真正价值是统一代码和口径，而不是简单兼容两种数据源。</li>
+</ul>
+<h4 id="2-Flink-的核心组件有哪些？"><a href="#2-Flink-的核心组件有哪些？" class="headerlink" title="2. Flink 的核心组件有哪些？"></a>2. Flink 的核心组件有哪些？</h4><ul>
+<li>考察点：JobManager、TaskManager、ResourceManager、Dispatcher。</li>
+<li>参考答案：JobManager 负责调度、协调与恢复；TaskManager 负责执行算子和维护状态；ResourceManager 负责资源申请和释放；Dispatcher 负责接收作业和 REST 入口。</li>
+<li>答题思路：按“提交 -&gt; 调度 -&gt; 执行 -&gt; 恢复”讲。</li>
+<li>加分点：提到 Slot、JobMaster、Checkpoint Coordinator。</li>
+</ul>
+<h4 id="3-处理时间、事件时间、注入时间的区别？"><a href="#3-处理时间、事件时间、注入时间的区别？" class="headerlink" title="3. 处理时间、事件时间、注入时间的区别？"></a>3. 处理时间、事件时间、注入时间的区别？</h4><ul>
+<li>考察点：时间语义和乱序处理。</li>
+<li>参考答案：处理时间是系统处理时刻，事件时间是事件实际发生时刻，注入时间是数据进入系统时刻。生产分析大多用事件时间。</li>
+<li>答题思路：先定义，再讲业务后果。</li>
+<li>加分点：说明水印是为了推进事件时间。</li>
+</ul>
+<h4 id="4-什么是水印？"><a href="#4-什么是水印？" class="headerlink" title="4. 什么是水印？"></a>4. 什么是水印？</h4><ul>
+<li>考察点：事件时间推进机制。</li>
+<li>参考答案：水印是 Flink 对“事件时间已经推进到什么位置”的一种声明，用于触发事件时间窗口和清理状态。它不是数据本身，而是进度标记。</li>
+<li>答题思路：强调水印不是时间戳，也不是数据顺序。</li>
+<li>加分点：可以补充乱序容忍和迟到数据处理。</li>
+</ul>
+<h4 id="5-窗口有哪些类型？"><a href="#5-窗口有哪些类型？" class="headerlink" title="5. 窗口有哪些类型？"></a>5. 窗口有哪些类型？</h4><ul>
+<li>考察点：滚动、滑动、会话、全局窗口。</li>
+<li>参考答案：滚动窗口不重叠，滑动窗口有重叠，会话窗口按空闲间隔切分，全局窗口需要自定义触发器。</li>
+<li>答题思路：按适用场景举例。</li>
+<li>加分点：说明允许迟到和触发器的重要性。</li>
+</ul>
+<h4 id="6-状态是什么？"><a href="#6-状态是什么？" class="headerlink" title="6. 状态是什么？"></a>6. 状态是什么？</h4><ul>
+<li>考察点：Keyed State、Operator State。</li>
+<li>参考答案：状态是算子在多条事件之间保留的上下文，用于聚合、去重、关联、规则判断等。没有状态，Flink 很多实时应用都做不了。</li>
+<li>答题思路：先说“跨事件记忆”，再分类。</li>
+<li>加分点：提到 Broadcast State 和 TTL。</li>
+</ul>
+<h4 id="7-Checkpoint-和-Savepoint-的区别？"><a href="#7-Checkpoint-和-Savepoint-的区别？" class="headerlink" title="7. Checkpoint 和 Savepoint 的区别？"></a>7. Checkpoint 和 Savepoint 的区别？</h4><ul>
+<li>考察点：容错和运维切换。</li>
+<li>参考答案：Checkpoint 是自动故障恢复点，Savepoint 是人工触发、可控保留的快照，主要用于升级、迁移和停机操作。</li>
+<li>答题思路：目的不同、生命周期不同。</li>
+<li>加分点：说明 Savepoint 更适合版本切换。</li>
+</ul>
+<h4 id="8-Exactly-Once-是如何实现的？"><a href="#8-Exactly-Once-是如何实现的？" class="headerlink" title="8. Exactly-Once 是如何实现的？"></a>8. Exactly-Once 是如何实现的？</h4><ul>
+<li>考察点：端到端一致性。</li>
+<li>参考答案：靠 Source 可恢复 offset、算子状态 checkpoint、Sink 事务或幂等写入一起完成。Flink 只负责计算层一致性，端到端还要看连接器。</li>
+<li>答题思路：一定要强调“端到端”。</li>
+<li>加分点：提两阶段提交、事务超时、幂等语义。</li>
+</ul>
+<h3 id="4-2-架构原理类"><a href="#4-2-架构原理类" class="headerlink" title="4.2 架构原理类"></a>4.2 架构原理类</h3><h4 id="9-Flink-作业提交流程是什么？"><a href="#9-Flink-作业提交流程是什么？" class="headerlink" title="9. Flink 作业提交流程是什么？"></a>9. Flink 作业提交流程是什么？</h4><ul>
+<li>考察点：Jar 提交、JobGraph、ExecutionGraph。</li>
+<li>参考答案：客户端把程序构造成 JobGraph 提交给 JobManager，JobManager 生成 ExecutionGraph 后调度到 TaskManager 执行。</li>
+<li>答题思路：从用户代码到执行图。</li>
+<li>加分点：可以补充 REST 提交和 Application 模式。</li>
+</ul>
+<h4 id="10-Flink-的数据处理流程是什么？"><a href="#10-Flink-的数据处理流程是什么？" class="headerlink" title="10. Flink 的数据处理流程是什么？"></a>10. Flink 的数据处理流程是什么？</h4><ul>
+<li>考察点：source -&gt; transform -&gt; sink。</li>
+<li>参考答案：数据从 Source 进入，经过一系列算子和状态处理，再写入 Sink。算子链、shuffle、keyBy、窗口和状态是中间关键。</li>
+<li>答题思路：强调数据流转和算子执行。</li>
+<li>加分点：提反压会沿链路向上游传播。</li>
+</ul>
+<h4 id="11-任务调度模型如何理解？"><a href="#11-任务调度模型如何理解？" class="headerlink" title="11. 任务调度模型如何理解？"></a>11. 任务调度模型如何理解？</h4><ul>
+<li>考察点：slot、并行度、任务槽共享。</li>
+<li>参考答案：Flink 按并行子任务调度到 TaskManager 的 Slot 中，算子链减少网络开销，调度时要兼顾资源隔离和利用率。</li>
+<li>答题思路：先讲并行子任务，再讲 slot。</li>
+<li>加分点：说明 slot sharing group 的作用。</li>
+</ul>
+<h4 id="12-Checkpoint-的-Barrier-机制是什么？"><a href="#12-Checkpoint-的-Barrier-机制是什么？" class="headerlink" title="12. Checkpoint 的 Barrier 机制是什么？"></a>12. Checkpoint 的 Barrier 机制是什么？</h4><ul>
+<li>考察点：一致性快照。</li>
+<li>参考答案：Checkpoint 触发时，Barrier 从 Source 注入并沿流向下游传播，算子在看到 Barrier 后做对齐并快照状态，从而得到一致性快照。</li>
+<li>答题思路：抓住“Barrier 传播 + 状态快照”。</li>
+<li>加分点：提到 unaligned checkpoint 适合严重反压。</li>
+</ul>
+<h4 id="13-反压为什么会产生？"><a href="#13-反压为什么会产生？" class="headerlink" title="13. 反压为什么会产生？"></a>13. 反压为什么会产生？</h4><ul>
+<li>考察点：吞吐不匹配。</li>
+<li>参考答案：下游处理慢、sink 慢、外部系统慢、状态或网络成为瓶颈时，上游输出被阻塞，反压逐级传播。</li>
+<li>答题思路：先说“慢的那一环”。</li>
+<li>加分点：讲 backpressure 不是单点问题，而是整条链路问题。</li>
+</ul>
+<h4 id="14-RocksDB-State-Backend-的原理是什么？"><a href="#14-RocksDB-State-Backend-的原理是什么？" class="headerlink" title="14. RocksDB State Backend 的原理是什么？"></a>14. RocksDB State Backend 的原理是什么？</h4><ul>
+<li>考察点：大状态、落盘、LSM。</li>
+<li>参考答案：RocksDB 把状态存储在本地磁盘和内存缓存中，适合大状态作业，checkpoint 时可以利用增量快照减少传输量。</li>
+<li>答题思路：说明它解决“内存放不下”的问题。</li>
+<li>加分点：提 compaction、IO、序列化开销。</li>
+</ul>
+<h4 id="15-内存管理模型怎么理解？"><a href="#15-内存管理模型怎么理解？" class="headerlink" title="15. 内存管理模型怎么理解？"></a>15. 内存管理模型怎么理解？</h4><ul>
+<li>考察点：堆内、堆外、网络缓冲、状态。</li>
+<li>参考答案：Flink 内存要分给任务堆、网络缓冲、RocksDB、元数据和其他运行时部分。内存配置不合理会导致 OOM、频繁 GC 或 checkpoint 慢。</li>
+<li>答题思路：不要只讲 JVM heap。</li>
+<li>加分点：提网络缓冲和直接内存。</li>
+</ul>
+<h3 id="4-3-实战应用类"><a href="#4-3-实战应用类" class="headerlink" title="4.3 实战应用类"></a>4.3 实战应用类</h3><h4 id="16-什么时候选-DataStream，什么时候选-SQL？"><a href="#16-什么时候选-DataStream，什么时候选-SQL？" class="headerlink" title="16. 什么时候选 DataStream，什么时候选 SQL？"></a>16. 什么时候选 DataStream，什么时候选 SQL？</h4><ul>
+<li>考察点：表达能力和维护成本。</li>
+<li>参考答案：复杂控制流、定时器、侧输出、精细状态控制选 DataStream；标准 ETL、聚合、关联、建模选 SQL。</li>
+<li>答题思路：从“开发效率”和“控制能力”平衡讲。</li>
+<li>加分点：很多团队实际是 SQL 解决 80%，DataStream 解决 20% 复杂逻辑。</li>
+</ul>
+<h4 id="17-事件时间和水印怎么配？"><a href="#17-事件时间和水印怎么配？" class="headerlink" title="17. 事件时间和水印怎么配？"></a>17. 事件时间和水印怎么配？</h4><ul>
+<li>考察点：乱序与迟到。</li>
+<li>参考答案：先估计最大乱序范围，再设置 watermark 延迟；窗口再配 allowed lateness 和迟到侧输出。</li>
+<li>答题思路：先估计业务乱序，再谈配置。</li>
+<li>加分点：不同 source 分区乱序差异大时，注意 idleness。</li>
+</ul>
+<h4 id="18-如何做延迟数据处理？"><a href="#18-如何做延迟数据处理？" class="headerlink" title="18. 如何做延迟数据处理？"></a>18. 如何做延迟数据处理？</h4><ul>
+<li>考察点：迟到、补偿、旁路。</li>
+<li>参考答案：主链路处理准时数据，迟到数据通过 side output 输出到补偿链路，必要时再做二次汇总或离线修正。</li>
+<li>答题思路：把主链路和补偿链路分开。</li>
+<li>加分点：不要直接无限延迟窗口，成本会爆。</li>
+</ul>
+<h4 id="19-Flink-CDC-的原理是什么？"><a href="#19-Flink-CDC-的原理是什么？" class="headerlink" title="19. Flink CDC 的原理是什么？"></a>19. Flink CDC 的原理是什么？</h4><ul>
+<li>考察点：全量 + 增量、binlog。</li>
+<li>参考答案：CDC 通过捕获数据库变更日志，把初始化快照和后续增量变更统一成持续数据流，适合同步和维表构建。</li>
+<li>答题思路：强调“统一数据流”。</li>
+<li>加分点：提 DDL 演进、主键和 binlog 保留时间。</li>
+</ul>
+<h4 id="20-维表关联怎么实现？"><a href="#20-维表关联怎么实现？" class="headerlink" title="20. 维表关联怎么实现？"></a>20. 维表关联怎么实现？</h4><ul>
+<li>考察点：预加载、实时查询、广播。</li>
+<li>参考答案：小维表可预加载到状态，大维表可异步查外部系统，动态规则或配置可广播状态同步。</li>
+<li>答题思路：按维表大小和更新频率分方案。</li>
+<li>加分点：补充 temporal join。</li>
+</ul>
+<h4 id="21-异步-I-x2F-O-适合什么场景？"><a href="#21-异步-I-x2F-O-适合什么场景？" class="headerlink" title="21. 异步 I&#x2F;O 适合什么场景？"></a>21. 异步 I&#x2F;O 适合什么场景？</h4><ul>
+<li>考察点：外部慢查询。</li>
+<li>参考答案：适合外部 DB、KV、RPC、特征服务等延迟较高但必须查询的场景。它能提高吞吐，但要控制超时和并发。</li>
+<li>答题思路：说清楚“慢查询换吞吐”。</li>
+<li>加分点：说明乱序模式更高效。</li>
+</ul>
+<h4 id="22-流批一体怎么落地？"><a href="#22-流批一体怎么落地？" class="headerlink" title="22. 流批一体怎么落地？"></a>22. 流批一体怎么落地？</h4><ul>
+<li>考察点：有界流、同口径、湖仓。</li>
+<li>参考答案：统一一套 SQL 或 DataStream 逻辑，离线跑历史全量，实时跑增量，最后通过湖仓或统一结果表合并。</li>
+<li>答题思路：从逻辑统一、存储统一两个角度答。</li>
+<li>加分点：强调不是“把批任务改成流任务”这么简单。</li>
+</ul>
+<h4 id="23-如何保证写入一致性？"><a href="#23-如何保证写入一致性？" class="headerlink" title="23. 如何保证写入一致性？"></a>23. 如何保证写入一致性？</h4><ul>
+<li>考察点：幂等、事务、两阶段提交。</li>
+<li>参考答案：对支持事务的 Sink 使用两阶段提交；对不支持事务的系统设计幂等 upsert、唯一键或版本号控制。</li>
+<li>答题思路：先判断 sink 能力，再选方案。</li>
+<li>加分点：很多“Exactly-Once 失败”其实是 Sink 没配好。</li>
+</ul>
+<h4 id="24-数据倾斜怎么处理？"><a href="#24-数据倾斜怎么处理？" class="headerlink" title="24. 数据倾斜怎么处理？"></a>24. 数据倾斜怎么处理？</h4><ul>
+<li>考察点：热 key、单点瓶颈。</li>
+<li>参考答案：通过打散 key、预聚合、分桶、两级聚合、热点隔离来缓解；必要时对热点单独链路处理。</li>
+<li>答题思路：先定位是 source、算子还是 sink 倾斜。</li>
+<li>加分点：讲具体 key 分布分析方法。</li>
+</ul>
+<h4 id="25-CEP-开发要注意什么？"><a href="#25-CEP-开发要注意什么？" class="headerlink" title="25. CEP 开发要注意什么？"></a>25. CEP 开发要注意什么？</h4><ul>
+<li>考察点：模式定义、超时、状态。</li>
+<li>参考答案：要控制模式长度和时间窗口，设计合理的 NFA 规则，处理超时、重复匹配和异常分支。</li>
+<li>答题思路：先说规则，后说状态。</li>
+<li>加分点：CEP 很适合风控和流程审计，但不能无限复杂化。</li>
+</ul>
+<h3 id="4-4-性能调优类"><a href="#4-4-性能调优类" class="headerlink" title="4.4 性能调优类"></a>4.4 性能调优类</h3><h4 id="26-并行度怎么调？"><a href="#26-并行度怎么调？" class="headerlink" title="26. 并行度怎么调？"></a>26. 并行度怎么调？</h4><ul>
+<li>考察点：资源、吞吐、分区。</li>
+<li>参考答案：并行度要与 source 分区、sink 能力、CPU 和状态规模匹配。不是越高越好，过高会增加 shuffle 和 checkpoint 成本。</li>
+<li>答题思路：先看瓶颈，再调并行度。</li>
+<li>加分点：局部算子并行度和全局并行度可以不同。</li>
+</ul>
+<h4 id="27-反压怎么排查？"><a href="#27-反压怎么排查？" class="headerlink" title="27. 反压怎么排查？"></a>27. 反压怎么排查？</h4><ul>
+<li>考察点：链路定位。</li>
+<li>参考答案：先看 Web UI 的反压指标，再逐段定位 source、算子、sink、外部系统，优先检查 sink 写入慢、GC、网络和热点 key。</li>
+<li>答题思路：先定位再优化。</li>
+<li>加分点：反压不是只调 Flink 参数，外部依赖常是根因。</li>
+</ul>
+<h4 id="28-Checkpoint-为什么会慢？"><a href="#28-Checkpoint-为什么会慢？" class="headerlink" title="28. Checkpoint 为什么会慢？"></a>28. Checkpoint 为什么会慢？</h4><ul>
+<li>考察点：状态、对齐、IO。</li>
+<li>参考答案：可能是状态太大、对齐时间长、并发 checkpoint 过多、存储慢、反压严重或序列化开销过高。</li>
+<li>答题思路：分成状态体积、网络、存储三类。</li>
+<li>加分点：必要时考虑增量 checkpoint 或 unaligned checkpoint。</li>
+</ul>
+<h4 id="29-RocksDB-怎么调优？"><a href="#29-RocksDB-怎么调优？" class="headerlink" title="29. RocksDB 怎么调优？"></a>29. RocksDB 怎么调优？</h4><ul>
+<li>考察点：compaction、cache、IO。</li>
+<li>参考答案：关注写放大、compaction、block cache、内存分配和本地磁盘性能。状态越大越要关注 SSD 和 checkpoint 频率。</li>
+<li>答题思路：强调它不是“开了就行”。</li>
+<li>加分点：说明序列化和 key 设计也影响 RocksDB 性能。</li>
+</ul>
+<h4 id="30-序列化为什么重要？"><a href="#30-序列化为什么重要？" class="headerlink" title="30. 序列化为什么重要？"></a>30. 序列化为什么重要？</h4><ul>
+<li>考察点：CPU、网络、状态大小。</li>
+<li>参考答案：低效序列化会增加 CPU、传输和存储开销，影响整个作业吞吐。生产要尽量使用高效、稳定、兼容性好的序列化方案。</li>
+<li>答题思路：从链路成本解释。</li>
+<li>加分点：状态演进时序列化兼容性是升级关键。</li>
+</ul>
+<h3 id="4-5-问题排查类"><a href="#4-5-问题排查类" class="headerlink" title="4.5 问题排查类"></a>4.5 问题排查类</h3><h4 id="31-作业启动失败怎么排查？"><a href="#31-作业启动失败怎么排查？" class="headerlink" title="31. 作业启动失败怎么排查？"></a>31. 作业启动失败怎么排查？</h4><ul>
+<li>考察点：配置、依赖、资源、类冲突。</li>
+<li>参考答案：先看日志和 REST 错误，再查 jar 依赖冲突、连接器版本、资源是否不足、配置是否非法。</li>
+<li>答题思路：先定位错误类型，再看栈。</li>
+<li>加分点：提交前在预发先做最小作业验证。</li>
+</ul>
+<h4 id="32-水印不推进怎么办？"><a href="#32-水印不推进怎么办？" class="headerlink" title="32. 水印不推进怎么办？"></a>32. 水印不推进怎么办？</h4><ul>
+<li>考察点：空分区、乱序、时间戳。</li>
+<li>参考答案：常见原因是某个分区无数据、时间戳提取错、下游处理阻塞或 watermark 策略配置不合理。</li>
+<li>答题思路：先查 source，再查 watermark assigner。</li>
+<li>加分点：<code>withIdleness</code> 经常能解决部分分区空闲拖死全局的问题。</li>
+</ul>
+<h4 id="33-窗口不触发怎么排查？"><a href="#33-窗口不触发怎么排查？" class="headerlink" title="33. 窗口不触发怎么排查？"></a>33. 窗口不触发怎么排查？</h4><ul>
+<li>考察点：时间语义、触发器、水印。</li>
+<li>参考答案：可能是 watermark 未到、触发器不对、使用了错误时间语义、或者 key 下无数据。</li>
+<li>答题思路：窗口不触发通常就是水位线没走到。</li>
+<li>加分点：全局窗口必须自定义触发。</li>
+</ul>
+<h4 id="34-数据重复怎么排查？"><a href="#34-数据重复怎么排查？" class="headerlink" title="34. 数据重复怎么排查？"></a>34. 数据重复怎么排查？</h4><ul>
+<li>考察点：重启、幂等、事务。</li>
+<li>参考答案：看是不是 checkpoint 恢复导致重复消费、sink 幂等失效、事务没提交、或者上游本身重复。</li>
+<li>答题思路：把 source、计算和 sink 三段分别检查。</li>
+<li>加分点：Exactly-Once 不等于“永远不会重复看到中间结果”。</li>
+</ul>
+<h4 id="35-状态过大怎么办？"><a href="#35-状态过大怎么办？" class="headerlink" title="35. 状态过大怎么办？"></a>35. 状态过大怎么办？</h4><ul>
+<li>考察点：建模、TTL、清理。</li>
+<li>参考答案：优先检查状态是否多存了明细、是否缺少 TTL、是否可以做增量聚合或降粒度建模。</li>
+<li>答题思路：先减状态，再调参数。</li>
+<li>加分点：状态过大很多时候是模型问题，不只是参数问题。</li>
+</ul>
+<h3 id="4-6-架构设计与选型类"><a href="#4-6-架构设计与选型类" class="headerlink" title="4.6 架构设计与选型类"></a>4.6 架构设计与选型类</h3><h4 id="36-Flink-适合做实时数仓吗？"><a href="#36-Flink-适合做实时数仓吗？" class="headerlink" title="36. Flink 适合做实时数仓吗？"></a>36. Flink 适合做实时数仓吗？</h4><ul>
+<li>考察点：数仓链路、口径统一。</li>
+<li>参考答案：非常适合。Flink 可以作为实时数仓的计算层，配合 Kafka、CDC 和湖仓表格式完成分层建模和增量计算。</li>
+<li>答题思路：给出典型 ODS-DWD-DWS-ADS 结构。</li>
+<li>加分点：强调和离线数仓要共建统一口径。</li>
+</ul>
+<h4 id="37-Flink-和-Spark-Streaming-怎么选？"><a href="#37-Flink-和-Spark-Streaming-怎么选？" class="headerlink" title="37. Flink 和 Spark Streaming 怎么选？"></a>37. Flink 和 Spark Streaming 怎么选？</h4><ul>
+<li>考察点：延迟、语义、状态。</li>
+<li>参考答案：要极低延迟、事件时间和复杂状态，选 Flink；要和 Spark 批生态深度融合、以微批接受更高延迟，选 Spark Structured Streaming。</li>
+<li>答题思路：从延迟、状态、生态三维比较。</li>
+<li>加分点：不要只说“谁更快”，要说“谁更匹配场景”。</li>
+</ul>
+<h4 id="38-Flink-和-Kafka-Streams-怎么选？"><a href="#38-Flink-和-Kafka-Streams-怎么选？" class="headerlink" title="38. Flink 和 Kafka Streams 怎么选？"></a>38. Flink 和 Kafka Streams 怎么选？</h4><ul>
+<li>考察点：部署复杂度和能力边界。</li>
+<li>参考答案：Kafka Streams 适合 Kafka 中心化的轻量应用，部署简单；Flink 适合更复杂的状态、事件时间、CEP、跨源处理和湖仓协同。</li>
+<li>答题思路：先讲轻量与重型的差异。</li>
+<li>加分点：Kafka Streams 是库，Flink 是独立引擎。</li>
+</ul>
+<h4 id="39-Flink-和-Hive-x2F-ClickHouse-怎么搭配？"><a href="#39-Flink-和-Hive-x2F-ClickHouse-怎么搭配？" class="headerlink" title="39. Flink 和 Hive &#x2F; ClickHouse 怎么搭配？"></a>39. Flink 和 Hive &#x2F; ClickHouse 怎么搭配？</h4><ul>
+<li>考察点：计算层与查询层。</li>
+<li>参考答案：Hive 适合离线批处理，ClickHouse 适合高性能分析查询，Flink 负责实时计算和增量加工，三者经常组合而不是互相替代。</li>
+<li>答题思路：把角色分清。</li>
+<li>加分点：Flink 产出宽表后，ClickHouse 很适合做查询层。</li>
+</ul>
+<h4 id="40-如何设计海量状态作业？"><a href="#40-如何设计海量状态作业？" class="headerlink" title="40. 如何设计海量状态作业？"></a>40. 如何设计海量状态作业？</h4><ul>
+<li>考察点：存储、分布、恢复。</li>
+<li>参考答案：优先减少状态量、拆分热键、选择 RocksDB、做好 checkpoint 存储和恢复路径设计，并评估恢复时间与磁盘容量。</li>
+<li>答题思路：从“先减后存”说起。</li>
+<li>加分点：要考虑状态迁移和压缩成本。</li>
+</ul>
+<hr>
+<h2 id="五、版本差异、选型边界与演进建议"><a href="#五、版本差异、选型边界与演进建议" class="headerlink" title="五、版本差异、选型边界与演进建议"></a>五、版本差异、选型边界与演进建议</h2><h3 id="5-1-1-13-x2F-1-17-x2F-1-20-x2F-2-x-的看法"><a href="#5-1-1-13-x2F-1-17-x2F-1-20-x2F-2-x-的看法" class="headerlink" title="5.1 1.13 &#x2F; 1.17 &#x2F; 1.20 &#x2F; 2.x 的看法"></a>5.1 1.13 &#x2F; 1.17 &#x2F; 1.20 &#x2F; 2.x 的看法</h3><table>
+<thead>
+<tr>
+<th>版本</th>
+<th>关键词</th>
+<th>适合怎么理解</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1.13</td>
+<td>流批统一、生产可用能力增强</td>
+<td>可以视作很多企业线上化的重要起点</td>
+</tr>
+<tr>
+<td>1.17</td>
+<td>SQL &#x2F; Table 能力进一步成熟</td>
+<td>适合做更稳的实时数仓与流批协同</td>
+</tr>
+<tr>
+<td>1.20</td>
+<td>1.x 时代的稳定收束版本</td>
+<td>生产中仍然是非常稳妥的主线</td>
+</tr>
+<tr>
+<td>2.0 &#x2F; 2.2</td>
+<td>架构与 API 进入新阶段</td>
+<td>关注新 API、新表能力和未来迁移方向</td>
+</tr>
+</tbody></table>
+<h3 id="5-2-版本演进重点"><a href="#5-2-版本演进重点" class="headerlink" title="5.2 版本演进重点"></a>5.2 版本演进重点</h3><h4 id="1-13-时代"><a href="#1-13-时代" class="headerlink" title="1.13 时代"></a>1.13 时代</h4><ul>
+<li>这一阶段可以理解为 Flink 进入大规模生产的关键台阶。</li>
+<li>事件时间、状态、checkpoint、SQL、连接器生态继续成熟。</li>
+<li>很多团队会在这个阶段把实时 ETL、实时数仓、CDC 同步正式推到主链路。</li>
+<li>适合把“能跑”升级为“能稳定跑、可恢复地跑”。</li>
+<li>官方发布说明里，1.13 还强调了 reactive scaling 和可观测性增强，反压与热点分析能力也更容易被生产团队接受。</li>
+<li>面试时如果问 1.13，常见关键词是“生产化、弹性扩缩、可观测性、稳定性提升”。</li>
+</ul>
+<h4 id="1-17-时代"><a href="#1-17-时代" class="headerlink" title="1.17 时代"></a>1.17 时代</h4><ul>
+<li>Table &#x2F; SQL 更适合作为主力开发模式，研发效率明显提升。</li>
+<li>流批协同、连接器生态、维表关联、CDC 场景更加成熟。</li>
+<li>很多实时数仓和湖仓项目会在这个阶段定型。</li>
+<li>如果你面试的是偏数据平台岗位，1.17 往往是很常见的企业现网版本。</li>
+<li>官方发布说明把 1.17 的主线概括为 streaming warehouse，意思就是它更贴近“实时数仓”这类生产主战场。</li>
+<li>这一版可以重点记住：批处理性能和流处理语义都在增强，SQL &#x2F; Table 的实战地位更高。</li>
+</ul>
+<h4 id="1-20-时代"><a href="#1-20-时代" class="headerlink" title="1.20 时代"></a>1.20 时代</h4><ul>
+<li>可以视作 1.x 线的稳定高峰，也是很多企业最稳妥的生产主线之一。</li>
+<li>这时 Flink 的 SQL、状态、容错、连接器和生态协同已经很适合规模化落地。</li>
+<li>对新人学习和面试来说，1.20 是最容易建立“标准答案”的版本线。</li>
+<li>如果你现在要选一个长期维护的 1.x 版本，通常优先从 1.20 系列考虑。</li>
+<li>官方发布说明明确把 1.20 定位为 2.0 前的最后一个 minor 版本，并引入了 Materialized Table、checkpoint 文件合并、批作业恢复、HiveSource 动态并行度推断等能力。</li>
+<li>这意味着 1.20 既是稳定版，也是向 2.x 过渡的重要桥梁。</li>
+</ul>
+<h4 id="2-0-x2F-2-2-时代"><a href="#2-0-x2F-2-2-时代" class="headerlink" title="2.0 &#x2F; 2.2 时代"></a>2.0 &#x2F; 2.2 时代</h4><ul>
+<li>Flink 开始更明显地进入新架构与新 API 时代。</li>
+<li>关注 DataStream API V2、新表能力、Materialized Table、Data+AI 方向增强等新特性。</li>
+<li>对老项目来说，2.x 更适合先做能力验证，再逐步替换，不建议一上来全量迁移。</li>
+<li>迁移时一定要先做 savepoint、序列化兼容、连接器兼容和回放验证。</li>
+<li>从选型角度看，2.x 更适合平台型团队、架构升级和新特性验证，而不是先手去冒险替换所有稳定生产作业。</li>
+</ul>
+<h4 id="版本选型一句话"><a href="#版本选型一句话" class="headerlink" title="版本选型一句话"></a>版本选型一句话</h4><ul>
+<li>新项目生产主线偏稳妥时，优先 1.20 LTS 或企业发行版。</li>
+<li>新能力试点、平台演进、未来架构验证可以看 2.x。</li>
+<li>1.13 &#x2F; 1.17 更适合理解演进脉络和面试历史背景。</li>
+</ul>
+<h3 id="5-3-选型边界总结"><a href="#5-3-选型边界总结" class="headerlink" title="5.3 选型边界总结"></a>5.3 选型边界总结</h3><ul>
+<li>Flink 是实时计算引擎，不是数据库，不是全文检索引擎，也不是离线数仓的万能替代。</li>
+<li>它最强的地方是持续流处理、状态计算、事件时间、复杂一致性。</li>
+<li>真正的最佳实践通常是“Flink + Kafka + 湖仓 &#x2F; OLAP &#x2F; KV &#x2F; 检索引擎”的组合，而不是单打独斗。</li>
+</ul>
+<h3 id="5-4-给不同规模团队的建议"><a href="#5-4-给不同规模团队的建议" class="headerlink" title="5.4 给不同规模团队的建议"></a>5.4 给不同规模团队的建议</h3><h4 id="小团队"><a href="#小团队" class="headerlink" title="小团队"></a>小团队</h4><ul>
+<li>优先 SQL &#x2F; Table API。</li>
+<li>先做一条实时 ETL 主链路。</li>
+<li>连接器和状态设计尽量简单。</li>
+</ul>
+<h4 id="中型团队"><a href="#中型团队" class="headerlink" title="中型团队"></a>中型团队</h4><ul>
+<li>DataStream 和 SQL 并用。</li>
+<li>建实时数仓分层。</li>
+<li>做规范化的 checkpoint、监控和告警。</li>
+</ul>
+<h4 id="大型团队"><a href="#大型团队" class="headerlink" title="大型团队"></a>大型团队</h4><ul>
+<li>建统一实时平台。</li>
+<li>引入规范化的状态管理、湖仓协同、权限治理和版本管理。</li>
+<li>把离线、实时、特征、风控和监控统一到体系里。</li>
+</ul>
+<hr>
+<h2 id="六、参考资料"><a href="#六、参考资料" class="headerlink" title="六、参考资料"></a>六、参考资料</h2><p>以下是本文主要参考的官方资料入口，建议按需继续深挖：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://flink.apache.org/downloads/">Apache Flink Downloads</a></li>
+<li><a target="_blank" rel="noopener" href="https://nightlies.apache.org/flink/flink-docs-stable/docs/concepts/flink-architecture/">Apache Flink Architecture</a></li>
+<li><a target="_blank" rel="noopener" href="https://nightlies.apache.org/flink/flink-docs-stable/docs/concepts/time/">Apache Flink Time and Watermarks</a></li>
+<li><a target="_blank" rel="noopener" href="https://nightlies.apache.org/flink/flink-docs-stable/docs/concepts/stateful-stream-processing/">Apache Flink Stateful Stream Processing</a></li>
+<li><a target="_blank" rel="noopener" href="https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/datastream/fault-tolerance/checkpointing/">Apache Flink Checkpointing</a></li>
+<li><a target="_blank" rel="noopener" href="https://nightlies.apache.org/flink/flink-docs-stable/docs/ops/state/state_backends/">Apache Flink State Backends</a></li>
+<li><a target="_blank" rel="noopener" href="https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/datastream/operators/windows/">Apache Flink Windows</a></li>
+<li><a target="_blank" rel="noopener" href="https://nightlies.apache.org/flink/flink-docs-stable/docs/connectors/datastream/kafka/">Apache Flink Kafka Connector</a></li>
+<li><a target="_blank" rel="noopener" href="https://flink.apache.org/2021/05/03/apache-flink-1.13.0-release-announcement/">Apache Flink 1.13 Release Announcement</a></li>
+<li><a target="_blank" rel="noopener" href="https://flink.apache.org/2023/03/23/announcing-the-release-of-apache-flink-1.17/">Apache Flink 1.17 Release Announcement</a></li>
+<li><a target="_blank" rel="noopener" href="https://flink.apache.org/2024/08/02/announcing-the-release-of-apache-flink-1.20/">Apache Flink 1.20 Release Announcement</a></li>
+<li><a target="_blank" rel="noopener" href="https://flink.apache.org/2025/03/24/apache-flink-2.0.0-a-new-era-of-real-time-data-processing/">Apache Flink 2.0 Release Announcement</a></li>
+<li><a target="_blank" rel="noopener" href="https://flink.apache.org/2025/12/04/apache-flink-2.2.0-advancing-real-time-data--ai-and-empowering-stream-processing-for-the-ai-era/">Apache Flink 2.2.0 Release Announcement</a></li>
+<li><a target="_blank" rel="noopener" href="https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html">Apache Spark Structured Streaming Guide</a></li>
+</ul>
+<hr>
+<h2 id="附：可直接复用的落地清单"><a href="#附：可直接复用的落地清单" class="headerlink" title="附：可直接复用的落地清单"></a>附：可直接复用的落地清单</h2><h3 id="1-做一个实时任务前先问自己"><a href="#1-做一个实时任务前先问自己" class="headerlink" title="1. 做一个实时任务前先问自己"></a>1. 做一个实时任务前先问自己</h3><ul>
+<li>输入有没有乱序。</li>
+<li>输出要不要 Exactly-Once。</li>
+<li>状态会不会无限增长。</li>
+<li>有没有迟到和补偿逻辑。</li>
+<li>Sink 能不能幂等或事务提交。</li>
+<li>失败后恢复能不能接受。</li>
+</ul>
+<h3 id="2-一条健康的生产链路通常应该有"><a href="#2-一条健康的生产链路通常应该有" class="headerlink" title="2. 一条健康的生产链路通常应该有"></a>2. 一条健康的生产链路通常应该有</h3><ul>
+<li>明确的 source offset 策略。</li>
+<li>明确的事件时间和 watermark 策略。</li>
+<li>明确的 state TTL 和恢复策略。</li>
+<li>明确的 sink 一致性策略。</li>
+<li>明确的监控、告警和回放策略。</li>
+<li>明确的升级和回滚方案。</li>
+</ul>
+<h3 id="3-最常见的避坑总结"><a href="#3-最常见的避坑总结" class="headerlink" title="3. 最常见的避坑总结"></a>3. 最常见的避坑总结</h3><ul>
+<li>不要把处理时间误当事件时间。</li>
+<li>不要把窗口迟到当成彻底解决方案。</li>
+<li>不要让 sink 成为全链路瓶颈。</li>
+<li>不要让状态无限长。</li>
+<li>不要忽视外部系统的一致性边界。</li>
+<li>不要在没有回放和压测的情况下直接上生产。</li>
+</ul>
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1753903578/" target="_blank">Flink</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
+                        
+                            <a href="/category/Web/">Web</a>
+                        
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
+                        
+                            <a href="/tag/Flink/">Flink</a>
+                        
+                    </div>
+                
+                <div class="article-prev-next">
+                    
+                        <a href="/article/1753903578/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1753903578/" title="发布于 2025-08-23 01:45">HBase</a>
+                        <br>
+                    
+                    
+                        <a href="/article/1752904578/" class="next-prefix">» </a> 下一篇：    <a href="/article/1752904578/" title="发布于 2025-07-17 01:43">ClickHouse 全面梳理原理手册</a>
+                    
+                </div>
+            </div>
+            
+    <div class="article-comments">
+        
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
+    
+</div>
+
+    <div id="footer"></div>
+    <div id="sidebar">
+    <div class="menu-wrap" style="display:none;">
+        
+            <div class="menu-notice">
+                <span class="iconfont icon-notice"></span>
+                <div class="notice">
+                    <span>简单地活着，肆意而又精彩！</span>
+                </div>
+            </div>
+        
+        <nav class="menu">
+            <div class="menu-introduce"> 
+                <div class="introduce-avatar">
+                    <img src="/image/sidebar/avatar.jpg">
+                </div> 
+                <div class="introduce-info"> 
+                    <div class="introduce-user"><span>Live For Code</span></div>
+                </div> 
+            </div> 
+            <div class="menu-list">
+                <ul>
+                    
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                    
+                        <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
+                    
+                        <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
+                    
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                    
+                        <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
+                    
+                        <li class=""><a href="/about" class="" target="_self"><span class="iconfont icon-about-fill"></span>关于</a></li>
+                    
+                        <li class=""><a href="/atom.xml" class="" target="_blank"><span class="iconfont icon-rss"></span>订阅</a></li>
+                    
+                        <li class=""><a href="/comment" class="" target="_self"><span class="iconfont icon-comments-fill"></span>留言板</a></li>
+                    
+                        <li class=""><a href="/friend" class="" target="_self"><span class="iconfont icon-link"></span>友情链接</a></li>
+                    
+                </ul> 
+            </div> 
+            <div class="menu-link">
+                <div class="box">
+                    <div class="image-box"></div>
+                </div>
+                
+                    <a name="知乎" href="https://www.zhihu.com/people/wo-xin-de-love" class="" target="_blank" data=""><span class="iconfont icon-zhihu"></span></a>
+                
+                    <a name="微博" href="https://weibo.com/u/3939432776" class="" target="_blank" data=""><span class="iconfont icon-weibo"></span></a>
+                
+                    <a name="QQ" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"><span class="iconfont icon-qq"></span></a>
+                
+                    <a name="微信" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"><span class="iconfont icon-wechat"></span></a>
+                
+                    <a name="GitHub" href="https://github.com/first19326" class="" target="_blank" data=""><span class="iconfont icon-github"></span></a>
+                
+            </div> 
+        </nav>
+        <button class="menu-button-close"></button>
+        <div class="morph-shape" id="morph-shape" data-morph-open="M-7.312,0H15c0,0,66,113.339,66,399.5C81,664.006,15,800,15,800H-7.312V0z;M-7.312,0H100c0,0,0,113.839,0,400c0,264.506,0,400,0,400H-7.312V0z">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 800" preserveAspectRatio="none">
+                <path d="M-7.312,0H0c0,0,0,113.839,0,400c0,264.506,0,400,0,400h-7.312V0z"/>
+            </svg>
+        </div>
+    </div>
+    <button class="menu-button-open">MENU</button>
+    <div class="menu-cover"></div>
+</div>
+    
+<div id="tools">
+    <div class="progressbar-top"></div>
+
+    <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
+    <script type="text/javascript" src="/js/APlayer.min.js"></script>
+    <script type="text/javascript" src="/js/Meting.min.js"></script>
+    <meting-js id="3778678" lrcshow="false" server="netease"
+               type="playlist" fixed="true" autoplay="false"
+               loop="all" order="random" preload="auto"
+               volume="0.67" mutex="true"></meting-js>
+
+    <script type="text/javascript">
+        (function () {
+            var toolsRoot = document.getElementById('tools');
+            if (!toolsRoot || typeof APlayer === 'undefined') {
+                return;
+            }
+
+            var metingElement = toolsRoot.querySelector('meting-js');
+            var targetVolume = 0.67;
+            var autoplayEnabled = true;
+            var introAudio = {
+                name: "知我",
+                artist: "国风堂 / 哦漏",
+                cover: "/image/header/home.jpg",
+                url: "/music/song/知我.mp3",
+                lrc: ""
+            };
+            var introIndex = -1;
+            var introRemoved = false;
+            var metingPlayer = null;
+            var initTimer = null;
+
+            function restoreAudio(audio) {
+                if (!audio) {
+                    return;
+                }
+
+                audio.muted = false;
+                audio.defaultMuted = false;
+                audio.removeAttribute('muted');
+                audio.removeAttribute('autoplay');
+                audio.volume = targetVolume;
+            }
+
+            function attemptPlay(player, muted) {
+                if (!player || !player.audio) {
+                    return;
+                }
+
+                var audio = player.audio;
+                if (typeof muted === 'boolean') {
+                    audio.muted = muted;
+                    audio.defaultMuted = muted;
+                    if (muted) {
+                        audio.setAttribute('muted', 'muted');
+                        audio.setAttribute('autoplay', 'autoplay');
+                        audio.volume = 0;
+                    }
+                }
+
+                var result = audio.play();
+                if (result && typeof result.catch === 'function') {
+                    result.catch(function () {
+                        if (player && player.setUIPaused) {
+                            player.setUIPaused();
+                        }
+                    });
+                }
+            }
+
+            function startMutedAutoplay(player) {
+                if (!player || !player.audio) {
+                    return;
+                }
+
+                var audio = player.audio;
+                audio.muted = true;
+                audio.defaultMuted = true;
+                audio.setAttribute('muted', 'muted');
+                audio.setAttribute('autoplay', 'autoplay');
+                audio.volume = 0;
+
+                var clearMute = function () {
+                    restoreAudio(audio);
+                };
+
+                audio.addEventListener('playing', function () {
+                    window.setTimeout(clearMute, 120);
+                }, {once: true});
+
+                ['loadedmetadata', 'canplay', 'canplaythrough'].forEach(function (eventName) {
+                    audio.addEventListener(eventName, function resumeOnReady() {
+                        if (audio.paused) {
+                            attemptPlay(player, true);
+                        }
+                    }, {once: true});
+                });
+
+                [0, 250, 1200, 2500].forEach(function (delay) {
+                    window.setTimeout(function () {
+                        if (audio.paused) {
+                            attemptPlay(player, true);
+                        }
+                    }, delay);
+                });
+
+                attemptPlay(player, true);
+            }
+
+            function showPlayerControls(player) {
+                if (player && player.setMode) {
+                    player.setMode('normal');
+                }
+                if (player && player.template && player.template.info) {
+                    player.template.info.style.display = 'block';
+                }
+            }
+
+            function resetRandomOrder(player) {
+                if (!player || !player.list || !player.list.audios) {
+                    return;
+                }
+
+                var order = [];
+                for (var i = 0; i < player.list.audios.length; i++) {
+                    order.push(i);
+                }
+                for (var j = order.length - 1; j > 0; j--) {
+                    var randomIndex = Math.floor(Math.random() * (j + 1));
+                    var item = order[j];
+                    order[j] = order[randomIndex];
+                    order[randomIndex] = item;
+                }
+                player.randomOrder = order;
+            }
+
+            function removeIntroAfterLeaving(player) {
+                if (introRemoved || introIndex < 0 || !player || !player.list || player.list.index === introIndex) {
+                    return;
+                }
+
+                player.removeAudio(introIndex);
+                introRemoved = true;
+                introIndex = -1;
+
+                if (player.options && player.options.order === 'random') {
+                    resetRandomOrder(player);
+                }
+            }
+
+            function initIntro(player) {
+                if (!player || !player.list || !player.list.audios || !player.addAudio || !introAudio.url) {
+                    return;
+                }
+
+                metingPlayer = player;
+                showPlayerControls(player);
+
+                player.addAudio(introAudio);
+                introIndex = player.list.audios.length - 1;
+                player.list.switch(introIndex);
+                showPlayerControls(player);
+
+                player.on('listswitch', function () {
+                    window.setTimeout(function () {
+                        removeIntroAfterLeaving(player);
+                    }, 0);
+                });
+                player.on('ended', function () {
+                    window.setTimeout(function () {
+                        removeIntroAfterLeaving(player);
+                    }, 0);
+                });
+
+                if (autoplayEnabled) {
+                    startMutedAutoplay(player);
+                }
+
+                document.addEventListener('click', function resumeMusic() {
+                    if (player && player.audio && player.audio.paused) {
+                        restoreAudio(player.audio);
+                        attemptPlay(player, false);
+                    }
+                    document.removeEventListener('click', resumeMusic);
+                });
+
+                window.__liveForCodeMusic = {
+                    player: player,
+                    meting: metingElement
+                };
+            }
+
+            initTimer = window.setInterval(function () {
+                if (metingElement && metingElement.aplayer) {
+                    window.clearInterval(initTimer);
+                    initIntro(metingElement.aplayer);
+                }
+            }, 100);
+        })();
+    </script>
+    
+    <div class="wrap-right">
+        <div class="setting">
+            <div class="iconbox mode">
+                <div class="light">
+                    <span class="iconfont icon-daymode"></span>
+                    <span class="icontext">浅色模式</span>
+                </div>
+                <div class="dark">
+                    <span class="iconfont icon-nightmode-fill"></span>
+                    <span class="icontext">深色模式</span>
+                </div>
+            </div>
+            <div class="iconbox bottom">
+                <div style="display: inline-block; transform: rotate(180deg);">
+                    <span class="iconfont icon-top"></span>
+                </div>
+                <span class="icontext">跳至底部</span>
+            </div>
+        </div>
+        <div class="iconbox set">
+            <div style="display: inline-block;">
+                <span class="iconfont icon-setting"></span>
+            </div>
+            <span class="icontext">设置</span>
+        </div>
+        <div class="iconbox top">
+            <span class="iconfont icon-top"></span>
+            <span class="icontext">返回顶部</span>
+        </div>
+    </div>
+    <div class="loading"></div>
+</div>
+
+    <script>
+    window.config = {
+        GitHubUserName     : "first19326",
+        GitHubRepositories : "Hexo-LiveForCode",
+
+        User             : "Live For Code",
+        UserAvatar       : "/image/sidebar/avatar.jpg",
+        WebsiteStartDate : "2020-01-01",
+
+        WebsiteTitleBlur         : "(◍´꒳`◍) Hi, Live For Code",
+        WebsiteTitleBlurTimeOut  : 500,
+        WebsiteTitleFocus        : "(*´∇｀*) 欢迎回来!",
+        WebsiteTitleFocusTimeOut : 1000,
+        WebsiteFavicon           : "/image/website/logo.png",
+
+        ProgressBar : {
+            id       : "topProgressBar",
+            color    : "#77B6FF",
+            height   : "2px",
+            duration : 0.2
+        },
+
+        Loading: {
+            rebound : {
+                tension  : 16,
+                friction : 5
+            },
+            spinner : {
+                id     : "spinner",
+                radius : 90,
+                sides  : 3,
+                depth  : 4,
+                colors : {
+                    background : "#F0F0F0",
+                    stroke     : "#272633",
+                    base       : "",
+                    child      : "#272633"
+                },
+                alwaysForward : true,
+                restAt        : 0.5,
+                renderBase    : false
+            }
+        },
+
+        HomeHeaderAnimationRendered : true,
+        HomeHeaderAnimation         : {
+            radius      : 15,
+            density     : 0.2,
+            color       : "rgba(255, 255, 255, .2)",
+            clearOffset : 0.3
+        },
+
+        BackAnimationRendered          : true,
+        IEBrowserBackAnimationRendered : false,
+        BackAnimation                  : {
+            colorSaturation  : "60%",
+            colorBrightness  : "50%",
+            colorAlpha       : 0.5,
+            colorCycleSpeed  : 5,
+            verticalPosition : "random",
+            horizontalSpeed  : 200,
+            ribbonCount      : 3,
+            strokeSize       : 0,
+            parallaxAmount   : -0.2,
+            animateSections  : true
+        },
+
+        HomeHeaderImage : [
+            
+                "/image/header/home.jpg",
+            
+                "/image/header/home.jpeg",
+            
+                "/image/header/2023-04-17-20-51-03.jpg",
+            
+                "/image/header/2023-04-17-20-54-07.jpg",
+            
+                "/image/header/2023-04-17-20-54-22.jpg",
+            
+                "/image/header/2023-04-17-20-55-25.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+        HomeBannerText  : "",
+
+        ArticleHeaderImage : [
+            
+                "/image/header/article.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+
+        OtherBannerText : "",
+
+        Error : {
+            icon    : "icon-swimming",
+            title   : "PAGE NOT FOUND",
+            content : [
+                
+                    "很抱歉，您访问的页面不存在！",
+                
+                    "可能是输入地址有误或该地址已变更。",
+                
+            ],
+            buttons : [
+                
+                    {
+                        icon  : "icon-home",
+                        text  : "返回首页",
+                        href  : "https://fadeway32.gitee.io/",
+                        class : ""
+                    },
+                
+            ]
+        },
+
+        MenuNotice : {
+            enable : true,
+            notice : "简单地活着，肆意而又精彩！",
+            speed  : 20
+        },
+        MenuList : [
+            
+                {
+                    name   : "首页",
+                    icon   : "icon-home-fill",
+                    href   : "/",
+                    type   : "index",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "分类",
+                    icon   : "icon-folder-fill",
+                    href   : "/category",
+                    type   : "category",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "标签",
+                    icon   : "icon-discount-fill",
+                    href   : "/tag",
+                    type   : "tag",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "归档",
+                    icon   : "icon-calendar-fill",
+                    href   : "/archive",
+                    type   : "archive",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "赞赏",
+                    icon   : "icon-heart-fill",
+                    href   : "/donate",
+                    type   : "donate",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "关于",
+                    icon   : "icon-about-fill",
+                    href   : "/about",
+                    type   : "about",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "订阅",
+                    icon   : "icon-rss",
+                    href   : "/atom.xml",
+                    type   : "",
+                    class  : "",
+                    target : "_blank"
+                },
+            
+                {
+                    name   : "留言板",
+                    icon   : "icon-comments-fill",
+                    href   : "/comment",
+                    type   : "comment",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "友情链接",
+                    icon   : "icon-link",
+                    href   : "/friend",
+                    type   : "friend",
+                    class  : "",
+                    target : "_self"
+                },
+            
+        ],
+        MenuLink : [
+            
+                
+                    {
+                        name   : "知乎",
+                        icon   : "icon-zhihu",
+                        href   : "https://www.zhihu.com/people/wo-xin-de-love",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "微博",
+                        icon   : "icon-weibo",
+                        href   : "https://weibo.com/u/3939432776",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "QQ",
+                        icon   : "icon-qq",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"
+                    },
+                
+                    {
+                        name   : "微信",
+                        icon   : "icon-wechat",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"
+                    },
+                
+                    {
+                        name   : "GitHub",
+                        icon   : "icon-github",
+                        href   : "https://github.com/first19326",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+            
+        ],
+
+        FooterStyle : 2,
+        BottomText  : "<div><span class='face'>ღゝ◡╹)ノ♡</span></div><div>【人生若只如初见<span><i class='iconfont icon-like-fill'></i></span>何事秋风悲画扇】</div><div>&copy; 2020-2022 WorstOne. All Rights Reserved.</div>",
+
+        ConsoleList : [
+            
+                
+                    [
+                        
+                            
+                                "Based on cnblogs theme SimpleMemory.",
+                            
+                                "",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "SimpleMemory Author:",
+                            
+                                "BNDong",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "Theme:",
+                            
+                                "LiveForCode",
+                            
+                        
+                    ],
+                
+            
+        ],
+
+        FontIconExtend : "",
+
+        Donate : {
+            paypal  : "",
+            bitcoin : "",
+            alipay  : "/image/donate/alipay.png",
+            wechat  : "/image/donate/wechat.png"
+        },
+
+        Search : {
+            applicationID : "854JXVO35S",
+            apiKey        : "1945575867b066df2d460a4a97e23421",
+            indexName     : "hexo2",
+            hits          : {
+                page : 30
+            },
+            labels        : {
+                placeholder : "搜索",
+                empty       : "未发现与 「${query}」 相关的内容",
+                stats       : "${hits} 条相关条目，使用了 ${time} 毫秒",
+            }
+        }, 
+
+        Valine : {
+            switch         : true,
+            el             : ".comments-content",
+            appId          : "srhKtvWPQTWYKh3qX8G8M7v0-gzGzoHsz",
+            appKey         : "8uVSP1q6UlALVC5igYfIfv2h",
+            serverURLs     : "",
+            placeholder    : "你是我一生只会遇见一次的惊喜...",
+            avatar         : "mm",
+            meta           : "nick,mail,link",
+            requiredFields : "nick,mail",
+            pageSize       : 5,
+            lang           : "zh-cn",
+            visitor        : true,
+            enableQQ       : true
+        },
+
+        Tocbot : {
+            switch                : true,
+            tocSelector           : ".toc",
+            contentSelector       : ".article-body",
+            headingSelector       : "h1, h2, h3, h4, h5",
+            headingsOffset        : 0,
+            scrollSmooth          : true,
+            scrollSmoothOffset    : -5,
+            positionFixedSelector : ".toc",
+            positionFixedClass    : "toc-fixed",
+            fixedSidebarOffset    : "",
+        },
+
+        Require : {
+            baseUrl     : "/js/",
+            waitSeconds : 100
+        },
+
+        Music : {
+            type : "Meting"
+        },
+        APlayer : {
+            container : ".aplayer",
+            fixed     : true,
+            autoplay  : true,
+            loop      : "all",
+            order     : "list",
+            preload   : "auto",
+            volume    : 0.67,
+            mutex     : true,
+            lrcType   : 0,
+            audio     : [
+                
+                    {
+                        name   : "知我",
+                        artist : "国风堂 / 哦漏",
+                        cover  : "/image/header/home.jpg",
+                        url    : "/music/song/知我.mp3",
+                        lrc    : ""
+                    },
+                
+            ]
+        },
+        Meting : {
+            id       : "3778678", 
+            lrcshow  : false, 
+            server   : "netease", 
+            type     : "playlist", 
+            fixed    : true, 
+            autoplay : true, 
+            loop     : "all", 
+            order    : "random", 
+            preload  : "auto", 
+            volume   : 0.67, 
+            mutex    : true
+        },
+
+        Mouse : {
+            enable  : true,
+            options : {
+                size  : 6,
+                sizeF : 24
+            }
+        },
+
+        LazyLoad : {
+            default : "/image/website/lazyload.svg"
+        },
+  
+        Style : {
+            aplayer          : "/css/APlayer.css",
+            archive          : "/css/archive.css",
+            base             : "/css/base.css",
+            clipboard        : "/css/clipboard.css",
+            code             : "/css/code.css",
+            donate           : "/css/donate.css",
+            fancybox         : "/css/jquery.fancybox.css",
+            footer           : "/css/footer.css",
+            iconfont         : "/iconfont/iconfont.css",
+            index            : "/css/index.css",
+            menuBubble       : "/css/menu-bubble.css",
+            mouse            : "/css/mouse.css",
+            page             : "/css/page.css",
+            post             : "/css/post.css",
+            search           : "/css/search.css",
+            tocbot           : "/css/tocbot.css",
+            valine           : "/css/valine.css"
+        },
+
+        Script: {
+            aplayer          : "/js/APlayer.min.js",
+            config           : "/js/require.config.js",
+            index            : "/js/index.js",
+            instantSearch    : "/js/instantsearch.min.js",
+            iscroll          : "/js/iscroll.js",
+            jQuery           : "/js/jquery-3.4.1.min.js",
+            loading          : "/js/loading.js",
+            meting           : "/js/Meting.min.js",
+            require          : "/js/require.min.js"
+        },
+
+        Font: {
+            LongCang    : "/font/LongCang.css",
+            Monda       : "/font/Monda.css",
+            NotoSansSC  : "/font/NotoSansSC.css",
+            NotoSerifSC : "/font/NotoSerifSC.css",
+            Playball    : "/font/Playball.css",
+            PTMono      : "/font/PTMono.css",
+            Roboto      : "/font/Roboto.css",
+            RobotoSlab  : "/font/RobotoSlab.css",
+            Rosario     : "/font/Rosario.css",
+            UbuntuMono  : "/font/UbuntuMono.css"
+        },
+
+        Suffix : {
+            about : "你知道的越多,你不知道的越多"
+        },
+            
+        Theme : {
+            url  : "https://fadeway32.gitee.io/",
+            name : "fadeway32"
+        }  
+    };
+</script>
+    <script type="text/javascript" src="/js/home-docs.js"></script>
+    <script type="text/javascript" src="/js/index.js"></script>
+</body>
+</html>

@@ -1,0 +1,1744 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <!--    <meta name="referrer" content="origin">-->
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>
+        
+            01-LangGraph-v1-实战源码手册
+        
+    </title>
+    <link rel="shortcut icon" href="#"/>
+
+    <link type="text/css" rel="stylesheet" href="/font/LongCang.css">
+    <link type="text/css" rel="stylesheet" href="/font/Monda.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSansSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/NotoSerifSC.css">
+    <link type="text/css" rel="stylesheet" href="/font/Playball.css">
+    <link type="text/css" rel="stylesheet" href="/font/PTMono.css">
+    <link type="text/css" rel="stylesheet" href="/font/Roboto.css">
+    <link type="text/css" rel="stylesheet" href="/font/RobotoSlab.css">
+    <link type="text/css" rel="stylesheet" href="/font/Rosario.css">
+    <link type="text/css" rel="stylesheet" href="/font/UbuntuMono.css">
+
+    <link type="text/css" rel="stylesheet" href="/css/base.css">
+    <link type="text/css" rel="stylesheet" href="/css/code.css">
+
+    <script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+    <a id="cover"></a>
+    <link type="text/css" rel="stylesheet" href="/css/post.css">
+<header>
+    <meta name="referrer" content="no-referrer">
+</header>
+<div id="header" class="header">
+    <div class="vertical">
+        <div class="inner">
+            
+                <h1 class="header-subtitle">01-LangGraph-v1-实战源码手册</h1>
+                <div class="header-subinfo">
+                    <p class="article-info-text">
+                        <span>
+                            <i class="iconfont icon-time"></i> 发表时间：2025-07-16
+                        </span>
+                        
+                            <span id="/article/1752903578/" class="leancloud_visitors" data-flag-title="01-LangGraph-v1-实战源码手册">
+                                <i class="iconfont icon-browse"></i> 阅读：<sapn class="leancloud-visitors-count"></span>
+                            </span>
+                        
+                        <span>
+                            <i class="iconfont icon-interactive"></i> 评论：<span class="valine-comment-count" data-xid="/article/1752903578/"></span>
+                        </span>
+                    </p>
+                    
+                        
+                            <span class="category-color">Web</span>
+                        
+                    
+                    
+                        
+                            <span class="tag-color">LangGraph</span>
+                        
+                    
+                </div>
+            
+        </div>
+    </div>
+    
+</div>
+<div id="container"
+
+>
+    
+        <!-- 文章页面 -->
+        
+        <div id="article" data-doc-title="01-LangGraph-v1-实战源码手册" data-doc-path="/article/1752903578/"
+             data-doc-url="/article/1752903578/" data-doc-date="2025-07-16">
+            <div class="toc"></div>
+            <div class="article-body">
+                <h1 id="LangGraph-v1-x-实战源码面试手册"><a href="#LangGraph-v1-x-实战源码面试手册" class="headerlink" title="LangGraph v1.x 实战源码面试手册"></a>LangGraph v1.x 实战源码面试手册</h1><blockquote>
+<p>版本基准：<code>langgraph==1.2.0</code>，Python 版本要求 <code>&gt;=3.10</code>。<br>适用对象：希望系统掌握 LangGraph Graph API、状态管理、持久化、人机交互、LLM&#x2F;工具调用、多智能体编排，以及面试复习的 Python 开发者。<br>更新时间：2026-05-15。</p>
+</blockquote>
+<h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ul>
+<li><a href="#1-%E7%8E%AF%E5%A2%83%E5%87%86%E5%A4%87%E4%B8%8E%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5">1. 环境准备与核心概念</a></li>
+<li><a href="#2-%E7%A4%BA%E4%BE%8B%E8%B0%83%E7%94%A8%E4%BB%8E%E5%9F%BA%E7%A1%80%E6%B5%81%E7%A8%8B%E5%88%B0%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93%E7%BC%96%E6%8E%92">2. 示例调用：从基础流程到多智能体编排</a></li>
+<li><a href="#3-%E6%BA%90%E7%A0%81%E6%A2%B3%E7%90%86%E6%A0%B8%E5%BF%83%E8%AE%BE%E8%AE%A1%E4%B8%8E%E6%89%A7%E8%A1%8C%E9%93%BE%E8%B7%AF">3. 源码梳理：核心设计与执行链路</a></li>
+<li><a href="#4-%E9%AB%98%E9%A2%91%E9%9D%A2%E8%AF%95%E9%A2%98%E4%B8%8E%E5%8F%82%E8%80%83%E7%AD%94%E6%A1%88">4. 高频面试题与参考答案</a></li>
+<li><a href="#5-%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5%E6%B8%85%E5%8D%95">5. 工程实践清单</a></li>
+<li><a href="#6-%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99">6. 参考资料</a></li>
+</ul>
+<h2 id="1-环境准备与核心概念"><a href="#1-环境准备与核心概念" class="headerlink" title="1. 环境准备与核心概念"></a>1. 环境准备与核心概念</h2><h3 id="1-1-安装"><a href="#1-1-安装" class="headerlink" title="1.1 安装"></a>1.1 安装</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">python -m venv .venv</span><br><span class="line"><span class="built_in">source</span> .venv/bin/activate  <span class="comment"># Windows PowerShell: .\.venv\Scripts\Activate.ps1</span></span><br><span class="line">pip install -U <span class="string">&quot;langgraph==1.2.0&quot;</span> <span class="string">&quot;langchain&gt;=1.0&quot;</span> <span class="string">&quot;langchain-core&gt;=1.0&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>如果要运行 LLM 示例，还需要安装对应模型 Provider：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># OpenAI 示例</span></span><br><span class="line">pip install -U langchain-openai</span><br><span class="line"><span class="built_in">export</span> OPENAI_API_KEY=<span class="string">&quot;sk-...&quot;</span>  <span class="comment"># Windows PowerShell: $env:OPENAI_API_KEY=&quot;sk-...&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="1-2-LangGraph-的核心抽象"><a href="#1-2-LangGraph-的核心抽象" class="headerlink" title="1.2 LangGraph 的核心抽象"></a>1.2 LangGraph 的核心抽象</h3><table>
+<thead>
+<tr>
+<th>抽象</th>
+<th>作用</th>
+<th>常见 API</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>State</td>
+<td>图执行期间共享的状态结构，通常用 <code>TypedDict</code>、dataclass 或 Pydantic model 定义</td>
+<td><code>class State(TypedDict): ...</code></td>
+</tr>
+<tr>
+<td>Reducer</td>
+<td>决定同一个状态 key 如何合并多次更新；未声明 reducer 时默认覆盖</td>
+<td><code>Annotated[list[str], operator.add]</code></td>
+</tr>
+<tr>
+<td>Node</td>
+<td>一个可执行单元，读取 state，返回局部状态更新，也可以返回 <code>Command</code> 控制流</td>
+<td><code>builder.add_node(&quot;name&quot;, fn)</code></td>
+</tr>
+<tr>
+<td>Edge</td>
+<td>节点间的静态流转关系</td>
+<td><code>add_edge(START, &quot;node&quot;)</code></td>
+</tr>
+<tr>
+<td>Conditional Edge</td>
+<td>根据函数返回值动态路由</td>
+<td><code>add_conditional_edges(&quot;router&quot;, route_fn, mapping)</code></td>
+</tr>
+<tr>
+<td>Send</td>
+<td>动态 fan-out，每个分支可携带自己的局部 state</td>
+<td><code>Send(&quot;worker&quot;, &#123;&quot;item&quot;: item&#125;)</code></td>
+</tr>
+<tr>
+<td>Command</td>
+<td>在节点内同时更新 state 并跳转，或用于 <code>interrupt</code> 后恢复</td>
+<td><code>Command(update=..., goto=...)</code>、<code>Command(resume=...)</code></td>
+</tr>
+<tr>
+<td>Checkpointer</td>
+<td>短期记忆，按 <code>thread_id</code> 保存每个 super-step 的 checkpoint</td>
+<td><code>InMemorySaver</code>、Postgres saver</td>
+</tr>
+<tr>
+<td>Store</td>
+<td>长期记忆，跨 thread 保存任意业务记忆</td>
+<td><code>InMemoryStore</code>、<code>BaseStore</code></td>
+</tr>
+<tr>
+<td>Runtime Context</td>
+<td>每次运行注入的只读上下文，比如 <code>user_id</code>、租户、请求参数</td>
+<td><code>StateGraph(..., context_schema=Context)</code></td>
+</tr>
+</tbody></table>
+<h3 id="1-3-最小心智模型"><a href="#1-3-最小心智模型" class="headerlink" title="1.3 最小心智模型"></a>1.3 最小心智模型</h3><p>LangGraph 不是“链式调用框架”，而是一个状态化图运行时：</p>
+<ol>
+<li>你定义 state schema，说明图中允许读写哪些 key。</li>
+<li>你把 Python 函数或 Runnable 注册为节点。</li>
+<li>你用边描述节点执行顺序，用条件边或 <code>Command</code> 描述动态控制流。</li>
+<li><code>compile()</code> 将 builder 编译成可执行图。</li>
+<li>运行时按 Pregel&#x2F;Bulk Synchronous Parallel 风格执行：一个 super-step 中被调度的节点并行执行，节点写出的更新在 step 结束后统一合并到 channel。</li>
+<li>如果启用 checkpointer，每个 super-step 边界会保存 checkpoint，从而支持中断恢复、短期记忆、回放与 time travel。</li>
+</ol>
+<h2 id="2-示例调用：从基础流程到多智能体编排"><a href="#2-示例调用：从基础流程到多智能体编排" class="headerlink" title="2. 示例调用：从基础流程到多智能体编排"></a>2. 示例调用：从基础流程到多智能体编排</h2><p>本章所有非 LLM 示例都可以直接本地运行。LLM 示例需要有效 API key；如果不想访问云模型，可替换为支持 tool calling 的本地模型封装。</p>
+<h3 id="2-1-基础顺序流程：StateGraph、节点与边"><a href="#2-1-基础顺序流程：StateGraph、节点与边" class="headerlink" title="2.1 基础顺序流程：StateGraph、节点与边"></a>2.1 基础顺序流程：StateGraph、节点与边</h3><p><strong>场景</strong>：把输入文本依次经过“清洗”和“加后缀”两个节点。</p>
+<p><strong>依赖</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install -U <span class="string">&quot;langgraph==1.2.0&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>完整代码</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing_extensions <span class="keyword">import</span> TypedDict</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> END, START, StateGraph</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">TextState</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    <span class="comment"># 图中共享状态。默认 reducer 是覆盖：节点返回的新 text 会覆盖旧 text。</span></span><br><span class="line">    text: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">normalize</span>(<span class="params">state: TextState</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;节点 1：读取 state，返回局部更新。&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;text&quot;</span>: state[<span class="string">&quot;text&quot;</span>].strip().lower()&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">append_suffix</span>(<span class="params">state: TextState</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;节点 2：继续更新同一个 key。&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;text&quot;</span>: state[<span class="string">&quot;text&quot;</span>] + <span class="string">&quot; | processed&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">builder = StateGraph(TextState)</span><br><span class="line">builder.add_node(<span class="string">&quot;normalize&quot;</span>, normalize)</span><br><span class="line">builder.add_node(<span class="string">&quot;append_suffix&quot;</span>, append_suffix)</span><br><span class="line"></span><br><span class="line">builder.add_edge(START, <span class="string">&quot;normalize&quot;</span>)</span><br><span class="line">builder.add_edge(<span class="string">&quot;normalize&quot;</span>, <span class="string">&quot;append_suffix&quot;</span>)</span><br><span class="line">builder.add_edge(<span class="string">&quot;append_suffix&quot;</span>, END)</span><br><span class="line"></span><br><span class="line">graph = builder.<span class="built_in">compile</span>()</span><br><span class="line"></span><br><span class="line">result = graph.invoke(&#123;<span class="string">&quot;text&quot;</span>: <span class="string">&quot;  Hello LangGraph  &quot;</span>&#125;)</span><br><span class="line"><span class="built_in">print</span>(result)</span><br></pre></td></tr></table></figure>
+
+<p><strong>核心参数说明</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>参数&#x2F;方法</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>StateGraph(TextState)</code></td>
+<td>创建图 builder，<code>TextState</code> 是全局状态结构</td>
+</tr>
+<tr>
+<td><code>add_node(name, fn)</code></td>
+<td>注册节点，节点函数第一个参数是 state</td>
+</tr>
+<tr>
+<td><code>add_edge(START, &quot;normalize&quot;)</code></td>
+<td>定义入口边</td>
+</tr>
+<tr>
+<td><code>compile()</code></td>
+<td>编译为可执行图；编译前只是 builder，不能执行</td>
+</tr>
+<tr>
+<td><code>invoke(input)</code></td>
+<td>同步执行图并返回最终 state</td>
+</tr>
+</tbody></table>
+<p><strong>预期输出</strong>：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;&#x27;text&#x27;: &#x27;hello langgraph | processed&#x27;&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>结果解读</strong>：<code>normalize</code> 和 <code>append_suffix</code> 都写 <code>text</code>，因为没有声明 reducer，后一个节点对 <code>text</code> 的更新会覆盖前一个值。</p>
+<p><strong>常见坑点</strong>：</p>
+<ul>
+<li>节点返回值必须是 dict、<code>Command</code> 或符合 LangGraph 更新协议的对象；返回裸字符串会触发 <code>InvalidUpdateError</code>。</li>
+<li>至少要有从 <code>START</code> 出发的入口边，否则编译校验会失败。</li>
+</ul>
+<h3 id="2-2-状态管理与-Reducer：追加而不是覆盖"><a href="#2-2-状态管理与-Reducer：追加而不是覆盖" class="headerlink" title="2.2 状态管理与 Reducer：追加而不是覆盖"></a>2.2 状态管理与 Reducer：追加而不是覆盖</h3><p><strong>场景</strong>：多个节点都向 <code>logs</code> 写入日志，希望保留所有日志。</p>
+<p><strong>完整代码</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> operator</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> Annotated</span><br><span class="line"><span class="keyword">from</span> typing_extensions <span class="keyword">import</span> TypedDict</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> END, START, StateGraph</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">AuditState</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    task: <span class="built_in">str</span></span><br><span class="line">    <span class="comment"># operator.add 表示同一个 key 的多次更新会做列表拼接，而不是覆盖。</span></span><br><span class="line">    logs: Annotated[<span class="built_in">list</span>[<span class="built_in">str</span>], operator.add]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">receive</span>(<span class="params">state: AuditState</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;logs&quot;</span>: [<span class="string">f&quot;receive task=<span class="subst">&#123;state[<span class="string">&#x27;task&#x27;</span>]&#125;</span>&quot;</span>]&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">validate</span>(<span class="params">state: AuditState</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;logs&quot;</span>: [<span class="string">&quot;validate ok&quot;</span>]&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">finish</span>(<span class="params">state: AuditState</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;logs&quot;</span>: [<span class="string">&quot;finish&quot;</span>]&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">builder = StateGraph(AuditState)</span><br><span class="line">builder.add_node(<span class="string">&quot;receive&quot;</span>, receive)</span><br><span class="line">builder.add_node(<span class="string">&quot;validate&quot;</span>, validate)</span><br><span class="line">builder.add_node(<span class="string">&quot;finish&quot;</span>, finish)</span><br><span class="line">builder.add_edge(START, <span class="string">&quot;receive&quot;</span>)</span><br><span class="line">builder.add_edge(<span class="string">&quot;receive&quot;</span>, <span class="string">&quot;validate&quot;</span>)</span><br><span class="line">builder.add_edge(<span class="string">&quot;validate&quot;</span>, <span class="string">&quot;finish&quot;</span>)</span><br><span class="line">builder.add_edge(<span class="string">&quot;finish&quot;</span>, END)</span><br><span class="line"></span><br><span class="line">graph = builder.<span class="built_in">compile</span>()</span><br><span class="line"><span class="built_in">print</span>(graph.invoke(&#123;<span class="string">&quot;task&quot;</span>: <span class="string">&quot;invoice-001&quot;</span>, <span class="string">&quot;logs&quot;</span>: []&#125;))</span><br></pre></td></tr></table></figure>
+
+<p><strong>预期输出</strong>：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;&#x27;task&#x27;: &#x27;invoice-001&#x27;, &#x27;logs&#x27;: [&#x27;receive task=invoice-001&#x27;, &#x27;validate ok&#x27;, &#x27;finish&#x27;]&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>核心参数说明</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>写法</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Annotated[list[str], operator.add]</code></td>
+<td>为 <code>logs</code> 声明 reducer，合并时调用 <code>operator.add(old, update)</code></td>
+</tr>
+<tr>
+<td><code>&#123;&quot;logs&quot;: [&quot;...&quot;]&#125;</code></td>
+<td>节点只返回本次增量，不需要手动读取旧日志</td>
+</tr>
+</tbody></table>
+<p><strong>结果解读</strong>：LangGraph 内部会把 schema key 转换成 channel。没有 reducer 的 key 通常使用 <code>LastValue</code>，带 reducer 的 key 会使用聚合 channel，因此能处理多节点写入。</p>
+<p><strong>常见坑点</strong>：</p>
+<ul>
+<li>reducer 必须是确定性的；不要在 reducer 内访问网络、随机数或数据库。</li>
+<li>reducer 的左右参数类型要兼容。比如 <code>list + str</code> 会失败，节点应返回列表增量。</li>
+</ul>
+<h3 id="2-3-条件分支：add-conditional-edges"><a href="#2-3-条件分支：add-conditional-edges" class="headerlink" title="2.3 条件分支：add_conditional_edges"></a>2.3 条件分支：add_conditional_edges</h3><p><strong>场景</strong>：根据订单金额进入普通审核或高风险审核。</p>
+<p><strong>完整代码</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Literal</span></span><br><span class="line"><span class="keyword">from</span> typing_extensions <span class="keyword">import</span> TypedDict</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> END, START, StateGraph</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">OrderState</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    order_id: <span class="built_in">str</span></span><br><span class="line">    amount: <span class="built_in">float</span></span><br><span class="line">    decision: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">classify</span>(<span class="params">state: OrderState</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;decision&quot;</span>: <span class="string">&quot;pending&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">route</span>(<span class="params">state: OrderState</span>) -&gt; <span class="type">Literal</span>[<span class="string">&quot;normal&quot;</span>, <span class="string">&quot;risk&quot;</span>]:</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;risk&quot;</span> <span class="keyword">if</span> state[<span class="string">&quot;amount&quot;</span>] &gt;= <span class="number">1000</span> <span class="keyword">else</span> <span class="string">&quot;normal&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">normal_review</span>(<span class="params">state: OrderState</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;decision&quot;</span>: <span class="string">&quot;approved_by_normal_review&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">risk_review</span>(<span class="params">state: OrderState</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;decision&quot;</span>: <span class="string">&quot;manual_risk_review_required&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">builder = StateGraph(OrderState)</span><br><span class="line">builder.add_node(<span class="string">&quot;classify&quot;</span>, classify)</span><br><span class="line">builder.add_node(<span class="string">&quot;normal_review&quot;</span>, normal_review)</span><br><span class="line">builder.add_node(<span class="string">&quot;risk_review&quot;</span>, risk_review)</span><br><span class="line">builder.add_edge(START, <span class="string">&quot;classify&quot;</span>)</span><br><span class="line">builder.add_conditional_edges(</span><br><span class="line">    <span class="string">&quot;classify&quot;</span>,</span><br><span class="line">    route,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;normal&quot;</span>: <span class="string">&quot;normal_review&quot;</span>,</span><br><span class="line">        <span class="string">&quot;risk&quot;</span>: <span class="string">&quot;risk_review&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">)</span><br><span class="line">builder.add_edge(<span class="string">&quot;normal_review&quot;</span>, END)</span><br><span class="line">builder.add_edge(<span class="string">&quot;risk_review&quot;</span>, END)</span><br><span class="line"></span><br><span class="line">graph = builder.<span class="built_in">compile</span>()</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(graph.invoke(&#123;<span class="string">&quot;order_id&quot;</span>: <span class="string">&quot;A-1&quot;</span>, <span class="string">&quot;amount&quot;</span>: <span class="number">300</span>, <span class="string">&quot;decision&quot;</span>: <span class="string">&quot;&quot;</span>&#125;))</span><br><span class="line"><span class="built_in">print</span>(graph.invoke(&#123;<span class="string">&quot;order_id&quot;</span>: <span class="string">&quot;A-2&quot;</span>, <span class="string">&quot;amount&quot;</span>: <span class="number">5000</span>, <span class="string">&quot;decision&quot;</span>: <span class="string">&quot;&quot;</span>&#125;))</span><br></pre></td></tr></table></figure>
+
+<p><strong>预期输出</strong>：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&#123;&#x27;order_id&#x27;: &#x27;A-1&#x27;, &#x27;amount&#x27;: 300, &#x27;decision&#x27;: &#x27;approved_by_normal_review&#x27;&#125;</span><br><span class="line">&#123;&#x27;order_id&#x27;: &#x27;A-2&#x27;, &#x27;amount&#x27;: 5000, &#x27;decision&#x27;: &#x27;manual_risk_review_required&#x27;&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>结果解读</strong>：<code>route</code> 不更新 state，只返回路由标签；mapping 决定标签对应哪个节点。</p>
+<p><strong>常见坑点</strong>：</p>
+<ul>
+<li>条件函数返回值要和 mapping key 对齐。</li>
+<li>如果条件函数直接返回节点名，可以不传 mapping，但面试或团队项目中建议显式 mapping，便于读图和重构。</li>
+</ul>
+<h3 id="2-4-循环流程：重试直到满足条件"><a href="#2-4-循环流程：重试直到满足条件" class="headerlink" title="2.4 循环流程：重试直到满足条件"></a>2.4 循环流程：重试直到满足条件</h3><p><strong>场景</strong>：模拟一个“草稿评分”流程，分数不足时继续修改，最多执行若干轮。</p>
+<p><strong>完整代码</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Literal</span></span><br><span class="line"><span class="keyword">from</span> typing_extensions <span class="keyword">import</span> TypedDict</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> END, START, StateGraph</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">DraftState</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    draft: <span class="built_in">str</span></span><br><span class="line">    score: <span class="built_in">int</span></span><br><span class="line">    attempts: <span class="built_in">int</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">write_or_revise</span>(<span class="params">state: DraftState</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    attempts = state[<span class="string">&quot;attempts&quot;</span>] + <span class="number">1</span></span><br><span class="line">    draft = state[<span class="string">&quot;draft&quot;</span>] + <span class="string">f&quot; -&gt; revision-<span class="subst">&#123;attempts&#125;</span>&quot;</span></span><br><span class="line">    score = <span class="built_in">min</span>(<span class="number">100</span>, state[<span class="string">&quot;score&quot;</span>] + <span class="number">35</span>)</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;draft&quot;</span>: draft, <span class="string">&quot;score&quot;</span>: score, <span class="string">&quot;attempts&quot;</span>: attempts&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">should_continue</span>(<span class="params">state: DraftState</span>) -&gt; <span class="type">Literal</span>[<span class="string">&quot;revise&quot;</span>, <span class="string">&quot;done&quot;</span>]:</span><br><span class="line">    <span class="keyword">if</span> state[<span class="string">&quot;score&quot;</span>] &gt;= <span class="number">80</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;done&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;revise&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">builder = StateGraph(DraftState)</span><br><span class="line">builder.add_node(<span class="string">&quot;write_or_revise&quot;</span>, write_or_revise)</span><br><span class="line">builder.add_edge(START, <span class="string">&quot;write_or_revise&quot;</span>)</span><br><span class="line">builder.add_conditional_edges(</span><br><span class="line">    <span class="string">&quot;write_or_revise&quot;</span>,</span><br><span class="line">    should_continue,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;revise&quot;</span>: <span class="string">&quot;write_or_revise&quot;</span>,</span><br><span class="line">        <span class="string">&quot;done&quot;</span>: END,</span><br><span class="line">    &#125;,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">graph = builder.<span class="built_in">compile</span>()</span><br><span class="line"></span><br><span class="line">result = graph.invoke(</span><br><span class="line">    &#123;<span class="string">&quot;draft&quot;</span>: <span class="string">&quot;v0&quot;</span>, <span class="string">&quot;score&quot;</span>: <span class="number">0</span>, <span class="string">&quot;attempts&quot;</span>: <span class="number">0</span>&#125;,</span><br><span class="line">    config=&#123;<span class="string">&quot;recursion_limit&quot;</span>: <span class="number">10</span>&#125;,</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(result)</span><br></pre></td></tr></table></figure>
+
+<p><strong>预期输出</strong>：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;&#x27;draft&#x27;: &#x27;v0 -&gt; revision-1 -&gt; revision-2 -&gt; revision-3&#x27;, &#x27;score&#x27;: 100, &#x27;attempts&#x27;: 3&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>核心参数说明</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>recursion_limit</code></td>
+<td>最大图 step 数限制，用于防止错误条件造成无限循环</td>
+</tr>
+<tr>
+<td><code>&quot;revise&quot;: &quot;write_or_revise&quot;</code></td>
+<td>条件边指回自身，形成循环</td>
+</tr>
+</tbody></table>
+<p><strong>常见坑点</strong>：</p>
+<ul>
+<li>循环必须有明确退出条件。</li>
+<li><code>recursion_limit</code> 不是业务重试次数，而是图执行 step 上限；节点数越多，消耗 step 越快。</li>
+</ul>
+<h3 id="2-5-并行-Fan-out-x2F-Fan-in：Send-与-Map-Reduce"><a href="#2-5-并行-Fan-out-x2F-Fan-in：Send-与-Map-Reduce" class="headerlink" title="2.5 并行 Fan-out&#x2F;Fan-in：Send 与 Map-Reduce"></a>2.5 并行 Fan-out&#x2F;Fan-in：Send 与 Map-Reduce</h3><p><strong>场景</strong>：把一批主题分发给多个 worker 并行处理，再汇总结果。</p>
+<p><strong>完整代码</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> operator</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> Annotated</span><br><span class="line"><span class="keyword">from</span> typing_extensions <span class="keyword">import</span> TypedDict</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> END, START, StateGraph</span><br><span class="line"><span class="keyword">from</span> langgraph.types <span class="keyword">import</span> Send</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">OverallState</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    subjects: <span class="built_in">list</span>[<span class="built_in">str</span>]</span><br><span class="line">    summaries: Annotated[<span class="built_in">list</span>[<span class="built_in">str</span>], operator.add]</span><br><span class="line">    final_report: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">WorkerState</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    subject: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">dispatch</span>(<span class="params">state: OverallState</span>):</span><br><span class="line">    <span class="comment"># 动态创建多个 worker 任务，每个任务获得自己的局部输入。</span></span><br><span class="line">    <span class="keyword">return</span> [Send(<span class="string">&quot;summarize_one&quot;</span>, &#123;<span class="string">&quot;subject&quot;</span>: subject&#125;) <span class="keyword">for</span> subject <span class="keyword">in</span> state[<span class="string">&quot;subjects&quot;</span>]]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">summarize_one</span>(<span class="params">state: WorkerState</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;summaries&quot;</span>: [<span class="string">f&quot;<span class="subst">&#123;state[<span class="string">&#x27;subject&#x27;</span>]&#125;</span>: key insight&quot;</span>]&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">reduce_report</span>(<span class="params">state: OverallState</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;final_report&quot;</span>: <span class="string">&quot;\n&quot;</span>.join(state[<span class="string">&quot;summaries&quot;</span>])&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">builder = StateGraph(OverallState)</span><br><span class="line">builder.add_node(<span class="string">&quot;summarize_one&quot;</span>, summarize_one)</span><br><span class="line">builder.add_node(<span class="string">&quot;reduce_report&quot;</span>, reduce_report)</span><br><span class="line">builder.add_conditional_edges(START, dispatch)</span><br><span class="line">builder.add_edge(<span class="string">&quot;summarize_one&quot;</span>, <span class="string">&quot;reduce_report&quot;</span>)</span><br><span class="line">builder.add_edge(<span class="string">&quot;reduce_report&quot;</span>, END)</span><br><span class="line"></span><br><span class="line">graph = builder.<span class="built_in">compile</span>()</span><br><span class="line"></span><br><span class="line">result = graph.invoke(</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;subjects&quot;</span>: [<span class="string">&quot;state&quot;</span>, <span class="string">&quot;checkpoint&quot;</span>, <span class="string">&quot;interrupt&quot;</span>],</span><br><span class="line">        <span class="string">&quot;summaries&quot;</span>: [],</span><br><span class="line">        <span class="string">&quot;final_report&quot;</span>: <span class="string">&quot;&quot;</span>,</span><br><span class="line">    &#125;</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(result[<span class="string">&quot;final_report&quot;</span>])</span><br></pre></td></tr></table></figure>
+
+<p><strong>预期输出</strong>：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">state: key insight</span><br><span class="line">checkpoint: key insight</span><br><span class="line">interrupt: key insight</span><br></pre></td></tr></table></figure>
+
+<p><strong>结果解读</strong>：<code>dispatch</code> 返回多个 <code>Send</code> 对象，LangGraph 会调度多个 <code>summarize_one</code> 任务。<code>summaries</code> 使用 <code>operator.add</code> 聚合多个 worker 的返回值，最后进入 <code>reduce_report</code>。</p>
+<p><strong>常见坑点</strong>：</p>
+<ul>
+<li>fan-out 的汇总 key 必须有 reducer，否则多个 worker 同时写同一个 key 会互相覆盖或触发冲突。</li>
+<li>并行分支不要依赖执行顺序；如果顺序重要，给结果带 index，reduce 时排序。</li>
+</ul>
+<h3 id="2-6-人机交互：interrupt-Command-resume-x3D-…"><a href="#2-6-人机交互：interrupt-Command-resume-x3D-…" class="headerlink" title="2.6 人机交互：interrupt + Command(resume&#x3D;…)"></a>2.6 人机交互：interrupt + Command(resume&#x3D;…)</h3><p><strong>场景</strong>：生成内容后暂停给人工审核，人工返回修改后的文本。</p>
+<p><strong>完整代码</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing_extensions <span class="keyword">import</span> TypedDict</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> END, START, StateGraph</span><br><span class="line"><span class="keyword">from</span> langgraph.types <span class="keyword">import</span> Command, interrupt</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ReviewState</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    generated_text: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">draft</span>(<span class="params">state: ReviewState</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;generated_text&quot;</span>: <span class="string">&quot;原始草稿：LangGraph 可以编排智能体。&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">human_review</span>(<span class="params">state: ReviewState</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="comment"># interrupt 的参数会暴露给调用方，常用来传递审核说明和当前内容。</span></span><br><span class="line">    edited_text = interrupt(</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="string">&quot;instruction&quot;</span>: <span class="string">&quot;请审核并编辑 generated_text&quot;</span>,</span><br><span class="line">            <span class="string">&quot;content&quot;</span>: state[<span class="string">&quot;generated_text&quot;</span>],</span><br><span class="line">        &#125;</span><br><span class="line">    )</span><br><span class="line">    <span class="comment"># 恢复执行时，Command(resume=...) 的值会成为 interrupt(...) 的返回值。</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;generated_text&quot;</span>: edited_text&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">builder = StateGraph(ReviewState)</span><br><span class="line">builder.add_node(<span class="string">&quot;draft&quot;</span>, draft)</span><br><span class="line">builder.add_node(<span class="string">&quot;human_review&quot;</span>, human_review)</span><br><span class="line">builder.add_edge(START, <span class="string">&quot;draft&quot;</span>)</span><br><span class="line">builder.add_edge(<span class="string">&quot;draft&quot;</span>, <span class="string">&quot;human_review&quot;</span>)</span><br><span class="line">builder.add_edge(<span class="string">&quot;human_review&quot;</span>, END)</span><br><span class="line"></span><br><span class="line">checkpointer = InMemorySaver()</span><br><span class="line">graph = builder.<span class="built_in">compile</span>(checkpointer=checkpointer)</span><br><span class="line"></span><br><span class="line">config = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;review-thread-001&quot;</span>&#125;&#125;</span><br><span class="line"></span><br><span class="line">first = graph.invoke(&#123;<span class="string">&quot;generated_text&quot;</span>: <span class="string">&quot;&quot;</span>&#125;, config=config)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;paused:&quot;</span>, first)</span><br><span class="line"></span><br><span class="line">final = graph.invoke(</span><br><span class="line">    Command(resume=<span class="string">&quot;终稿：LangGraph 适合编排可持久化、可中断的智能体工作流。&quot;</span>),</span><br><span class="line">    config=config,</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;final:&quot;</span>, final)</span><br></pre></td></tr></table></figure>
+
+<p><strong>预期输出示意</strong>：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">paused: &#123;&#x27;generated_text&#x27;: &#x27;原始草稿：LangGraph 可以编排智能体。&#x27;, &#x27;__interrupt__&#x27;: (...)&#125;</span><br><span class="line">final: &#123;&#x27;generated_text&#x27;: &#x27;终稿：LangGraph 适合编排可持久化、可中断的智能体工作流。&#x27;&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>核心参数说明</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>参数&#x2F;对象</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>interrupt(payload)</code></td>
+<td>暂停当前图执行，并把 payload 返回给调用方</td>
+</tr>
+<tr>
+<td><code>Command(resume=value)</code></td>
+<td>恢复中断，value 成为 <code>interrupt()</code> 的返回值</td>
+</tr>
+<tr>
+<td><code>checkpointer</code></td>
+<td>人机交互必须依赖 checkpoint 保存暂停点</td>
+</tr>
+<tr>
+<td><code>thread_id</code></td>
+<td>恢复时必须使用同一个 <code>thread_id</code></td>
+</tr>
+</tbody></table>
+<p><strong>关键规则</strong>：</p>
+<ul>
+<li><code>interrupt</code> 不等于 Python 的 <code>input()</code>。恢复时节点会从头重新执行，不是从 <code>interrupt</code> 那一行继续。</li>
+<li>不要把 <code>interrupt</code> 包在 <code>try/except</code> 中吞掉异常。</li>
+<li>同一个节点里多个 <code>interrupt</code> 的顺序必须稳定，恢复值按顺序匹配。</li>
+<li><code>interrupt</code> payload 和 resume value 最好保持 JSON 可序列化。</li>
+</ul>
+<h3 id="2-7-短期记忆：InMemorySaver-与-thread-id"><a href="#2-7-短期记忆：InMemorySaver-与-thread-id" class="headerlink" title="2.7 短期记忆：InMemorySaver 与 thread_id"></a>2.7 短期记忆：InMemorySaver 与 thread_id</h3><p><strong>场景</strong>：同一个会话 thread 多次调用时保留消息历史，不同 thread 隔离。</p>
+<p><strong>完整代码</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> operator</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> Annotated</span><br><span class="line"><span class="keyword">from</span> typing_extensions <span class="keyword">import</span> TypedDict</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> END, START, StateGraph</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ChatState</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    messages: Annotated[<span class="built_in">list</span>[<span class="built_in">str</span>], operator.add]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">bot</span>(<span class="params">state: ChatState</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    last_user_msg = state[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>]</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;messages&quot;</span>: [<span class="string">f&quot;bot: 收到 <span class="subst">&#123;last_user_msg&#125;</span>&quot;</span>]&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">builder = StateGraph(ChatState)</span><br><span class="line">builder.add_node(<span class="string">&quot;bot&quot;</span>, bot)</span><br><span class="line">builder.add_edge(START, <span class="string">&quot;bot&quot;</span>)</span><br><span class="line">builder.add_edge(<span class="string">&quot;bot&quot;</span>, END)</span><br><span class="line"></span><br><span class="line">graph = builder.<span class="built_in">compile</span>(checkpointer=InMemorySaver())</span><br><span class="line"></span><br><span class="line">thread_a = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;user-a-session-1&quot;</span>&#125;&#125;</span><br><span class="line">thread_b = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;user-b-session-1&quot;</span>&#125;&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(graph.invoke(&#123;<span class="string">&quot;messages&quot;</span>: [<span class="string">&quot;user: hi&quot;</span>]&#125;, config=thread_a))</span><br><span class="line"><span class="built_in">print</span>(graph.invoke(&#123;<span class="string">&quot;messages&quot;</span>: [<span class="string">&quot;user: remember me&quot;</span>]&#125;, config=thread_a))</span><br><span class="line"><span class="built_in">print</span>(graph.invoke(&#123;<span class="string">&quot;messages&quot;</span>: [<span class="string">&quot;user: new session&quot;</span>]&#125;, config=thread_b))</span><br></pre></td></tr></table></figure>
+
+<p><strong>预期输出示意</strong>：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;&#x27;messages&#x27;: [&#x27;user: hi&#x27;, &#x27;bot: 收到 user: hi&#x27;]&#125;</span><br><span class="line">&#123;&#x27;messages&#x27;: [&#x27;user: hi&#x27;, &#x27;bot: 收到 user: hi&#x27;, &#x27;user: remember me&#x27;, &#x27;bot: 收到 user: remember me&#x27;]&#125;</span><br><span class="line">&#123;&#x27;messages&#x27;: [&#x27;user: new session&#x27;, &#x27;bot: 收到 user: new session&#x27;]&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>结果解读</strong>：<code>thread_a</code> 第二次调用会读取上一次 checkpoint 中的 state，并把新输入按 reducer 合并进去；<code>thread_b</code> 使用不同 <code>thread_id</code>，所以状态隔离。</p>
+<p><strong>常见坑点</strong>：</p>
+<ul>
+<li>启用 checkpointer 后要传 <code>&#123;&quot;configurable&quot;: &#123;&quot;thread_id&quot;: &quot;...&quot;&#125;&#125;</code>。</li>
+<li><code>InMemorySaver</code> 适合开发和测试，进程重启即丢失；生产应使用 Postgres、MongoDB、Redis 等持久化 saver。</li>
+</ul>
+<h3 id="2-8-长期记忆：InMemoryStore-context-schema"><a href="#2-8-长期记忆：InMemoryStore-context-schema" class="headerlink" title="2.8 长期记忆：InMemoryStore + context_schema"></a>2.8 长期记忆：InMemoryStore + context_schema</h3><p><strong>场景</strong>：跨多个 thread 保存用户偏好，比如“用户喜欢喝咖啡”。</p>
+<p><strong>完整代码</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> uuid</span><br><span class="line"><span class="keyword">from</span> typing_extensions <span class="keyword">import</span> TypedDict</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> END, START, StateGraph</span><br><span class="line"><span class="keyword">from</span> langgraph.runtime <span class="keyword">import</span> Runtime</span><br><span class="line"><span class="keyword">from</span> langgraph.store.memory <span class="keyword">import</span> InMemoryStore</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MemoryState</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    <span class="built_in">input</span>: <span class="built_in">str</span></span><br><span class="line">    answer: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Context</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    user_id: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">remember_or_answer</span>(<span class="params"></span></span><br><span class="line"><span class="params">    state: MemoryState,</span></span><br><span class="line"><span class="params">    runtime: Runtime[Context],</span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    user_id = runtime.context[<span class="string">&quot;user_id&quot;</span>]</span><br><span class="line">    namespace = (user_id, <span class="string">&quot;preferences&quot;</span>)</span><br><span class="line">    text = state[<span class="string">&quot;input&quot;</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="string">&quot;喜欢&quot;</span> <span class="keyword">in</span> text:</span><br><span class="line">        runtime.store.put(</span><br><span class="line">            namespace,</span><br><span class="line">            <span class="built_in">str</span>(uuid.uuid4()),</span><br><span class="line">            &#123;<span class="string">&quot;preference&quot;</span>: text&#125;,</span><br><span class="line">        )</span><br><span class="line">        <span class="keyword">return</span> &#123;<span class="string">&quot;answer&quot;</span>: <span class="string">&quot;已记录你的偏好。&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line">    memories = runtime.store.search(namespace, limit=<span class="number">5</span>)</span><br><span class="line">    preferences = [item.value[<span class="string">&quot;preference&quot;</span>] <span class="keyword">for</span> item <span class="keyword">in</span> memories]</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;answer&quot;</span>: <span class="string">f&quot;我记得这些偏好：<span class="subst">&#123;preferences&#125;</span>&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">builder = StateGraph(MemoryState, context_schema=Context)</span><br><span class="line">builder.add_node(<span class="string">&quot;memory&quot;</span>, remember_or_answer)</span><br><span class="line">builder.add_edge(START, <span class="string">&quot;memory&quot;</span>)</span><br><span class="line">builder.add_edge(<span class="string">&quot;memory&quot;</span>, END)</span><br><span class="line"></span><br><span class="line">graph = builder.<span class="built_in">compile</span>(</span><br><span class="line">    checkpointer=InMemorySaver(),</span><br><span class="line">    store=InMemoryStore(),</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">config_1 = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;thread-1&quot;</span>&#125;&#125;</span><br><span class="line">config_2 = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;thread-2&quot;</span>&#125;&#125;</span><br><span class="line">context = &#123;<span class="string">&quot;user_id&quot;</span>: <span class="string">&quot;user-001&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(graph.invoke(&#123;<span class="string">&quot;input&quot;</span>: <span class="string">&quot;我喜欢手冲咖啡&quot;</span>, <span class="string">&quot;answer&quot;</span>: <span class="string">&quot;&quot;</span>&#125;, config=config_1, context=context))</span><br><span class="line"><span class="built_in">print</span>(graph.invoke(&#123;<span class="string">&quot;input&quot;</span>: <span class="string">&quot;你记得我什么？&quot;</span>, <span class="string">&quot;answer&quot;</span>: <span class="string">&quot;&quot;</span>&#125;, config=config_2, context=context))</span><br></pre></td></tr></table></figure>
+
+<p><strong>预期输出示意</strong>：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&#123;&#x27;input&#x27;: &#x27;我喜欢手冲咖啡&#x27;, &#x27;answer&#x27;: &#x27;已记录你的偏好。&#x27;&#125;</span><br><span class="line">&#123;&#x27;input&#x27;: &#x27;你记得我什么？&#x27;, &#x27;answer&#x27;: &quot;我记得这些偏好：[&#x27;我喜欢手冲咖啡&#x27;]&quot;&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>结果解读</strong>：checkpointer 管理 thread 内状态，store 管理跨 thread 的长期记忆。这里 <code>thread-1</code> 写入的偏好，可以被 <code>thread-2</code> 读取，因为 store namespace 使用的是同一个 <code>user_id</code>。</p>
+<p><strong>常见坑点</strong>：</p>
+<ul>
+<li><code>context_schema</code> 是 v1 推荐的运行上下文方式；旧的 <code>config_schema</code> 已被弃用。</li>
+<li>长期记忆要设计 namespace，例如 <code>(tenant_id, user_id, &quot;preferences&quot;)</code>，避免不同用户或租户串数据。</li>
+<li>不要把全部长期记忆无脑塞进 prompt，应搜索、过滤、摘要后使用。</li>
+</ul>
+<h3 id="2-9-LLM-与工具集成：ToolNode-tools-condition"><a href="#2-9-LLM-与工具集成：ToolNode-tools-condition" class="headerlink" title="2.9 LLM 与工具集成：ToolNode + tools_condition"></a>2.9 LLM 与工具集成：ToolNode + tools_condition</h3><p><strong>场景</strong>：LLM 判断是否需要调用工具，工具执行后结果回到 LLM，直到无需工具为止。</p>
+<p><strong>依赖</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pip install -U <span class="string">&quot;langgraph==1.2.0&quot;</span> <span class="string">&quot;langchain&gt;=1.0&quot;</span> langchain-openai</span><br><span class="line"><span class="built_in">export</span> OPENAI_API_KEY=<span class="string">&quot;sk-...&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>完整代码</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> HumanMessage, SystemMessage</span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> END, START, MessagesState, StateGraph</span><br><span class="line"><span class="keyword">from</span> langgraph.prebuilt <span class="keyword">import</span> ToolNode, tools_condition</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">multiply</span>(<span class="params">a: <span class="built_in">int</span>, b: <span class="built_in">int</span></span>) -&gt; <span class="built_in">int</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Multiply two integers.&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> a * b</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">tools = [multiply]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 可替换为支持 tool calling 的模型，例如 OpenAI、Anthropic 或兼容接口模型。</span></span><br><span class="line">llm = init_chat_model(<span class="string">&quot;openai:gpt-4.1-mini&quot;</span>, temperature=<span class="number">0</span>)</span><br><span class="line">llm_with_tools = llm.bind_tools(tools)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">call_model</span>(<span class="params">state: MessagesState</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    messages = [</span><br><span class="line">        SystemMessage(content=<span class="string">&quot;You are a careful math assistant. Use tools when needed.&quot;</span>),</span><br><span class="line">        *state[<span class="string">&quot;messages&quot;</span>],</span><br><span class="line">    ]</span><br><span class="line">    response = llm_with_tools.invoke(messages)</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;messages&quot;</span>: [response]&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">builder = StateGraph(MessagesState)</span><br><span class="line">builder.add_node(<span class="string">&quot;llm&quot;</span>, call_model)</span><br><span class="line">builder.add_node(<span class="string">&quot;tools&quot;</span>, ToolNode(tools))</span><br><span class="line">builder.add_edge(START, <span class="string">&quot;llm&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># tools_condition 会检查最后一条 AIMessage 是否包含 tool_calls。</span></span><br><span class="line"><span class="comment"># 如果有，路由到 tools；如果没有，路由到 END。</span></span><br><span class="line">builder.add_conditional_edges(<span class="string">&quot;llm&quot;</span>, tools_condition)</span><br><span class="line">builder.add_edge(<span class="string">&quot;tools&quot;</span>, <span class="string">&quot;llm&quot;</span>)</span><br><span class="line"></span><br><span class="line">graph = builder.<span class="built_in">compile</span>()</span><br><span class="line"></span><br><span class="line">result = graph.invoke(</span><br><span class="line">    &#123;<span class="string">&quot;messages&quot;</span>: [HumanMessage(content=<span class="string">&quot;What is 17 * 23?&quot;</span>)]&#125;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> message <span class="keyword">in</span> result[<span class="string">&quot;messages&quot;</span>]:</span><br><span class="line">    <span class="built_in">print</span>(<span class="built_in">type</span>(message).__name__, message.content)</span><br></pre></td></tr></table></figure>
+
+<p><strong>预期输出解读</strong>：</p>
+<ul>
+<li>第一轮 LLM 通常返回带 <code>tool_calls</code> 的 <code>AIMessage</code>。</li>
+<li><code>ToolNode</code> 执行 <code>multiply(a=17, b=23)</code>，产出 <code>ToolMessage</code>。</li>
+<li>第二轮 LLM 读取工具结果，返回自然语言答案，例如 <code>17 * 23 = 391</code>。</li>
+</ul>
+<p><strong>核心参数说明</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>对象</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>MessagesState</code></td>
+<td>内置消息状态，通常包含 <code>messages</code>，适合聊天和工具调用</td>
+</tr>
+<tr>
+<td><code>@tool</code></td>
+<td>把 Python 函数声明成可被模型调用的工具</td>
+</tr>
+<tr>
+<td><code>llm.bind_tools(tools)</code></td>
+<td>把工具 schema 绑定给支持 tool calling 的模型</td>
+</tr>
+<tr>
+<td><code>ToolNode(tools)</code></td>
+<td>根据最后一条 AIMessage 的 tool_calls 执行对应工具</td>
+</tr>
+<tr>
+<td><code>tools_condition</code></td>
+<td>预置条件路由函数，有工具调用则到 tools，否则结束</td>
+</tr>
+</tbody></table>
+<p><strong>常见坑点</strong>：</p>
+<ul>
+<li>模型必须支持 tool calling；不支持时可能只输出工具名文本而不产生 <code>tool_calls</code>。</li>
+<li>工具 docstring 和类型注解会影响工具 schema，建议写清楚参数含义。</li>
+<li>不要在工具中执行不受控的 <code>eval</code>、shell 或数据库写操作；生产环境要加权限和审计。</li>
+</ul>
+<h3 id="2-10-多智能体编排：Router-x2F-Supervisor-模式"><a href="#2-10-多智能体编排：Router-x2F-Supervisor-模式" class="headerlink" title="2.10 多智能体编排：Router&#x2F;Supervisor 模式"></a>2.10 多智能体编排：Router&#x2F;Supervisor 模式</h3><p><strong>场景</strong>：一个 supervisor 根据任务类型，把请求交给 researcher 或 coder，再统一收口。</p>
+<p>这个示例不依赖真实 LLM，便于本地运行；实际项目中可把 <code>supervisor</code>、<code>researcher</code>、<code>coder</code> 替换成 LLM 节点或子图。</p>
+<p><strong>完整代码</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> operator</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> Annotated, <span class="type">Literal</span></span><br><span class="line"><span class="keyword">from</span> typing_extensions <span class="keyword">import</span> TypedDict</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> END, START, StateGraph</span><br><span class="line"><span class="keyword">from</span> langgraph.types <span class="keyword">import</span> Command</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">AgentState</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    task: <span class="built_in">str</span></span><br><span class="line">    route: <span class="built_in">str</span></span><br><span class="line">    artifacts: Annotated[<span class="built_in">list</span>[<span class="built_in">str</span>], operator.add]</span><br><span class="line">    final_answer: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">supervisor</span>(<span class="params">state: AgentState</span>) -&gt; Command[<span class="type">Literal</span>[<span class="string">&quot;researcher&quot;</span>, <span class="string">&quot;coder&quot;</span>]]:</span><br><span class="line">    task = state[<span class="string">&quot;task&quot;</span>].lower()</span><br><span class="line">    <span class="keyword">if</span> <span class="string">&quot;代码&quot;</span> <span class="keyword">in</span> task <span class="keyword">or</span> <span class="string">&quot;code&quot;</span> <span class="keyword">in</span> task:</span><br><span class="line">        <span class="keyword">return</span> Command(update=&#123;<span class="string">&quot;route&quot;</span>: <span class="string">&quot;coder&quot;</span>&#125;, goto=<span class="string">&quot;coder&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> Command(update=&#123;<span class="string">&quot;route&quot;</span>: <span class="string">&quot;researcher&quot;</span>&#125;, goto=<span class="string">&quot;researcher&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">researcher</span>(<span class="params">state: AgentState</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="string">&quot;artifacts&quot;</span>: [</span><br><span class="line">            <span class="string">&quot;researcher: 梳理背景、术语、约束与参考资料。&quot;</span></span><br><span class="line">        ]</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">coder</span>(<span class="params">state: AgentState</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="string">&quot;artifacts&quot;</span>: [</span><br><span class="line">            <span class="string">&quot;coder: 设计接口、实现步骤、测试策略。&quot;</span></span><br><span class="line">        ]</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">synthesize</span>(<span class="params">state: AgentState</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="string">&quot;final_answer&quot;</span>: (</span><br><span class="line">            <span class="string">f&quot;route=<span class="subst">&#123;state[<span class="string">&#x27;route&#x27;</span>]&#125;</span>\n&quot;</span></span><br><span class="line">            + <span class="string">&quot;\n&quot;</span>.join(state[<span class="string">&quot;artifacts&quot;</span>])</span><br><span class="line">        )</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">builder = StateGraph(AgentState)</span><br><span class="line">builder.add_node(<span class="string">&quot;supervisor&quot;</span>, supervisor)</span><br><span class="line">builder.add_node(<span class="string">&quot;researcher&quot;</span>, researcher)</span><br><span class="line">builder.add_node(<span class="string">&quot;coder&quot;</span>, coder)</span><br><span class="line">builder.add_node(<span class="string">&quot;synthesize&quot;</span>, synthesize)</span><br><span class="line"></span><br><span class="line">builder.add_edge(START, <span class="string">&quot;supervisor&quot;</span>)</span><br><span class="line">builder.add_edge(<span class="string">&quot;researcher&quot;</span>, <span class="string">&quot;synthesize&quot;</span>)</span><br><span class="line">builder.add_edge(<span class="string">&quot;coder&quot;</span>, <span class="string">&quot;synthesize&quot;</span>)</span><br><span class="line">builder.add_edge(<span class="string">&quot;synthesize&quot;</span>, END)</span><br><span class="line"></span><br><span class="line">graph = builder.<span class="built_in">compile</span>()</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(</span><br><span class="line">    graph.invoke(</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="string">&quot;task&quot;</span>: <span class="string">&quot;请给出 LangGraph 多智能体代码设计&quot;</span>,</span><br><span class="line">            <span class="string">&quot;route&quot;</span>: <span class="string">&quot;&quot;</span>,</span><br><span class="line">            <span class="string">&quot;artifacts&quot;</span>: [],</span><br><span class="line">            <span class="string">&quot;final_answer&quot;</span>: <span class="string">&quot;&quot;</span>,</span><br><span class="line">        &#125;</span><br><span class="line">    )[<span class="string">&quot;final_answer&quot;</span>]</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p><strong>预期输出</strong>：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">route=coder</span><br><span class="line">coder: 设计接口、实现步骤、测试策略。</span><br></pre></td></tr></table></figure>
+
+<p><strong>结果解读</strong>：<code>supervisor</code> 返回 <code>Command(update=..., goto=...)</code>，在同一个节点内完成状态更新和动态路由。<code>researcher</code> 与 <code>coder</code> 共享同一全局 state，但只通过 <code>artifacts</code> 输出结构化结果，最后由 <code>synthesize</code> 汇总。</p>
+<p><strong>常见坑点</strong>：</p>
+<ul>
+<li>如果节点返回 <code>Command(goto=...)</code>，不要再给该节点额外添加静态出边，否则动态目标和静态目标可能都会执行。</li>
+<li><code>Command[Literal[&quot;a&quot;, &quot;b&quot;]]</code> 的类型标注会参与图校验，<code>Literal</code> 中声明的目标节点必须已经注册。</li>
+<li>多智能体不是越多越好。建议按“能力边界”和“上下文隔离”拆分，而不是按人设拆分。</li>
+<li>多智能体共享 state 时要限制写入 key，避免多个 agent 互相覆盖。</li>
+</ul>
+<h2 id="3-源码梳理：核心设计与执行链路"><a href="#3-源码梳理：核心设计与执行链路" class="headerlink" title="3. 源码梳理：核心设计与执行链路"></a>3. 源码梳理：核心设计与执行链路</h2><p>本节基于 LangGraph v1.x 主线源码阅读，重点关注 <code>libs/langgraph/langgraph</code> 与 <code>libs/checkpoint/langgraph/checkpoint</code>。</p>
+<h3 id="3-1-整体架构"><a href="#3-1-整体架构" class="headerlink" title="3.1 整体架构"></a>3.1 整体架构</h3><p>LangGraph 可以分成四层：</p>
+<table>
+<thead>
+<tr>
+<th>层级</th>
+<th>责任</th>
+<th>代表模块&#x2F;类</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>图构建层</td>
+<td>接收 state schema、节点、边、条件边，做静态校验</td>
+<td><code>langgraph.graph.state.StateGraph</code></td>
+</tr>
+<tr>
+<td>状态与通道层</td>
+<td>把 schema key 转换成 channel，决定状态如何读写与合并</td>
+<td><code>BaseChannel</code>、<code>LastValue</code>、<code>BinaryOperatorAggregate</code>、<code>EphemeralValue</code></td>
+</tr>
+<tr>
+<td>执行引擎层</td>
+<td>调度节点，按 super-step 执行、合并更新、处理流式输出</td>
+<td><code>Pregel</code>、<code>PregelNode</code>、<code>ChannelWrite</code>、<code>ChannelRead</code></td>
+</tr>
+<tr>
+<td>持久化层</td>
+<td>保存 checkpoint、pending writes、thread 状态和历史</td>
+<td><code>BaseCheckpointSaver</code>、<code>InMemorySaver</code>、Postgres&#x2F;Mongo&#x2F;Redis saver</td>
+</tr>
+</tbody></table>
+<p>核心思想是“节点不直接修改全局 state”。节点只返回更新，运行时在 step 边界统一写入 channel。这个设计让并行、重试、checkpoint、time travel 和 human-in-the-loop 都能建立在同一套状态机制上。</p>
+<h3 id="3-2-核心模块划分"><a href="#3-2-核心模块划分" class="headerlink" title="3.2 核心模块划分"></a>3.2 核心模块划分</h3><h4 id="3-2-1-状态定义模块"><a href="#3-2-1-状态定义模块" class="headerlink" title="3.2.1 状态定义模块"></a>3.2.1 状态定义模块</h4><p>入口：<code>langgraph.graph.state</code></p>
+<p>关键职责：</p>
+<ul>
+<li>读取 <code>TypedDict</code>、dataclass、Pydantic model 等 schema 的类型注解。</li>
+<li>识别 <code>Annotated[T, reducer]</code>。</li>
+<li>把每个 state key 转换成对应 channel。</li>
+<li>区分普通 channel 与 managed value。</li>
+</ul>
+<p>简化理解：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">State schema</span><br><span class="line">  -&gt; type hints</span><br><span class="line">  -&gt; key -&gt; channel</span><br><span class="line">  -&gt; nodes read selected channels</span><br><span class="line">  -&gt; node updates write back to channels</span><br></pre></td></tr></table></figure>
+
+<p>默认情况下，普通 key 类似“最后一次写入获胜”。带 reducer 的 key 则使用聚合逻辑，例如列表追加、集合合并、计数累加。</p>
+<h4 id="3-2-2-图构建模块"><a href="#3-2-2-图构建模块" class="headerlink" title="3.2.2 图构建模块"></a>3.2.2 图构建模块</h4><p>入口：<code>StateGraph</code></p>
+<p>核心数据结构：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>nodes</code></td>
+<td>节点名到节点定义的映射</td>
+</tr>
+<tr>
+<td><code>edges</code></td>
+<td>静态边集合</td>
+</tr>
+<tr>
+<td><code>branches</code></td>
+<td>条件边&#x2F;分支定义</td>
+</tr>
+<tr>
+<td><code>channels</code></td>
+<td>state key 对应的 channel</td>
+</tr>
+<tr>
+<td><code>managed</code></td>
+<td>由运行时管理的值</td>
+</tr>
+<tr>
+<td><code>schemas</code></td>
+<td>每个 schema 对应的 key&#x2F;channel 信息</td>
+</tr>
+<tr>
+<td><code>waiting_edges</code></td>
+<td>多起点等待边，用于部分 fan-in 场景</td>
+</tr>
+</tbody></table>
+<p><code>StateGraph</code> 是 builder，不负责真正执行。源码注释明确指出，必须调用 <code>.compile()</code> 生成可执行图后，才能使用 <code>invoke()</code>、<code>stream()</code>、<code>ainvoke()</code> 等方法。</p>
+<h4 id="3-2-3-执行引擎模块"><a href="#3-2-3-执行引擎模块" class="headerlink" title="3.2.3 执行引擎模块"></a>3.2.3 执行引擎模块</h4><p>入口：<code>langgraph.pregel.main.Pregel</code></p>
+<p>执行模型参考 Pregel&#x2F;Bulk Synchronous Parallel：</p>
+<ol>
+<li><strong>Plan</strong>：根据上一个 step 更新过的 channel，选择本轮要执行的 actor，也就是 <code>PregelNode</code>。</li>
+<li><strong>Execution</strong>：并行执行所有被选中的节点。节点在这一阶段看不到同 step 其他节点刚写出的更新。</li>
+<li><strong>Update</strong>：收集所有节点写出的更新，统一更新 channel。</li>
+<li>重复执行，直到没有节点可调度、到达 <code>END</code>，或超过递归&#x2F;step 限制。</li>
+</ol>
+<p>这个模型解释了两个重要现象：</p>
+<ul>
+<li>并行节点的输出要靠 reducer 合并，不能假设执行顺序。</li>
+<li>checkpoint 保存发生在 super-step 边界，因此恢复点也是 step 级别，不是任意代码行级别。</li>
+</ul>
+<h4 id="3-2-4-检查点模块"><a href="#3-2-4-检查点模块" class="headerlink" title="3.2.4 检查点模块"></a>3.2.4 检查点模块</h4><p>入口：<code>langgraph.checkpoint.base</code></p>
+<p><code>BaseCheckpointSaver</code> 的职责是按 <code>thread_id</code> 保存和读取 checkpoint。checkpoint 中包含：</p>
+<ul>
+<li>channel values：各 channel 当前值。</li>
+<li>channel versions：channel 版本，用于判断哪些节点需要被触发。</li>
+<li>versions seen：节点已经看过的 channel 版本。</li>
+<li>pending sends&#x2F;writes：尚待调度或待提交的写入。</li>
+<li>metadata 和 parent config：支持历史、回放和 time travel。</li>
+</ul>
+<p>短期记忆使用 checkpointer。长期记忆使用 store。两者经常同时出现，但职责不同。</p>
+<h3 id="3-3-关键核心类与方法"><a href="#3-3-关键核心类与方法" class="headerlink" title="3.3 关键核心类与方法"></a>3.3 关键核心类与方法</h3><h4 id="StateGraph"><a href="#StateGraph" class="headerlink" title="StateGraph"></a>StateGraph</h4><p>作用：图的构建器。</p>
+<p>常用方法：</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>__init__(state_schema, context_schema=None, input_schema=None, output_schema=None)</code></td>
+<td>定义图的状态、上下文、输入输出 schema</td>
+</tr>
+<tr>
+<td><code>add_node(name, action, ...)</code></td>
+<td>注册节点，支持 retry、cache、timeout、metadata 等参数</td>
+</tr>
+<tr>
+<td><code>add_edge(start, end)</code></td>
+<td>添加静态边</td>
+</tr>
+<tr>
+<td><code>add_conditional_edges(source, path, path_map=None)</code></td>
+<td>添加条件边</td>
+</tr>
+<tr>
+<td><code>set_entry_point(node)</code> &#x2F; <code>set_finish_point(node)</code></td>
+<td>设置入口&#x2F;终点的便捷方法</td>
+</tr>
+<tr>
+<td><code>compile(checkpointer=None, store=None, ...)</code></td>
+<td>编译为 <code>CompiledStateGraph</code></td>
+</tr>
+</tbody></table>
+<p>设计要点：</p>
+<ul>
+<li><code>StateGraph</code> 本身不执行，只记录图结构。</li>
+<li>v1 推荐使用 <code>context_schema</code> 注入运行上下文，<code>config_schema</code> 已弃用。</li>
+<li><code>add_node</code> 可接收普通函数、异步函数或 Runnable。</li>
+</ul>
+<h4 id="CompiledStateGraph"><a href="#CompiledStateGraph" class="headerlink" title="CompiledStateGraph"></a>CompiledStateGraph</h4><p>作用：可执行图，实现 LangChain Runnable 接口。</p>
+<p>常用能力：</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>invoke(input, config=None, context=None)</code></td>
+<td>同步执行</td>
+</tr>
+<tr>
+<td><code>stream(input, config=None, stream_mode=...)</code></td>
+<td>流式执行</td>
+</tr>
+<tr>
+<td><code>ainvoke(...)</code> &#x2F; <code>astream(...)</code></td>
+<td>异步执行</td>
+</tr>
+<tr>
+<td><code>get_state(config)</code></td>
+<td>获取 thread 当前状态</td>
+</tr>
+<tr>
+<td><code>get_state_history(config)</code></td>
+<td>获取 checkpoint 历史</td>
+</tr>
+<tr>
+<td><code>update_state(config, values, as_node=...)</code></td>
+<td>手动更新状态，常用于调试和人工修复</td>
+</tr>
+</tbody></table>
+<p>源码上，<code>CompiledStateGraph</code> 继承 <code>Pregel</code>，并在编译时把 builder 中的节点、边、分支挂载成 Pregel 可调度的 actor&#x2F;channel。</p>
+<h4 id="Node-x2F-PregelNode"><a href="#Node-x2F-PregelNode" class="headerlink" title="Node &#x2F; PregelNode"></a>Node &#x2F; PregelNode</h4><p>LangGraph 用户层看到的是“节点函数”，底层会包装为 <code>PregelNode</code>：</p>
+<ul>
+<li>订阅某些 input channels。</li>
+<li>读取 state 和 runtime context。</li>
+<li>调用用户函数&#x2F;Runnable。</li>
+<li>把返回值转换成 channel writes。</li>
+<li>支持 retry、timeout、cache、error handler 等执行策略。</li>
+</ul>
+<p>节点函数常见签名：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">node</span>(<span class="params">state: State</span>) -&gt; <span class="built_in">dict</span>: ...</span><br><span class="line"><span class="keyword">def</span> <span class="title function_">node</span>(<span class="params">state: State, runtime: Runtime[Context]</span>) -&gt; <span class="built_in">dict</span>: ...</span><br><span class="line"><span class="keyword">def</span> <span class="title function_">node</span>(<span class="params">state: State, runtime: Runtime[Context], store: BaseStore</span>) -&gt; <span class="built_in">dict</span>: ...</span><br></pre></td></tr></table></figure>
+
+<h4 id="Channel"><a href="#Channel" class="headerlink" title="Channel"></a>Channel</h4><p>Channel 是 state key 的运行时承载结构。它不仅保存值，也定义如何接受更新。</p>
+<p>常见 channel：</p>
+<table>
+<thead>
+<tr>
+<th>Channel</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>LastValue</code></td>
+<td>默认行为，保留最后一次写入</td>
+</tr>
+<tr>
+<td><code>BinaryOperatorAggregate</code></td>
+<td>使用 reducer 聚合多次更新</td>
+</tr>
+<tr>
+<td><code>EphemeralValue</code></td>
+<td>临时触发类 channel，常用于 START 或分支触发</td>
+</tr>
+<tr>
+<td><code>Topic</code></td>
+<td>pub&#x2F;sub 风格，多值通信</td>
+</tr>
+</tbody></table>
+<p><code>BaseChannel</code> 关键方法：</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>get()</code></td>
+<td>读取当前值</td>
+</tr>
+<tr>
+<td><code>update(values)</code></td>
+<td>用一批更新修改当前值</td>
+</tr>
+<tr>
+<td><code>checkpoint()</code></td>
+<td>返回可序列化快照</td>
+</tr>
+<tr>
+<td><code>from_checkpoint(checkpoint)</code></td>
+<td>从快照恢复 channel</td>
+</tr>
+</tbody></table>
+<h4 id="Checkpointer"><a href="#Checkpointer" class="headerlink" title="Checkpointer"></a>Checkpointer</h4><p>Checkpointer 负责将 thread 状态持久化。<code>compile(checkpointer=...)</code> 后，每次执行都应传：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">config = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;some-thread-id&quot;</span>&#125;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>生产建议：</p>
+<ul>
+<li>开发测试用 <code>InMemorySaver</code>。</li>
+<li>服务端生产用 Postgres、MongoDB 或 Redis saver。</li>
+<li>对安全敏感场景，确认 serializer 策略，不要随意启用 pickle fallback。</li>
+</ul>
+<h4 id="Command"><a href="#Command" class="headerlink" title="Command"></a>Command</h4><p><code>Command</code> 是控制流原语，常见用途：</p>
+<table>
+<thead>
+<tr>
+<th>用途</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>节点内更新并跳转</td>
+<td><code>Command(update=&#123;&quot;x&quot;: 1&#125;, goto=&quot;next&quot;)</code></td>
+</tr>
+<tr>
+<td>子图跳回父图</td>
+<td><code>Command(goto=&quot;parent_node&quot;, graph=Command.PARENT)</code></td>
+</tr>
+<tr>
+<td>interrupt 恢复</td>
+<td><code>graph.invoke(Command(resume=value), config=config)</code></td>
+</tr>
+</tbody></table>
+<p>注意：如果节点返回 <code>Command(goto=...)</code>，应避免再为该节点配置静态出边，否则可能产生多目标执行。</p>
+<h3 id="3-4-核心执行链路"><a href="#3-4-核心执行链路" class="headerlink" title="3.4 核心执行链路"></a>3.4 核心执行链路</h3><h4 id="3-4-1-图的编译流程"><a href="#3-4-1-图的编译流程" class="headerlink" title="3.4.1 图的编译流程"></a>3.4.1 图的编译流程</h4><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">StateGraph(...)</span><br><span class="line">  -&gt; _add_schema(state/input/output schema)</span><br><span class="line">  -&gt; add_node / add_edge / add_conditional_edges</span><br><span class="line">  -&gt; compile(...)</span><br><span class="line">     -&gt; validate nodes/edges/interrupt points</span><br><span class="line">     -&gt; 创建 CompiledStateGraph</span><br><span class="line">     -&gt; attach_node(START)</span><br><span class="line">     -&gt; attach_node(each user node)</span><br><span class="line">     -&gt; attach_edge(static edges)</span><br><span class="line">     -&gt; attach_branch(conditional edges)</span><br><span class="line">     -&gt; validate compiled graph</span><br><span class="line">  -&gt; Runnable: invoke/stream/ainvoke/astream</span><br></pre></td></tr></table></figure>
+
+<p>关键点：</p>
+<ul>
+<li>编译会把用户层节点转换成 Pregel actor。</li>
+<li>条件边会被转换成分支写入逻辑。</li>
+<li>state key 会映射到 channel，节点更新会写入对应 channel。</li>
+<li>checkpointer、store、cache、debug 等运行时能力在 compile 阶段注入。</li>
+</ul>
+<h4 id="3-4-2-状态流转机制"><a href="#3-4-2-状态流转机制" class="headerlink" title="3.4.2 状态流转机制"></a>3.4.2 状态流转机制</h4><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">input dict</span><br><span class="line">  -&gt; 写入 START/input channel</span><br><span class="line">  -&gt; 触发入口节点</span><br><span class="line">  -&gt; 节点读取 state snapshot</span><br><span class="line">  -&gt; 节点返回 partial update</span><br><span class="line">  -&gt; ChannelWrite 将 update 转换为 channel updates</span><br><span class="line">  -&gt; step 结束时 channel.update(values)</span><br><span class="line">  -&gt; reducer/LastValue 决定最终 state</span><br><span class="line">  -&gt; 下一个 step 根据更新过的 channel 调度节点</span><br></pre></td></tr></table></figure>
+
+<p>为什么节点只返回 partial update？</p>
+<ul>
+<li>降低节点耦合，不需要每个节点复制完整 state。</li>
+<li>支持多个节点并行写不同 key。</li>
+<li>支持 reducer 聚合同一 key 的多次更新。</li>
+<li>便于 checkpoint 记录增量与恢复。</li>
+</ul>
+<h4 id="3-4-3-消息传递逻辑"><a href="#3-4-3-消息传递逻辑" class="headerlink" title="3.4.3 消息传递逻辑"></a>3.4.3 消息传递逻辑</h4><p>在聊天&#x2F;工具调用场景，<code>MessagesState</code> 本质上仍是 state schema，只是围绕 <code>messages</code> 做了适合消息列表的 reducer。</p>
+<p>典型链路：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">HumanMessage</span><br><span class="line">  -&gt; llm node</span><br><span class="line">  -&gt; AIMessage(content or tool_calls)</span><br><span class="line">  -&gt; tools_condition</span><br><span class="line">     -&gt; no tool_calls: END</span><br><span class="line">     -&gt; has tool_calls: ToolNode</span><br><span class="line">  -&gt; ToolMessage</span><br><span class="line">  -&gt; llm node</span><br><span class="line">  -&gt; final AIMessage</span><br></pre></td></tr></table></figure>
+
+<p><code>ToolNode</code> 不负责“思考”，只负责执行模型已请求的工具调用。是否调用工具由模型输出的 <code>tool_calls</code> 决定。</p>
+<h4 id="3-4-4-持久化与恢复链路"><a href="#3-4-4-持久化与恢复链路" class="headerlink" title="3.4.4 持久化与恢复链路"></a>3.4.4 持久化与恢复链路</h4><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">invoke(input, config=&#123;&quot;configurable&quot;: &#123;&quot;thread_id&quot;: &quot;t1&quot;&#125;&#125;)</span><br><span class="line">  -&gt; checkpointer 读取 t1 最新 checkpoint</span><br><span class="line">  -&gt; 合并本次输入</span><br><span class="line">  -&gt; 执行一个或多个 super-step</span><br><span class="line">  -&gt; 每个 step 边界保存 checkpoint</span><br><span class="line">  -&gt; 如果 interrupt，保存暂停状态并返回 __interrupt__</span><br><span class="line">  -&gt; invoke(Command(resume=value), same config)</span><br><span class="line">  -&gt; 从 checkpoint 恢复</span><br><span class="line">  -&gt; 重新执行 interrupt 所在节点</span><br><span class="line">  -&gt; interrupt(...) 返回 resume value</span><br></pre></td></tr></table></figure>
+
+<p>人机交互的关键是“同一个 thread_id + checkpointer + Command(resume&#x3D;…)”。</p>
+<h4 id="3-4-5-异常处理流程"><a href="#3-4-5-异常处理流程" class="headerlink" title="3.4.5 异常处理流程"></a>3.4.5 异常处理流程</h4><p>常见异常来源：</p>
+<ul>
+<li>节点返回值不是合法 update。</li>
+<li>多个并行节点写同一 key，但该 key 没有 reducer。</li>
+<li>条件边返回未知路由。</li>
+<li>循环超过 <code>recursion_limit</code>。</li>
+<li>checkpointer 缺少 <code>thread_id</code>。</li>
+<li>async 节点超时或外部 API 失败。</li>
+</ul>
+<p>处理策略：</p>
+<ul>
+<li>对可恢复外部错误使用 <code>retry_policy</code>。</li>
+<li>对慢请求使用 timeout，优先异步节点。</li>
+<li>对业务失败返回结构化错误 state，而不是直接抛异常。</li>
+<li>对人工审批、危险工具调用使用 <code>interrupt</code>。</li>
+<li>用 LangSmith 或 <code>stream_mode=&quot;updates&quot;</code> 观察节点级状态更新。</li>
+</ul>
+<h2 id="4-高频面试题与参考答案"><a href="#4-高频面试题与参考答案" class="headerlink" title="4. 高频面试题与参考答案"></a>4. 高频面试题与参考答案</h2><h3 id="4-1-基础概念"><a href="#4-1-基础概念" class="headerlink" title="4.1 基础概念"></a>4.1 基础概念</h3><p><strong>1. LangGraph 解决了什么问题？</strong></p>
+<p>LangGraph 用于构建长生命周期、可持久化、可中断、可循环和可分支的智能体工作流。它比普通 chain 更适合复杂控制流，比如多轮工具调用、人工审批、多智能体协作、失败恢复和状态回放。</p>
+<p><strong>2. LangGraph 和 LangChain 是什么关系？</strong></p>
+<p>LangChain 提供模型、工具、agent 高层抽象和生态集成；LangGraph 是底层编排运行时，负责状态图、执行调度、checkpoint、人机交互等。LangChain v1 的高层 agent 能力建立在 LangGraph 之上，但复杂编排通常直接使用 LangGraph。</p>
+<p><strong>3. StateGraph 的 state 是什么？</strong></p>
+<p>state 是图执行期间的共享数据结构，定义节点能读写哪些字段。节点读取完整或部分 state，返回 partial update，由 LangGraph 合并回全局 state。</p>
+<p><strong>4. START 和 END 是真实节点吗？</strong></p>
+<p>它们是特殊标记。<code>START</code> 表示入口触发点，<code>END</code> 表示终止位置。用户不需要为它们实现函数。</p>
+<p><strong>5. 节点函数应该返回什么？</strong></p>
+<p>通常返回 dict，表示对 state 的局部更新；也可以返回 <code>Command</code>，用于同时更新 state 和控制跳转；map-reduce 条件边可返回 <code>Send</code> 列表。</p>
+<p><strong>6. 为什么 LangGraph 要显式定义边？</strong></p>
+<p>边让执行路径可读、可视化、可校验，也让运行时能确定节点触发关系。复杂 agent 的问题通常不是“能不能调用模型”，而是“什么时候调用谁、失败如何恢复、状态怎么流转”，边正是描述这些规则的核心。</p>
+<h3 id="4-2-架构原理"><a href="#4-2-架构原理" class="headerlink" title="4.2 架构原理"></a>4.2 架构原理</h3><p><strong>7. LangGraph 的执行模型是什么？</strong></p>
+<p>底层采用类似 Pregel 的 super-step 模型。每一轮先计划要运行的节点，再并行执行这些节点，最后统一合并它们写出的 channel 更新。更新在本 step 内对其他节点不可见，只在下一 step 生效。</p>
+<p><strong>8. 为什么说 LangGraph 是状态机也是数据流图？</strong></p>
+<p>它像状态机，因为执行路径由节点和边决定；也像数据流图，因为节点通过 state&#x2F;channel 读写数据，channel 更新触发后续节点。</p>
+<p><strong>9. compile() 做了什么？</strong></p>
+<p><code>compile()</code> 会校验图结构，把节点包装为 PregelNode，把 state schema 转成 channel，把静态边和条件边挂载到执行图，并注入 checkpointer、store、cache、interrupt 配置，最终生成可执行的 <code>CompiledStateGraph</code>。</p>
+<p><strong>10. CompiledStateGraph 和 StateGraph 的区别？</strong></p>
+<p><code>StateGraph</code> 是构建器，只记录结构；<code>CompiledStateGraph</code> 是可执行对象，实现 Runnable 接口，支持 <code>invoke</code>、<code>stream</code>、<code>ainvoke</code>、<code>astream</code>、状态读取和 checkpoint 恢复。</p>
+<p><strong>11. PregelNode 是什么？</strong></p>
+<p>PregelNode 是底层 actor。它订阅 channel，读取状态，执行用户函数或 Runnable，然后把返回值转换成 channel writes。</p>
+<p><strong>12. Channel 的作用是什么？</strong></p>
+<p>Channel 是 state key 的运行时容器，负责保存值、接收更新、执行合并逻辑和生成 checkpoint。reducer 本质上会影响 channel 的更新策略。</p>
+<h3 id="4-3-状态机制"><a href="#4-3-状态机制" class="headerlink" title="4.3 状态机制"></a>4.3 状态机制</h3><p><strong>13. 默认 reducer 是什么？</strong></p>
+<p>默认行为是覆盖，也就是后写入的值替换旧值。适合 <code>status</code>、<code>final_answer</code> 这类单值字段。</p>
+<p><strong>14. 什么时候需要自定义 reducer？</strong></p>
+<p>当多个节点可能写同一个 key，或者你希望累积历史时需要 reducer。典型例子是 <code>messages</code>、<code>logs</code>、<code>artifacts</code>、并行 worker 的结果列表。</p>
+<p><strong>15. reducer 有哪些最佳实践？</strong></p>
+<p>保持纯函数、确定性、类型稳定；不要在 reducer 中做 I&#x2F;O；并行结果需要顺序时携带 index 并在汇总节点排序。</p>
+<p><strong>16. 节点能不能直接修改 state？</strong></p>
+<p>不建议，也不应该依赖原地修改。节点应返回 partial update，由 LangGraph 统一合并。原地修改会让状态变化难以追踪，也可能破坏 checkpoint 和并行语义。</p>
+<p><strong>17. 如何避免多个节点写同一字段冲突？</strong></p>
+<p>要么设计不同输出 key，要么为该 key 声明 reducer，要么让多个节点写入独立中间字段后由汇总节点合并。</p>
+<p><strong>18. MessagesState 适合什么场景？</strong></p>
+<p>适合聊天、工具调用和 agent loop。它围绕消息列表提供了常用的消息累积语义，能自然接入 <code>ToolNode</code>、<code>tools_condition</code> 和聊天模型。</p>
+<h3 id="4-4-控制流机制"><a href="#4-4-控制流机制" class="headerlink" title="4.4 控制流机制"></a>4.4 控制流机制</h3><p><strong>19. add_edge 和 add_conditional_edges 有什么区别？</strong></p>
+<p><code>add_edge</code> 是静态跳转；<code>add_conditional_edges</code> 根据运行时 state 计算下一步。前者适合固定流程，后者适合分类、路由、循环退出和动态分支。</p>
+<p><strong>20. Command 和 conditional edge 如何选择？</strong></p>
+<p>只需要路由时用条件边；需要在同一个节点里“更新 state + 跳转”时用 <code>Command</code>。使用 <code>Command(goto=...)</code> 时不要再混用静态出边。</p>
+<p><strong>21. Send 解决什么问题？</strong></p>
+<p><code>Send</code> 用于动态 fan-out。它可以在运行时根据列表长度创建多个任务，并为每个任务传入不同局部 state，适合 map-reduce、批处理和并行检索。</p>
+<p><strong>22. 如何实现循环？</strong></p>
+<p>用条件边指回前面的节点，并提供明确退出条件。运行时可设置 <code>recursion_limit</code> 防止无限循环。</p>
+<p><strong>23. recursion_limit 是什么？</strong></p>
+<p>它限制图执行的最大 step 数，不是节点内业务循环次数。复杂图中一次业务循环可能经过多个节点，因此要按图结构估算。</p>
+<h3 id="4-5-持久化与记忆"><a href="#4-5-持久化与记忆" class="headerlink" title="4.5 持久化与记忆"></a>4.5 持久化与记忆</h3><p><strong>24. checkpointer 和 store 的区别？</strong></p>
+<p>checkpointer 是短期记忆，按 thread 保存图状态和执行历史，用于恢复、中断、回放；store 是长期记忆，跨 thread 保存业务数据，如用户偏好、画像、项目知识。</p>
+<p><strong>25. thread_id 为什么重要？</strong></p>
+<p>checkpointer 以 <code>thread_id</code> 作为主键读取和保存 checkpoint。没有 thread_id，就无法区分会话，也无法正确恢复 interrupt。</p>
+<p><strong>26. InMemorySaver 能不能用于生产？</strong></p>
+<p>不建议。它适合开发、测试和 demo，进程重启数据会丢失。生产应使用持久化后端，如 Postgres、MongoDB 或 Redis。</p>
+<p><strong>27. 如何设计长期记忆 namespace？</strong></p>
+<p>按隔离维度设计 tuple，例如 <code>(tenant_id, user_id, &quot;preferences&quot;)</code> 或 <code>(org_id, project_id, &quot;facts&quot;)</code>。namespace 必须防止跨用户、跨租户串数据。</p>
+<p><strong>28. 为什么不能把所有长期记忆都放进 prompt？</strong></p>
+<p>会增加 token 成本、降低相关性，甚至引入过期或冲突信息。应按 query 检索、过滤、摘要，只注入当前任务需要的记忆。</p>
+<h3 id="4-6-人机交互"><a href="#4-6-人机交互" class="headerlink" title="4.6 人机交互"></a>4.6 人机交互</h3><p><strong>29. interrupt 的工作原理是什么？</strong></p>
+<p>节点调用 <code>interrupt(payload)</code> 时，LangGraph 暂停执行，把 payload 返回给调用方，并通过 checkpointer 保存状态。恢复时调用方传入 <code>Command(resume=value)</code>，<code>interrupt()</code> 会返回这个 value。</p>
+<p><strong>30. interrupt 恢复后从哪里继续？</strong></p>
+<p>从包含 <code>interrupt</code> 的节点开头重新执行，而不是从 <code>interrupt</code> 那一行继续。因此 interrupt 之前的副作用可能重复发生。</p>
+<p><strong>31. interrupt 有哪些规则？</strong></p>
+<p>必须启用 checkpointer；恢复时使用同一 thread_id；不要在 <code>try/except</code> 中吞掉 interrupt；同一节点多个 interrupt 的顺序要稳定；payload 尽量 JSON 可序列化。</p>
+<p><strong>32. 人工审批工具调用怎么做？</strong></p>
+<p>在执行危险工具前插入 review 节点，展示工具名、参数和风险说明，通过 <code>interrupt</code> 等待人工批准。批准后继续执行，拒绝则返回安全的 state 更新或路由到终止节点。</p>
+<h3 id="4-7-LLM-与工具集成"><a href="#4-7-LLM-与工具集成" class="headerlink" title="4.7 LLM 与工具集成"></a>4.7 LLM 与工具集成</h3><p><strong>33. ToolNode 做什么？</strong></p>
+<p><code>ToolNode</code> 读取最后一条 AIMessage 的 <code>tool_calls</code>，找到对应工具并执行，然后把结果包装成 ToolMessage 写回 messages。</p>
+<p><strong>34. tools_condition 做什么？</strong></p>
+<p>它检查最后一条消息是否包含工具调用。有则路由到 tools 节点；没有则路由到 END，是 ReAct 风格工具循环的常用条件边。</p>
+<p><strong>35. 为什么模型明明输出工具名却没有执行工具？</strong></p>
+<p>多数情况下是模型没有产生标准 <code>tool_calls</code>，只是输出了普通文本。需要使用支持 tool calling 的模型，并通过 <code>bind_tools(tools)</code> 绑定工具 schema。</p>
+<p><strong>36. 工具设计有哪些注意点？</strong></p>
+<p>函数名、类型注解和 docstring 要清晰；参数尽量结构化；危险操作要权限控制和人工审批；工具返回值要简洁，避免把大量原始数据塞回上下文。</p>
+<p><strong>37. create_react_agent 在 v1 中还推荐吗？</strong></p>
+<p>LangGraph v1 迁移文档说明，旧的 <code>langgraph.prebuilt.create_react_agent</code> 已进入弃用路径，推荐使用 LangChain v1 的 <code>create_agent</code>；如果需要细粒度编排，则直接用 <code>StateGraph + ToolNode + tools_condition</code>。</p>
+<h3 id="4-8-多智能体设计"><a href="#4-8-多智能体设计" class="headerlink" title="4.8 多智能体设计"></a>4.8 多智能体设计</h3><p><strong>38. 多智能体系统什么时候有必要？</strong></p>
+<p>当任务天然存在不同能力边界、上下文边界或权限边界时才有必要。例如研究、代码、审查、执行工具分别由不同节点或子图处理。</p>
+<p><strong>39. Supervisor 模式是什么？</strong></p>
+<p>Supervisor 是一个中心调度节点，负责观察任务状态并决定下一个 agent。优点是可控、易审计；缺点是中心节点容易成为复杂度瓶颈。</p>
+<p><strong>40. Network 模式是什么？</strong></p>
+<p>多个 agent 之间可以互相 handoff，没有唯一中心。优点是灵活；缺点是更难控制循环、权限和全局状态一致性。</p>
+<p><strong>41. 多智能体共享 state 有什么风险？</strong></p>
+<p>多个 agent 可能覆盖彼此输出、泄露不该看到的上下文，或形成循环。建议限制每个 agent 的输入输出 schema，使用汇总节点统一合并。</p>
+<p><strong>42. 子图有什么价值？</strong></p>
+<p>子图能封装复杂流程，让一个 agent 或能力单元作为父图中的节点复用。它也能隔离内部状态，只暴露必要输入输出。</p>
+<p><strong>43. handoff 如何实现？</strong></p>
+<p>可以用条件边或 <code>Command(goto=...)</code>。跨子图跳到父图节点时可使用 <code>Command.PARENT</code>，但父图共享 key 需要 reducer 处理更新。</p>
+<h3 id="4-9-性能优化"><a href="#4-9-性能优化" class="headerlink" title="4.9 性能优化"></a>4.9 性能优化</h3><p><strong>44. LangGraph 性能瓶颈通常在哪里？</strong></p>
+<p>常见瓶颈是 LLM 调用延迟、工具 I&#x2F;O、过大的消息历史、长期记忆检索不精准、并行 fan-out 数量过大，以及 checkpoint 后端写入延迟。</p>
+<p><strong>45. 如何优化 token 成本？</strong></p>
+<p>控制 messages 长度，对历史做摘要；长期记忆按需检索；工具返回结构化摘要；多智能体间传递 artifacts 而不是完整对话。</p>
+<p><strong>46. 如何优化并行任务？</strong></p>
+<p>使用 <code>Send</code> 做 fan-out；限制并发和批大小；为外部 API 设置 timeout&#x2F;retry；结果汇总 key 使用 reducer，并在 reduce 节点排序和裁剪。</p>
+<p><strong>47. checkpoint 会不会影响性能？</strong></p>
+<p>会。checkpoint 带来持久化和恢复能力，也增加序列化与存储开销。生产中应选择合适后端、控制 state 体积，并避免把大文件或不可序列化对象放入 state。</p>
+<p><strong>48. 什么数据不适合放进 state？</strong></p>
+<p>大文件、数据库连接、模型对象、临时 socket、不可序列化对象和敏感明文。它们应放在外部存储或运行时依赖中，state 只保存引用或摘要。</p>
+<h3 id="4-10-问题排查与生产实践"><a href="#4-10-问题排查与生产实践" class="headerlink" title="4.10 问题排查与生产实践"></a>4.10 问题排查与生产实践</h3><p><strong>49. InvalidUpdateError 常见原因是什么？</strong></p>
+<p>节点返回了非 dict&#x2F;非 Command 的值，或者返回 key 不在 state schema 中。修复方式是明确 state schema，并让节点只返回合法 partial update。</p>
+<p><strong>50. 条件边路由不到节点怎么办？</strong></p>
+<p>检查条件函数返回值、mapping key、目标节点名是否一致。建议用 <code>Literal[...]</code> 给路由函数标注返回类型，减少拼写错误。</p>
+<p><strong>51. 图意外多执行了一个节点，可能是什么原因？</strong></p>
+<p>常见原因是节点既返回 <code>Command(goto=...)</code>，又定义了静态出边。LangGraph 会执行动态目标，也可能继续执行静态边目标。</p>
+<p><strong>52. 为什么恢复 interrupt 后副作用重复了？</strong></p>
+<p>因为恢复时节点从头执行。把外部副作用放在 interrupt 之后，或用幂等键、事务、状态标记防重复。</p>
+<p><strong>53. 如何观察每个节点的输出？</strong></p>
+<p>使用 <code>graph.stream(..., stream_mode=&quot;updates&quot;)</code> 查看节点级更新；复杂项目建议接入 LangSmith 观察 trace、状态变化和 token 成本。</p>
+<p><strong>54. 生产如何处理异常？</strong></p>
+<p>对外部依赖使用 retry&#x2F;timeout；对业务失败写入结构化错误 state；危险操作走人工审批；保留 checkpoint 便于恢复；通过日志和 trace 定位失败节点。</p>
+<p><strong>55. 如何做测试？</strong></p>
+<p>把节点函数当普通函数做单元测试；对条件路由做参数化测试；对图做端到端 invoke 测试；对 interrupt 测试暂停和恢复；对 checkpointer 测试同 thread 累积和不同 thread 隔离。</p>
+<p><strong>56. 面试中如何一句话总结 LangGraph？</strong></p>
+<p>LangGraph 是一个面向智能体的状态图运行时，用显式 state、节点、边和 checkpoint，把 LLM 应用从简单链式调用扩展到可循环、可分支、可中断、可恢复的生产级工作流。</p>
+<h2 id="5-工程实践清单"><a href="#5-工程实践清单" class="headerlink" title="5. 工程实践清单"></a>5. 工程实践清单</h2><h3 id="5-1-建模建议"><a href="#5-1-建模建议" class="headerlink" title="5.1 建模建议"></a>5.1 建模建议</h3><ul>
+<li>先设计 state schema，再写节点；schema 是团队协作契约。</li>
+<li>节点保持小而清晰：一个节点完成一个稳定职责。</li>
+<li>中间结果用结构化字段，不要全部塞进 <code>messages</code>。</li>
+<li>对会被并行写入的 key 必须声明 reducer。</li>
+<li>对外部副作用使用幂等 ID，尤其是 interrupt 之前或 retry 节点中。</li>
+</ul>
+<h3 id="5-2-记忆建议"><a href="#5-2-记忆建议" class="headerlink" title="5.2 记忆建议"></a>5.2 记忆建议</h3><ul>
+<li>thread 内上下文用 checkpointer。</li>
+<li>跨 thread 用户画像、偏好、项目知识用 store。</li>
+<li>namespace 包含租户和用户维度。</li>
+<li>定期清理、摘要或压缩长期记忆。</li>
+<li>敏感信息加密或脱敏，不要直接写入可被模型完整读取的 state。</li>
+</ul>
+<h3 id="5-3-LLM-x2F-工具建议"><a href="#5-3-LLM-x2F-工具建议" class="headerlink" title="5.3 LLM&#x2F;工具建议"></a>5.3 LLM&#x2F;工具建议</h3><ul>
+<li>工具函数加类型注解和清晰 docstring。</li>
+<li>工具返回尽量短，必要时返回引用 ID。</li>
+<li>对写操作、支付、删除、发消息等工具加入人工审批。</li>
+<li>选择真正支持 tool calling 的模型。</li>
+<li>给 agent loop 设置最大步数和失败出口。</li>
+</ul>
+<h3 id="5-4-多智能体建议"><a href="#5-4-多智能体建议" class="headerlink" title="5.4 多智能体建议"></a>5.4 多智能体建议</h3><ul>
+<li>先用单图和少量节点解决问题，不要过早拆多 agent。</li>
+<li>拆分依据是能力、权限、上下文边界，而不是“角色名字”。</li>
+<li>supervisor 输出结构化 route 和理由，便于审计。</li>
+<li>worker 输出 artifacts，最终由 synthesize 节点统一生成答案。</li>
+<li>对循环 handoff 设置最大轮数和死循环检测。</li>
+</ul>
+<h2 id="6-参考资料"><a href="#6-参考资料" class="headerlink" title="6. 参考资料"></a>6. 参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://pypi.org/project/langgraph/">PyPI: langgraph 1.2.0</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/python/langgraph/graph-api">LangGraph Graph API overview</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/python/langgraph/use-graph-api">LangGraph: Use the graph API</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/python/langgraph/persistence">LangGraph Persistence</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/python/langgraph/interrupts">LangGraph Interrupts &#x2F; Human-in-the-loop</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/python/langchain/tools">LangChain Tools: ToolNode and tools_condition</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/python/migrate/langgraph-v1">LangGraph v1 migration guide</a></li>
+<li><a href="https://github.com/langchain-ai/langgraph">LangGraph GitHub repository</a></li>
+<li><a href="https://github.com/langchain-ai/langgraph/blob/main/libs/langgraph/langgraph/graph/state.py">StateGraph source</a></li>
+<li><a href="https://github.com/langchain-ai/langgraph/blob/main/libs/langgraph/langgraph/pregel/main.py">Pregel runtime source</a></li>
+<li><a href="https://github.com/langchain-ai/langgraph/blob/main/libs/checkpoint/langgraph/checkpoint/base/__init__.py">Checkpoint base source</a></li>
+<li><a href="https://github.com/langchain-ai/langgraph/blob/main/libs/langgraph/langgraph/channels/base.py">Channel base source</a></li>
+</ul>
+
+                
+                <p class="end">__END__</p>
+            </div>
+            <div class="article-footer">
+                <div class="suffix-box">
+    <div class="suffix-box-left">
+        <img src="/image/sidebar/avatar.jpg" alt="Live For Code">
+    </div>
+    <div class="suffix-box-right">
+        <span class="suffix-box-title">文章作者：</span>Live For Code
+        <br>
+        <span class="suffix-box-title">文章出处：</span><a href="/article/1752903578/" target="_blank">01-LangGraph-v1-实战源码手册</a>
+        <br>
+        <span class="suffix-box-title">作者签名：</span>你知道的越多,你不知道的越多
+        <br>
+        <span class="suffix-box-title">关于主题：</span><a href="https://fadeway32.gitee.io/" target="_blank">fadeway32</a>
+        <br>
+        <span class="suffix-box-title">版权声明：</span>文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" title="BY-NC-SA" target="_blank">BY-NC-SA</a> 许可协议，转载请注明出处
+        <br>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+                
+                    <div class="category">
+                        分类：
+                        
+                            <a href="/category/Web/">Web</a>
+                        
+                    </div>
+                
+                
+                    <div class="tag">
+                        标签：
+                        
+                            <a href="/tag/LangGraph/">LangGraph</a>
+                        
+                    </div>
+                
+                <div class="article-prev-next">
+                    
+                        <a href="/article/1752904578/" class="prev-prefix">« </a> 上一篇：    <a href="/article/1752904578/" title="发布于 2025-07-17 01:43">ClickHouse 全面梳理原理手册</a>
+                        <br>
+                    
+                    
+                        <a href="/article/1752903579/" class="next-prefix">» </a> 下一篇：    <a href="/article/1752903579/" title="发布于 2025-07-16 01:42">02 LangChain框架解析</a>
+                    
+                </div>
+            </div>
+            
+    <div class="article-comments">
+        
+            <div class="comments-title">
+                评论列表
+            </div>
+        
+        <div class="comments-content"></div>
+    </div>
+
+        </div>
+    
+</div>
+
+    <div id="footer"></div>
+    <div id="sidebar">
+    <div class="menu-wrap" style="display:none;">
+        
+            <div class="menu-notice">
+                <span class="iconfont icon-notice"></span>
+                <div class="notice">
+                    <span>简单地活着，肆意而又精彩！</span>
+                </div>
+            </div>
+        
+        <nav class="menu">
+            <div class="menu-introduce"> 
+                <div class="introduce-avatar">
+                    <img src="/image/sidebar/avatar.jpg">
+                </div> 
+                <div class="introduce-info"> 
+                    <div class="introduce-user"><span>Live For Code</span></div>
+                </div> 
+            </div> 
+            <div class="menu-list">
+                <ul>
+                    
+                        <li class=""><a href="/" class="" target="_self"><span class="iconfont icon-home-fill"></span>首页</a></li>
+                    
+                        <li class=""><a href="/category" class="" target="_self"><span class="iconfont icon-folder-fill"></span>分类</a></li>
+                    
+                        <li class=""><a href="/tag" class="" target="_self"><span class="iconfont icon-discount-fill"></span>标签</a></li>
+                    
+                        <li class=""><a href="/archive" class="" target="_self"><span class="iconfont icon-calendar-fill"></span>归档</a></li>
+                    
+                        <li class=""><a href="/donate" class="" target="_self"><span class="iconfont icon-heart-fill"></span>赞赏</a></li>
+                    
+                        <li class=""><a href="/about" class="" target="_self"><span class="iconfont icon-about-fill"></span>关于</a></li>
+                    
+                        <li class=""><a href="/atom.xml" class="" target="_blank"><span class="iconfont icon-rss"></span>订阅</a></li>
+                    
+                        <li class=""><a href="/comment" class="" target="_self"><span class="iconfont icon-comments-fill"></span>留言板</a></li>
+                    
+                        <li class=""><a href="/friend" class="" target="_self"><span class="iconfont icon-link"></span>友情链接</a></li>
+                    
+                </ul> 
+            </div> 
+            <div class="menu-link">
+                <div class="box">
+                    <div class="image-box"></div>
+                </div>
+                
+                    <a name="知乎" href="https://www.zhihu.com/people/wo-xin-de-love" class="" target="_blank" data=""><span class="iconfont icon-zhihu"></span></a>
+                
+                    <a name="微博" href="https://weibo.com/u/3939432776" class="" target="_blank" data=""><span class="iconfont icon-weibo"></span></a>
+                
+                    <a name="QQ" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"><span class="iconfont icon-qq"></span></a>
+                
+                    <a name="微信" href="javascript:;" class="image" target="_self" data="https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"><span class="iconfont icon-wechat"></span></a>
+                
+                    <a name="GitHub" href="https://github.com/first19326" class="" target="_blank" data=""><span class="iconfont icon-github"></span></a>
+                
+            </div> 
+        </nav>
+        <button class="menu-button-close"></button>
+        <div class="morph-shape" id="morph-shape" data-morph-open="M-7.312,0H15c0,0,66,113.339,66,399.5C81,664.006,15,800,15,800H-7.312V0z;M-7.312,0H100c0,0,0,113.839,0,400c0,264.506,0,400,0,400H-7.312V0z">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 800" preserveAspectRatio="none">
+                <path d="M-7.312,0H0c0,0,0,113.839,0,400c0,264.506,0,400,0,400h-7.312V0z"/>
+            </svg>
+        </div>
+    </div>
+    <button class="menu-button-open">MENU</button>
+    <div class="menu-cover"></div>
+</div>
+    
+<div id="tools">
+    <div class="progressbar-top"></div>
+
+    <link type="text/css" rel="stylesheet" href="/css/APlayer.css">
+    <script type="text/javascript" src="/js/APlayer.min.js"></script>
+    <script type="text/javascript" src="/js/Meting.min.js"></script>
+    <meting-js id="3778678" lrcshow="false" server="netease"
+               type="playlist" fixed="true" autoplay="false"
+               loop="all" order="random" preload="auto"
+               volume="0.67" mutex="true"></meting-js>
+
+    <script type="text/javascript">
+        (function () {
+            var toolsRoot = document.getElementById('tools');
+            if (!toolsRoot || typeof APlayer === 'undefined') {
+                return;
+            }
+
+            var metingElement = toolsRoot.querySelector('meting-js');
+            var targetVolume = 0.67;
+            var autoplayEnabled = true;
+            var introAudio = {
+                name: "知我",
+                artist: "国风堂 / 哦漏",
+                cover: "/image/header/home.jpg",
+                url: "/music/song/知我.mp3",
+                lrc: ""
+            };
+            var introIndex = -1;
+            var introRemoved = false;
+            var metingPlayer = null;
+            var initTimer = null;
+
+            function restoreAudio(audio) {
+                if (!audio) {
+                    return;
+                }
+
+                audio.muted = false;
+                audio.defaultMuted = false;
+                audio.removeAttribute('muted');
+                audio.removeAttribute('autoplay');
+                audio.volume = targetVolume;
+            }
+
+            function attemptPlay(player, muted) {
+                if (!player || !player.audio) {
+                    return;
+                }
+
+                var audio = player.audio;
+                if (typeof muted === 'boolean') {
+                    audio.muted = muted;
+                    audio.defaultMuted = muted;
+                    if (muted) {
+                        audio.setAttribute('muted', 'muted');
+                        audio.setAttribute('autoplay', 'autoplay');
+                        audio.volume = 0;
+                    }
+                }
+
+                var result = audio.play();
+                if (result && typeof result.catch === 'function') {
+                    result.catch(function () {
+                        if (player && player.setUIPaused) {
+                            player.setUIPaused();
+                        }
+                    });
+                }
+            }
+
+            function startMutedAutoplay(player) {
+                if (!player || !player.audio) {
+                    return;
+                }
+
+                var audio = player.audio;
+                audio.muted = true;
+                audio.defaultMuted = true;
+                audio.setAttribute('muted', 'muted');
+                audio.setAttribute('autoplay', 'autoplay');
+                audio.volume = 0;
+
+                var clearMute = function () {
+                    restoreAudio(audio);
+                };
+
+                audio.addEventListener('playing', function () {
+                    window.setTimeout(clearMute, 120);
+                }, {once: true});
+
+                ['loadedmetadata', 'canplay', 'canplaythrough'].forEach(function (eventName) {
+                    audio.addEventListener(eventName, function resumeOnReady() {
+                        if (audio.paused) {
+                            attemptPlay(player, true);
+                        }
+                    }, {once: true});
+                });
+
+                [0, 250, 1200, 2500].forEach(function (delay) {
+                    window.setTimeout(function () {
+                        if (audio.paused) {
+                            attemptPlay(player, true);
+                        }
+                    }, delay);
+                });
+
+                attemptPlay(player, true);
+            }
+
+            function showPlayerControls(player) {
+                if (player && player.setMode) {
+                    player.setMode('normal');
+                }
+                if (player && player.template && player.template.info) {
+                    player.template.info.style.display = 'block';
+                }
+            }
+
+            function resetRandomOrder(player) {
+                if (!player || !player.list || !player.list.audios) {
+                    return;
+                }
+
+                var order = [];
+                for (var i = 0; i < player.list.audios.length; i++) {
+                    order.push(i);
+                }
+                for (var j = order.length - 1; j > 0; j--) {
+                    var randomIndex = Math.floor(Math.random() * (j + 1));
+                    var item = order[j];
+                    order[j] = order[randomIndex];
+                    order[randomIndex] = item;
+                }
+                player.randomOrder = order;
+            }
+
+            function removeIntroAfterLeaving(player) {
+                if (introRemoved || introIndex < 0 || !player || !player.list || player.list.index === introIndex) {
+                    return;
+                }
+
+                player.removeAudio(introIndex);
+                introRemoved = true;
+                introIndex = -1;
+
+                if (player.options && player.options.order === 'random') {
+                    resetRandomOrder(player);
+                }
+            }
+
+            function initIntro(player) {
+                if (!player || !player.list || !player.list.audios || !player.addAudio || !introAudio.url) {
+                    return;
+                }
+
+                metingPlayer = player;
+                showPlayerControls(player);
+
+                player.addAudio(introAudio);
+                introIndex = player.list.audios.length - 1;
+                player.list.switch(introIndex);
+                showPlayerControls(player);
+
+                player.on('listswitch', function () {
+                    window.setTimeout(function () {
+                        removeIntroAfterLeaving(player);
+                    }, 0);
+                });
+                player.on('ended', function () {
+                    window.setTimeout(function () {
+                        removeIntroAfterLeaving(player);
+                    }, 0);
+                });
+
+                if (autoplayEnabled) {
+                    startMutedAutoplay(player);
+                }
+
+                document.addEventListener('click', function resumeMusic() {
+                    if (player && player.audio && player.audio.paused) {
+                        restoreAudio(player.audio);
+                        attemptPlay(player, false);
+                    }
+                    document.removeEventListener('click', resumeMusic);
+                });
+
+                window.__liveForCodeMusic = {
+                    player: player,
+                    meting: metingElement
+                };
+            }
+
+            initTimer = window.setInterval(function () {
+                if (metingElement && metingElement.aplayer) {
+                    window.clearInterval(initTimer);
+                    initIntro(metingElement.aplayer);
+                }
+            }, 100);
+        })();
+    </script>
+    
+    <div class="wrap-right">
+        <div class="setting">
+            <div class="iconbox mode">
+                <div class="light">
+                    <span class="iconfont icon-daymode"></span>
+                    <span class="icontext">浅色模式</span>
+                </div>
+                <div class="dark">
+                    <span class="iconfont icon-nightmode-fill"></span>
+                    <span class="icontext">深色模式</span>
+                </div>
+            </div>
+            <div class="iconbox bottom">
+                <div style="display: inline-block; transform: rotate(180deg);">
+                    <span class="iconfont icon-top"></span>
+                </div>
+                <span class="icontext">跳至底部</span>
+            </div>
+        </div>
+        <div class="iconbox set">
+            <div style="display: inline-block;">
+                <span class="iconfont icon-setting"></span>
+            </div>
+            <span class="icontext">设置</span>
+        </div>
+        <div class="iconbox top">
+            <span class="iconfont icon-top"></span>
+            <span class="icontext">返回顶部</span>
+        </div>
+    </div>
+    <div class="loading"></div>
+</div>
+
+    <script>
+    window.config = {
+        GitHubUserName     : "first19326",
+        GitHubRepositories : "Hexo-LiveForCode",
+
+        User             : "Live For Code",
+        UserAvatar       : "/image/sidebar/avatar.jpg",
+        WebsiteStartDate : "2020-01-01",
+
+        WebsiteTitleBlur         : "(◍´꒳`◍) Hi, Live For Code",
+        WebsiteTitleBlurTimeOut  : 500,
+        WebsiteTitleFocus        : "(*´∇｀*) 欢迎回来!",
+        WebsiteTitleFocusTimeOut : 1000,
+        WebsiteFavicon           : "/image/website/logo.png",
+
+        ProgressBar : {
+            id       : "topProgressBar",
+            color    : "#77B6FF",
+            height   : "2px",
+            duration : 0.2
+        },
+
+        Loading: {
+            rebound : {
+                tension  : 16,
+                friction : 5
+            },
+            spinner : {
+                id     : "spinner",
+                radius : 90,
+                sides  : 3,
+                depth  : 4,
+                colors : {
+                    background : "#F0F0F0",
+                    stroke     : "#272633",
+                    base       : "",
+                    child      : "#272633"
+                },
+                alwaysForward : true,
+                restAt        : 0.5,
+                renderBase    : false
+            }
+        },
+
+        HomeHeaderAnimationRendered : true,
+        HomeHeaderAnimation         : {
+            radius      : 15,
+            density     : 0.2,
+            color       : "rgba(255, 255, 255, .2)",
+            clearOffset : 0.3
+        },
+
+        BackAnimationRendered          : true,
+        IEBrowserBackAnimationRendered : false,
+        BackAnimation                  : {
+            colorSaturation  : "60%",
+            colorBrightness  : "50%",
+            colorAlpha       : 0.5,
+            colorCycleSpeed  : 5,
+            verticalPosition : "random",
+            horizontalSpeed  : 200,
+            ribbonCount      : 3,
+            strokeSize       : 0,
+            parallaxAmount   : -0.2,
+            animateSections  : true
+        },
+
+        HomeHeaderImage : [
+            
+                "/image/header/home.jpg",
+            
+                "/image/header/home.jpeg",
+            
+                "/image/header/2023-04-17-20-51-03.jpg",
+            
+                "/image/header/2023-04-17-20-54-07.jpg",
+            
+                "/image/header/2023-04-17-20-54-22.jpg",
+            
+                "/image/header/2023-04-17-20-55-25.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+        HomeBannerText  : "",
+
+        ArticleHeaderImage : [
+            
+                "/image/header/article.jpg",
+            
+                "/image/header/2023-04-17-21-04-19.jpg",
+            
+                "/image/header/2023-04-17-21-04-34.jpg",
+            
+                "/image/header/2023-04-17-21-04-41.jpg",
+            
+                "/image/header/2023-04-17-21-05-22.jpg",
+            
+        ],
+
+        OtherBannerText : "",
+
+        Error : {
+            icon    : "icon-swimming",
+            title   : "PAGE NOT FOUND",
+            content : [
+                
+                    "很抱歉，您访问的页面不存在！",
+                
+                    "可能是输入地址有误或该地址已变更。",
+                
+            ],
+            buttons : [
+                
+                    {
+                        icon  : "icon-home",
+                        text  : "返回首页",
+                        href  : "https://fadeway32.gitee.io/",
+                        class : ""
+                    },
+                
+            ]
+        },
+
+        MenuNotice : {
+            enable : true,
+            notice : "简单地活着，肆意而又精彩！",
+            speed  : 20
+        },
+        MenuList : [
+            
+                {
+                    name   : "首页",
+                    icon   : "icon-home-fill",
+                    href   : "/",
+                    type   : "index",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "分类",
+                    icon   : "icon-folder-fill",
+                    href   : "/category",
+                    type   : "category",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "标签",
+                    icon   : "icon-discount-fill",
+                    href   : "/tag",
+                    type   : "tag",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "归档",
+                    icon   : "icon-calendar-fill",
+                    href   : "/archive",
+                    type   : "archive",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "赞赏",
+                    icon   : "icon-heart-fill",
+                    href   : "/donate",
+                    type   : "donate",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "关于",
+                    icon   : "icon-about-fill",
+                    href   : "/about",
+                    type   : "about",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "订阅",
+                    icon   : "icon-rss",
+                    href   : "/atom.xml",
+                    type   : "",
+                    class  : "",
+                    target : "_blank"
+                },
+            
+                {
+                    name   : "留言板",
+                    icon   : "icon-comments-fill",
+                    href   : "/comment",
+                    type   : "comment",
+                    class  : "",
+                    target : "_self"
+                },
+            
+                {
+                    name   : "友情链接",
+                    icon   : "icon-link",
+                    href   : "/friend",
+                    type   : "friend",
+                    class  : "",
+                    target : "_self"
+                },
+            
+        ],
+        MenuLink : [
+            
+                
+                    {
+                        name   : "知乎",
+                        icon   : "icon-zhihu",
+                        href   : "https://www.zhihu.com/people/wo-xin-de-love",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "微博",
+                        icon   : "icon-weibo",
+                        href   : "https://weibo.com/u/3939432776",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+                    {
+                        name   : "QQ",
+                        icon   : "icon-qq",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/B5C4BECA9D2E1BBE5B5B9020421E9426.png"
+                    },
+                
+                    {
+                        name   : "微信",
+                        icon   : "icon-wechat",
+                        href   : "javascript:;",
+                        class  : "image",
+                        target : "_self",
+                        image  : "https://gitee.com/fadeway32/fadeway32/raw/master/img/F35AB4B62DEAE3B5DC2907087E35424E.png"
+                    },
+                
+                    {
+                        name   : "GitHub",
+                        icon   : "icon-github",
+                        href   : "https://github.com/first19326",
+                        class  : "",
+                        target : "_blank",
+                        image  : ""
+                    },
+                
+            
+        ],
+
+        FooterStyle : 2,
+        BottomText  : "<div><span class='face'>ღゝ◡╹)ノ♡</span></div><div>【人生若只如初见<span><i class='iconfont icon-like-fill'></i></span>何事秋风悲画扇】</div><div>&copy; 2020-2022 WorstOne. All Rights Reserved.</div>",
+
+        ConsoleList : [
+            
+                
+                    [
+                        
+                            
+                                "Based on cnblogs theme SimpleMemory.",
+                            
+                                "",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "SimpleMemory Author:",
+                            
+                                "BNDong",
+                            
+                        
+                    ],
+                
+                    [
+                        
+                            
+                                "Theme:",
+                            
+                                "LiveForCode",
+                            
+                        
+                    ],
+                
+            
+        ],
+
+        FontIconExtend : "",
+
+        Donate : {
+            paypal  : "",
+            bitcoin : "",
+            alipay  : "/image/donate/alipay.png",
+            wechat  : "/image/donate/wechat.png"
+        },
+
+        Search : {
+            applicationID : "854JXVO35S",
+            apiKey        : "1945575867b066df2d460a4a97e23421",
+            indexName     : "hexo2",
+            hits          : {
+                page : 30
+            },
+            labels        : {
+                placeholder : "搜索",
+                empty       : "未发现与 「${query}」 相关的内容",
+                stats       : "${hits} 条相关条目，使用了 ${time} 毫秒",
+            }
+        }, 
+
+        Valine : {
+            switch         : true,
+            el             : ".comments-content",
+            appId          : "srhKtvWPQTWYKh3qX8G8M7v0-gzGzoHsz",
+            appKey         : "8uVSP1q6UlALVC5igYfIfv2h",
+            serverURLs     : "",
+            placeholder    : "你是我一生只会遇见一次的惊喜...",
+            avatar         : "mm",
+            meta           : "nick,mail,link",
+            requiredFields : "nick,mail",
+            pageSize       : 5,
+            lang           : "zh-cn",
+            visitor        : true,
+            enableQQ       : true
+        },
+
+        Tocbot : {
+            switch                : true,
+            tocSelector           : ".toc",
+            contentSelector       : ".article-body",
+            headingSelector       : "h1, h2, h3, h4, h5",
+            headingsOffset        : 0,
+            scrollSmooth          : true,
+            scrollSmoothOffset    : -5,
+            positionFixedSelector : ".toc",
+            positionFixedClass    : "toc-fixed",
+            fixedSidebarOffset    : "",
+        },
+
+        Require : {
+            baseUrl     : "/js/",
+            waitSeconds : 100
+        },
+
+        Music : {
+            type : "Meting"
+        },
+        APlayer : {
+            container : ".aplayer",
+            fixed     : true,
+            autoplay  : true,
+            loop      : "all",
+            order     : "list",
+            preload   : "auto",
+            volume    : 0.67,
+            mutex     : true,
+            lrcType   : 0,
+            audio     : [
+                
+                    {
+                        name   : "知我",
+                        artist : "国风堂 / 哦漏",
+                        cover  : "/image/header/home.jpg",
+                        url    : "/music/song/知我.mp3",
+                        lrc    : ""
+                    },
+                
+            ]
+        },
+        Meting : {
+            id       : "3778678", 
+            lrcshow  : false, 
+            server   : "netease", 
+            type     : "playlist", 
+            fixed    : true, 
+            autoplay : true, 
+            loop     : "all", 
+            order    : "random", 
+            preload  : "auto", 
+            volume   : 0.67, 
+            mutex    : true
+        },
+
+        Mouse : {
+            enable  : true,
+            options : {
+                size  : 6,
+                sizeF : 24
+            }
+        },
+
+        LazyLoad : {
+            default : "/image/website/lazyload.svg"
+        },
+  
+        Style : {
+            aplayer          : "/css/APlayer.css",
+            archive          : "/css/archive.css",
+            base             : "/css/base.css",
+            clipboard        : "/css/clipboard.css",
+            code             : "/css/code.css",
+            donate           : "/css/donate.css",
+            fancybox         : "/css/jquery.fancybox.css",
+            footer           : "/css/footer.css",
+            iconfont         : "/iconfont/iconfont.css",
+            index            : "/css/index.css",
+            menuBubble       : "/css/menu-bubble.css",
+            mouse            : "/css/mouse.css",
+            page             : "/css/page.css",
+            post             : "/css/post.css",
+            search           : "/css/search.css",
+            tocbot           : "/css/tocbot.css",
+            valine           : "/css/valine.css"
+        },
+
+        Script: {
+            aplayer          : "/js/APlayer.min.js",
+            config           : "/js/require.config.js",
+            index            : "/js/index.js",
+            instantSearch    : "/js/instantsearch.min.js",
+            iscroll          : "/js/iscroll.js",
+            jQuery           : "/js/jquery-3.4.1.min.js",
+            loading          : "/js/loading.js",
+            meting           : "/js/Meting.min.js",
+            require          : "/js/require.min.js"
+        },
+
+        Font: {
+            LongCang    : "/font/LongCang.css",
+            Monda       : "/font/Monda.css",
+            NotoSansSC  : "/font/NotoSansSC.css",
+            NotoSerifSC : "/font/NotoSerifSC.css",
+            Playball    : "/font/Playball.css",
+            PTMono      : "/font/PTMono.css",
+            Roboto      : "/font/Roboto.css",
+            RobotoSlab  : "/font/RobotoSlab.css",
+            Rosario     : "/font/Rosario.css",
+            UbuntuMono  : "/font/UbuntuMono.css"
+        },
+
+        Suffix : {
+            about : "你知道的越多,你不知道的越多"
+        },
+            
+        Theme : {
+            url  : "https://fadeway32.gitee.io/",
+            name : "fadeway32"
+        }  
+    };
+</script>
+    <script type="text/javascript" src="/js/home-docs.js"></script>
+    <script type="text/javascript" src="/js/index.js"></script>
+</body>
+</html>
